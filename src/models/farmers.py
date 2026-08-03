@@ -1,0 +1,35 @@
+from sqlalchemy import Column, Integer, String, Text, Date
+from src.core.database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship
+
+
+class Farmer(Base):
+    __tablename__ = "farmers"
+
+    farmer_id = Column(Integer, primary_key=True, index=True)
+
+    rsbsa_id = Column(String(30), unique=True, nullable=False)
+
+    first_name = Column(String(50), nullable=False)
+
+    last_name = Column(String(50), nullable=False)
+
+    address = Column(Text, nullable=False)
+
+    sex = Column(String(10), nullable=False)
+
+    birthdate = Column(Date, nullable=False)
+
+    email_address = Column(String(100), nullable=True)
+
+    phone_number = Column(String(15), nullable=False)
+
+    planting_intents = relationship(
+    "PlantingIntent",
+    back_populates="farmer"
+)
+    offtake_requests = relationship(
+    "OfftakeRequest",
+    back_populates="farmer"
+)
