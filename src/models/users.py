@@ -41,3 +41,7 @@ class User(Base):
     "AuditLog",
     back_populates="user"
 )
+    raw_plant_reports = relationship(
+    "RawPlantReport",
+    back_populates="user"
+)
