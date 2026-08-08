@@ -19,7 +19,7 @@ from src.models.audit_logs import AuditLog
 from src.api.routes import audit_logs
 from src.api.routes import raw_plant_reports
 from src.api.routes import report_planting_intents
-
+from src.api.routes.auth import router as auth_router
 from src.api.routes import users, farmers, buyers, buyer_registry
 
 
@@ -39,7 +39,7 @@ app.include_router(forecasts.router,prefix="/forecasts",tags=["Forecasts"])
 app.include_router(audit_logs.router,prefix="/audit-logs",tags=["Audit Logs"])
 app.include_router(raw_plant_reports.router,prefix="/raw-plant-reports",tags=["Raw Plant Reports"])
 app.include_router(report_planting_intents.router,prefix="/report-planting-intents",tags=["Report Planting Intents"])
-
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
