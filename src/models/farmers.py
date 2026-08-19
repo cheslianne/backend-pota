@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Date
+from sqlalchemy.orm import relationship
+
 from src.core.database import Base
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import relationship
 
 
 class Farmer(Base):
@@ -26,10 +26,11 @@ class Farmer(Base):
     phone_number = Column(String(15), nullable=False)
 
     planting_intents = relationship(
-    "PlantingIntent",
-    back_populates="farmer"
-)
+        "PlantingIntent",
+        back_populates="farmer"
+    )
+
     offtake_requests = relationship(
-    "OfftakeRequest",
-    back_populates="farmer"
-)
+        "OfftakeRequest",
+        back_populates="farmer"
+    )

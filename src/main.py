@@ -1,46 +1,172 @@
+# src/main.py
+
 from fastapi import FastAPI
-from src.core.database import Base, engine
+from fastapi.middleware.cors import CORSMiddleware
 
-from src.models.users import User
-from src.models.farmers import Farmer
-from src.models.buyers import Buyer
-from src.models.buyer_registry import BuyerRegistry
-from src.models.buyer_status import BuyerStatus
-from src.api.routes import buyer_status
-from src.models.planting_intents import PlantingIntent
-from src.api.routes import planting_intents
-from src.models.offtake_requests import OfftakeRequest
-from src.api.routes import offtake_requests
-from src.models.price_data import PriceData
-from src.api.routes import price_data
-from src.models.forecasts import Forecast
-from src.api.routes import forecasts
-from src.models.audit_logs import AuditLog
-from src.api.routes import audit_logs
-from src.api.routes import raw_plant_reports
-from src.api.routes import report_planting_intents
-from src.api.routes.auth import router as auth_router
-from src.api.routes import users, farmers, buyers, buyer_registry
+from src.api.routes import (
+    users,
+    auth,
+    farmers,
+    planting_intents,
+    offtake_requests,
+    buyer_registry,
+    buyer_status,
+    buyers,
+    forecasts,
+    price_data,
+    raw_plant_reports,
+    report_planting_intents,
+    audit_logs,
+    email,
+)
 
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(
+    title="eSaka API",
+    description="Intelligent Supply-Demand Analytics and Geospatial Market Intelligence Platform",
+    version="1.0.0"
+)
 
-app = FastAPI()
 
-app.include_router(users.router, prefix="/users", tags=["Users"])
-app.include_router(farmers.router, prefix="/farmers", tags=["Farmers"])
-app.include_router(buyers.router, prefix="/buyers", tags=["Buyers"])
-app.include_router(buyer_registry.router, prefix="/buyer-registry", tags=["Buyer Registry"])
-app.include_router(buyer_status.router,prefix="/buyer-status", tags=["Buyer Status"])
-app.include_router(planting_intents.router,prefix="/planting-intent",tags=["Planting Intent"])
-app.include_router(offtake_requests.router,prefix="/offtake-request",tags=["Offtake Request"])
-app.include_router(price_data.router,prefix="/price-data",tags=["Price Data"])
-app.include_router(forecasts.router,prefix="/forecasts",tags=["Forecasts"])
-app.include_router(audit_logs.router,prefix="/audit-logs",tags=["Audit Logs"])
-app.include_router(raw_plant_reports.router,prefix="/raw-plant-reports",tags=["Raw Plant Reports"])
-app.include_router(report_planting_intents.router,prefix="/report-planting-intents",tags=["Report Planting Intents"])
-app.include_router(auth_router)
+# =========================================================
+# CORS
+# =========================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =========================================================
+# ROUTES
+# =========================================================
+
+app.include_router(
+    auth.router,
+    prefix="/api/auth",
+    tags=["Authentication"]
+)
+
+app.include_router(
+    users.router,
+    prefix="/api/users",
+    tags=["Users"]
+)
+
+app.include_router(
+    farmers.router,
+    prefix="/api/farmers",
+    tags=["Farmers"]
+)
+
+app.include_router(
+    planting_intents.router,
+    prefix="/api/planting-intents",
+    tags=["Planting Intents"]
+)
+
+app.include_router(
+    offtake_requests.router,
+    prefix="/api/offtake-requests",
+    tags=["Offtake Requests"]
+)
+
+app.include_router(
+    buyer_registry.router,
+    prefix="/api/buyer-registry",
+    tags=["Buyer Registry"]
+)
+
+app.include_router(
+    buyer_status.router,
+    prefix="/api/buyer-status",
+    tags=["Buyer Status"]
+)
+
+app.include_router(
+    buyers.router,
+    prefix="/api/buyers",
+    tags=["Buyers"]
+)
+
+app.include_router(
+    forecasts.router,
+    prefix="/api/forecasts",
+    tags=["Forecasts"]
+)
+
+app.include_router(
+    price_data.router,
+    prefix="/api/price-data",
+    tags=["Price Data"]
+)
+
+app.include_router(
+    raw_plant_reports.router,
+    prefix="/api/raw-plant-reports",
+    tags=["Raw Plant Reports"]
+)
+
+app.include_router(
+    report_planting_intents.router,
+    prefix="/api/report-planting-intents",
+    tags=["Report Planting Intents"]
+)
+
+app.include_router(
+    audit_logs.router,
+    prefix="/api/audit-logs",
+    tags=["Audit Logs"]
+)
+
+app.include_router(
+    email.router,
+    prefix="/api/email",
+    tags=["Email"]
+)
+
+
+# =========================================================
+# DEBUG FARMER ROUTES
+# =========================================================
+
+print("\n===== ALL APP FARMER ROUTES =====")
+
+for route in app.routes:
+    if "farmer" in route.path.lower():
+        print(
+            route.path,
+            getattr(route, "methods", None),
+            getattr(route, "name", None)
+        )
+
+print("=================================\n")
+
+
+# =========================================================
+# ROOT
+# =========================================================
 
 @app.get("/")
 def root():
-    return {"message": "Hello, FastAPI is working!"}
+    return {
+        "message": "Welcome to eSaka API",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
+
+
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "version": "1.0.0"
+    }

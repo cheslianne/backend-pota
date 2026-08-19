@@ -1,3 +1,4 @@
+# src/api/schemas/auth.py
 from pydantic import BaseModel
 
 
@@ -6,6 +7,15 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
+class LoginResponse(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = "bearer"
+    user_id: int
+    username: str
+    role: str
+
+
+class TokenData(BaseModel):
+    user_id: int
+    username: str
+    role: str

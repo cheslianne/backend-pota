@@ -3,6 +3,8 @@
 from sqlalchemy import Column, Integer, String, DateTime, func
 from src.core.database import Base
 from sqlalchemy.orm import relationship
+from src.models.audit_logs import AuditLog
+from src.models.raw_plant_reports import RawPlantReport
 
 
 class User(Base):
