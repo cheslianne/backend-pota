@@ -129,24 +129,6 @@ app.include_router(
     tags=["Email"]
 )
 
-
-# =========================================================
-# DEBUG FARMER ROUTES
-# =========================================================
-
-print("\n===== ALL APP FARMER ROUTES =====")
-
-for route in app.routes:
-    if "farmer" in route.path.lower():
-        print(
-            route.path,
-            getattr(route, "methods", None),
-            getattr(route, "name", None)
-        )
-
-print("=================================\n")
-
-
 # =========================================================
 # ROOT
 # =========================================================
