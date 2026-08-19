@@ -1,30 +1,89 @@
 # src/models/users.py
 
-from sqlalchemy import Column, Integer, String, DateTime, func
-from src.core.database import Base
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
-from src.models.audit_logs import AuditLog
-from src.models.raw_plant_reports import RawPlantReport
+
+from src.core.database import Base
 
 
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(Integer, primary_key=True, index=True)
+    # ============================================================
+    # PRIMARY KEY
+    # ============================================================
 
-    first_name = Column(String(50), nullable=False)
+    user_id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    last_name = Column(String(50), nullable=False)
+    # ============================================================
+    # USER INFORMATION
+    # ============================================================
 
-    username = Column(String(50), unique=True, nullable=False)
+    first_name = Column(
+        String(50),
+        nullable=False
+    )
 
-    email_address = Column(String(100), unique=True, nullable=False)
+    last_name = Column(
+        String(50),
+        nullable=False
+    )
 
-    phone_number = Column(String(15), nullable=False)
+    username = Column(
+        String(50),
+        unique=True,
+        nullable=False,
+        index=True
+    )
 
-    password = Column(String(255), nullable=False)
+    email_address = Column(
+        String(100),
+        unique=True,
+        nullable=False
+    )
 
-    role = Column(String(30), nullable=False)
+    phone_number = Column(
+        String(15),
+        nullable=False
+    )
+
+    # ============================================================
+    # AUTHENTICATION
+    # ============================================================
+
+    password = Column(
+        String(255),
+        nullable=False
+    )
+
+    # ============================================================
+    # ROLE
+    # ============================================================
+
+    role = Column(
+        String(30),
+        nullable=False
+    )
+
+    # ============================================================
+    # ACCOUNT STATUS
+    # True  = Active
+    # False = Deactivated
+    # ============================================================
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        server_default="true"
+    )
+
+    # ============================================================
+    # TIMESTAMPS
+    # ============================================================
 
     created_at = Column(
         DateTime,
@@ -39,11 +98,16 @@ class User(Base):
         nullable=False
     )
 
+    # ============================================================
+    # RELATIONSHIPS
+    # ============================================================
+
     audit_logs = relationship(
-    "AuditLog",
-    back_populates="user"
-)
+        "AuditLog",
+        back_populates="user"
+    )
+
     raw_plant_reports = relationship(
-    "RawPlantReport",
-    back_populates="user"
-)
+        "RawPlantReport",
+        back_populates="user"
+    )

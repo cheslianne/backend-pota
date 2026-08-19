@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buyer Registry Form — eSaka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<style>
+  html,body{ background:var(--green, #5B6B4F); }
+
+  .frame{
+    min-height:100vh;
+    padding:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--green, #5B6B4F);
+  }
+
+  .page-inner{
+    width:100%;
+    max-width:1010px;
+    background:var(--cream, #F2EDE1);
+    padding:36px 40px 44px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:26px;
+  }
+
+  .brand svg{ width:130px; height:112px; flex-shrink:0; }
+
+  .brand-word{
+    font-family:'Dancing Script', cursive;
+    font-weight:700;
+    font-size:54px;
+    color:var(--green, #5B6B4F);
+    line-height:1;
+    margin-left:-14px;
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.2));
+  }
+
+  .card{
+    background:#F4F1EA;
+    padding:40px 50px 34px;
+  }
+
+  .card h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:0.02em;
+    color:var(--green, #5B6B4F);
+    text-align:center;
+    text-transform:uppercase;
+    margin-bottom:34px;
+  }
+
+  .step{ display:none; }
+  .step.active-step{ display:block; }
+
+  .form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:26px 60px;
+  }
+
+  .field label{
+    display:block;
+    font-size:13.5px;
+    color:var(--ink, #2E2A22);
+    margin-bottom:8px;
+  }
+
+  .field label .req{ color:#c0392b; }
+
+  .field input,
+  .field textarea{
+    width:100%;
+    padding:11px 14px;
+    font-size:14px;
+    font-family:'Inter', sans-serif;
+    border:1.5px solid var(--ink, #2E2A22);
+    border-radius:4px;
+    background:#fff;
+    color:var(--ink, #2E2A22);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .field input:focus,
+  .field textarea:focus{
+    border-color:var(--green, #5B6B4F);
+    box-shadow:0 0 0 3px rgba(91,107,79,0.15);
+  }
+
+  .field textarea{
+    resize:vertical;
+    min-height:225px;
+    font-family:'Inter', sans-serif;
+  }
+
+  .upload-box{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .upload-box input[type="text"]{ cursor:default; background:#fff; }
+
+  .select-file-btn{
+    align-self:flex-start;
+    padding:8px 18px;
+    font-size:13px;
+    font-family:'Inter', sans-serif;
+    border:1.5px solid var(--ink, #2E2A22);
+    border-radius:4px;
+    background:#fff;
+    color:var(--ink, #2E2A22);
+    cursor:pointer;
+    transition:background-color .2s ease, color .2s ease;
+  }
+
+  .select-file-btn:hover{
+    background:var(--green, #5B6B4F);
+    border-color:var(--green, #5B6B4F);
+    color:#fff;
+  }
+
+  .form-error{
+    display:none;
+    background:#F1D9D5;
+    border:1px solid #d9a89f;
+    color:#8c3226;
+    font-size:13.5px;
+    padding:10px 16px;
+    border-radius:5px;
+    margin-bottom:20px;
+  }
+
+  .form-error.show{ display:block; }
+
+  .card-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:14px;
+    margin-top:38px;
+  }
+
+  .btn-outline, .btn-filled{
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    font-weight:500;
+    padding:10px 26px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:background-color .2s ease, color .2s ease, transform .15s ease;
+  }
+
+  .btn-outline{
+    border:1.5px solid var(--ink, #2E2A22);
+    background:transparent;
+    color:var(--ink, #2E2A22);
+  }
+
+  .btn-outline:hover{ background:#e6e1d4; }
+
+  .btn-filled{
+    border:1.5px solid var(--green, #5B6B4F);
+    background:var(--green, #5B6B4F);
+    color:#fff;
+  }
+
+  .btn-filled:hover{ background:var(--green-dark, #495a3f); }
+  .btn-filled:active, .btn-outline:active{ transform:translateY(1px); }
+
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(30,35,28,0.55);
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+  }
+
+  .modal-overlay.show{ display:flex; }
+
+  .modal-box{
+    background:#F0EDE4;
+    border-radius:4px;
+    padding:34px 60px 30px;
+    text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,0.3);
+  }
+
+  .modal-box h2{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:0.02em;
+    color:var(--green, #5B6B4F);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+
+  .modal-box p{
+    font-size:14.5px;
+    color:var(--ink, #2E2A22);
+    margin-bottom:22px;
+  }
+
+  .modal-ok{
+    border:1.5px solid var(--green, #5B6B4F);
+    background:var(--green, #5B6B4F);
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:500;
+    padding:9px 32px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+
+  .modal-ok:hover{ background:var(--green-dark, #495a3f); }
+
+  @media (max-width: 720px){
+    .page-inner{ padding:26px 16px 32px; }
+    .card{ padding:28px 22px 26px; }
+    .form-grid{ grid-template-columns:1fr; gap:20px; }
+    .brand svg{ width:90px; height:78px; }
+    .brand-word{ font-size:38px; }
+    .card h1{ font-size:24px; }
+    .field textarea{ min-height:160px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="page-inner">
+
+    <div class="brand">
+      <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g fill="none" stroke="#8C6A4A" stroke-width="2.5" stroke-linecap="round">
+          <path d="M8 90 C 40 40, 90 20, 150 15"/>
+          <path d="M8 90 C 45 55, 95 40, 155 45"/>
+          <path d="M8 90 C 50 78, 100 72, 158 82"/>
+          <path d="M8 90 C 45 105, 95 118, 150 130"/>
+          <path d="M8 90 C 40 130, 85 150, 130 158"/>
+        </g>
+        <g fill="none" stroke="#C9A15A" stroke-width="1.5" opacity="0.7">
+          <path d="M160 12 c 6 4, 10 10, 8 18"/>
+        </g>
+      </svg>
+      <span class="brand-word">eSaka</span>
+    </div>
+
+    <div class="card">
+      <h1>Buyer Registry Form</h1>
+
+      <form id="registryForm" novalidate>
+
+        <!-- ===== STEP 1 ===== -->
+        <div class="step active-step" id="step-1">
+          <p class="form-error" id="step1Error">Please fill in all required fields.</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="orgName">Organization or Business <span class="req">*</span></label>
+              <input type="text" id="orgName" required>
+            </div>
+            <div class="field">
+              <label for="phoneNumber">Phone Number <span class="req">*</span></label>
+              <input type="tel" id="phoneNumber" required>
+            </div>
+
+            <div class="field">
+              <label for="contactPerson">Contact Person <span class="req">*</span></label>
+              <input type="text" id="contactPerson" required>
+            </div>
+            <div class="field">
+              <label for="buyerEmail">Email <span class="req">*</span></label>
+              <input type="email" id="buyerEmail" required>
+            </div>
+
+            <div class="field">
+              <label for="address">Address <span class="req">*</span></label>
+              <input type="text" id="address" required>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button type="button" class="btn-outline" id="cancelStep1">Cancel</button>
+            <button type="button" class="btn-filled" id="toStep2">Next</button>
+          </div>
+        </div>
+
+        <!-- ===== STEP 2 ===== -->
+        <div class="step" id="step-2">
+          <p class="form-error" id="step2Error">Please upload a document before submitting.</p>
+          <div class="form-grid">
+            <div class="field">
+              <label for="message">Message (Optional)</label>
+              <textarea id="message" rows="8"></textarea>
+            </div>
+            <div class="field">
+              <label for="uploadName">Upload Documents <span class="req">*</span></label>
+              <div class="upload-box">
+                <input type="text" id="uploadName" readonly placeholder="">
+                <input type="file" id="fileInput" hidden>
+                <button type="button" class="select-file-btn" id="selectFileBtn">Select File</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button type="button" class="btn-outline" id="backToStep1">Cancel</button>
+            <button type="submit" class="btn-filled" id="submitBtn">Next</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== Submitted ===== -->
+<div class="modal-overlay" id="submittedModal">
+  <div class="modal-box">
+    <h2>Request Submitted</h2>
+    <p>We will contact you for updates soon!</p>
+    <button class="modal-ok" id="modalOkBtn">Ok</button>
+  </div>
+</div>
+
+<script>
+  const step1 = document.getElementById('step-1');
+  const step2 = document.getElementById('step-2');
+  const submittedModal = document.getElementById('submittedModal');
+  const registryForm = document.getElementById('registryForm');
+
+  function showStep(step){
+    [step1, step2].forEach(s => s.classList.remove('active-step'));
+    step.classList.add('active-step');
+  }
+
+  const step1Error = document.getElementById('step1Error');
+  const step2Error = document.getElementById('step2Error');
+
+  document.getElementById('cancelStep1').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('toStep2').addEventListener('click', () => {
+    const orgName = document.getElementById('orgName').value.trim();
+    const contactPerson = document.getElementById('contactPerson').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    const buyerEmail = document.getElementById('buyerEmail').value.trim();
+
+    if (!orgName || !contactPerson || !address || !phoneNumber || !buyerEmail){
+      step1Error.classList.add('show');
+      return;
+    }
+
+    step1Error.classList.remove('show');
+    showStep(step2);
+  });
+
+  document.getElementById('backToStep1').addEventListener('click', () => {
+    step2Error.classList.remove('show');
+    showStep(step1);
+  });
+
+  const fileInput = document.getElementById('fileInput');
+  const uploadName = document.getElementById('uploadName');
+
+  document.getElementById('selectFileBtn').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    uploadName.value = fileInput.files.length ? fileInput.files[0].name : '';
+    if (fileInput.files.length) step2Error.classList.remove('show');
+  });
+
+  registryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    if (!fileInput.files.length){
+      step2Error.classList.add('show');
+      return;
+    }
+
+    step2Error.classList.remove('show');
+    // TODO: replace nalang w/ real req
+    submittedModal.classList.add('show');
+  });
+
+  document.getElementById('modalOkBtn').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+</script>
+
+</body>
+</html>

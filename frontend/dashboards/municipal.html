@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Municipal Coordinator — eSaka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 24px;
+    background:var(--cream);
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    z-index:2100;
+  }
+
+  .topbar-left{ display:flex; align-items:center; gap:16px; }
+
+  .hamburger{
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:6px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .hamburger span{
+    display:block;
+    width:26px;
+    height:3px;
+    background:var(--ink);
+    border-radius:2px;
+  }
+
+  .logos{ display:flex; align-items:center; gap:10px; }
+  .seal{ width:44px; height:44px; }
+
+  .brand-word{
+    font-family:'Dancing Script', cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--green);
+    margin-left:-6px;
+  }
+
+  .brand-logo svg{ width:60px; height:50px; }
+
+  .topbar-right{ display:flex; align-items:center; gap:18px; }
+
+  .bell-wrap{
+    position:relative;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:var(--green);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
+  .bell-dot{
+    position:absolute;
+    top:2px;
+    right:2px;
+    width:9px;
+    height:9px;
+    background:#C0392B;
+    border-radius:50%;
+    border:2px solid var(--cream);
+  }
+
+  .user-info{ display:flex; align-items:center; gap:10px; }
+  .user-text{ text-align:right; line-height:1.25; }
+  .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
+  .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
+  .avatar{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:#4a4a4a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .avatar svg{ width:20px; height:20px; fill:#fff; }
+
+  .layout{ display:flex; min-height:calc(100vh - 73px); }
+
+  /* SIDEBAR STYLES */
+  .sidebar{
+    width:230px;
+    background:var(--green);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:22px 0;
+    flex-shrink:0;
+    position:fixed;
+    top:73px;
+    left:-230px;
+    bottom:0;
+    z-index:2000;
+    transition:left .28s ease;
+  }
+
+  .sidebar.open{ left:0; }
+
+  .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 24px;
+    color:#fff;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+    cursor:pointer;
+    background:transparent;
+    border:none;
+    width:100%;
+    text-align:left;
+  }
+
+  .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
+  .nav-item:hover{ background:rgba(255,255,255,0.08); }
+  .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
+  .signout{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 24px;
+    color:#fff;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+  }
+
+  .signout svg{ width:18px; height:18px; fill:#fff; }
+  .signout:hover{ opacity:0.8; }
+
+  .main{
+    flex:1;
+    padding:36px 40px;
+    min-width:0;
+  }
+
+  .view{ display:none; }
+  .view.active-view{ display:block; }
+
+  .main-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:22px;
+  }
+
+  .main-header h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:36px;
+    color:var(--green);
+    letter-spacing:0.02em;
+    margin:0;
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:24px 28px;
+  }
+
+  /* MAP DESIGN */
+  #map{
+    width:100%;
+    height:360px;
+    border-radius:8px;
+    border:1px solid var(--border);
+  }
+
+  /* SEARCH & FILTER BAR */
+  .search-row{ display:flex; gap:10px; align-items:center; }
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    border-radius:8px;
+    padding:8px 14px;
+    min-width:260px;
+  }
+  .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
+  .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
+
+  /* TAB BUTTONS (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING) */
+  .tab-buttons-row{
+    display:flex;
+    gap:16px;
+    margin-bottom:24px;
+    align-items:center;
+  }
+
+  .tab-btn{
+    padding:12px 24px;
+    border:1.5px solid var(--ink);
+    border-radius:8px;
+    background:#EFEAE0;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+    cursor:pointer;
+    transition:all 0.2s ease;
+  }
+
+  .tab-btn:hover{ background:#DEDDDC; }
+  .tab-btn.active{
+    background:#C4C3C2;
+    border-color:var(--ink);
+  }
+
+  /* SUMMARY TAB CONTENT DESIGN */
+  .summary-grid{
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    gap:24px;
+  }
+
+  .summary-left-box, .summary-right-card{
+    background:#fff;
+    border:1px solid #D0D0D0;
+    border-radius:8px;
+    padding:20px;
+  }
+
+  .summary-stat-chips{
+    display:flex;
+    gap:10px;
+    margin:14px 0 20px;
+    flex-wrap:wrap;
+  }
+
+  .stat-chip{
+    padding:10px 14px;
+    border-radius:8px;
+    text-align:center;
+    font-size:12px;
+    font-weight:700;
+    min-width:70px;
+  }
+
+  .stat-chip.gray{ background:#F2EFE9; border:1px solid #CCC; color:#333; }
+  .stat-chip.black{ background:#000; color:#fff; }
+  .stat-chip.green{ background:#0B823A; color:#fff; }
+  .stat-chip.gold{ background:#D69E3D; color:#fff; }
+  .stat-chip.red{ background:#B82218; color:#fff; }
+
+  .stat-chip span{ display:block; font-size:14px; margin-top:2px; }
+
+  .placeholder-line{
+    height:24px;
+    background:#F2EFE9;
+    border-radius:4px;
+    margin-bottom:10px;
+  }
+
+  .top-commodity-body{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-top:12px;
+  }
+
+  .top-commodity-img{
+    width:120px;
+    height:80px;
+    background:#D6E5B3;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* TABLE COMMON DESIGN */
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  thead tr{ background:#DEDDDC; }
+  thead th{
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+    color:#222;
+    padding:14px 10px;
+  }
+  thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
+  thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
+
+  tbody td{
+    padding:14px 8px;
+    font-size:13.5px;
+    text-align:center;
+    vertical-align:middle;
+  }
+
+  .pill{
+    display:inline-block;
+    padding:6px 16px;
+    border-radius:999px;
+    background:#EEEEEE;
+    font-size:12.5px;
+    color:#222;
+    white-space:nowrap;
+  }
+
+  .status-pill{
+    display:inline-block;
+    padding:6px 20px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:700;
+    color:#fff;
+  }
+
+  .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#118308; }
+  .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
+  .status-pill.planted{ background:#E06030; }
+  .status-pill.pending{ background:#C48D53; }
+
+  /* REMARKS / NOTES SECTION */
+  .notes-row{
+    display:flex;
+    gap:24px;
+    align-items:flex-end;
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid #E0E0E0;
+  }
+
+  .notes-field{ flex:1; }
+  .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
+
+  .btn-outline-report{
+    appearance:none;
+    border:1.5px solid #5A6B52;
+    background:#EFEAE0;
+    color:#333;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    padding:10px 24px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+
+  .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
+
+  .detail-actions-row{
+    display:flex;
+    justify-content:flex-end;
+    gap:16px;
+    margin-top:24px;
+  }
+
+  .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
+  .approve-btn.active{ background:#5A7365; border-color:#5A7365; color:#fff; }
+
+  /* MODAL OVERLAY */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(30,35,28,0.55);
+    align-items:center;
+    justify-content:center;
+    z-index:3000;
+  }
+
+  .modal-overlay.show{ display:flex; }
+
+  .modal-box{
+    background:#DEDDDC;
+    border-radius:8px;
+    padding:36px 48px;
+    text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,0.3);
+    max-width:480px;
+    width:90%;
+  }
+
+  .modal-box p{
+    font-family:'Oswald', sans-serif;
+    font-size:28px;
+    font-weight:700;
+    color:#536B5C;
+    margin-bottom:24px;
+    line-height:1.25;
+  }
+
+  .modal-confirm-btn{
+    border:none;
+    background:#5A7365;
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 36px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+
+  .clickable-row{ cursor:pointer; }
+  .clickable-row:hover td{ background:#F6F3EB; }
+
+  /* HELPER CLASSES PARANG WALA NANG INLINE STYLE WARNINGS */
+  .text-loc { font-size: 12px; color: #666; }
+  .text-section-title { font-size: 13px; font-weight: 700; margin-top: 6px; }
+  .text-alert-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .text-narrative-title { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
+  .textarea-narrative { width: 100%; height: 80px; border: 1.5px solid #666; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; resize: vertical; }
+
+  .text-top-commodity { font-size: 13px; font-weight: 700; }
+  .text-green-highlight { color: #0B823A; }
+  .top-commodity-text { font-size: 12.5px; line-height: 1.6; }
+  .text-as-of { font-size: 11px; color: #888; text-align: right; margin-top: 20px; }
+
+  .upload-section { margin-top: 28px; border-top: 1px solid #EEE; padding-top: 16px; }
+  .upload-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .upload-flex { display: flex; gap: 8px; }
+  .input-required { flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #CCC; border-radius: 4px; }
+  .btn-select-file { padding: 6px 12px; font-size: 12px; }
+
+  .actions-right-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+  .btn-submit-bg { background: #E5E4E3; }
+
+  .hidden-element { display: none; }
+  .notes-row-clean { border-top: none; padding-top: 0; }
+  .textarea-notes { width:100%; height:90px; padding:12px; font-size:14px; font-family:'Inter', sans-serif; border:1.5px solid #666; border-radius:4px; background:#fff; color:var(--ink); outline:none; resize:vertical; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="logos">
+        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
+          <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
+          <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
+        </svg>
+        <div class="brand-logo">
+          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
+              <path d="M8 90 C 40 40, 90 20, 150 15"/>
+              <path d="M8 90 C 45 55, 95 40, 155 45"/>
+              <path d="M8 90 C 50 78, 100 72, 158 82"/>
+              <path d="M8 90 C 45 105, 95 118, 150 130"/>
+              <path d="M8 90 C 40 130, 85 150, 130 158"/>
+            </g>
+          </svg>
+        </div>
+        <span class="brand-word">eSaka</span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="bell-wrap" aria-label="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
+        <span class="bell-dot"></span>
+      </div>
+
+      <div class="user-info">
+        <div class="user-text">
+          <div class="user-name">Juan Dela Cruz</div>
+          <div class="user-role">Municipal Coordinator</div>
+        </div>
+        <div class="avatar">
+          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-list">
+        <button class="nav-item active" type="button" data-view="intents">
+          <svg viewBox="0 0 24 24"><path d="M17 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zM5 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>
+          View Plant Intents
+        </button>
+        <button class="nav-item" type="button" data-view="map">
+          <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
+          View Map
+        </button>
+        <button class="nav-item" type="button" data-view="reports">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          View Reports
+        </button>
+      </div>
+
+      <a class="signout" href="../index.html">
+        <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
+        Sign Out
+      </a>
+    </nav>
+
+    <main class="main">
+
+      <!-- ===================== VIEW 1: Plant Intents ===================== -->
+      <section class="view active-view" id="view-intents">
+        <div class="main-header">
+          <h1>Planting Intents</h1>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Commodity</th>
+                <th>Volume</th>
+                <th>Location</th>
+                <th>Planting Date</th>
+                <th>Harvest Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill">Pedro Manalang</span></td>
+                <td><span class="pill">Onion</span></td>
+                <td><span class="pill">15,000kg</span></td>
+                <td><span class="pill">Sta. Monica</span></td>
+                <td><span class="pill">2/1/2026</span></td>
+                <td><span class="pill">6/15/2026</span></td>
+                <td><span class="status-pill confirmed">Confirmed</span></td>
+              </tr>
+              <tr>
+                <td><span class="pill">Juan Dela Cruz</span></td>
+                <td><span class="pill">Tomato</span></td>
+                <td><span class="pill">8,000kg</span></td>
+                <td><span class="pill">Sta. Barbara</span></td>
+                <td><span class="pill">3/1/2026</span></td>
+                <td><span class="pill">5/20/2026</span></td>
+                <td><span class="status-pill confirmed">Confirmed</span></td>
+              </tr>
+              <tr>
+                <td><span class="pill">Ben Bernardo</span></td>
+                <td><span class="pill">Cabbage</span></td>
+                <td><span class="pill">16,000kg</span></td>
+                <td><span class="pill">Sta. Lucia</span></td>
+                <td><span class="pill">3/15/2026</span></td>
+                <td><span class="pill">5/30/2026</span></td>
+                <td><span class="status-pill submitted">Submitted</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== VIEW 2: Map ===================== -->
+      <section class="view" id="view-map">
+        <div class="main-header">
+          <h1>Map</h1>
+        </div>
+
+        <div class="card">
+          <div id="map"></div>
+        </div>
+      </section>
+
+      <!-- ===================== VIEW 3: View Reports ===================== -->
+      <section class="view" id="view-reports">
+        
+        <!-- Tab Nav Buttons -->
+        <div class="main-header">
+          <h1>Reports</h1>
+          <div class="search-row">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search...">
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-buttons-row">
+          <button class="tab-btn active" data-tab="summary" type="button">SUMMARY</button>
+          <button class="tab-btn" data-tab="individual" type="button">VIEW INDIVIDUAL</button>
+          <button class="tab-btn" data-tab="approved" type="button">APPROVED</button>
+          <button class="tab-btn" data-tab="pending" type="button">PENDING</button>
+        </div>
+
+        <!-- TAB 1: SUMMARY -->
+        <div class="tab-content" id="tab-summary">
+          <div class="card">
+            <div class="summary-grid">
+              <div class="summary-left-box">
+                <div class="text-loc">Location: <b>Municipality, Province</b></div>
+                <div class="text-section-title">AEW Summary Report:</div>
+
+                <div class="summary-stat-chips">
+                  <div class="stat-chip gray">AEWs <span>12345</span></div>
+                  <div class="stat-chip black">Submissions <span>12345</span></div>
+                  <div class="stat-chip green">Approved <span>652</span></div>
+                  <div class="stat-chip gold">Pending <span>100</span></div>
+                  <div class="stat-chip red">Revised <span>45</span></div>
+                </div>
+
+                <div class="text-alert-title">Oversupply Alerts:</div>
+                <div class="placeholder-line"></div>
+                <div class="placeholder-line"></div>
+
+                <div class="text-narrative-title">Narrative Report</div>
+                <textarea class="textarea-narrative"></textarea>
+              </div>
+
+              <div class="summary-right-card">
+                <div class="text-top-commodity">Top Commodity: <span class="text-green-highlight">Onion</span></div>
+                <div class="top-commodity-body">
+                  <div class="top-commodity-text">
+                    <div>Total Planted: <b>—</b></div>
+                    <div>Total Harvested: <b>—</b></div>
+                  </div>
+                  <div class="top-commodity-img">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#88A060"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                  </div>
+                </div>
+                <div class="text-as-of">Data as of June 30, 2026</div>
+
+                <div class="upload-section">
+                  <div class="upload-title">Upload Documents</div>
+                  <div class="upload-flex">
+                    <input type="text" placeholder="required" readonly class="input-required">
+                    <button class="btn-outline-report btn-select-file" type="button">Select File</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions-right-row">
+              <button class="btn-outline-report" type="button">Export as PDF</button>
+              <button class="btn-outline-report btn-submit-bg" id="submitReportToProvBtn" type="button">Submit Report</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: VIEW INDIVIDUAL LIST -->
+        <div class="tab-content hidden-element" id="tab-individual">
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Commodity</th>
+                  <th>Volume</th>
+                  <th>Location</th>
+                  <th>Planting Date</th>
+                  <th>Harvesting Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="clickable-row" data-id="1">
+                  <td><span class="pill">Pedro Manalang</span></td>
+                  <td><span class="pill">Onion</span></td>
+                  <td><span class="pill">15,000kg</span></td>
+                  <td><span class="pill">Sta. Monica</span></td>
+                  <td><span class="pill">February 1, 2026</span></td>
+                  <td><span class="pill">San Juan</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: APPROVED -->
+        <div class="tab-content hidden-element" id="tab-approved">
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Commodity</th>
+                  <th>Volume</th>
+                  <th>Location</th>
+                  <th>Planting Date</th>
+                  <th>Harvesting Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="clickable-row" data-id="1">
+                  <td><span class="pill">Pedro Manalang</span></td>
+                  <td><span class="pill">Onion</span></td>
+                  <td><span class="pill">15,000kg</span></td>
+                  <td><span class="pill">Sta. Monica</span></td>
+                  <td><span class="pill">February 1, 2026</span></td>
+                  <td><span class="pill">San Juan</span></td>
+                  <td><span class="status-pill approved">Approved</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: PENDING -->
+        <div class="tab-content hidden-element" id="tab-pending">
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Commodity</th>
+                  <th>Volume</th>
+                  <th>Location</th>
+                  <th>Planting Date</th>
+                  <th>Harvesting Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="clickable-row" data-id="2">
+                  <td><span class="pill">Lisa Enriquez</span></td>
+                  <td><span class="pill">Onion</span></td>
+                  <td><span class="pill">15,000kg</span></td>
+                  <td><span class="pill">Sta. Monica</span></td>
+                  <td><span class="pill">February 1, 2026</span></td>
+                  <td><span class="pill">San Pedro</span></td>
+                  <td><span class="status-pill pending">Pending</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUBVIEW: INDIVIDUAL DETAIL VIEW -->
+        <div id="individualDetailView" class="hidden-element">
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Commodity</th>
+                  <th>Planting Date</th>
+                  <th>Harvest Date</th>
+                  <th>Estimated Yield (kg)</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="pill">Onion</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">67</span></td>
+                  <td><span class="pill">San Juan</span></td>
+                  <td><span class="status-pill harvested">Harvested</span></td>
+                </tr>
+                <tr>
+                  <td><span class="pill">Tomato</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">67</span></td>
+                  <td><span class="pill">San Pablo</span></td>
+                  <td><span class="status-pill planted">Planted</span></td>
+                </tr>
+                <tr>
+                  <td><span class="pill">Onion</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">select</span></td>
+                  <td><span class="pill">67</span></td>
+                  <td><span class="pill">San Juan</span></td>
+                  <td><span class="status-pill mediating">Mediating</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="notes-row">
+              <div class="notes-field">
+                <label>Notes</label>
+                <textarea class="textarea-notes" readonly></textarea>
+              </div>
+              <div>
+                <button class="btn-outline-report" type="button">View Attachments</button>
+              </div>
+            </div>
+
+            <div class="notes-row notes-row-clean">
+              <div class="notes-field">
+                <label>Remarks</label>
+                <textarea id="remarksTextarea" class="textarea-notes"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-actions-row">
+            <button class="btn-outline-report" id="backToTabsBtn" type="button">Return</button>
+            <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
+            <button class="btn-outline-report approve-btn" id="approveBtn" type="button">Approve</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box">
+      <p id="reportModalText">Report Submitted to Provincial Level</p>
+      <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
+    </div>
+  </div>
+
+<!-- Leaflet-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+<script>
+  // SIDEBAR & VIEW SWITCHING
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const sidebar = document.getElementById('sidebar');
+
+  hamburgerBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    setTimeout(() => {
+      if (window.leafletMap) window.leafletMap.invalidateSize();
+    }, 300);
+  });
+
+  const navButtons = document.querySelectorAll('.nav-item[data-view]');
+  const views = document.querySelectorAll('.view');
+
+  function switchView(viewKey){
+    views.forEach(v => v.classList.remove('active-view'));
+    document.getElementById('view-' + viewKey).classList.add('active-view');
+    navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewKey));
+
+    if (viewKey === 'map' && window.leafletMap){
+      setTimeout(() => window.leafletMap.invalidateSize(), 50);
+    }
+  }
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  // MAP INITIALIZATION
+  const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
+  const map = L.map('map', {
+    maxBounds: pampangaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 10
+  }).setView([15.0794, 120.6200], 10);
+  window.leafletMap = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  // TAB SWITCHING (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING)
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const individualDetailView = document.getElementById('individualDetailView');
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.style.display = 'none');
+      individualDetailView.style.display = 'none';
+
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
+    });
+  });
+
+  // OPEN INDIVIDUAL DETAIL VIEW
+  document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', () => {
+      tabContents.forEach(c => c.style.display = 'none');
+      individualDetailView.style.display = 'block';
+    });
+  });
+
+  document.getElementById('backToTabsBtn').addEventListener('click', () => {
+    individualDetailView.style.display = 'none';
+    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+    document.getElementById('tab-' + activeTab).style.display = 'block';
+  });
+
+  // MODAL & ACTIONS
+  const reportModal = document.getElementById('reportModal');
+  const reportModalText = document.getElementById('reportModalText');
+  const flagBtn = document.getElementById('flagBtn');
+  const approveBtn = document.getElementById('approveBtn');
+
+  function openModal(msg) {
+    reportModalText.textContent = msg;
+    reportModal.classList.add('show');
+  }
+
+  document.getElementById('submitReportToProvBtn').addEventListener('click', () => {
+    openModal('Report Submitted to Provincial Level');
+  });
+
+  flagBtn.addEventListener('click', () => {
+    flagBtn.classList.add('active');
+    flagBtn.textContent = 'Flagged';
+    openModal('Report Flagged for Revision');
+  });
+
+  approveBtn.addEventListener('click', () => {
+    approveBtn.classList.add('active');
+    openModal('Report Approved Successfully');
+  });
+
+  document.getElementById('reportModalConfirmBtn').addEventListener('click', () => {
+    reportModal.classList.remove('show');
+  });
+</script>
+
+</body>
+</html>

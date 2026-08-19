@@ -25,8 +25,13 @@ class UserUpdate(BaseModel):
     role: str | None = None
 
 
+class UserStatusUpdate(BaseModel):
+    is_active: bool
+
+
 class UserResponse(UserBase):
     user_id: int
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eSaka — Tamang Presyo. Tamang Tanim. Tamang Kita.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F2EDE1;      /* — background */
+    --ink:#2E2A22;        /* — text */
+    --green:#5B6B4F;      /* — primary */
+    --green-dark:#495a3f; /* active states */
+    --brown:#8C6A4A;      /* — secondary */
+    --gold:#C9A15A;       /* — sparing accent */
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html,body{
+    width:100%;
+    min-height:100vh;
+    font-family:'Inter', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+
+  .page{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:60px 8vw 0;
+    overflow:hidden;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:56px;
+  }
+
+  .brand svg{
+    width:150px;
+    height:130px;
+    flex-shrink:0;
+  }
+
+  .brand-word{
+    font-family:'Dancing Script', cursive;
+    font-weight:700;
+    font-size:64px;
+    color:var(--green);
+    line-height:1;
+    margin-left:-18px;
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.25));
+  }
+
+  .content{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:40px;
+    flex-wrap:wrap;
+    flex:1;
+  }
+
+  .copy{ max-width:520px; }
+
+  .tagline{
+    font-size:19px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:10px;
+  }
+
+  .description{
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--ink);
+    max-width:470px;
+  }
+
+  .actions{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-top:6px;
+    min-width:240px;
+  }
+
+  .btn{
+    appearance:none;
+    border:1.5px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:16px;
+    font-weight:500;
+    padding:14px 28px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background-color .25s ease, color .25s ease, border-color .25s ease, transform .15s ease;
+  }
+
+  .btn:hover,
+  .btn:focus-visible{
+    background-color:var(--green);
+    border-color:var(--green);
+    color:#fff;
+  }
+
+  .btn:active{ transform:translateY(1px); }
+
+  .btn:focus-visible{
+    outline:2px solid var(--green-dark);
+    outline-offset:3px;
+  }
+
+  .waves{
+    position:relative;
+    width:100%;
+    height:210px;
+    margin-top:40px;
+    pointer-events:none;
+  }
+
+  .waves svg{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .btn{ will-change: background-color; }
+  }
+
+  @media (max-width: 900px){
+    .page{ padding:40px 6vw 0; }
+    .brand svg{ width:120px; height:104px; }
+    .brand-word{ font-size:50px; }
+    .content{ flex-direction:column; gap:32px; }
+    .actions{ width:100%; }
+    .btn{ width:100%; }
+  }
+
+  @media (max-width: 480px){
+    .brand{ gap:2px; margin-bottom:36px; }
+    .brand svg{ width:90px; height:78px; }
+    .brand-word{ font-size:38px; margin-left:-10px; }
+    .tagline{ font-size:16px; }
+    .description{ font-size:13.5px; }
+    .waves{ height:140px; margin-top:24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="brand">
+    <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="none" stroke="#8C6A4A" stroke-width="2.5" stroke-linecap="round">
+        <path d="M8 90 C 40 40, 90 20, 150 15"/>
+        <path d="M8 90 C 45 55, 95 40, 155 45"/>
+        <path d="M8 90 C 50 78, 100 72, 158 82"/>
+        <path d="M8 90 C 45 105, 95 118, 150 130"/>
+        <path d="M8 90 C 40 130, 85 150, 130 158"/>
+      </g>
+      <g fill="none" stroke="#C9A15A" stroke-width="1.5" opacity="0.7">
+        <path d="M160 12 c 6 4, 10 10, 8 18"/>
+      </g>
+    </svg>
+    <span class="brand-word">eSaka</span>
+  </div>
+
+  <div class="content">
+    <div class="copy">
+      <p class="tagline">Tamang Presyo. Tamang Tanim. Tamang Kita.</p>
+      <p class="description">
+        eSaka is a market intelligence platform designed for Philippine smallholder
+        farmers. By combining real-time price data, planting intent coordination,
+        and verified buyer matching, eSaka helps farmers avoid oversupply,
+        negotiate fair prices, and reduce dependency on exploitative middlemen.
+        Built for farmers, AEWs, and the Department of Agriculture.
+      </p>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="button" id="loginBtn">Login</button>
+      <button class="btn" type="button" id="registryBtn">Submit Buyer Registry</button>
+    </div>
+  </div>
+
+  <div class="waves">
+    <svg viewBox="0 0 1000 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,90 C200,150 350,20 550,60 C750,100 850,40 1000,70 L1000,200 L0,200 Z" fill="#8C6A4A"/>
+      <path d="M0,120 C220,170 380,60 560,100 C760,140 860,80 1000,105 L1000,200 L0,200 Z" fill="#F2EDE1"/>
+      <path d="M0,150 C240,190 400,110 580,140 C770,168 870,120 1000,140 L1000,200 L0,200 Z" fill="#5B6B4F"/>
+      <path d="M0,180 C200,210 340,150 520,170 C700,190 820,160 1000,175 L1000,200 L0,200 Z" fill="#C9A15A"/>
+    </svg>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    window.location.href = 'login.html';
+  });
+
+  document.getElementById('registryBtn').addEventListener('click', () => {
+    window.location.href = 'buyer-registry.html';
+  });
+</script>
+
+</body>
+</html>

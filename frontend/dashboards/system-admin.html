@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>System Admin — eSaka</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+
+  <style>
+    .hidden {
+      display: none !important;
+    }
+
+    .btn-disabled-filter {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .api-error {
+      color: #8C2A1C;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .alert-container-card {
+      padding: 24px;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .alert-card {
+      background: #E2E2E2;
+      border-radius: 14px;
+      padding: 18px 24px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .alert-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+
+    .alert-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .alert-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .sev-pill {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 999px;
+    }
+
+    .sev-pill.high {
+      background: #E8C3B9;
+      color: #8C2A1C;
+    }
+
+    .sev-pill.medium {
+      background: #E5DA9D;
+      color: #7A6310;
+    }
+
+    .sev-pill.low {
+      background: #D1E0D7;
+      color: #2D6A4F;
+    }
+
+    .status-pill-btn {
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .status-pill-btn.unresolved {
+      background: #E8B4AC;
+      color: #8B2D22;
+    }
+
+    .status-pill-btn.acknowledged {
+      background: #A3D9B1;
+      color: #1E5C31;
+    }
+
+    .alert-desc {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.45;
+      margin: 0 0 12px;
+    }
+
+    .alert-stats {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      font-size: 12.5px;
+      color: #666;
+    }
+
+    .alert-stats span b {
+      color: #222;
+      font-weight: 600;
+    }
+
+    .alert-date {
+      margin-left: auto;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .alert-detail-box {
+      max-width: 460px;
+      text-align: left;
+      padding: 28px 32px;
+    }
+
+    .alert-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .alert-modal-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+      margin: 0;
+    }
+
+    .modal-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #F6F3EB;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .modal-stats-grid div {
+      color: var(--muted);
+    }
+
+    .modal-stats-grid div b {
+      color: var(--ink);
+      display: block;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .modal-actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .loading-row {
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     TOPBAR
+========================================================= -->
+
+<div class="topbar">
+
+  <div class="topbar-left">
+
+    <button
+      class="hamburger"
+      id="hamburgerBtn"
+      aria-label="Toggle navigation"
+      type="button"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="logos">
+
+      <svg class="seal" viewBox="0 0 100 100">
+        <circle
+          cx="50"
+          cy="50"
+          r="46"
+          fill="none"
+          stroke="#5B6B4F"
+          stroke-width="3"
+        />
+
+        <path
+          d="M50 20 C35 30,30 45,50 65 C70 45,65 30,50 20Z"
+          fill="#5B6B4F"
+        />
+
+        <path
+          d="M50 30 L50 62"
+          stroke="#F2EDE1"
+          stroke-width="2"
+        />
+      </svg>
+
+      <div class="brand-logo">
+        <svg viewBox="0 0 200 170">
+          <g
+            fill="none"
+            stroke="#8C6A4A"
+            stroke-width="3"
+            stroke-linecap="round"
+          >
+            <path d="M8 90 C40 40,90 20,150 15"/>
+            <path d="M8 90 C45 55,95 40,155 45"/>
+            <path d="M8 90 C50 78,100 72,158 82"/>
+            <path d="M8 90 C45 105,95 118,150 130"/>
+            <path d="M8 90 C40 130,85 150,130 158"/>
+          </g>
+        </svg>
+      </div>
+
+      <span class="brand-word">eSaka</span>
+
+    </div>
+  </div>
+
+  <div class="topbar-right">
+
+    <div
+      class="bell-wrap"
+      id="bellBtn"
+      aria-label="Notifications"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
+      </svg>
+
+      <span class="bell-dot"></span>
+    </div>
+
+    <div
+      class="notif-dropdown"
+      id="notifDropdown"
+    >
+      <div class="notif-header">
+        Notifications
+      </div>
+
+      <button class="notif-item" type="button">
+        <b>System updated</b> successfully to v1.2.
+      </button>
+    </div>
+
+    <div class="user-info">
+
+      <div class="user-text">
+
+        <div
+          class="user-name"
+          id="loggedInUserName"
+        >
+          System Admin
+        </div>
+
+        <div
+          class="user-role"
+          id="loggedInUserRole"
+        >
+          System Administrator
+        </div>
+
+      </div>
+
+      <div class="avatar">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
+        </svg>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     LAYOUT
+========================================================= -->
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+
+  <nav class="sidebar" id="sidebar">
+
+    <div class="nav-list">
+
+      <button
+        class="nav-item active"
+        type="button"
+        data-view="users"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+        Manage Users
+      </button>
+
+      <button
+        class="nav-item"
+        type="button"
+        data-view="etl"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/>
+        </svg>
+        Monitor ETL Pipeline
+      </button>
+
+      <button
+        class="nav-item"
+        type="button"
+        data-view="alerts"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+        </svg>
+        Alert Log
+      </button>
+
+      <button
+        class="nav-item"
+        type="button"
+        data-view="audit"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+        </svg>
+        Audit Log
+      </button>
+
+    </div>
+
+    <a
+      class="signout"
+      href="../index.html"
+      id="signOutButton"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/>
+      </svg>
+      Sign Out
+    </a>
+
+  </nav>
+
+
+  <!-- MAIN -->
+
+  <main class="main">
+
+    <!-- USERS -->
+
+    <section
+      class="view active-view"
+      id="view-users"
+    >
+
+      <div class="main-header">
+
+        <h1>All Users</h1>
+
+        <div class="search-row">
+
+          <div class="search-box">
+
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <line
+                x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"
+              />
+            </svg>
+
+            <input
+              type="text"
+              id="searchUsers"
+              placeholder="Search users..."
+            >
+
+          </div>
+
+          <button
+            class="filter-btn btn-disabled-filter"
+            type="button"
+            disabled
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/>
+            </svg>
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <div class="card-title">
+          User Account Management
+        </div>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="userRows">
+
+            <tr>
+              <td colspan="5" class="loading-row">
+                Loading users...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div class="add-account-row">
+
+        <button
+          class="btn-primary"
+          id="addAccountBtn"
+          type="button"
+        >
+          Add Account
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ADD ACCOUNT -->
+
+    <section
+      class="view"
+      id="view-add-account"
+    >
+
+      <div class="main-header">
+        <h1>Add New Account</h1>
+      </div>
+
+      <div class="card">
+
+        <form
+          id="addAccountForm"
+          novalidate
+        >
+
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label for="firstName">
+                First Name *
+              </label>
+
+              <input
+                type="text"
+                id="firstName"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="lastName">
+                Last Name *
+              </label>
+
+              <input
+                type="text"
+                id="lastName"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="newUsername">
+                Username *
+              </label>
+
+              <input
+                type="text"
+                id="newUsername"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="newEmail">
+                Email *
+              </label>
+
+              <input
+                type="email"
+                id="newEmail"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="newPassword">
+                Password *
+              </label>
+
+              <input
+                type="password"
+                id="newPassword"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="phoneNumber">
+                Phone Number *
+              </label>
+
+              <input
+                type="tel"
+                id="phoneNumber"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="confirmPassword">
+                Confirm Password *
+              </label>
+
+              <input
+                type="password"
+                id="confirmPassword"
+                required
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="roleSelect">
+                Role *
+              </label>
+
+              <select id="roleSelect" required>
+
+                <option
+                  value=""
+                  disabled
+                  selected
+                >
+                  Select a role
+                </option>
+
+                <option value="System Administrator">
+                  System Administrator
+                </option>
+
+                <option value="DA-RFO Officer">
+                  DA-RFO
+                </option>
+
+                <option value="Provincial Coordinator">
+                  Provincial Coordinator
+                </option>
+
+                <option value="Municipal Coordinator">
+                  Municipal Coordinator
+                </option>
+
+                <option value="AEW">
+                  AEW
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              class="btn-secondary"
+              id="cancelAddAccount"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="btn-primary"
+            >
+              Create Account
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ETL -->
+
+    <section
+      class="view"
+      id="view-etl"
+    >
+
+      <div class="main-header">
+
+        <h1>ETL Pipeline Run Logs</h1>
+
+        <div class="search-row">
+
+          <div class="search-box">
+
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <line
+                x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"
+              />
+            </svg>
+
+            <input
+              type="text"
+              id="searchETL"
+              placeholder="Search logs..."
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <div class="card-title">
+          ETL Pipeline Run Log
+        </div>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Run Date/Time</th>
+              <th>Data Source</th>
+              <th>Records Processed</th>
+              <th>Records Rejected</th>
+              <th>Errors</th>
+              <th>Duration</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody id="etlRows">
+
+            <tr>
+              <td colspan="7" style="text-align:center;">
+                No ETL logs available.
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div class="manual-run-row">
+
+        <button
+          class="btn-primary outline"
+          id="manualRunBtn"
+          type="button"
+        >
+          Manual Run
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ALERTS -->
+
+    <section
+      class="view"
+      id="view-alerts"
+    >
+
+      <div class="main-header">
+
+        <h1>System Alert Logs</h1>
+
+        <div class="search-row">
+
+          <div class="search-box">
+
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <line
+                x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"
+              />
+            </svg>
+
+            <input
+              type="text"
+              id="searchAlerts"
+              placeholder="Search alerts..."
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="card alert-container-card">
+
+        <div
+          class="alert-list"
+          id="alertList"
+        >
+
+          <div
+            class="alert-card"
+            data-severity="high"
+          >
+
+            <div class="alert-top">
+
+              <div class="alert-title-group">
+
+                <span class="alert-title">
+                  Onion Oversupply Risk — Region III
+                </span>
+
+                <span class="sev-pill high">
+                  High
+                </span>
+
+              </div>
+
+              <button
+                class="status-pill-btn unresolved"
+                type="button"
+              >
+                Unresolved
+              </button>
+
+            </div>
+
+            <p class="alert-desc">
+              Projected supply of 280,000 kg exceeds
+              demand by 40%. Recommend coordinating
+              with buyers or adjusting planting schedules.
+            </p>
+
+            <div class="alert-stats">
+
+              <span>
+                Supply:
+                <b>280t</b>
+              </span>
+
+              <span>
+                Demand:
+                <b>200t</b>
+              </span>
+
+              <span>
+                Surplus:
+                <b>+40%</b>
+              </span>
+
+              <span class="alert-date">
+                2026-05-10
+              </span>
+
+            </div>
+
+          </div>
+
+          <div
+            class="alert-card"
+            data-severity="medium"
+          >
+
+            <div class="alert-top">
+
+              <div class="alert-title-group">
+
+                <span class="alert-title">
+                  Tomato Oversupply Risk — CALABARZON
+                </span>
+
+                <span class="sev-pill medium">
+                  Medium
+                </span>
+
+              </div>
+
+              <button
+                class="status-pill-btn acknowledged"
+                type="button"
+              >
+                Acknowledged
+              </button>
+
+            </div>
+
+            <p class="alert-desc">
+              Tomato supply in Lipa City area is 31%
+              above projected demand. Monitor closely
+              and notify buyers.
+            </p>
+
+            <div class="alert-stats">
+
+              <span>
+                Supply:
+                <b>210t</b>
+              </span>
+
+              <span>
+                Demand:
+                <b>160t</b>
+              </span>
+
+              <span>
+                Surplus:
+                <b>+31%</b>
+              </span>
+
+              <span class="alert-date">
+                2026-05-08
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- AUDIT -->
+
+    <section
+      class="view"
+      id="view-audit"
+    >
+
+      <div class="main-header">
+
+        <h1>System Audit Logs</h1>
+
+        <div class="search-row">
+
+          <div class="search-box">
+
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <line
+                x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"
+              />
+            </svg>
+
+            <input
+              type="text"
+              id="searchAudit"
+              placeholder="Search audit logs..."
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <div class="card-title">
+          Platform Audit Log
+        </div>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Log ID</th>
+              <th>User ID</th>
+              <th>Action</th>
+              <th>Resource Type</th>
+              <th>Resource ID</th>
+              <th>Timestamp</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+
+          <tbody id="auditLogRows">
+
+            <tr>
+              <td
+                colspan="7"
+                style="text-align:center;"
+              >
+                Loading audit logs...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- =========================================================
+     SUCCESS MODAL
+========================================================= -->
+
+<div
+  class="modal-overlay"
+  id="successModal"
+>
+
+  <div class="modal-box">
+
+    <p class="modal-title">
+      Account Created Successfully
+    </p>
+
+    <button
+      class="btn-primary modal-ok"
+      id="modalOkBtn"
+      type="button"
+    >
+      OK
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     ALERT MODAL
+========================================================= -->
+
+<div
+  class="modal-overlay"
+  id="alertDetailModal"
+>
+
+  <div class="modal-box alert-detail-box">
+
+    <div class="alert-modal-header">
+
+      <h2 id="modalAlertTitle">
+        Alert Details
+      </h2>
+
+      <span
+        id="modalAlertSev"
+        class="sev-pill high"
+      >
+        High
+      </span>
+
+    </div>
+
+    <p id="modalAlertDesc"></p>
+
+    <div class="modal-stats-grid">
+
+      <div>
+        Supply:
+        <b id="modalAlertSupply"></b>
+      </div>
+
+      <div>
+        Demand:
+        <b id="modalAlertDemand"></b>
+      </div>
+
+      <div>
+        Surplus:
+        <b id="modalAlertSurplus"></b>
+      </div>
+
+      <div>
+        Date Logged:
+        <b id="modalAlertDate"></b>
+      </div>
+
+    </div>
+
+    <div class="modal-actions-row">
+
+      <button
+        class="btn-secondary"
+        id="closeAlertModalBtn"
+        type="button"
+      >
+        Close
+      </button>
+
+      <button
+        class="btn-primary"
+        id="toggleAlertStatusBtn"
+        type="button"
+      >
+        Acknowledge Alert
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script src="../assets/js/dashboard-common.js"></script>
+<script src="../assets/js/system-admin.js"></script>
+
+</body>
+</html>

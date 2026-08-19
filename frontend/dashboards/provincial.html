@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Provincial Coordinator — eSaka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Leaflet-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 24px;
+    background:var(--cream);
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    z-index:2100;
+  }
+
+  .topbar-left{ display:flex; align-items:center; gap:16px; }
+
+  .hamburger{
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:6px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .hamburger span{
+    display:block;
+    width:26px;
+    height:3px;
+    background:var(--ink);
+    border-radius:2px;
+  }
+
+  .logos{ display:flex; align-items:center; gap:10px; }
+  .seal{ width:44px; height:44px; }
+
+  .brand-word{
+    font-family:'Dancing Script', cursive;
+    font-weight:700;
+    font-size:28px;
+    color:var(--green);
+    margin-left:-6px;
+  }
+
+  .brand-logo svg{ width:60px; height:50px; }
+
+  .topbar-right{ display:flex; align-items:center; gap:18px; }
+
+  .bell-wrap{
+    position:relative;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:var(--green);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
+  .bell-dot{
+    position:absolute;
+    top:2px;
+    right:2px;
+    width:9px;
+    height:9px;
+    background:#C0392B;
+    border-radius:50%;
+    border:2px solid var(--cream);
+  }
+
+  .notif-wrap{ position:relative; }
+
+  .notif-dropdown{
+    display:none;
+    position:absolute;
+    top:48px;
+    right:0;
+    width:280px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:0 10px 26px rgba(46,42,34,0.18);
+    z-index:2200;
+    overflow:hidden;
+  }
+
+  .notif-dropdown.show{ display:block; }
+
+  .notif-header{
+    padding:12px 16px;
+    font-size:13px;
+    font-weight:700;
+    border-bottom:1px solid var(--border);
+    color:var(--ink);
+  }
+
+  .notif-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:12px 16px;
+    font-size:12.5px;
+    line-height:1.4;
+    color:var(--ink);
+    background:none;
+    border:none;
+    border-bottom:1px solid #EFEAE0;
+    cursor:pointer;
+  }
+
+  .notif-item:last-child{ border-bottom:none; }
+  .notif-item:hover{ background:#F6F3EB; }
+  .notif-item b{ color:var(--green); }
+
+  .user-info{ display:flex; align-items:center; gap:10px; }
+  .user-text{ text-align:right; line-height:1.25; }
+  .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
+  .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
+  .avatar{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:#4a4a4a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .avatar svg{ width:20px; height:20px; fill:#fff; }
+
+  .layout{ display:flex; min-height:calc(100vh - 73px); }
+
+  /* SIDEBAR */
+  .sidebar{
+    width:230px;
+    background:var(--green);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:22px 0;
+    flex-shrink:0;
+    position:fixed;
+    top:73px;
+    left:-230px;
+    bottom:0;
+    z-index:2000;
+    transition:left .28s ease;
+  }
+
+  .sidebar.open{ left:0; }
+
+  .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 24px;
+    color:#fff;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+    cursor:pointer;
+    background:transparent;
+    border:none;
+    width:100%;
+    text-align:left;
+  }
+
+  .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
+  .nav-item:hover{ background:rgba(255,255,255,0.08); }
+  .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
+  .signout{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 24px;
+    color:#fff;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+  }
+
+  .signout svg{ width:18px; height:18px; fill:#fff; }
+  .signout:hover{ opacity:0.8; }
+
+  .main{
+    flex:1;
+    padding:36px 40px;
+    min-width:0;
+  }
+
+  .view{ display:none; }
+  .view.active-view{ display:block; }
+
+  .main-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:22px;
+  }
+
+  /* Header Title */
+  .main-header h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:36px;
+    color:var(--green);
+    letter-spacing:0.02em;
+    margin:0;
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:24px 28px;
+  }
+
+  .card-title{ font-size:15px; font-weight:700; margin-bottom:16px; }
+
+  #map{
+    width:100%;
+    height:340px;
+    border-radius:6px;
+    border:1px solid var(--border);
+  }
+
+  .popup-title{ font-weight:700; margin-bottom:4px; }
+  .popup-status{ font-size:12.5px; }
+
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    margin-top:16px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  .legend-item{ display:flex; align-items:center; gap:7px; }
+
+  .legend-dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    display:inline-block;
+  }
+
+  .legend-dot.surplus{ background:#c0392b; }
+  .legend-dot.deficit{ background:#e6b800; }
+  .legend-dot.balanced{ background:#3d8b40; }
+  .legend-dot.nodata{ background:#8a8a8a; }
+
+  /* SEARCH & FILTER ROW */
+  .search-row{ display:flex; gap:10px; align-items:center; }
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    border-radius:8px;
+    padding:8px 14px;
+    min-width:260px;
+  }
+  .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
+  .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
+  .filter-btn{
+    width:38px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .filter-btn svg{ width:18px; height:18px; fill:var(--ink); }
+
+  /* REPORT SUBVIEWS */
+  .report-subview{ display:none; }
+  .report-subview.active-subview{ display:block; }
+
+  .report-list-card{ padding:24px; }
+
+  .crop-reports-banner{
+    background:#C4986C;
+    color:#fff;
+    font-weight:700;
+    font-size:15px;
+    text-align:center;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:20px;
+  }
+
+  .report-item-list{
+    display:flex;
+    flex-direction:column;
+    border:1px solid #E0E0E0;
+    border-radius:8px;
+    overflow:hidden;
+  }
+
+  .report-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:#fff;
+    border:none;
+    border-bottom:1px solid #E0E0E0;
+    padding:18px 24px;
+    font-size:14px;
+    color:var(--ink);
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+
+  .report-item:last-child{ border-bottom:none; }
+  .report-item:hover{ background:#F6F3EB; }
+
+  .submit-report-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:20px;
+  }
+
+  /* TABLE DESIGN */
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  
+  thead tr{ background:#DEDDDC; }
+  
+  thead th{
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+    color:#222;
+    padding:14px 10px;
+  }
+  thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
+  thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
+
+  tbody td{
+    padding:16px 8px;
+    font-size:13.5px;
+    text-align:center;
+    vertical-align:middle;
+  }
+
+  .pill{
+    display:inline-block;
+    padding:6px 16px;
+    border-radius:999px;
+    background:#EEEEEE;
+    font-size:12.5px;
+    color:#222;
+    white-space:nowrap;
+  }
+
+  .status-pill{
+    display:inline-block;
+    padding:6px 20px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:700;
+    color:#fff;
+  }
+
+  .status-pill.approved{ background:#118308; }
+
+  /* REMARKS / NOTES SECTION */
+  .notes-row{
+    display:flex;
+    gap:24px;
+    align-items:flex-end;
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid #E0E0E0;
+  }
+
+  .notes-field{ flex:1; }
+
+  .notes-field label{
+    display:block;
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:8px;
+    color:var(--ink);
+  }
+
+  .notes-field textarea{
+    width:100%;
+    height:100px;
+    padding:12px;
+    font-size:14px;
+    font-family:'Inter', sans-serif;
+    border:1.5px solid #666;
+    border-radius:4px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+    resize:vertical;
+  }
+
+  .attachments-btn-wrap{ margin-bottom:4px; }
+
+  /* BUTTONS DESIGN */
+  .btn-outline-report{
+    appearance:none;
+    border:1.5px solid #5A6B52;
+    background:#EFEAE0;
+    color:#333;
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    padding:10px 26px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+
+  .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
+
+  .detail-actions-row{
+    display:flex;
+    justify-content:flex-end;
+    gap:16px;
+    margin-top:28px;
+  }
+
+  .flag-btn.active{
+    background:#C83232;
+    border-color:#C83232;
+    color:#fff;
+  }
+
+  .approve-btn.active{
+    background:#5A7365;
+    border-color:#5A7365;
+    color:#fff;
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(30,35,28,0.55);
+    align-items:center;
+    justify-content:center;
+    z-index:3000;
+  }
+
+  .modal-overlay.show{ display:flex; }
+
+  .modal-box{
+    background:#DEDDDC;
+    border-radius:8px;
+    padding:36px 48px;
+    text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,0.3);
+    max-width:480px;
+    width:90%;
+  }
+
+  .modal-box p{
+    font-family:'Oswald', sans-serif;
+    font-size:28px;
+    font-weight:700;
+    color:#536B5C;
+    margin-bottom:24px;
+    line-height:1.25;
+  }
+
+  .modal-confirm-btn{
+    border:none;
+    background:#5A7365;
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 36px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:background-color .2s ease;
+  }
+
+  .modal-confirm-btn:hover{ background:#4A5F53; }
+
+  @media (max-width: 900px){
+    .main{ padding:26px 20px; }
+    table{ min-width:600px; }
+    .card{ overflow-x:auto; }
+    #map{ height:260px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="logos">
+        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
+          <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
+          <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
+        </svg>
+        <div class="brand-logo">
+          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
+              <path d="M8 90 C 40 40, 90 20, 150 15"/>
+              <path d="M8 90 C 45 55, 95 40, 155 45"/>
+              <path d="M8 90 C 50 78, 100 72, 158 82"/>
+              <path d="M8 90 C 45 105, 95 118, 150 130"/>
+              <path d="M8 90 C 40 130, 85 150, 130 158"/>
+            </g>
+          </svg>
+        </div>
+        <span class="brand-word">eSaka</span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="notif-wrap">
+        <div class="bell-wrap" id="bellBtn" aria-label="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
+          <span class="bell-dot"></span>
+        </div>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-header">Notifications</div>
+          <button class="notif-item" data-goto="report">
+            <b>New report submitted</b> by Diego Santos (Digos City) — pending your review.
+          </button>
+        </div>
+      </div>
+
+      <div class="user-info">
+        <div class="user-text">
+          <div class="user-name">Juan Dela Cruz</div>
+          <div class="user-role">Provincial Coordinator</div>
+        </div>
+        <div class="avatar">
+          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-list">
+        <button class="nav-item active" type="button" data-view="map">
+          <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
+          View Map
+        </button>
+        <button class="nav-item" type="button" data-view="report">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          View Report
+        </button>
+      </div>
+
+      <a class="signout" href="../index.html">
+        <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
+        Sign Out
+      </a>
+    </nav>
+
+    <main class="main">
+
+      <!-- ===================== VIEW: Map ===================== -->
+      <section class="view active-view" id="view-map">
+        <div class="main-header">
+          <h1>Map</h1>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Regional Supply-Demand Map</div>
+          <div id="map"></div>
+
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot surplus"></span> Surplus</span>
+            <span class="legend-item"><span class="legend-dot deficit"></span> Deficit</span>
+            <span class="legend-item"><span class="legend-dot balanced"></span> Balanced</span>
+            <span class="legend-item"><span class="legend-dot nodata"></span> No Data</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== VIEW: Report (list + detail) ===================== -->
+      <section class="view" id="view-report">
+
+        <!-- ---- Sub-view: All Reports (list) ---- -->
+        <div id="reportListSubview" class="report-subview active-subview">
+          <div class="main-header">
+            <h1>All Reports</h1>
+            <div class="search-row">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchReports" placeholder="Search reports...">
+              </div>
+              <div class="filter-wrap">
+                <button class="filter-btn" id="filterBtnReports" aria-label="Filter">
+                  <svg viewBox="0 0 24 24"><path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card report-list-card">
+            <div class="crop-reports-banner">Crop Reports</div>
+            <div class="report-item-list" id="reportItemList">
+              <button class="report-item" data-report-id="1">Onion Harvest Report - Sta. Monica</button>
+              <button class="report-item" data-report-id="2">Tomato Harvest Report - Sta. Barbara</button>
+              <button class="report-item" data-report-id="3">Cabbage Harvest Report - Sta. Lucia</button>
+            </div>
+          </div>
+
+          <div class="submit-report-row">
+            <button class="btn-outline-report" id="submitReportBtn">Submit Report</button>
+          </div>
+        </div>
+
+        <!-- ---- Sub-view: Report detail ---- -->
+        <div id="reportDetailSubview" class="report-subview">
+          <div class="main-header">
+            <h1>View Reports</h1>
+            <div class="search-row">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" placeholder="Search...">
+              </div>
+              <div class="filter-wrap">
+                <button class="filter-btn" aria-label="Filter">
+                  <svg viewBox="0 0 24 24"><path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Commodity</th>
+                  <th>Volume</th>
+                  <th>Location</th>
+                  <th>Planting Date</th>
+                  <th>Harvesting Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="pill" id="detailName">Pedro Manalang</span></td>
+                  <td><span class="pill" id="detailCommodity">Onion</span></td>
+                  <td><span class="pill" id="detailVolume">15,000kg</span></td>
+                  <td><span class="pill" id="detailLocation">Sta. Monica</span></td>
+                  <td><span class="pill" id="detailPlanting">February 1, 2026</span></td>
+                  <td><span class="pill" id="detailHarvesting">San Juan</span></td>
+                  <td><span class="status-pill approved">Confirmed</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="notes-row">
+              <div class="notes-field">
+                <label id="notesLabel">Remarks</label>
+                <textarea id="reportNotes" rows="4"></textarea>
+              </div>
+              <div class="attachments-btn-wrap">
+                <button class="btn-outline-report" id="viewAttachmentsBtn">View Attachments</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-actions-row">
+            <button class="btn-outline-report" id="returnBtn">Return</button>
+            <button class="btn-outline-report flag-btn" id="flagBtn">Flag for Revision</button>
+            <button class="btn-outline-report approve-btn" id="approveBtn">Approve</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===== Confirmation Modal ===== -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box">
+      <p id="reportModalText">Report Submitted to Regional Level</p>
+      <button class="modal-confirm-btn" id="reportModalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+<script>
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const sidebar = document.getElementById('sidebar');
+
+  hamburgerBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    setTimeout(() => {
+      if (window.leafletMap) window.leafletMap.invalidateSize();
+    }, 300);
+  });
+
+  const bellBtn = document.getElementById('bellBtn');
+  const notifDropdown = document.getElementById('notifDropdown');
+
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifDropdown.classList.toggle('show');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!notifDropdown.contains(e.target) && e.target !== bellBtn){
+      notifDropdown.classList.remove('show');
+    }
+  });
+
+  const navButtons = document.querySelectorAll('.nav-item[data-view]');
+  const views = document.querySelectorAll('.view');
+
+  function switchView(viewKey){
+    views.forEach(v => v.classList.remove('active-view'));
+    document.getElementById('view-' + viewKey).classList.add('active-view');
+    navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewKey));
+
+    if (viewKey === 'map' && window.leafletMap){
+      setTimeout(() => window.leafletMap.invalidateSize(), 50);
+    }
+  }
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  document.querySelector('.notif-item[data-goto="report"]').addEventListener('click', () => {
+    switchView('report');
+    notifDropdown.classList.remove('show');
+  });
+
+  const pampangaBounds = L.latLngBounds(
+    [14.85, 120.35],
+    [15.35, 120.95]
+  );
+
+  const map = L.map('map', {
+    maxBounds: pampangaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 10
+  }).setView([15.0794, 120.6200], 10);
+  window.leafletMap = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map).on('tileerror', function(error){
+    console.error('Map tile failed to load — check your internet connection or firewall/ad-blocker settings.', error);
+  });
+
+  const STATUS_COLORS = {
+    surplus:  '#c0392b',
+    deficit:  '#e6b800',
+    balanced: '#3d8b40',
+    'no-data':'#8a8a8a'
+  };
+
+  const municipalities = [
+    { name: 'San Fernando',  lat: 15.0333, lng: 120.6900, status: 'balanced', detail: 'Rice supply matches demand' },
+    { name: 'Angeles City',  lat: 15.1450, lng: 120.5930, status: 'deficit',  detail: 'Vegetable demand exceeds supply by 15%' },
+    { name: 'Mabalacat',     lat: 15.2226, lng: 120.5730, status: 'surplus',  detail: 'Onion supply exceeds demand by 22%' },
+    { name: 'Guagua',        lat: 14.9797, lng: 120.6353, status: 'deficit',  detail: 'Corn demand exceeds supply by 9%' },
+    { name: 'Lubao',         lat: 14.9333, lng: 120.6000, status: 'balanced', detail: 'Rice supply matches demand' },
+    { name: 'Porac',         lat: 15.0667, lng: 120.5333, status: 'no-data', detail: 'No recent report submitted' },
+    { name: 'Candaba',       lat: 15.0961, lng: 120.8228, status: 'surplus', detail: 'Fish supply exceeds demand by 30%' },
+    { name: 'Arayat',        lat: 15.1428, lng: 120.7472, status: 'no-data', detail: 'No recent report submitted' }
+  ];
+
+  const markerGroup = [];
+
+  municipalities.forEach(m => {
+    const marker = L.circleMarker([m.lat, m.lng], {
+      radius: 9,
+      fillColor: STATUS_COLORS[m.status],
+      color: '#fff',
+      weight: 2,
+      fillOpacity: 0.9
+    }).addTo(map);
+
+    marker.bindPopup(
+      `<div class="popup-title">${m.name}</div>` +
+      `<div class="popup-status">${m.detail}</div>`
+    );
+
+    markerGroup.push(marker);
+  });
+
+  const bounds = L.latLngBounds(municipalities.map(m => [m.lat, m.lng]));
+  map.fitBounds(bounds, { padding: [30, 30] });
+
+  const reportListSubview = document.getElementById('reportListSubview');
+  const reportDetailSubview = document.getElementById('reportDetailSubview');
+  const reportModal = document.getElementById('reportModal');
+  const reportModalText = document.getElementById('reportModalText');
+
+  const REPORT_DATA = {
+    '1': { name: 'Pedro Manalang', commodity: 'Onion',   volume: '15,000kg', location: 'Sta. Monica', planting: 'February 1, 2026', harvesting: 'San Juan' },
+    '2': { name: 'Ana Reyes',      commodity: 'Tomato',  volume: '9,200kg',  location: 'Sta. Barbara', planting: 'January 20, 2026', harvesting: 'Sta. Barbara' },
+    '3': { name: 'Rico Villanueva',commodity: 'Cabbage', volume: '6,500kg',  location: 'Sta. Lucia',   planting: 'January 15, 2026', harvesting: 'Sta. Lucia' }
+  };
+
+  function showReportSubview(subview){
+    reportListSubview.classList.remove('active-subview');
+    reportDetailSubview.classList.remove('active-subview');
+    subview.classList.add('active-subview');
+  }
+
+  document.querySelectorAll('.report-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const data = REPORT_DATA[btn.dataset.reportId];
+      if (data){
+        document.getElementById('detailName').textContent = data.name;
+        document.getElementById('detailCommodity').textContent = data.commodity;
+        document.getElementById('detailVolume').textContent = data.volume;
+        document.getElementById('detailLocation').textContent = data.location;
+        document.getElementById('detailPlanting').textContent = data.planting;
+        document.getElementById('detailHarvesting').textContent = data.harvesting;
+      }
+
+      flagBtn.classList.remove('active');
+      approveBtn.classList.remove('active');
+      flagBtn.textContent = 'Flag for Revision';
+      flagBtn.disabled = false;
+      approveBtn.disabled = false;
+      returnBtn.disabled = false;
+
+      showReportSubview(reportDetailSubview);
+    });
+  });
+
+  const returnBtn = document.getElementById('returnBtn');
+  const flagBtn = document.getElementById('flagBtn');
+  const approveBtn = document.getElementById('approveBtn');
+
+  returnBtn.addEventListener('click', () => {
+    showReportSubview(reportListSubview);
+  });
+
+  function finalizeReport(action){
+    flagBtn.disabled = true;
+    approveBtn.disabled = true;
+    returnBtn.disabled = true;
+
+    if (action === 'flag'){
+      flagBtn.classList.add('active');
+      flagBtn.textContent = 'Flagged';
+      reportModalText.textContent = 'Report Flagged for Revision — Farmer will be notified.';
+    } else {
+      approveBtn.classList.add('active');
+      reportModalText.textContent = 'Report Submitted to Regional Level';
+    }
+
+    reportModal.classList.add('show');
+  }
+
+  flagBtn.addEventListener('click', () => finalizeReport('flag'));
+  approveBtn.addEventListener('click', () => finalizeReport('approve'));
+
+  document.getElementById('reportModalConfirmBtn').addEventListener('click', () => {
+    reportModal.classList.remove('show');
+    showReportSubview(reportListSubview);
+  });
+
+  document.getElementById('viewAttachmentsBtn').addEventListener('click', () => {
+    alert('No attachments available in this demo.');
+  });
+
+  document.getElementById('submitReportBtn').addEventListener('click', () => {
+    alert('Submit Report form not built yet.');
+  });
+</script>
+
+</body>
+</html>

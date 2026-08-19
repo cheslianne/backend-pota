@@ -59,6 +59,16 @@ def login(
         )
 
     # =====================================================
+    # CHECK ACCOUNT STATUS
+    # =====================================================
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been deactivated.",
+        )
+
+    # =====================================================
     # VERIFY PASSWORD
     # =====================================================
 
