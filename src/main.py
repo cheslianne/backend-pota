@@ -1,5 +1,3 @@
-# src/main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -128,6 +126,7 @@ app.include_router(
     prefix="/api/email",
     tags=["Email"]
 )
+
 
 # =========================================================
 # ROOT

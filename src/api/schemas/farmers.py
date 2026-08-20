@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
 
 
@@ -31,5 +31,6 @@ class FarmerUpdate(BaseModel):
 class FarmerResponse(FarmerBase):
     farmer_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )

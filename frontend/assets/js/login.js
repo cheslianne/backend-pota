@@ -26,7 +26,7 @@ function getDashboardByRole(role) {
   const dashboards = {
     'System Administrator': './dashboards/system-admin.html',
 
-    'AEW': './dashboards/aew.html',
+    'Agricultural Extension Worker': './dashboards/aew.html',
 
     'DA-RFO Officer': './dashboards/da.html',
     'DA-RFO': './dashboards/da.html',

@@ -1,105 +1,206 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
-from src.core.auth import get_current_user
-
 from src.models.farmers import Farmer
-from src.models.users import User
-
 from src.api.schemas.farmers import (
     FarmerCreate,
     FarmerUpdate,
-    FarmerResponse
+    FarmerResponse,
 )
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/farmers",
+    tags=["Farmers"]
+)
 
 
-@router.post("/", response_model=FarmerResponse)
+# ============================================================
+# CREATE FARMER
+# ============================================================
+
+@router.post(
+    "/",
+    response_model=FarmerResponse,
+    status_code=status.HTTP_201_CREATED
+)
 def create_farmer(
     farmer: FarmerCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    db_farmer = Farmer(**farmer.dict())
+    # Check duplicate RSBSA ID
+    existing_farmer = (
+        db.query(Farmer)
+        .filter(Farmer.rsbsa_id == farmer.rsbsa_id)
+        .first()
+    )
 
-    db.add(db_farmer)
-    db.commit()
-    db.refresh(db_farmer)
+    if existing_farmer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="RSBSA ID already exists."
+        )
 
-    return db_farmer
+    new_farmer = Farmer(
+        rsbsa_id=farmer.rsbsa_id,
+        first_name=farmer.first_name,
+        last_name=farmer.last_name,
+        address=farmer.address,
+        sex=farmer.sex,
+        birthdate=farmer.birthdate,
+        email_address=farmer.email_address,
+        phone_number=farmer.phone_number,
+    )
+
+    try:
+        db.add(new_farmer)
+        db.commit()
+        db.refresh(new_farmer)
+
+    except Exception as e:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create farmer: {str(e)}"
+        )
+
+    return new_farmer
 
 
-@router.get("/{farmer_id}", response_model=FarmerResponse)
-def read_farmer(
+# ============================================================
+# GET ALL FARMERS
+# ============================================================
+
+@router.get(
+    "/",
+    response_model=list[FarmerResponse]
+)
+def get_farmers(
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Farmer)
+        .order_by(Farmer.farmer_id.desc())
+        .all()
+    )
+
+
+# ============================================================
+# GET SINGLE FARMER
+# ============================================================
+
+@router.get(
+    "/{farmer_id}",
+    response_model=FarmerResponse
+)
+def get_farmer(
     farmer_id: int,
     db: Session = Depends(get_db)
 ):
-    db_farmer = (
+    farmer = (
         db.query(Farmer)
         .filter(Farmer.farmer_id == farmer_id)
         .first()
     )
 
-    if not db_farmer:
+    if not farmer:
         raise HTTPException(
-            status_code=404,
-            detail="Farmer not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Farmer not found."
         )
 
-    return db_farmer
+    return farmer
 
 
-@router.put("/{farmer_id}", response_model=FarmerResponse)
+# ============================================================
+# UPDATE FARMER
+# ============================================================
+
+@router.put(
+    "/{farmer_id}",
+    response_model=FarmerResponse
+)
 def update_farmer(
     farmer_id: int,
-    farmer: FarmerUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    farmer_data: FarmerUpdate,
+    db: Session = Depends(get_db)
 ):
-    db_farmer = (
+    farmer = (
         db.query(Farmer)
         .filter(Farmer.farmer_id == farmer_id)
         .first()
     )
 
-    if not db_farmer:
+    if not farmer:
         raise HTTPException(
-            status_code=404,
-            detail="Farmer not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Farmer not found."
         )
 
-    for key, value in farmer.dict(exclude_unset=True).items():
-        setattr(db_farmer, key, value)
+    if farmer_data.rsbsa_id is not None:
+        existing_farmer = (
+            db.query(Farmer)
+            .filter(
+                Farmer.rsbsa_id == farmer_data.rsbsa_id,
+                Farmer.farmer_id != farmer_id
+            )
+            .first()
+        )
 
-    db.commit()
-    db.refresh(db_farmer)
+        if existing_farmer:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="RSBSA ID already exists."
+            )
 
-    return db_farmer
+    update_data = farmer_data.model_dump(
+        exclude_unset=True
+    )
+
+    for field, value in update_data.items():
+        setattr(farmer, field, value)
+
+    try:
+        db.commit()
+        db.refresh(farmer)
+
+    except Exception as e:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update farmer: {str(e)}"
+        )
+
+    return farmer
 
 
-@router.delete("/{farmer_id}")
+# ============================================================
+# DELETE FARMER
+# ============================================================
+
+@router.delete(
+    "/{farmer_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
 def delete_farmer(
     farmer_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    db_farmer = (
+    farmer = (
         db.query(Farmer)
         .filter(Farmer.farmer_id == farmer_id)
         .first()
     )
 
-    if not db_farmer:
+    if not farmer:
         raise HTTPException(
-            status_code=404,
-            detail="Farmer not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Farmer not found."
         )
 
-    db.delete(db_farmer)
+    db.delete(farmer)
     db.commit()
 
-    return {
-        "detail": "Farmer deleted"
-    }
+    return None
