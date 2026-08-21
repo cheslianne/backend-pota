@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 
 
@@ -29,5 +29,10 @@ class BuyerRegistryUpdate(BaseModel):
 class BuyerRegistryResponse(BuyerRegistryBase):
     buyer_registry_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BuyerRegistryWithStatusResponse(BuyerRegistryResponse):
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)

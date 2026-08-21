@@ -1592,57 +1592,13 @@
                   <th>Location</th>
                   <th>Planting Date</th>
                   <th>Harvest Date</th>
-                  <th>Status</th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody id="plantingIntentsTableBody">
+    <!-- Planting intents will be loaded here by aew.js -->
+</tbody>
 
-                <tr>
-                  <td>
-                    <span class="pill">
-                      Pedro Manalang
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      Onion
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      15,000kg
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      Sta. Monica
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      2/1/2026
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      6/15/2026
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="status-pill confirmed">
-                      Confirmed
-                    </span>
-                  </td>
-                </tr>
-
-              </tbody>
 
             </table>
 
@@ -2022,17 +1978,52 @@
           <div class="card">
 
             <div class="confirm-offtake-grid">
+<div class="offtake-letter-body">
 
-              <div class="offtake-letter-body">
+  <p>
+    <b>To:</b>
+    <span id="confirmBuyerName">Buyer Organization</span>
+  </p>
 
-                <p>
-                  <b>To:</b>
-                  Buyer Organization
-                </p>
+  <br>
 
-                <p>
-                  We are officially submitting an offtake request for the upcoming harvest.
-                </p>
+  <p>
+    <b>Farmer:</b>
+    <span id="confirmFarmerName">—</span>
+  </p>
+
+  <p>
+    <b>Farmer ID:</b>
+    <span id="confirmFarmerId">—</span>
+  </p>
+
+  <p>
+    <b>Commodity:</b>
+    <span id="confirmCommodity">—</span>
+  </p>
+
+  <p>
+    <b>Quantity:</b>
+    <span id="confirmQuantity">—</span> kg
+  </p>
+
+  <p>
+    <b>Selling Price:</b>
+    ₱<span id="confirmSellingPrice">—</span> / kg
+  </p>
+
+  <p>
+    <b>Harvest Date:</b>
+    <span id="confirmHarvestDate">—</span>
+  </p>
+
+  <br>
+
+  <p>
+    We are officially submitting an offtake request for the upcoming harvest.
+  </p>
+
+</div>
 
               </div>
 

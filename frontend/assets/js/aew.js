@@ -14,6 +14,9 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 const FARMERS_ENDPOINT =
     `${API_BASE_URL}/api/farmers/farmers/`;
 
+const PLANTING_INTENTS_ENDPOINT =
+    `${API_BASE_URL}/api/planting-intents/`;
+
 
 /* ============================================================
    AUTH
@@ -2064,9 +2067,15 @@ function openManageFarmer(
         );
 }
 
-
 /* ============================================================
    PLANTING INTENT
+============================================================ */
+
+let PLANTING_INTENTS_DATA = [];
+
+
+/* ============================================================
+   INITIALIZE PLANTING INTENT
 ============================================================ */
 
 function initPlantingIntent() {
@@ -2086,8 +2095,16 @@ function initPlantingIntent() {
             "plantIntentSubmittedModal"
         );
 
+    /* --------------------------------------------------------
+       LOAD PLANTING INTENTS
+    -------------------------------------------------------- */
 
-    /* ADD */
+    fetchPlantingIntents();
+
+
+    /* --------------------------------------------------------
+       ADD
+    -------------------------------------------------------- */
 
     document
         .getElementById(
@@ -2101,7 +2118,6 @@ function initPlantingIntent() {
                     "hidden-element"
                 );
 
-
                 formSubview?.classList.remove(
                     "hidden-element"
                 );
@@ -2109,7 +2125,9 @@ function initPlantingIntent() {
         );
 
 
-    /* CANCEL */
+    /* --------------------------------------------------------
+       CANCEL
+    -------------------------------------------------------- */
 
     document
         .getElementById(
@@ -2123,7 +2141,6 @@ function initPlantingIntent() {
                     "hidden-element"
                 );
 
-
                 list?.classList.remove(
                     "hidden-element"
                 );
@@ -2131,7 +2148,9 @@ function initPlantingIntent() {
         );
 
 
-    /* SUBMIT */
+    /* --------------------------------------------------------
+       SUBMIT
+    -------------------------------------------------------- */
 
     document
         .getElementById(
@@ -2139,19 +2158,18 @@ function initPlantingIntent() {
         )
         ?.addEventListener(
             "submit",
-            event => {
+            async event => {
 
                 event.preventDefault();
 
-
-                modal?.classList.add(
-                    "show"
-                );
+                await submitPlantingIntent();
             }
         );
 
 
-    /* CLOSE */
+    /* --------------------------------------------------------
+       CLOSE SUCCESS MODAL
+    -------------------------------------------------------- */
 
     document
         .getElementById(
@@ -2165,19 +2183,803 @@ function initPlantingIntent() {
                     "show"
                 );
 
-
                 formSubview?.classList.add(
                     "hidden-element"
                 );
 
-
                 list?.classList.remove(
                     "hidden-element"
                 );
+
+                /*
+                 * Refresh the table after
+                 * successfully adding a planting intent.
+                 */
+
+                fetchPlantingIntents();
             }
         );
 }
 
+
+/* ============================================================
+   FETCH PLANTING INTENTS FROM FASTAPI
+============================================================ */
+
+async function fetchPlantingIntents() {
+
+    const tbody =
+        document.getElementById(
+            "plantingIntentsTableBody"
+        );
+
+    if (tbody) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    style="
+                        padding:30px;
+                        text-align:center;
+                    "
+                >
+                    Loading planting intents...
+                </td>
+            </tr>
+        `;
+    }
+
+
+    try {
+
+        console.log(
+            "Fetching planting intents:",
+            PLANTING_INTENTS_ENDPOINT
+        );
+
+
+        const data =
+            await apiRequest(
+                PLANTING_INTENTS_ENDPOINT,
+                {
+                    method: "GET"
+                }
+            );
+
+
+        console.log(
+            "Planting Intents API response:",
+            data
+        );
+
+
+        /*
+         * FastAPI should return an array.
+         */
+
+        if (!Array.isArray(data)) {
+
+            throw new Error(
+                "Invalid planting intents response. Expected an array."
+            );
+        }
+
+
+        PLANTING_INTENTS_DATA =
+            data.map(
+                intent =>
+                    normalizePlantingIntent(
+                        intent
+                    )
+            );
+
+
+        renderPlantingIntentsTable();
+
+
+        console.log(
+            `Successfully loaded ${PLANTING_INTENTS_DATA.length} planting intent(s).`
+        );
+
+
+        return PLANTING_INTENTS_DATA;
+
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load planting intents:",
+            error
+        );
+
+
+        PLANTING_INTENTS_DATA = [];
+
+
+        if (tbody) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="7"
+                        style="
+                            padding:30px;
+                            text-align:center;
+                            color:#C0392B;
+                        "
+                    >
+                        Failed to load planting intents.
+                        <br>
+                        <small>
+                            ${escapeHtml(
+                                error.message ||
+                                "Please check the FastAPI server."
+                            )}
+                        </small>
+                    </td>
+                </tr>
+            `;
+        }
+
+
+        handleAuthError(error);
+
+        return [];
+    }
+}
+
+/* ============================================================
+   NORMALIZE PLANTING INTENT
+============================================================ */
+function normalizePlantingIntent(intent) {
+
+    return {
+
+        planting_intent_id:
+            intent.planting_intent_id ??
+            intent.id ??
+            null,
+
+        farmer_id:
+            intent.farmer_id ??
+            null,
+
+        farmer_name:
+            intent.farmer_name ??
+            "-",
+
+        commodity:
+            intent.commodity ??
+            "-",
+
+        volume:
+            intent.volume ??
+            "",
+
+        location:
+            intent.location ??
+            "-",
+
+        planting_date:
+            intent.planting_date ??
+            "",
+
+        harvest_date:
+            intent.harvest_date ??
+            "",
+
+        remarks:
+            intent.remarks ??
+            "",
+
+        status:
+            intent.status ??
+            "Pending",
+
+        created_at:
+            intent.created_at ??
+            null
+    };
+}
+function normalizePlantingIntent(intent) {
+
+    return {
+
+        // ID
+        planting_intent_id:
+            intent.planting_intent_id ??
+            intent.id ??
+            null,
+
+        // FARMER
+        farmer_id:
+            intent.farmer_id ??
+            null,
+
+        farmer_name:
+            intent.farmer_name ??
+            intent.name ??
+            "-",
+
+        // COMMODITY
+        commodity:
+            intent.commodity ??
+            intent.crop ??
+            "-",
+
+        // VOLUME
+        volume:
+            intent.volume ??
+            intent.planned_volume ??
+            intent.quantity ??
+            "",
+
+        // LOCATION
+        location:
+            intent.location ??
+            intent.municipality ??
+            intent.barangay ??
+            "-",
+
+        // DATES
+        planting_date:
+            intent.planting_date ??
+            "",
+
+        harvest_date:
+            intent.harvest_date ??
+            intent.expected_harvest_date ??
+            "",
+
+        // REMARKS
+        remarks:
+            intent.remarks ??
+            "",
+
+        // STATUS
+        // Current backend does not return status,
+        // so default to Pending.
+        status:
+            intent.status ??
+            "Pending",
+
+        // CREATED AT
+        created_at:
+            intent.created_at ??
+            null
+    };
+}
+
+
+/* ============================================================
+   RENDER PLANTING INTENTS TABLE
+============================================================ */
+
+function renderPlantingIntentsTable() {
+
+    const tbody =
+        document.getElementById(
+            "plantingIntentsTableBody"
+        );
+
+
+    if (!tbody) {
+
+        console.warn(
+            "plantingIntentsTableBody not found."
+        );
+
+        return;
+    }
+
+
+    tbody.innerHTML = "";
+
+
+    /* ========================================================
+       NO DATA
+    ======================================================== */
+
+    if (
+        !PLANTING_INTENTS_DATA ||
+        PLANTING_INTENTS_DATA.length === 0
+    ) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    style="
+                        padding:30px;
+                        text-align:center;
+                        color:#777;
+                    "
+                >
+                    No planting intents found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    /* ========================================================
+       RENDER EACH PLANTING INTENT
+    ======================================================== */
+
+    PLANTING_INTENTS_DATA.forEach(
+        rawIntent => {
+
+            /*
+             * Always normalize the backend response
+             * before displaying it.
+             */
+            const intent =
+                normalizePlantingIntent(
+                    rawIntent
+                );
+
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+
+            tr.innerHTML = `
+
+                <!-- FARMER NAME -->
+                <td>
+                    ${escapeHtml(
+                        intent.farmer_name || "-"
+                    )}
+                </td>
+
+
+                <!-- COMMODITY -->
+                <td>
+                    ${escapeHtml(
+                        intent.commodity || "-"
+                    )}
+                </td>
+
+
+                <!-- VOLUME -->
+                <td>
+                    ${escapeHtml(
+                        formatPlantingVolume(
+                            intent.volume
+                        )
+                    )}
+                </td>
+
+
+                <!-- LOCATION -->
+                <td>
+                    ${escapeHtml(
+                        intent.location || "-"
+                    )}
+                </td>
+
+
+                <!-- PLANTING DATE -->
+                <td>
+                    ${escapeHtml(
+                        formatPlantingDate(
+                            intent.planting_date
+                        )
+                    )}
+                </td>
+
+
+                <!-- HARVEST DATE -->
+                <td>
+                    ${escapeHtml(
+                        formatPlantingDate(
+                            intent.harvest_date
+                        )
+                    )}
+                </td>
+
+
+                <!-- STATUS -->
+                <td>
+                    <span
+                        class="status-pill ${getPlantingStatusClass(
+                            intent.status
+                        )}"
+                    >
+                        ${escapeHtml(
+                            intent.status || "Pending"
+                        )}
+                    </span>
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                tr
+            );
+        }
+    );
+}
+
+/* ============================================================
+   SUBMIT PLANTING INTENT TO FASTAPI
+============================================================ */
+
+async function submitPlantingIntent() {
+
+    const form =
+        document.getElementById(
+            "submitPlantIntentForm"
+        );
+
+    if (!form) {
+        alert("Planting Intent form not found.");
+        return;
+    }
+
+
+    /*
+     * IMPORTANT:
+     * Actual HTML order:
+     *
+     * 0 = Farmer Name
+     * 1 = Planting Date
+     * 2 = Farmer ID
+     * 3 = Harvest Date
+     * 4 = Commodity
+     * 5 = Volume
+     */
+
+    const inputs =
+        form.querySelectorAll(
+            "input"
+        );
+
+
+    const farmerName =
+        inputs[0]?.value.trim() || "";
+
+    const plantingDate =
+        inputs[1]?.value || "";
+
+    const farmerId =
+        inputs[2]?.value.trim() || "";
+
+    const harvestDate =
+        inputs[3]?.value || "";
+
+    const commodity =
+        inputs[4]?.value.trim() || "";
+
+    const volume =
+        inputs[5]?.value || "";
+
+
+    /*
+     * Validate required fields
+     */
+
+    if (!farmerName) {
+        alert("Please enter Farmer Name.");
+        return;
+    }
+
+    if (!farmerId) {
+        alert("Please enter Farmer ID.");
+        return;
+    }
+
+    if (!plantingDate) {
+        alert("Please select Planting Date.");
+        return;
+    }
+
+    if (!harvestDate) {
+        alert("Please select Harvest Date.");
+        return;
+    }
+
+    if (!commodity) {
+        alert("Please enter Commodity.");
+        return;
+    }
+
+    if (!volume) {
+        alert("Please enter Volume.");
+        return;
+    }
+
+
+    /*
+     * Farmer ID MUST be an integer
+     */
+
+    const parsedFarmerId =
+        Number(farmerId);
+
+
+    if (
+        !Number.isInteger(
+            parsedFarmerId
+        )
+    ) {
+        alert(
+            "Farmer ID must be a valid number."
+        );
+        return;
+    }
+
+
+    /*
+     * Volume MUST be numeric
+     */
+
+    const parsedVolume =
+        Number(volume);
+
+
+    if (
+        Number.isNaN(
+            parsedVolume
+        )
+    ) {
+        alert(
+            "Volume must be a valid number."
+        );
+        return;
+    }
+
+
+    /*
+     * Payload sent to FastAPI
+     */
+
+    const plantingIntentData = {
+
+        farmer_id:
+            parsedFarmerId,
+
+        commodity:
+            commodity,
+
+        volume:
+            parsedVolume,
+
+        planting_date:
+            plantingDate,
+
+        harvest_date:
+            harvestDate
+    };
+
+
+    console.log(
+        "Submitting planting intent:",
+        plantingIntentData
+    );
+
+
+    try {
+
+        const createdIntent =
+            await apiRequest(
+                PLANTING_INTENTS_ENDPOINT,
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify(
+                            plantingIntentData
+                        )
+                }
+            );
+
+
+        console.log(
+            "Planting intent created:",
+            createdIntent
+        );
+
+
+        /*
+         * Reload table
+         */
+
+        await fetchPlantingIntents();
+
+
+        /*
+         * Show success modal
+         */
+
+        document
+            .getElementById(
+                "plantIntentSubmittedModal"
+            )
+            ?.classList.add(
+                "show"
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "Create planting intent error:",
+            error
+        );
+
+
+        handleAuthError(
+            error
+        );
+
+
+        alert(
+            "Failed to submit planting intent.\n\n" +
+            (
+                error.message ||
+                "Please check the FastAPI server."
+            )
+        );
+    }
+}
+
+/* ============================================================
+   FORMAT PLANTING DATE
+============================================================ */
+
+function formatPlantingDate(
+    dateString
+) {
+
+    if (!dateString) {
+
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            dateString
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return dateString;
+    }
+
+
+    return date.toLocaleDateString(
+        "en-US",
+        {
+            month: "numeric",
+            day: "numeric",
+            year: "numeric"
+        }
+    );
+}
+
+
+/* ============================================================
+   FORMAT VOLUME
+============================================================ */
+
+function formatPlantingVolume(
+    volume
+) {
+
+    if (
+        volume === null ||
+        volume === undefined ||
+        volume === ""
+    ) {
+
+        return "-";
+    }
+
+
+    /*
+     * Keep existing formatted values
+     * such as "15,000kg".
+     */
+
+    if (
+        typeof volume === "string" &&
+        volume.toLowerCase().includes("kg")
+    ) {
+
+        return volume;
+    }
+
+
+    const numericVolume =
+        Number(
+            String(volume)
+                .replace(/,/g, "")
+        );
+
+
+    if (
+        !Number.isNaN(
+            numericVolume
+        )
+    ) {
+
+        return (
+            numericVolume.toLocaleString() +
+            "kg"
+        );
+    }
+
+
+    return String(
+        volume
+    );
+}
+
+
+/* ============================================================
+   STATUS CLASS
+============================================================ */
+
+function getPlantingStatusClass(
+    status
+) {
+
+    const normalized =
+        String(
+            status || "pending"
+        )
+        .toLowerCase()
+        .trim();
+
+
+    if (
+        normalized === "confirmed"
+    ) {
+
+        return "confirmed";
+    }
+
+
+    if (
+        normalized === "approved"
+    ) {
+
+        return "approved";
+    }
+
+
+    if (
+        normalized === "rejected"
+    ) {
+
+        return "rejected";
+    }
+
+
+    if (
+        normalized === "cancelled" ||
+        normalized === "canceled"
+    ) {
+
+        return "cancelled";
+    }
+
+
+    return "pending";
+}
 
 /* ============================================================
    OFFTAKE REQUEST

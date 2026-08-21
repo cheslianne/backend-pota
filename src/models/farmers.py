@@ -15,6 +15,10 @@ class Farmer(Base):
 
     last_name = Column(String(50), nullable=False)
 
+    municipality = Column(String(100), nullable=False)
+
+    barangay = Column(String(100), nullable=False)
+
     address = Column(Text, nullable=False)
 
     sex = Column(String(10), nullable=False)

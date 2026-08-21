@@ -6,6 +6,8 @@ class FarmerBase(BaseModel):
     rsbsa_id: str
     first_name: str
     last_name: str
+    municipality: str
+    barangay: str
     address: str
     sex: str
     birthdate: date
@@ -21,6 +23,8 @@ class FarmerUpdate(BaseModel):
     rsbsa_id: str | None = None
     first_name: str | None = None
     last_name: str | None = None
+    municipality: str | None = None
+    barangay: str | None = None
     address: str | None = None
     sex: str | None = None
     birthdate: date | None = None

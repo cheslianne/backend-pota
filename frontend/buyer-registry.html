@@ -3,411 +3,1257 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Buyer Registry Form — eSaka</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+>
+
 <link rel="stylesheet" href="assets/css/base.css">
+
 <style>
-  html,body{ background:var(--green, #5B6B4F); }
 
-  .frame{
-    min-height:100vh;
-    padding:22px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:var(--green, #5B6B4F);
+  html,
+  body {
+    background: var(--green, #5B6B4F);
   }
 
-  .page-inner{
-    width:100%;
-    max-width:1010px;
-    background:var(--cream, #F2EDE1);
-    padding:36px 40px 44px;
+  .frame {
+    min-height: 100vh;
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green, #5B6B4F);
   }
 
-  .brand{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    margin-bottom:26px;
+  .page-inner {
+    width: 100%;
+    max-width: 1010px;
+    background: var(--cream, #F2EDE1);
+    padding: 36px 40px 44px;
   }
 
-  .brand svg{ width:130px; height:112px; flex-shrink:0; }
-
-  .brand-word{
-    font-family:'Dancing Script', cursive;
-    font-weight:700;
-    font-size:54px;
-    color:var(--green, #5B6B4F);
-    line-height:1;
-    margin-left:-14px;
-    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.2));
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 26px;
   }
 
-  .card{
-    background:#F4F1EA;
-    padding:40px 50px 34px;
+  .brand svg {
+    width: 130px;
+    height: 112px;
+    flex-shrink: 0;
   }
 
-  .card h1{
-    font-family:'Oswald', sans-serif;
-    font-weight:700;
-    font-size:30px;
-    letter-spacing:0.02em;
-    color:var(--green, #5B6B4F);
-    text-align:center;
-    text-transform:uppercase;
-    margin-bottom:34px;
+  .brand-word {
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: 54px;
+    color: var(--green, #5B6B4F);
+    line-height: 1;
+    margin-left: -14px;
+    filter: drop-shadow(1px 2px 1px rgba(0,0,0,0.2));
   }
 
-  .step{ display:none; }
-  .step.active-step{ display:block; }
-
-  .form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:26px 60px;
+  .card {
+    background: #F4F1EA;
+    padding: 40px 50px 34px;
   }
 
-  .field label{
-    display:block;
-    font-size:13.5px;
-    color:var(--ink, #2E2A22);
-    margin-bottom:8px;
+  .card h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: 0.02em;
+    color: var(--green, #5B6B4F);
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 34px;
   }
 
-  .field label .req{ color:#c0392b; }
+  .step {
+    display: none;
+  }
+
+  .step.active-step {
+    display: block;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px 60px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13.5px;
+    color: var(--ink, #2E2A22);
+    margin-bottom: 8px;
+  }
+
+  .field label .req {
+    color: #c0392b;
+  }
 
   .field input,
-  .field textarea{
-    width:100%;
-    padding:11px 14px;
-    font-size:14px;
-    font-family:'Inter', sans-serif;
-    border:1.5px solid var(--ink, #2E2A22);
-    border-radius:4px;
-    background:#fff;
-    color:var(--ink, #2E2A22);
-    outline:none;
-    transition:border-color .2s ease, box-shadow .2s ease;
+  .field textarea {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--ink, #2E2A22);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink, #2E2A22);
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+    box-sizing: border-box;
   }
 
   .field input:focus,
-  .field textarea:focus{
-    border-color:var(--green, #5B6B4F);
-    box-shadow:0 0 0 3px rgba(91,107,79,0.15);
+  .field textarea:focus {
+    border-color: var(--green, #5B6B4F);
+    box-shadow: 0 0 0 3px rgba(91,107,79,0.15);
   }
 
-  .field textarea{
-    resize:vertical;
-    min-height:225px;
-    font-family:'Inter', sans-serif;
+  .field textarea {
+    resize: vertical;
+    min-height: 225px;
+    font-family: 'Inter', sans-serif;
   }
 
-  .upload-box{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
+  .upload-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .upload-box input[type="text"]{ cursor:default; background:#fff; }
-
-  .select-file-btn{
-    align-self:flex-start;
-    padding:8px 18px;
-    font-size:13px;
-    font-family:'Inter', sans-serif;
-    border:1.5px solid var(--ink, #2E2A22);
-    border-radius:4px;
-    background:#fff;
-    color:var(--ink, #2E2A22);
-    cursor:pointer;
-    transition:background-color .2s ease, color .2s ease;
+  .upload-box input[type="text"] {
+    cursor: default;
+    background: #fff;
   }
 
-  .select-file-btn:hover{
-    background:var(--green, #5B6B4F);
-    border-color:var(--green, #5B6B4F);
-    color:#fff;
+  .select-file-btn {
+    align-self: flex-start;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--ink, #2E2A22);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink, #2E2A22);
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease;
   }
 
-  .form-error{
-    display:none;
-    background:#F1D9D5;
-    border:1px solid #d9a89f;
-    color:#8c3226;
-    font-size:13.5px;
-    padding:10px 16px;
-    border-radius:5px;
-    margin-bottom:20px;
+  .select-file-btn:hover {
+    background: var(--green, #5B6B4F);
+    border-color: var(--green, #5B6B4F);
+    color: #fff;
   }
 
-  .form-error.show{ display:block; }
-
-  .card-footer{
-    display:flex;
-    justify-content:flex-end;
-    gap:14px;
-    margin-top:38px;
+  .file-hint {
+    font-size: 12px;
+    color: #6d675d;
+    margin-top: -3px;
   }
 
-  .btn-outline, .btn-filled{
-    font-family:'Inter', sans-serif;
-    font-size:14.5px;
-    font-weight:500;
-    padding:10px 26px;
-    border-radius:5px;
-    cursor:pointer;
-    transition:background-color .2s ease, color .2s ease, transform .15s ease;
+  .form-error {
+    display: none;
+    background: #F1D9D5;
+    border: 1px solid #d9a89f;
+    color: #8c3226;
+    font-size: 13.5px;
+    padding: 10px 16px;
+    border-radius: 5px;
+    margin-bottom: 20px;
   }
 
-  .btn-outline{
-    border:1.5px solid var(--ink, #2E2A22);
-    background:transparent;
-    color:var(--ink, #2E2A22);
+  .form-error.show {
+    display: block;
   }
 
-  .btn-outline:hover{ background:#e6e1d4; }
-
-  .btn-filled{
-    border:1.5px solid var(--green, #5B6B4F);
-    background:var(--green, #5B6B4F);
-    color:#fff;
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 38px;
   }
 
-  .btn-filled:hover{ background:var(--green-dark, #495a3f); }
-  .btn-filled:active, .btn-outline:active{ transform:translateY(1px); }
-
-  .modal-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(30,35,28,0.55);
-    align-items:center;
-    justify-content:center;
-    z-index:50;
+  .btn-outline,
+  .btn-filled {
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    padding: 10px 26px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition:
+      background-color .2s ease,
+      color .2s ease,
+      transform .15s ease;
   }
 
-  .modal-overlay.show{ display:flex; }
-
-  .modal-box{
-    background:#F0EDE4;
-    border-radius:4px;
-    padding:34px 60px 30px;
-    text-align:center;
-    box-shadow:0 14px 40px rgba(0,0,0,0.3);
+  .btn-outline {
+    border: 1.5px solid var(--ink, #2E2A22);
+    background: transparent;
+    color: var(--ink, #2E2A22);
   }
 
-  .modal-box h2{
-    font-family:'Oswald', sans-serif;
-    font-weight:700;
-    font-size:24px;
-    letter-spacing:0.02em;
-    color:var(--green, #5B6B4F);
-    text-transform:uppercase;
-    margin-bottom:14px;
+  .btn-outline:hover {
+    background: #e6e1d4;
   }
 
-  .modal-box p{
-    font-size:14.5px;
-    color:var(--ink, #2E2A22);
-    margin-bottom:22px;
+  .btn-filled {
+    border: 1.5px solid var(--green, #5B6B4F);
+    background: var(--green, #5B6B4F);
+    color: #fff;
   }
 
-  .modal-ok{
-    border:1.5px solid var(--green, #5B6B4F);
-    background:var(--green, #5B6B4F);
-    color:#fff;
-    font-family:'Inter', sans-serif;
-    font-size:14px;
-    font-weight:500;
-    padding:9px 32px;
-    border-radius:5px;
-    cursor:pointer;
+  .btn-filled:hover {
+    background: var(--green-dark, #495a3f);
   }
 
-  .modal-ok:hover{ background:var(--green-dark, #495a3f); }
-
-  @media (max-width: 720px){
-    .page-inner{ padding:26px 16px 32px; }
-    .card{ padding:28px 22px 26px; }
-    .form-grid{ grid-template-columns:1fr; gap:20px; }
-    .brand svg{ width:90px; height:78px; }
-    .brand-word{ font-size:38px; }
-    .card h1{ font-size:24px; }
-    .field textarea{ min-height:160px; }
+  .btn-filled:active,
+  .btn-outline:active {
+    transform: translateY(1px);
   }
+
+  .btn-filled:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  /* ============================================================
+     MODALS
+  ============================================================ */
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30,35,28,0.55);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .modal-overlay.show {
+    display: flex;
+  }
+
+  .modal-box {
+    background: #F0EDE4;
+    border-radius: 4px;
+    padding: 34px 60px 30px;
+    text-align: center;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.3);
+    max-width: 450px;
+    width: calc(100% - 40px);
+  }
+
+  .modal-box h2 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+    color: var(--green, #5B6B4F);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .modal-box p {
+    font-size: 14.5px;
+    color: var(--ink, #2E2A22);
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+
+  .modal-ok {
+    border: 1.5px solid var(--green, #5B6B4F);
+    background: var(--green, #5B6B4F);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 32px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .modal-ok:hover {
+    background: var(--green-dark, #495a3f);
+  }
+
+  @media (max-width: 720px) {
+
+    .page-inner {
+      padding: 26px 16px 32px;
+    }
+
+    .card {
+      padding: 28px 22px 26px;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .brand svg {
+      width: 90px;
+      height: 78px;
+    }
+
+    .brand-word {
+      font-size: 38px;
+    }
+
+    .card h1 {
+      font-size: 24px;
+    }
+
+    .field textarea {
+      min-height: 160px;
+    }
+  }
+
 </style>
 </head>
+
 <body>
 
 <div class="frame">
+
   <div class="page-inner">
 
+    <!-- ========================================================
+         BRAND
+    ======================================================== -->
+
     <div class="brand">
-      <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <g fill="none" stroke="#8C6A4A" stroke-width="2.5" stroke-linecap="round">
+
+      <svg
+        viewBox="0 0 200 170"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+
+        <g
+          fill="none"
+          stroke="#8C6A4A"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        >
+
           <path d="M8 90 C 40 40, 90 20, 150 15"/>
           <path d="M8 90 C 45 55, 95 40, 155 45"/>
           <path d="M8 90 C 50 78, 100 72, 158 82"/>
           <path d="M8 90 C 45 105, 95 118, 150 130"/>
           <path d="M8 90 C 40 130, 85 150, 130 158"/>
+
         </g>
-        <g fill="none" stroke="#C9A15A" stroke-width="1.5" opacity="0.7">
+
+        <g
+          fill="none"
+          stroke="#C9A15A"
+          stroke-width="1.5"
+          opacity="0.7"
+        >
+
           <path d="M160 12 c 6 4, 10 10, 8 18"/>
+
         </g>
+
       </svg>
+
       <span class="brand-word">eSaka</span>
+
     </div>
 
+
+    <!-- ========================================================
+         CARD
+    ======================================================== -->
+
     <div class="card">
+
       <h1>Buyer Registry Form</h1>
 
       <form id="registryForm" novalidate>
 
-        <!-- ===== STEP 1 ===== -->
+        <!-- ====================================================
+             STEP 1
+        ==================================================== -->
+
         <div class="step active-step" id="step-1">
-          <p class="form-error" id="step1Error">Please fill in all required fields.</p>
+
+          <p class="form-error" id="step1Error">
+            Please fill in all required fields.
+          </p>
+
           <div class="form-grid">
-            <div class="field">
-              <label for="orgName">Organization or Business <span class="req">*</span></label>
-              <input type="text" id="orgName" required>
-            </div>
-            <div class="field">
-              <label for="phoneNumber">Phone Number <span class="req">*</span></label>
-              <input type="tel" id="phoneNumber" required>
-            </div>
 
             <div class="field">
-              <label for="contactPerson">Contact Person <span class="req">*</span></label>
-              <input type="text" id="contactPerson" required>
-            </div>
-            <div class="field">
-              <label for="buyerEmail">Email <span class="req">*</span></label>
-              <input type="email" id="buyerEmail" required>
+
+              <label for="orgName">
+                Organization or Business
+                <span class="req">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="orgName"
+                required
+              >
+
             </div>
 
+
             <div class="field">
-              <label for="address">Address <span class="req">*</span></label>
-              <input type="text" id="address" required>
+
+              <label for="phoneNumber">
+                Phone Number
+                <span class="req">*</span>
+              </label>
+
+              <input
+                type="tel"
+                id="phoneNumber"
+                required
+              >
+
             </div>
+
+
+            <div class="field">
+
+              <label for="contactPerson">
+                Contact Person
+                <span class="req">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="contactPerson"
+                required
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="buyerEmail">
+                Email
+                <span class="req">*</span>
+              </label>
+
+              <input
+                type="email"
+                id="buyerEmail"
+                required
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="address">
+                Address
+                <span class="req">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="address"
+                required
+              >
+
+            </div>
+
           </div>
+
 
           <div class="card-footer">
-            <button type="button" class="btn-outline" id="cancelStep1">Cancel</button>
-            <button type="button" class="btn-filled" id="toStep2">Next</button>
+
+            <button
+              type="button"
+              class="btn-outline"
+              id="cancelStep1"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              class="btn-filled"
+              id="toStep2"
+            >
+              Next
+            </button>
+
           </div>
+
         </div>
 
-        <!-- ===== STEP 2 ===== -->
+
+        <!-- ====================================================
+             STEP 2
+        ==================================================== -->
+
         <div class="step" id="step-2">
-          <p class="form-error" id="step2Error">Please upload a document before submitting.</p>
+
+          <p class="form-error" id="step2Error">
+            Please upload a valid document.
+          </p>
+
+
           <div class="form-grid">
+
             <div class="field">
-              <label for="message">Message (Optional)</label>
-              <textarea id="message" rows="8"></textarea>
+
+              <label for="message">
+                Message (Optional)
+              </label>
+
+              <textarea
+                id="message"
+                rows="8"
+              ></textarea>
+
             </div>
+
+
             <div class="field">
-              <label for="uploadName">Upload Documents <span class="req">*</span></label>
+
+              <label for="uploadName">
+                Upload Documents
+                <span class="req">*</span>
+              </label>
+
+
               <div class="upload-box">
-                <input type="text" id="uploadName" readonly placeholder="">
-                <input type="file" id="fileInput" hidden>
-                <button type="button" class="select-file-btn" id="selectFileBtn">Select File</button>
+
+                <input
+                  type="text"
+                  id="uploadName"
+                  readonly
+                  placeholder=""
+                >
+
+
+                <input
+                  type="file"
+                  id="fileInput"
+                  hidden
+                  accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
+                >
+
+
+                <button
+                  type="button"
+                  class="select-file-btn"
+                  id="selectFileBtn"
+                >
+                  Select File
+                </button>
+
+
+                <div class="file-hint">
+                  Accepted file types: JPEG / JPG and PDF only.
+                </div>
+
               </div>
+
             </div>
+
           </div>
 
+
           <div class="card-footer">
-            <button type="button" class="btn-outline" id="backToStep1">Cancel</button>
-            <button type="submit" class="btn-filled" id="submitBtn">Next</button>
+
+            <button
+              type="button"
+              class="btn-outline"
+              id="backToStep1"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="btn-filled"
+              id="submitBtn"
+            >
+              Submit
+            </button>
+
           </div>
+
         </div>
 
       </form>
+
     </div>
 
   </div>
+
 </div>
 
-<!-- ===== Submitted ===== -->
-<div class="modal-overlay" id="submittedModal">
+
+<!-- ============================================================
+     SUCCESS MODAL
+============================================================ -->
+
+<div
+  class="modal-overlay"
+  id="submittedModal"
+>
+
   <div class="modal-box">
-    <h2>Request Submitted</h2>
-    <p>We will contact you for updates soon!</p>
-    <button class="modal-ok" id="modalOkBtn">Ok</button>
+
+    <h2>
+      Submission Successful!
+    </h2>
+
+    <p>
+      Your buyer registry application has been submitted successfully.
+      Your application is now pending verification.
+    </p>
+
+    <button
+      class="modal-ok"
+      id="modalOkBtn"
+    >
+      OK
+    </button>
+
   </div>
+
 </div>
+
+
+<!-- ============================================================
+     ERROR MODAL
+============================================================ -->
+
+<div
+  class="modal-overlay"
+  id="errorModal"
+>
+
+  <div class="modal-box">
+
+    <h2>
+      Submission Failed
+    </h2>
+
+    <p id="errorModalMessage">
+      Something went wrong while submitting your application.
+    </p>
+
+    <button
+      class="modal-ok"
+      id="errorModalOkBtn"
+    >
+      OK
+    </button>
+
+  </div>
+
+</div>
+
 
 <script>
-  const step1 = document.getElementById('step-1');
-  const step2 = document.getElementById('step-2');
-  const submittedModal = document.getElementById('submittedModal');
-  const registryForm = document.getElementById('registryForm');
 
-  function showStep(step){
-    [step1, step2].forEach(s => s.classList.remove('active-step'));
-    step.classList.add('active-step');
+/* ============================================================
+   API CONFIGURATION
+============================================================ */
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+const BUYER_REGISTRY_ENDPOINT =
+  `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
+
+
+/* ============================================================
+   ELEMENTS
+============================================================ */
+
+const step1 =
+  document.getElementById("step-1");
+
+const step2 =
+  document.getElementById("step-2");
+
+const registryForm =
+  document.getElementById("registryForm");
+
+const step1Error =
+  document.getElementById("step1Error");
+
+const step2Error =
+  document.getElementById("step2Error");
+
+const fileInput =
+  document.getElementById("fileInput");
+
+const uploadName =
+  document.getElementById("uploadName");
+
+const submitBtn =
+  document.getElementById("submitBtn");
+
+const submittedModal =
+  document.getElementById("submittedModal");
+
+const errorModal =
+  document.getElementById("errorModal");
+
+const errorModalMessage =
+  document.getElementById("errorModalMessage");
+
+
+/* ============================================================
+   SHOW STEP
+============================================================ */
+
+function showStep(step) {
+
+  [step1, step2].forEach(function(s) {
+
+    s.classList.remove("active-step");
+
+  });
+
+  step.classList.add("active-step");
+
+}
+
+
+/* ============================================================
+   CANCEL STEP 1
+============================================================ */
+
+document
+  .getElementById("cancelStep1")
+  .addEventListener("click", function() {
+
+    window.location.href = "index.html";
+
+  });
+
+
+/* ============================================================
+   STEP 1 → STEP 2
+============================================================ */
+
+document
+  .getElementById("toStep2")
+  .addEventListener("click", function() {
+
+    const orgName =
+      document.getElementById("orgName").value.trim();
+
+    const contactPerson =
+      document.getElementById("contactPerson").value.trim();
+
+    const address =
+      document.getElementById("address").value.trim();
+
+    const phoneNumber =
+      document.getElementById("phoneNumber").value.trim();
+
+    const buyerEmail =
+      document.getElementById("buyerEmail").value.trim();
+
+
+    /* Required fields */
+
+    if (
+      !orgName ||
+      !contactPerson ||
+      !address ||
+      !phoneNumber ||
+      !buyerEmail
+    ) {
+
+      step1Error.textContent =
+        "Please fill in all required fields.";
+
+      step1Error.classList.add("show");
+
+      return;
+
+    }
+
+
+    /* Email validation */
+
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+    if (!emailPattern.test(buyerEmail)) {
+
+      step1Error.textContent =
+        "Please enter a valid email address.";
+
+      step1Error.classList.add("show");
+
+      return;
+
+    }
+
+
+    step1Error.classList.remove("show");
+
+    showStep(step2);
+
+  });
+
+
+/* ============================================================
+   STEP 2 → STEP 1
+============================================================ */
+
+document
+  .getElementById("backToStep1")
+  .addEventListener("click", function() {
+
+    step2Error.classList.remove("show");
+
+    showStep(step1);
+
+  });
+
+
+/* ============================================================
+   SELECT FILE
+============================================================ */
+
+document
+  .getElementById("selectFileBtn")
+  .addEventListener("click", function() {
+
+    fileInput.click();
+
+  });
+
+
+/* ============================================================
+   FILE VALIDATION
+============================================================ */
+
+fileInput.addEventListener("change", function() {
+
+  if (!fileInput.files.length) {
+
+    uploadName.value = "";
+
+    return;
+
   }
 
-  const step1Error = document.getElementById('step1Error');
-  const step2Error = document.getElementById('step2Error');
 
-  document.getElementById('cancelStep1').addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
+  const file =
+    fileInput.files[0];
 
-  document.getElementById('toStep2').addEventListener('click', () => {
-    const orgName = document.getElementById('orgName').value.trim();
-    const contactPerson = document.getElementById('contactPerson').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const phoneNumber = document.getElementById('phoneNumber').value.trim();
-    const buyerEmail = document.getElementById('buyerEmail').value.trim();
+  const fileName =
+    file.name.toLowerCase();
 
-    if (!orgName || !contactPerson || !address || !phoneNumber || !buyerEmail){
-      step1Error.classList.add('show');
-      return;
-    }
 
-    step1Error.classList.remove('show');
-    showStep(step2);
-  });
+  const allowedExtensions = [
+    ".jpg",
+    ".jpeg",
+    ".pdf"
+  ];
 
-  document.getElementById('backToStep1').addEventListener('click', () => {
-    step2Error.classList.remove('show');
-    showStep(step1);
-  });
 
-  const fileInput = document.getElementById('fileInput');
-  const uploadName = document.getElementById('uploadName');
+  const validExtension =
+    allowedExtensions.some(function(extension) {
 
-  document.getElementById('selectFileBtn').addEventListener('click', () => {
-    fileInput.click();
-  });
+      return fileName.endsWith(extension);
 
-  fileInput.addEventListener('change', () => {
-    uploadName.value = fileInput.files.length ? fileInput.files[0].name : '';
-    if (fileInput.files.length) step2Error.classList.remove('show');
-  });
+    });
 
-  registryForm.addEventListener('submit', (e) => {
+
+  const validMime =
+    file.type === "image/jpeg" ||
+    file.type === "application/pdf";
+
+
+  if (!validExtension || !validMime) {
+
+    fileInput.value = "";
+
+    uploadName.value = "";
+
+    step2Error.textContent =
+      "Invalid file. Please upload JPEG/JPG or PDF only.";
+
+    step2Error.classList.add("show");
+
+    return;
+
+  }
+
+
+  uploadName.value =
+    file.name;
+
+  step2Error.classList.remove("show");
+
+});
+
+
+/* ============================================================
+   SUBMIT BUYER REGISTRY
+============================================================ */
+
+registryForm.addEventListener(
+  "submit",
+  async function(e) {
+
     e.preventDefault();
 
-    if (!fileInput.files.length){
-      step2Error.classList.add('show');
+
+    /* ========================================================
+       CHECK FILE
+    ======================================================== */
+
+    if (!fileInput.files.length) {
+
+      step2Error.textContent =
+        "Please upload a document before submitting.";
+
+      step2Error.classList.add("show");
+
       return;
+
     }
 
-    step2Error.classList.remove('show');
-    // TODO: replace nalang w/ real req
-    submittedModal.classList.add('show');
+
+    const file =
+      fileInput.files[0];
+
+
+    const fileName =
+      file.name.toLowerCase();
+
+
+    const allowedExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".pdf"
+    ];
+
+
+    const validExtension =
+      allowedExtensions.some(function(extension) {
+
+        return fileName.endsWith(extension);
+
+      });
+
+
+    const validMime =
+      file.type === "image/jpeg" ||
+      file.type === "application/pdf";
+
+
+    if (!validExtension || !validMime) {
+
+      step2Error.textContent =
+        "Invalid file. Please upload JPEG/JPG or PDF only.";
+
+      step2Error.classList.add("show");
+
+      return;
+
+    }
+
+
+    step2Error.classList.remove("show");
+
+
+    /* ========================================================
+       FORM DATA
+       
+       IMPORTANT:
+       DO NOT use JSON.stringify().
+       DO NOT set Content-Type manually.
+    ======================================================== */
+
+    const formData =
+      new FormData();
+
+
+    formData.append(
+      "organization",
+      document
+        .getElementById("orgName")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "contact_person",
+      document
+        .getElementById("contactPerson")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "phone_number",
+      document
+        .getElementById("phoneNumber")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "email_address",
+      document
+        .getElementById("buyerEmail")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "address",
+      document
+        .getElementById("address")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "message",
+      document
+        .getElementById("message")
+        .value
+        .trim()
+    );
+
+
+    formData.append(
+      "document",
+      file
+    );
+
+
+    /* ========================================================
+       DEBUG
+    ======================================================== */
+
+    console.log(
+      "Submitting Buyer Registry..."
+    );
+
+    console.log(
+      "Organization:",
+      document.getElementById("orgName").value
+    );
+
+    console.log(
+      "Email:",
+      document.getElementById("buyerEmail").value
+    );
+
+    console.log(
+      "File:",
+      file.name
+    );
+
+
+    /* ========================================================
+       DISABLE BUTTON
+    ======================================================== */
+
+    submitBtn.disabled = true;
+
+    submitBtn.textContent =
+      "Submitting...";
+
+
+    try {
+
+      /* ======================================================
+         SEND MULTIPART FORM DATA
+      ====================================================== */
+
+      const response =
+        await fetch(
+          BUYER_REGISTRY_ENDPOINT,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+
+      /* ======================================================
+         GET RESPONSE
+      ====================================================== */
+
+      let data = null;
+
+
+      try {
+
+        data =
+          await response.json();
+
+      } catch (jsonError) {
+
+        data = null;
+
+      }
+
+
+      console.log(
+        "API RESPONSE:",
+        data
+      );
+
+
+      /* ======================================================
+         API ERROR
+      ====================================================== */
+
+      if (!response.ok) {
+
+        let errorMessage =
+          "Unable to submit buyer registry.";
+
+
+        if (data && data.detail) {
+
+          if (
+            Array.isArray(data.detail)
+          ) {
+
+            errorMessage =
+              data.detail
+                .map(function(error) {
+
+                  return (
+                    error.msg ||
+                    "Invalid input."
+                  );
+
+                })
+                .join(", ");
+
+          } else {
+
+            errorMessage =
+              data.detail;
+
+          }
+
+        }
+
+
+        throw new Error(
+          errorMessage
+        );
+
+      }
+
+
+      /* ======================================================
+         SUCCESS
+      ====================================================== */
+
+      console.log(
+        "Buyer Registry Submitted Successfully:",
+        data
+      );
+
+
+      submittedModal.classList.add(
+        "show"
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Buyer Registry Error:",
+        error
+      );
+
+
+      errorModalMessage.textContent =
+        error.message ||
+        "Something went wrong while submitting your application.";
+
+
+      errorModal.classList.add(
+        "show"
+      );
+
+
+    } finally {
+
+      submitBtn.disabled = false;
+
+      submitBtn.textContent =
+        "Submit";
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   SUCCESS MODAL OK
+============================================================ */
+
+document
+  .getElementById("modalOkBtn")
+  .addEventListener("click", function() {
+
+    window.location.href =
+      "index.html";
+
   });
 
-  document.getElementById('modalOkBtn').addEventListener('click', () => {
-    window.location.href = 'index.html';
+
+/* ============================================================
+   ERROR MODAL OK
+============================================================ */
+
+document
+  .getElementById("errorModalOkBtn")
+  .addEventListener("click", function() {
+
+    errorModal.classList.remove(
+      "show"
+    );
+
   });
+
 </script>
 
 </body>
