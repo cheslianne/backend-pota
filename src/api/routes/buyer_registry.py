@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -7,13 +10,32 @@ from src.models.buyer_registry import BuyerRegistry
 from src.models.buyer_status import BuyerStatus
 
 from src.api.schemas.buyer_registry import (
-    BuyerRegistryCreate,
-    BuyerRegistryUpdate,
     BuyerRegistryResponse,
     BuyerRegistryWithStatusResponse,
 )
 
+
 router = APIRouter()
+
+
+# ============================================================
+# UPLOAD CONFIGURATION
+# ============================================================
+
+UPLOAD_DIR = "uploads/buyer_registry"
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".pdf",
+}
+
+ALLOWED_CONTENT_TYPES = {
+    "image/jpeg",
+    "application/pdf",
+}
 
 
 # ============================================================
@@ -24,35 +46,125 @@ router = APIRouter()
     "/buyer-registry",
     response_model=BuyerRegistryResponse
 )
-def create_buyer_registry(
-    buyer: BuyerRegistryCreate,
-    db: Session = Depends(get_db)
+async def create_buyer_registry(
+    organization: str = Form(...),
+    contact_person: str = Form(...),
+    phone_number: str = Form(...),
+    email_address: str = Form(...),
+    address: str = Form(...),
+    message: str | None = Form(None),
+    document: UploadFile = File(...),
+    db: Session = Depends(get_db),
 ):
 
+    # ========================================================
+    # VALIDATE FILE
+    # ========================================================
+
+    if not document.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Document file is required."
+        )
+
+    original_filename = document.filename
+
+    file_extension = os.path.splitext(
+        original_filename
+    )[1].lower()
+
+    if file_extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Only JPEG/JPG and PDF files are allowed."
+        )
+
+    if document.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file format. Only JPEG/JPG and PDF files are allowed."
+        )
+
+    # ========================================================
+    # GENERATE UNIQUE FILE NAME
+    # ========================================================
+
+    unique_filename = (
+        f"{uuid.uuid4().hex}{file_extension}"
+    )
+
+    file_path = os.path.join(
+        UPLOAD_DIR,
+        unique_filename
+    )
+
+    # ========================================================
+    # SAVE ACTUAL FILE
+    # ========================================================
+
+    try:
+
+        file_content = await document.read()
+
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save uploaded document: {str(e)}"
+        )
+
+    # ========================================================
+    # SAVE BUYER REGISTRY
+    # ========================================================
+
     db_buyer = BuyerRegistry(
-        organization=buyer.organization,
-        contact_person=buyer.contact_person,
-        phone_number=buyer.phone_number,
-        email_address=buyer.email_address,
-        address=buyer.address,
-        message=buyer.message,
-        document=buyer.document
+        organization=organization,
+        contact_person=contact_person,
+        phone_number=phone_number,
+        email_address=email_address,
+        address=address,
+        message=message,
+
+        # Save path/reference to the actual uploaded file
+        document=file_path,
     )
 
-    db.add(db_buyer)
+    try:
 
-    db.flush()
+        db.add(db_buyer)
 
-    db_status = BuyerStatus(
-        buyer_registry_id=db_buyer.buyer_registry_id,
-        status="Pending"
-    )
+        db.flush()
 
-    db.add(db_status)
+        # ====================================================
+        # CREATE DEFAULT BUYER STATUS
+        # ====================================================
 
-    db.commit()
+        db_status = BuyerStatus(
+            buyer_registry_id=db_buyer.buyer_registry_id,
+            status="Pending"
+        )
 
-    db.refresh(db_buyer)
+        db.add(db_status)
+
+        db.commit()
+
+        db.refresh(db_buyer)
+
+    except Exception as e:
+
+        db.rollback()
+
+        # Delete uploaded file if database save fails
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save buyer registry: {str(e)}"
+        )
 
     return db_buyer
 
@@ -137,7 +249,6 @@ def read_buyer_registry(
 
     return db_buyer
 
-
 # ============================================================
 # UPDATE BUYER REGISTRY
 # ============================================================
@@ -146,9 +257,15 @@ def read_buyer_registry(
     "/buyer-registry/{buyer_registry_id}",
     response_model=BuyerRegistryResponse
 )
-def update_buyer_registry(
+async def update_buyer_registry(
     buyer_registry_id: int,
-    buyer: BuyerRegistryUpdate,
+    organization: str | None = Form(None),
+    contact_person: str | None = Form(None),
+    phone_number: str | None = Form(None),
+    email_address: str | None = Form(None),
+    address: str | None = Form(None),
+    message: str | None = Form(None),
+    document: UploadFile | None = File(None),
     db: Session = Depends(get_db)
 ):
 
@@ -168,25 +285,80 @@ def update_buyer_registry(
             detail="Buyer registry not found"
         )
 
-    update_data = buyer.model_dump(
-        exclude_unset=True
-    )
+    if organization is not None:
+        db_buyer.organization = organization
 
-    for key, value in update_data.items():
+    if contact_person is not None:
+        db_buyer.contact_person = contact_person
 
-        setattr(
-            db_buyer,
-            key,
-            value
+    if phone_number is not None:
+        db_buyer.phone_number = phone_number
+
+    if email_address is not None:
+        db_buyer.email_address = email_address
+
+    if address is not None:
+        db_buyer.address = address
+
+    if message is not None:
+        db_buyer.message = message
+
+    # ========================================================
+    # REPLACE DOCUMENT IF NEW FILE WAS UPLOADED
+    # ========================================================
+
+    if document is not None:
+
+        if not document.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid document."
+            )
+
+        file_extension = os.path.splitext(
+            document.filename
+        )[1].lower()
+
+        if file_extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Only JPEG/JPG and PDF files are allowed."
+            )
+
+        if document.content_type not in ALLOWED_CONTENT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file format."
+            )
+
+        unique_filename = (
+            f"{uuid.uuid4().hex}{file_extension}"
         )
+
+        new_file_path = os.path.join(
+            UPLOAD_DIR,
+            unique_filename
+        )
+
+        file_content = await document.read()
+
+        with open(new_file_path, "wb") as buffer:
+            buffer.write(file_content)
+
+        # Delete old file
+        if (
+            db_buyer.document
+            and os.path.exists(db_buyer.document)
+        ):
+            os.remove(db_buyer.document)
+
+        db_buyer.document = new_file_path
 
     db.commit()
 
     db.refresh(db_buyer)
 
     return db_buyer
-
-
 # ============================================================
 # DELETE BUYER REGISTRY
 # ============================================================
@@ -214,6 +386,16 @@ def delete_buyer_registry(
             status_code=404,
             detail="Buyer registry not found"
         )
+
+    # ========================================================
+    # DELETE ACTUAL DOCUMENT
+    # ========================================================
+
+    if (
+        db_buyer.document
+        and os.path.exists(db_buyer.document)
+    ):
+        os.remove(db_buyer.document)
 
     db.delete(db_buyer)
 
