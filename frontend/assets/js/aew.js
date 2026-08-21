@@ -5,24 +5,33 @@
 ============================================================ */
 
 
+
+
 /* ============================================================
    API CONFIGURATION
 ============================================================ */
 
+
 const API_BASE_URL = "http://127.0.0.1:8000";
+
 
 const FARMERS_ENDPOINT =
     `${API_BASE_URL}/api/farmers/farmers/`;
 
+
 const PLANTING_INTENTS_ENDPOINT =
     `${API_BASE_URL}/api/planting-intents/`;
+
+
 
 
 /* ============================================================
    AUTH
 ============================================================ */
 
+
 function getAuthToken() {
+
 
     return (
         localStorage.getItem("access_token") ||
@@ -32,100 +41,141 @@ function getAuthToken() {
 }
 
 
+
+
 function getAuthHeaders() {
 
+
     const token = getAuthToken();
+
 
     const headers = {
         "Content-Type": "application/json"
     };
 
+
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
+
     return headers;
 }
+
+
 
 
 /* ============================================================
    STATE
 ============================================================ */
 
+
 let FARMERS_DATA = [];
+
 
 let currentFarmersPage = 1;
 
+
 const farmersPerPage = 10;
+
 
 let currentActiveFarmer = null;
 
+
 let isEditMode = false;
 
+
 let mapInstance = null;
+
+
 
 
 /* ============================================================
    INITIALIZATION
 ============================================================ */
 
+
 document.addEventListener("DOMContentLoaded", async () => {
+
 
     console.log("=================================");
     console.log("eSaka AEW Dashboard loaded.");
     console.log("=================================");
 
+
     initSidebar();
+
 
     initViewNavigation();
 
+
     initMap();
+
 
     initFarmerSubviews();
 
+
     initPlantingIntent();
+
 
     initOfftakeRequest();
 
+
     initFairPrice();
+
 
     initSignout();
 
+
     setupUserProfile();
+
 
     await fetchFarmers();
 });
+
+
 
 
 /* ============================================================
    USER PROFILE
 ============================================================ */
 
+
 function setupUserProfile() {
+
 
     const storedName =
         localStorage.getItem("full_name") ||
         localStorage.getItem("name") ||
         localStorage.getItem("username");
 
+
     const storedRole =
         localStorage.getItem("role");
 
+
     const nameElement =
         document.getElementById("userDisplayName");
+
 
     const roleElement =
         document.getElementById("userDisplayRole");
 
 
+
+
     if (nameElement && storedName) {
+
 
         nameElement.textContent =
             storedName;
     }
 
 
+
+
     if (roleElement && storedRole) {
+
 
         roleElement.textContent =
             storedRole;
@@ -133,14 +183,18 @@ function setupUserProfile() {
 }
 
 
+
+
 /* ============================================================
    GENERIC API REQUEST HELPER
 ============================================================ */
+
 
 async function apiRequest(
     url,
     options = {}
 ) {
+
 
     const response =
         await fetch(
@@ -155,10 +209,15 @@ async function apiRequest(
         );
 
 
+
+
     let data = null;
+
 
     const contentType =
         response.headers.get("content-type") || "";
+
+
 
 
     if (
@@ -167,51 +226,69 @@ async function apiRequest(
         )
     ) {
 
+
         try {
+
 
             data =
                 await response.json();
 
+
         } catch (error) {
+
 
             data = null;
         }
 
+
     } else {
 
+
         try {
+
 
             data =
                 await response.text();
 
+
         } catch (error) {
+
 
             data = null;
         }
     }
 
 
+
+
     if (!response.ok) {
+
 
         let message =
             `HTTP ${response.status}`;
+
 
         if (
             data &&
             typeof data === "object"
         ) {
 
+
             if (data.detail) {
+
 
                 if (
                     typeof data.detail ===
                     "string"
                 ) {
 
+
                     message =
                         data.detail;
 
+
                 } else {
+
 
                     message =
                         JSON.stringify(
@@ -221,37 +298,50 @@ async function apiRequest(
             }
         }
 
+
         else if (
             typeof data === "string" &&
             data.trim()
         ) {
 
+
             message = data;
         }
+
+
 
 
         const error =
             new Error(message);
 
+
         error.status =
             response.status;
+
 
         error.data =
             data;
 
+
         throw error;
     }
+
+
 
 
     return data;
 }
 
 
+
+
 /* ============================================================
    AUTH ERROR HANDLER
 ============================================================ */
 
+
 function handleAuthError(error) {
+
 
     if (
         error &&
@@ -261,10 +351,12 @@ function handleAuthError(error) {
         )
     ) {
 
+
         console.warn(
             "Authentication/authorization error:",
             error
         );
+
 
         /*
          * Do not immediately redirect here.
@@ -272,18 +364,24 @@ function handleAuthError(error) {
          * We simply notify the user.
          */
 
+
         return true;
     }
 
+
     return false;
 }
+
+
 
 
 /* ============================================================
    FETCH FARMERS
 ============================================================ */
 
+
 async function fetchFarmers() {
+
 
     const tbody =
         document.getElementById(
@@ -291,7 +389,10 @@ async function fetchFarmers() {
         );
 
 
+
+
     if (tbody) {
+
 
         tbody.innerHTML = `
             <tr>
@@ -304,12 +405,17 @@ async function fetchFarmers() {
     }
 
 
+
+
     try {
+
 
         console.log(
             "Fetching farmers:",
             FARMERS_ENDPOINT
         );
+
+
 
 
         const data =
@@ -321,18 +427,25 @@ async function fetchFarmers() {
             );
 
 
+
+
         console.log(
             "Farmers API response:",
             data
         );
 
 
+
+
         if (!Array.isArray(data)) {
+
 
             throw new Error(
                 "Invalid farmers response. Expected an array."
             );
         }
+
+
 
 
         FARMERS_DATA =
@@ -341,10 +454,16 @@ async function fetchFarmers() {
             );
 
 
+
+
         currentFarmersPage = 1;
 
 
+
+
         renderFarmersTable();
+
+
 
 
         console.log(
@@ -352,10 +471,15 @@ async function fetchFarmers() {
         );
 
 
+
+
         return FARMERS_DATA;
 
 
+
+
     } catch (error) {
+
 
         console.error(
             "Unable to load farmers:",
@@ -363,10 +487,15 @@ async function fetchFarmers() {
         );
 
 
+
+
         FARMERS_DATA = [];
 
 
+
+
         if (tbody) {
+
 
             tbody.innerHTML = `
                 <tr>
@@ -390,10 +519,16 @@ async function fetchFarmers() {
         }
 
 
+
+
         updatePagination();
 
 
+
+
         handleAuthError(error);
+
+
 
 
         return [];
@@ -401,55 +536,74 @@ async function fetchFarmers() {
 }
 
 
+
+
 /* ============================================================
    NORMALIZE FARMER DATA
 ============================================================ */
 
+
 function normalizeFarmer(farmer) {
 
+
     return {
+
 
         farmer_id:
             farmer.farmer_id ?? null,
 
+
         rsbsa_id:
             farmer.rsbsa_id ?? "",
+
 
         first_name:
             farmer.first_name ?? "",
 
+
         middle_name:
             farmer.middle_name ?? "",
+
 
         last_name:
             farmer.last_name ?? "",
 
+
         suffix:
             farmer.suffix ?? "",
+
 
         address:
             farmer.address ?? "",
 
+
         sex:
             farmer.sex ?? "",
+
 
         birthdate:
             farmer.birthdate ?? "",
 
+
         email_address:
             farmer.email_address ?? "",
+
 
         phone_number:
             farmer.phone_number ?? "",
 
+
         region:
             farmer.region ?? "",
+
 
         municipality:
             farmer.municipality ?? "",
 
+
         barangay:
             farmer.barangay ?? "",
+
 
         status:
             farmer.status ?? "Active"
@@ -457,21 +611,28 @@ function normalizeFarmer(farmer) {
 }
 
 
+
+
 /* ============================================================
    SIDEBAR
 ============================================================ */
 
+
 function initSidebar() {
+
 
     const hamburgerBtn =
         document.getElementById(
             "hamburgerBtn"
         );
 
+
     const sidebar =
         document.getElementById(
             "sidebar"
         );
+
+
 
 
     if (
@@ -482,22 +643,30 @@ function initSidebar() {
     }
 
 
+
+
     hamburgerBtn.addEventListener(
         "click",
         () => {
+
 
             sidebar.classList.toggle(
                 "open"
             );
 
 
+
+
             setTimeout(
                 () => {
 
+
                     if (mapInstance) {
+
 
                         mapInstance.invalidateSize();
                     }
+
 
                 },
                 300
@@ -507,16 +676,21 @@ function initSidebar() {
 }
 
 
+
+
 /* ============================================================
    VIEW NAVIGATION
 ============================================================ */
 
+
 function initViewNavigation() {
+
 
     const navButtons =
         document.querySelectorAll(
             ".nav-item[data-view]"
         );
+
 
     const views =
         document.querySelectorAll(
@@ -524,25 +698,34 @@ function initViewNavigation() {
         );
 
 
+
+
     navButtons.forEach(
         button => {
+
 
             button.addEventListener(
                 "click",
                 () => {
 
+
                     const targetViewKey =
                         button.dataset.view;
 
 
+
+
                     views.forEach(
                         view => {
+
 
                             view.classList.remove(
                                 "active-view"
                             );
                         }
                     );
+
+
 
 
                     const targetView =
@@ -552,7 +735,10 @@ function initViewNavigation() {
                         );
 
 
+
+
                     if (targetView) {
+
 
                         targetView.classList.add(
                             "active-view"
@@ -560,8 +746,11 @@ function initViewNavigation() {
                     }
 
 
+
+
                     navButtons.forEach(
                         navButton => {
+
 
                             navButton.classList.toggle(
                                 "active",
@@ -571,15 +760,20 @@ function initViewNavigation() {
                     );
 
 
+
+
                     if (
                         targetViewKey === "map" &&
                         mapInstance
                     ) {
 
+
                         setTimeout(
                             () => {
 
+
                                 mapInstance.invalidateSize();
+
 
                             },
                             100
@@ -592,11 +786,15 @@ function initViewNavigation() {
 }
 
 
+
+
 /* ============================================================
    SIGN OUT
 ============================================================ */
 
+
 function initSignout() {
+
 
     const signoutBtn =
         document.getElementById(
@@ -604,38 +802,50 @@ function initSignout() {
         );
 
 
+
+
     if (!signoutBtn) {
         return;
     }
+
+
 
 
     signoutBtn.addEventListener(
         "click",
         () => {
 
+
             localStorage.removeItem(
                 "access_token"
             );
+
 
             localStorage.removeItem(
                 "token"
             );
 
+
             localStorage.removeItem(
                 "full_name"
             );
+
 
             localStorage.removeItem(
                 "name"
             );
 
+
             localStorage.removeItem(
                 "username"
             );
 
+
             localStorage.removeItem(
                 "role"
             );
+
+
 
 
             window.location.href =
@@ -645,11 +855,15 @@ function initSignout() {
 }
 
 
+
+
 /* ============================================================
    LEAFLET MAP
 ============================================================ */
 
+
 function initMap() {
+
 
     const mapEl =
         document.getElementById(
@@ -657,21 +871,29 @@ function initMap() {
         );
 
 
+
+
     if (!mapEl) {
         return;
     }
+
+
 
 
     if (
         typeof L === "undefined"
     ) {
 
+
         console.warn(
             "Leaflet is not loaded."
         );
 
+
         return;
     }
+
+
 
 
     const pampangaBounds =
@@ -681,6 +903,8 @@ function initMap() {
         );
 
 
+
+
     mapInstance =
         L.map(
             "map",
@@ -688,8 +912,10 @@ function initMap() {
                 maxBounds:
                     pampangaBounds,
 
+
                 maxBoundsViscosity:
                     1.0,
+
 
                 minZoom:
                     10
@@ -701,11 +927,14 @@ function initMap() {
         );
 
 
+
+
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
             attribution:
                 "&copy; OpenStreetMap contributors",
+
 
             maxZoom:
                 18
@@ -716,11 +945,15 @@ function initMap() {
 }
 
 
+
+
 /* ============================================================
    FARMERS TABLE
 ============================================================ */
 
+
 function renderFarmersTable() {
+
 
     const tbody =
         document.getElementById(
@@ -728,12 +961,18 @@ function renderFarmersTable() {
         );
 
 
+
+
     if (!tbody) {
         return;
     }
 
 
+
+
     tbody.innerHTML = "";
+
+
 
 
     const start =
@@ -743,9 +982,13 @@ function renderFarmersTable() {
         farmersPerPage;
 
 
+
+
     const end =
         start +
         farmersPerPage;
+
+
 
 
     const paginatedItems =
@@ -755,9 +998,12 @@ function renderFarmersTable() {
         );
 
 
+
+
     if (
         paginatedItems.length === 0
     ) {
+
 
         tbody.innerHTML = `
             <tr>
@@ -773,19 +1019,27 @@ function renderFarmersTable() {
         `;
 
 
+
+
         updatePagination();
+
 
         return;
     }
 
 
+
+
     paginatedItems.forEach(
         farmer => {
+
 
             const tr =
                 createFarmerTableRow(
                     farmer
                 );
+
+
 
 
             tbody.appendChild(
@@ -795,113 +1049,96 @@ function renderFarmersTable() {
     );
 
 
+
+
     updatePagination();
 }
+
+
 
 
 /* ============================================================
    CREATE FARMER TABLE ROW
 ============================================================ */
-
 function createFarmerTableRow(farmer) {
 
-    const tr =
-        document.createElement(
-            "tr"
-        );
+
+    const tr = document.createElement("tr");
 
 
-    tr.className =
-        "clickable-row";
+    tr.className = "clickable-row";
 
 
-    const fullName =
-        getFarmerFullName(
-            farmer
-        );
+    const fullName = getFarmerFullName(farmer);
 
 
     tr.innerHTML = `
-
         <td>
             <span class="pill">
-                ${escapeHtml(
-                    fullName
-                )}
+                ${escapeHtml(fullName)}
             </span>
         </td>
 
-        <td>
-            <span class="pill">
-                ${escapeHtml(
-                    farmer.rsbsa_id || "-"
-                )}
-            </span>
-        </td>
 
         <td>
             <span class="pill">
-                ${escapeHtml(
-                    farmer.region || "-"
-                )}
+                ${escapeHtml(farmer.rsbsa_id || "-")}
             </span>
         </td>
 
-        <td>
-            <span class="pill">
-                ${escapeHtml(
-                    farmer.municipality || "-"
-                )}
-            </span>
-        </td>
 
         <td>
             <span class="pill">
-                ${escapeHtml(
-                    farmer.barangay || "-"
-                )}
+                ${escapeHtml(farmer.municipality || "-")}
             </span>
         </td>
+
+
+        <td>
+            <span class="pill">
+                ${escapeHtml(farmer.barangay || "-")}
+            </span>
+        </td>
+
 
         <td>
             <span class="status-pill active">
-                ${escapeHtml(
-                    farmer.status || "Active"
-                )}
+                ${escapeHtml(farmer.status || "Active")}
             </span>
         </td>
     `;
 
 
-    tr.addEventListener(
-        "click",
-        () => {
-
-            openManageFarmer(
-                farmer
-            );
-        }
-    );
+    tr.addEventListener("click", () => {
+        openManageFarmer(farmer);
+    });
 
 
     return tr;
 }
 
 
+
+
 /* ============================================================
    FARMER FULL NAME
 ============================================================ */
 
+
 function getFarmerFullName(farmer) {
+
 
     return [
         farmer.first_name,
+
 
         farmer.middle_name
             ? farmer.middle_name.charAt(0) + "."
             : "",
 
+
         farmer.last_name,
+
 
         farmer.suffix
     ]
@@ -910,26 +1147,33 @@ function getFarmerFullName(farmer) {
 }
 
 
+
+
 /* ============================================================
    PAGINATION
 ============================================================ */
 
+
 function updatePagination() {
+
 
     const paginationInfo =
         document.getElementById(
             "paginationInfo"
         );
 
+
     const pageNumberBtns =
         document.getElementById(
             "pageNumberBtns"
         );
 
+
     const prevPageBtn =
         document.getElementById(
             "prevPageBtn"
         );
+
 
     const nextPageBtn =
         document.getElementById(
@@ -937,8 +1181,12 @@ function updatePagination() {
         );
 
 
+
+
     const total =
         FARMERS_DATA.length;
+
+
 
 
     const totalPages =
@@ -951,14 +1199,19 @@ function updatePagination() {
         );
 
 
+
+
     if (
         currentFarmersPage >
         totalPages
     ) {
 
+
         currentFarmersPage =
             totalPages;
     }
+
+
 
 
     const start =
@@ -972,6 +1225,8 @@ function updatePagination() {
             ) + 1;
 
 
+
+
     const end =
         Math.min(
             currentFarmersPage *
@@ -980,21 +1235,30 @@ function updatePagination() {
         );
 
 
+
+
     if (paginationInfo) {
+
 
         paginationInfo.textContent =
             `Showing ${start}-${end} of ${total} farmers`;
     }
 
 
+
+
     if (prevPageBtn) {
+
 
         prevPageBtn.disabled =
             currentFarmersPage <= 1;
     }
 
 
+
+
     if (nextPageBtn) {
+
 
         nextPageBtn.disabled =
             currentFarmersPage >=
@@ -1002,9 +1266,14 @@ function updatePagination() {
     }
 
 
+
+
     if (pageNumberBtns) {
 
+
         pageNumberBtns.innerHTML = "";
+
+
 
 
         for (
@@ -1013,10 +1282,13 @@ function updatePagination() {
             i++
         ) {
 
+
             const pageBtn =
                 document.createElement(
                     "button"
                 );
+
+
 
 
             pageBtn.className =
@@ -1027,24 +1299,34 @@ function updatePagination() {
                 }`;
 
 
+
+
             pageBtn.textContent =
                 i;
+
+
 
 
             pageBtn.type =
                 "button";
 
 
+
+
             pageBtn.addEventListener(
                 "click",
                 () => {
 
+
                     currentFarmersPage =
                         i;
+
 
                     renderFarmersTable();
                 }
             );
+
+
 
 
             pageNumberBtns.appendChild(
@@ -1055,11 +1337,15 @@ function updatePagination() {
 }
 
 
+
+
 /* ============================================================
    FARMER SEARCH
 ============================================================ */
 
+
 function initFarmerSearch() {
+
 
     const searchInput =
         document.getElementById(
@@ -1067,14 +1353,19 @@ function initFarmerSearch() {
         );
 
 
+
+
     if (!searchInput) {
         return;
     }
 
 
+
+
     searchInput.addEventListener(
         "input",
         () => {
+
 
             const keyword =
                 searchInput.value
@@ -1082,54 +1373,79 @@ function initFarmerSearch() {
                     .trim();
 
 
+
+
             if (!keyword) {
+
 
                 currentFarmersPage =
                     1;
 
+
                 renderFarmersTable();
+
 
                 return;
             }
+
+
 
 
             const filtered =
                 FARMERS_DATA.filter(
                     farmer => {
 
+
                         const searchableText = [
+
 
                             farmer.rsbsa_id,
 
+
                             farmer.first_name,
+
 
                             farmer.middle_name,
 
+
                             farmer.last_name,
+
 
                             farmer.suffix,
 
+
                             farmer.address,
+
 
                             farmer.email_address,
 
+
                             farmer.phone_number,
+
 
                             farmer.sex,
 
+
                             farmer.birthdate,
+
 
                             farmer.region,
 
+
                             farmer.municipality,
+
 
                             farmer.barangay,
 
+
                             farmer.status
+
 
                         ]
                         .join(" ")
                         .toLowerCase();
+
+
 
 
                         return searchableText
@@ -1140,8 +1456,12 @@ function initFarmerSearch() {
                 );
 
 
+
+
             currentFarmersPage =
                 1;
+
+
 
 
             renderFilteredFarmers(
@@ -1152,11 +1472,15 @@ function initFarmerSearch() {
 }
 
 
+
+
 /* ============================================================
    RENDER SEARCH RESULTS
 ============================================================ */
 
+
 function renderFilteredFarmers(data) {
+
 
     const tbody =
         document.getElementById(
@@ -1164,15 +1488,22 @@ function renderFilteredFarmers(data) {
         );
 
 
+
+
     if (!tbody) {
         return;
     }
 
 
+
+
     tbody.innerHTML = "";
 
 
+
+
     if (data.length === 0) {
+
 
         tbody.innerHTML = `
             <tr>
@@ -1188,21 +1519,29 @@ function renderFilteredFarmers(data) {
         `;
 
 
+
+
         updateSearchPaginationText(
             0
         );
+
 
         return;
     }
 
 
+
+
     data.forEach(
         farmer => {
+
 
             const tr =
                 createFarmerTableRow(
                     farmer
                 );
+
+
 
 
             tbody.appendChild(
@@ -1212,19 +1551,25 @@ function renderFilteredFarmers(data) {
     );
 
 
+
+
     updateSearchPaginationText(
         data.length
     );
 }
 
 
+
+
 /* ============================================================
    SEARCH PAGINATION TEXT
 ============================================================ */
 
+
 function updateSearchPaginationText(
     resultCount
 ) {
+
 
     const paginationInfo =
         document.getElementById(
@@ -1232,9 +1577,13 @@ function updateSearchPaginationText(
         );
 
 
+
+
     if (!paginationInfo) {
         return;
     }
+
+
 
 
     paginationInfo.textContent =
@@ -1242,56 +1591,69 @@ function updateSearchPaginationText(
 }
 
 
+
+
 /* ============================================================
    FARMER SUBVIEWS
 ============================================================ */
 
+
 function initFarmerSubviews() {
+
 
     const listSubview =
         document.getElementById(
             "farmersListSubview"
         );
 
+
     const regSubview =
         document.getElementById(
             "registerFarmerSubview"
         );
+
 
     const manSubview =
         document.getElementById(
             "manageFarmerSubview"
         );
 
+
     const addBtn =
         document.getElementById(
             "addFarmerBtn"
         );
+
 
     const cancelRegBtn =
         document.getElementById(
             "cancelRegisterFarmerBtn"
         );
 
+
     const backManBtn =
         document.getElementById(
             "backFromManageFarmerBtn"
         );
+
 
     const regForm =
         document.getElementById(
             "registerFarmerForm"
         );
 
+
     const toggleEditBtn =
         document.getElementById(
             "toggleEditFarmerBtn"
         );
 
+
     const deleteBtn =
         document.getElementById(
             "deleteFarmerBtn"
         );
+
 
     const confirmDeleteBtn =
         document.getElementById(
@@ -1299,25 +1661,35 @@ function initFarmerSubviews() {
         );
 
 
+
+
     /* --------------------------------------------------------
        SEARCH
     -------------------------------------------------------- */
 
+
     initFarmerSearch();
+
+
 
 
     /* --------------------------------------------------------
        ADD FARMER
     -------------------------------------------------------- */
 
+
     addBtn?.addEventListener(
         "click",
         () => {
 
+
             if (regForm) {
+
 
                 regForm.reset();
             }
+
+
 
 
             setValue(
@@ -1326,9 +1698,13 @@ function initFarmerSubviews() {
             );
 
 
+
+
             listSubview?.classList.add(
                 "hidden-element"
             );
+
+
 
 
             regSubview?.classList.remove(
@@ -1338,17 +1714,23 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        CANCEL REGISTER
     -------------------------------------------------------- */
+
 
     cancelRegBtn?.addEventListener(
         "click",
         () => {
 
+
             regSubview?.classList.add(
                 "hidden-element"
             );
+
+
 
 
             listSubview?.classList.remove(
@@ -1358,17 +1740,23 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        BACK FROM MANAGE
     -------------------------------------------------------- */
+
 
     backManBtn?.addEventListener(
         "click",
         () => {
 
+
             manSubview?.classList.add(
                 "hidden-element"
             );
+
+
 
 
             listSubview?.classList.remove(
@@ -1376,8 +1764,12 @@ function initFarmerSubviews() {
             );
 
 
+
+
             currentActiveFarmer =
                 null;
+
+
 
 
             isEditMode =
@@ -1386,63 +1778,79 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        REGISTER FARMER
     -------------------------------------------------------- */
+
 
     regForm?.addEventListener(
         "submit",
         async event => {
 
+
             event.preventDefault();
 
 
+
+
             const farmerData = {
+
 
                 rsbsa_id:
                     getValue(
                         "regFarmerId"
                     ),
 
+
                 first_name:
                     getValue(
                         "regFirstName"
                     ),
+
 
                 middle_name:
                     getValue(
                         "regMiddleName"
                     ),
 
+
                 last_name:
                     getValue(
                         "regLastName"
                     ),
+
 
                 suffix:
                     getValue(
                         "regSuffix"
                     ),
 
+
                 address:
                     getValue(
                         "regAddress"
                     ),
+
 
                 sex:
                     getValue(
                         "regSex"
                     ),
 
+
                 birthdate:
                     getValue(
                         "regBirthdate"
                     ),
 
+
                 phone_number:
                     getValue(
                         "regPhone"
                     ),
+
 
                 email_address:
                     getValue(
@@ -1451,19 +1859,25 @@ function initFarmerSubviews() {
             };
 
 
+
+
             console.log(
                 "Submitting farmer:",
                 farmerData
             );
 
 
+
+
             try {
+
 
                 const createdFarmer =
                     await apiRequest(
                         FARMERS_ENDPOINT,
                         {
                             method: "POST",
+
 
                             body:
                                 JSON.stringify(
@@ -1473,13 +1887,19 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 console.log(
                     "Created farmer:",
                     createdFarmer
                 );
 
 
+
+
                 await fetchFarmers();
+
+
 
 
                 document
@@ -1491,7 +1911,10 @@ function initFarmerSubviews() {
                     );
 
 
+
+
             } catch (error) {
+
 
                 console.error(
                     "Create farmer error:",
@@ -1499,9 +1922,13 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 handleAuthError(
                     error
                 );
+
+
 
 
                 alert(
@@ -1516,9 +1943,12 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        CLOSE FARMER ADDED MODAL
     -------------------------------------------------------- */
+
 
     document
         .getElementById(
@@ -1527,6 +1957,7 @@ function initFarmerSubviews() {
         ?.addEventListener(
             "click",
             () => {
+
 
                 document
                     .getElementById(
@@ -1537,9 +1968,13 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 regSubview?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 listSubview?.classList.remove(
@@ -1549,13 +1984,17 @@ function initFarmerSubviews() {
         );
 
 
+
+
     /* --------------------------------------------------------
        EDIT / SAVE FARMER
     -------------------------------------------------------- */
 
+
     toggleEditBtn?.addEventListener(
         "click",
         async () => {
+
 
             const editableInputs =
                 document.querySelectorAll(
@@ -1563,22 +2002,32 @@ function initFarmerSubviews() {
                 );
 
 
+
+
             if (!isEditMode) {
+
 
                 isEditMode =
                     true;
 
 
+
+
                 editableInputs.forEach(
                     input => {
+
 
                         input.readOnly =
                             false;
 
 
+
+
                         input.classList.add(
                             "input-editable-active"
                         );
+
+
 
 
                         input.classList.remove(
@@ -1588,35 +2037,48 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 toggleEditBtn.textContent =
                     "Save Changes";
+
+
 
 
                 return;
             }
 
 
+
+
             if (!currentActiveFarmer) {
+
 
                 alert(
                     "No farmer selected."
                 );
 
+
                 return;
             }
 
 
+
+
             const updateData = {
+
 
                 address:
                     getValue(
                         "manAddress"
                     ),
 
+
                 phone_number:
                     getValue(
                         "manPhone"
                     ),
+
 
                 email_address:
                     getValue(
@@ -1625,10 +2087,15 @@ function initFarmerSubviews() {
             };
 
 
+
+
             try {
+
 
                 const farmerId =
                     currentActiveFarmer.farmer_id;
+
+
 
 
                 const response =
@@ -1636,6 +2103,7 @@ function initFarmerSubviews() {
                         `${FARMERS_ENDPOINT}${farmerId}`,
                         {
                             method: "PUT",
+
 
                             body:
                                 JSON.stringify(
@@ -1645,26 +2113,37 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 console.log(
                     "Updated farmer:",
                     response
                 );
 
 
+
+
                 isEditMode =
                     false;
+
+
 
 
                 editableInputs.forEach(
                     input => {
 
+
                         input.readOnly =
                             true;
+
+
 
 
                         input.classList.remove(
                             "input-editable-active"
                         );
+
+
 
 
                         input.classList.add(
@@ -1674,11 +2153,17 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 toggleEditBtn.textContent =
                     "Edit Contact Info";
 
 
+
+
                 await fetchFarmers();
+
+
 
 
                 const updatedFarmer =
@@ -1689,7 +2174,10 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 if (updatedFarmer) {
+
 
                     openManageFarmer(
                         updatedFarmer
@@ -1697,12 +2185,17 @@ function initFarmerSubviews() {
                 }
 
 
+
+
                 alert(
                     "Farmer updated successfully."
                 );
 
 
+
+
             } catch (error) {
+
 
                 console.error(
                     "Update farmer error:",
@@ -1710,9 +2203,13 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 handleAuthError(
                     error
                 );
+
+
 
 
                 alert(
@@ -1727,22 +2224,30 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        DELETE BUTTON
     -------------------------------------------------------- */
+
 
     deleteBtn?.addEventListener(
         "click",
         () => {
 
+
             if (!currentActiveFarmer) {
+
 
                 alert(
                     "No farmer selected."
                 );
 
+
                 return;
             }
+
+
 
 
             document
@@ -1756,23 +2261,32 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        CONFIRM DELETE
     -------------------------------------------------------- */
 
+
     confirmDeleteBtn?.addEventListener(
         "click",
         async () => {
+
 
             if (!currentActiveFarmer) {
                 return;
             }
 
 
+
+
             try {
+
 
                 const farmerId =
                     currentActiveFarmer.farmer_id;
+
+
 
 
                 await apiRequest(
@@ -1781,6 +2295,8 @@ function initFarmerSubviews() {
                         method: "DELETE"
                     }
                 );
+
+
 
 
                 document
@@ -1792,11 +2308,17 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 currentActiveFarmer =
                     null;
 
 
+
+
                 await fetchFarmers();
+
+
 
 
                 manSubview?.classList.add(
@@ -1804,9 +2326,13 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 listSubview?.classList.remove(
                     "hidden-element"
                 );
+
+
 
 
                 alert(
@@ -1814,7 +2340,10 @@ function initFarmerSubviews() {
                 );
 
 
+
+
             } catch (error) {
+
 
                 console.error(
                     "Delete farmer error:",
@@ -1822,9 +2351,13 @@ function initFarmerSubviews() {
                 );
 
 
+
+
                 handleAuthError(
                     error
                 );
+
+
 
 
                 alert(
@@ -1839,9 +2372,12 @@ function initFarmerSubviews() {
     );
 
 
+
+
     /* --------------------------------------------------------
        PAGINATION PREVIOUS
     -------------------------------------------------------- */
+
 
     document
         .getElementById(
@@ -1851,11 +2387,14 @@ function initFarmerSubviews() {
             "click",
             () => {
 
+
                 if (
                     currentFarmersPage > 1
                 ) {
 
+
                     currentFarmersPage--;
+
 
                     renderFarmersTable();
                 }
@@ -1863,9 +2402,12 @@ function initFarmerSubviews() {
         );
 
 
+
+
     /* --------------------------------------------------------
        PAGINATION NEXT
     -------------------------------------------------------- */
+
 
     document
         .getElementById(
@@ -1874,6 +2416,7 @@ function initFarmerSubviews() {
         ?.addEventListener(
             "click",
             () => {
+
 
                 const totalPages =
                     Math.max(
@@ -1885,12 +2428,16 @@ function initFarmerSubviews() {
                     );
 
 
+
+
                 if (
                     currentFarmersPage <
                     totalPages
                 ) {
 
+
                     currentFarmersPage++;
+
 
                     renderFarmersTable();
                 }
@@ -1898,10 +2445,13 @@ function initFarmerSubviews() {
         );
 
 
+
+
     /* --------------------------------------------------------
        CLOSE DELETE MODAL
        Supports common close button IDs if present.
     -------------------------------------------------------- */
+
 
     const closeDeleteModalIds = [
         "closeDeleteFarmerBtn",
@@ -1909,14 +2459,18 @@ function initFarmerSubviews() {
     ];
 
 
+
+
     closeDeleteModalIds.forEach(
         id => {
+
 
             document
                 .getElementById(id)
                 ?.addEventListener(
                     "click",
                     () => {
+
 
                         document
                             .getElementById(
@@ -1932,25 +2486,35 @@ function initFarmerSubviews() {
 }
 
 
+
+
 /* ============================================================
    OPEN MANAGE FARMER
 ============================================================ */
 
+
 function openManageFarmer(
     farmer
 ) {
+
 
     if (!farmer) {
         return;
     }
 
 
+
+
     currentActiveFarmer =
         farmer;
 
 
+
+
     isEditMode =
         false;
+
+
 
 
     setValue(
@@ -1959,10 +2523,14 @@ function openManageFarmer(
     );
 
 
+
+
     setValue(
         "manAddress",
         farmer.address || ""
     );
+
+
 
 
     setValue(
@@ -1971,10 +2539,14 @@ function openManageFarmer(
     );
 
 
+
+
     setValue(
         "manMiddleName",
         farmer.middle_name || ""
     );
+
+
 
 
     setValue(
@@ -1983,10 +2555,14 @@ function openManageFarmer(
     );
 
 
+
+
     setValue(
         "manSuffix",
         farmer.suffix || ""
     );
+
+
 
 
     setValue(
@@ -1995,10 +2571,14 @@ function openManageFarmer(
     );
 
 
+
+
     setValue(
         "manBirthdate",
         farmer.birthdate || ""
     );
+
+
 
 
     setValue(
@@ -2007,10 +2587,14 @@ function openManageFarmer(
     );
 
 
+
+
     setValue(
         "manEmail",
         farmer.email_address || ""
     );
+
+
 
 
     document
@@ -2020,13 +2604,18 @@ function openManageFarmer(
         .forEach(
             input => {
 
+
                 input.readOnly =
                     true;
+
+
 
 
                 input.classList.remove(
                     "input-editable-active"
                 );
+
+
 
 
                 input.classList.add(
@@ -2036,17 +2625,24 @@ function openManageFarmer(
         );
 
 
+
+
     const editBtn =
         document.getElementById(
             "toggleEditFarmerBtn"
         );
 
 
+
+
     if (editBtn) {
+
 
         editBtn.textContent =
             "Edit Contact Info";
     }
+
+
 
 
     document
@@ -2058,6 +2654,8 @@ function openManageFarmer(
         );
 
 
+
+
     document
         .getElementById(
             "manageFarmerSubview"
@@ -2066,7 +2664,6 @@ function openManageFarmer(
             "hidden-element"
         );
 }
-
 /* ============================================================
    PLANTING INTENT
 ============================================================ */
@@ -2094,6 +2691,7 @@ function initPlantingIntent() {
         document.getElementById(
             "plantIntentSubmittedModal"
         );
+
 
     /* --------------------------------------------------------
        LOAD PLANTING INTENTS
@@ -2191,11 +2789,6 @@ function initPlantingIntent() {
                     "hidden-element"
                 );
 
-                /*
-                 * Refresh the table after
-                 * successfully adding a planting intent.
-                 */
-
                 fetchPlantingIntents();
             }
         );
@@ -2213,12 +2806,13 @@ async function fetchPlantingIntents() {
             "plantingIntentsTableBody"
         );
 
+
     if (tbody) {
 
         tbody.innerHTML = `
             <tr>
                 <td
-                    colspan="7"
+                    colspan="6"
                     style="
                         padding:30px;
                         text-align:center;
@@ -2253,10 +2847,6 @@ async function fetchPlantingIntents() {
             data
         );
 
-
-        /*
-         * FastAPI should return an array.
-         */
 
         if (!Array.isArray(data)) {
 
@@ -2302,7 +2892,7 @@ async function fetchPlantingIntents() {
             tbody.innerHTML = `
                 <tr>
                     <td
-                        colspan="7"
+                        colspan="6"
                         style="
                             padding:30px;
                             text-align:center;
@@ -2325,63 +2915,16 @@ async function fetchPlantingIntents() {
 
         handleAuthError(error);
 
+
         return [];
     }
 }
 
+
 /* ============================================================
    NORMALIZE PLANTING INTENT
 ============================================================ */
-function normalizePlantingIntent(intent) {
 
-    return {
-
-        planting_intent_id:
-            intent.planting_intent_id ??
-            intent.id ??
-            null,
-
-        farmer_id:
-            intent.farmer_id ??
-            null,
-
-        farmer_name:
-            intent.farmer_name ??
-            "-",
-
-        commodity:
-            intent.commodity ??
-            "-",
-
-        volume:
-            intent.volume ??
-            "",
-
-        location:
-            intent.location ??
-            "-",
-
-        planting_date:
-            intent.planting_date ??
-            "",
-
-        harvest_date:
-            intent.harvest_date ??
-            "",
-
-        remarks:
-            intent.remarks ??
-            "",
-
-        status:
-            intent.status ??
-            "Pending",
-
-        created_at:
-            intent.created_at ??
-            null
-    };
-}
 function normalizePlantingIntent(intent) {
 
     return {
@@ -2392,21 +2935,25 @@ function normalizePlantingIntent(intent) {
             intent.id ??
             null,
 
+
         // FARMER
         farmer_id:
             intent.farmer_id ??
             null,
+
 
         farmer_name:
             intent.farmer_name ??
             intent.name ??
             "-",
 
+
         // COMMODITY
         commodity:
             intent.commodity ??
             intent.crop ??
             "-",
+
 
         // VOLUME
         volume:
@@ -2415,6 +2962,7 @@ function normalizePlantingIntent(intent) {
             intent.quantity ??
             "",
 
+
         // LOCATION
         location:
             intent.location ??
@@ -2422,27 +2970,24 @@ function normalizePlantingIntent(intent) {
             intent.barangay ??
             "-",
 
+
         // DATES
         planting_date:
             intent.planting_date ??
             "",
+
 
         harvest_date:
             intent.harvest_date ??
             intent.expected_harvest_date ??
             "",
 
+
         // REMARKS
         remarks:
             intent.remarks ??
             "",
 
-        // STATUS
-        // Current backend does not return status,
-        // so default to Pending.
-        status:
-            intent.status ??
-            "Pending",
 
         // CREATED AT
         created_at:
@@ -2489,7 +3034,7 @@ function renderPlantingIntentsTable() {
         tbody.innerHTML = `
             <tr>
                 <td
-                    colspan="7"
+                    colspan="6"
                     style="
                         padding:30px;
                         text-align:center;
@@ -2512,10 +3057,6 @@ function renderPlantingIntentsTable() {
     PLANTING_INTENTS_DATA.forEach(
         rawIntent => {
 
-            /*
-             * Always normalize the backend response
-             * before displaying it.
-             */
             const intent =
                 normalizePlantingIntent(
                     rawIntent
@@ -2583,20 +3124,6 @@ function renderPlantingIntentsTable() {
                     )}
                 </td>
 
-
-                <!-- STATUS -->
-                <td>
-                    <span
-                        class="status-pill ${getPlantingStatusClass(
-                            intent.status
-                        )}"
-                    >
-                        ${escapeHtml(
-                            intent.status || "Pending"
-                        )}
-                    </span>
-                </td>
-
             `;
 
 
@@ -2606,6 +3133,7 @@ function renderPlantingIntentsTable() {
         }
     );
 }
+
 
 /* ============================================================
    SUBMIT PLANTING INTENT TO FASTAPI
@@ -2618,14 +3146,18 @@ async function submitPlantingIntent() {
             "submitPlantIntentForm"
         );
 
+
     if (!form) {
-        alert("Planting Intent form not found.");
+
+        alert(
+            "Planting Intent form not found."
+        );
+
         return;
     }
 
 
     /*
-     * IMPORTANT:
      * Actual HTML order:
      *
      * 0 = Farmer Name
@@ -2645,17 +3177,22 @@ async function submitPlantingIntent() {
     const farmerName =
         inputs[0]?.value.trim() || "";
 
+
     const plantingDate =
         inputs[1]?.value || "";
+
 
     const farmerId =
         inputs[2]?.value.trim() || "";
 
+
     const harvestDate =
         inputs[3]?.value || "";
 
+
     const commodity =
         inputs[4]?.value.trim() || "";
+
 
     const volume =
         inputs[5]?.value || "";
@@ -2666,32 +3203,61 @@ async function submitPlantingIntent() {
      */
 
     if (!farmerName) {
-        alert("Please enter Farmer Name.");
+
+        alert(
+            "Please enter Farmer Name."
+        );
+
         return;
     }
+
 
     if (!farmerId) {
-        alert("Please enter Farmer ID.");
+
+        alert(
+            "Please enter Farmer ID."
+        );
+
         return;
     }
+
 
     if (!plantingDate) {
-        alert("Please select Planting Date.");
+
+        alert(
+            "Please select Planting Date."
+        );
+
         return;
     }
+
 
     if (!harvestDate) {
-        alert("Please select Harvest Date.");
+
+        alert(
+            "Please select Harvest Date."
+        );
+
         return;
     }
+
 
     if (!commodity) {
-        alert("Please enter Commodity.");
+
+        alert(
+            "Please enter Commodity."
+        );
+
         return;
     }
 
+
     if (!volume) {
-        alert("Please enter Volume.");
+
+        alert(
+            "Please enter Volume."
+        );
+
         return;
     }
 
@@ -2709,9 +3275,11 @@ async function submitPlantingIntent() {
             parsedFarmerId
         )
     ) {
+
         alert(
             "Farmer ID must be a valid number."
         );
+
         return;
     }
 
@@ -2729,9 +3297,11 @@ async function submitPlantingIntent() {
             parsedVolume
         )
     ) {
+
         alert(
             "Volume must be a valid number."
         );
+
         return;
     }
 
@@ -2830,6 +3400,7 @@ async function submitPlantingIntent() {
     }
 }
 
+
 /* ============================================================
    FORMAT PLANTING DATE
 ============================================================ */
@@ -2927,80 +3498,31 @@ function formatPlantingVolume(
         volume
     );
 }
-
-
-/* ============================================================
-   STATUS CLASS
-============================================================ */
-
-function getPlantingStatusClass(
-    status
-) {
-
-    const normalized =
-        String(
-            status || "pending"
-        )
-        .toLowerCase()
-        .trim();
-
-
-    if (
-        normalized === "confirmed"
-    ) {
-
-        return "confirmed";
-    }
-
-
-    if (
-        normalized === "approved"
-    ) {
-
-        return "approved";
-    }
-
-
-    if (
-        normalized === "rejected"
-    ) {
-
-        return "rejected";
-    }
-
-
-    if (
-        normalized === "cancelled" ||
-        normalized === "canceled"
-    ) {
-
-        return "cancelled";
-    }
-
-
-    return "pending";
-}
-
 /* ============================================================
    OFFTAKE REQUEST
 ============================================================ */
 
+
 function initOfftakeRequest() {
+
 
     const list =
         document.getElementById(
             "offtakeListSubview"
         );
 
+
     const submitSub =
         document.getElementById(
             "submitOfftakeSubview"
         );
 
+
     const confirmSub =
         document.getElementById(
             "confirmOfftakeSubview"
         );
+
 
     const modal =
         document.getElementById(
@@ -3008,7 +3530,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* CREATE */
+
 
     document
         .getElementById(
@@ -3018,9 +3543,12 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 list?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 submitSub?.classList.remove(
@@ -3030,7 +3558,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* RETURN */
+
 
     document
         .getElementById(
@@ -3040,9 +3571,12 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 submitSub?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 list?.classList.remove(
@@ -3052,7 +3586,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* PROCEED */
+
 
     document
         .getElementById(
@@ -3062,9 +3599,12 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 submitSub?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 confirmSub?.classList.remove(
@@ -3074,7 +3614,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* BACK */
+
 
     document
         .getElementById(
@@ -3084,9 +3627,12 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 confirmSub?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 submitSub?.classList.remove(
@@ -3096,7 +3642,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* SEND */
+
 
     document
         .getElementById(
@@ -3106,6 +3655,7 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 modal?.classList.add(
                     "show"
                 );
@@ -3113,7 +3663,10 @@ function initOfftakeRequest() {
         );
 
 
+
+
     /* CLOSE */
+
 
     document
         .getElementById(
@@ -3123,14 +3676,19 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+
                 modal?.classList.remove(
                     "show"
                 );
 
 
+
+
                 confirmSub?.classList.add(
                     "hidden-element"
                 );
+
+
 
 
                 list?.classList.remove(
@@ -3141,21 +3699,28 @@ function initOfftakeRequest() {
 }
 
 
+
+
 /* ============================================================
    FAIR PRICE
 ============================================================ */
 
+
 function initFairPrice() {
+
 
     const select =
         document.getElementById(
             "fairPriceCropSelect"
         );
 
+
     const img =
         document.getElementById(
             "cropImageDisplay"
         );
+
+
 
 
     if (
@@ -3166,22 +3731,30 @@ function initFairPrice() {
     }
 
 
+
+
     select.addEventListener(
         "change",
         event => {
 
+
             const crop =
                 event.target.value;
+
+
 
 
             if (
                 crop === "tomato"
             ) {
 
+
                 img.src =
                     "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80";
 
+
             } else {
+
 
                 img.src =
                     "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80";
@@ -3191,11 +3764,15 @@ function initFairPrice() {
 }
 
 
+
+
 /* ============================================================
    HELPER — GET INPUT VALUE
 ============================================================ */
 
+
 function getValue(id) {
+
 
     const element =
         document.getElementById(
@@ -3203,9 +3780,13 @@ function getValue(id) {
         );
 
 
+
+
     if (!element) {
         return "";
     }
+
+
 
 
     return (
@@ -3215,14 +3796,18 @@ function getValue(id) {
 }
 
 
+
+
 /* ============================================================
    HELPER — SET INPUT VALUE
 ============================================================ */
+
 
 function setValue(
     id,
     value
 ) {
+
 
     const element =
         document.getElementById(
@@ -3230,7 +3815,10 @@ function setValue(
         );
 
 
+
+
     if (element) {
+
 
         element.value =
             value ?? "";
@@ -3238,13 +3826,17 @@ function setValue(
 }
 
 
+
+
 /* ============================================================
    HELPER — ESCAPE HTML
 ============================================================ */
 
+
 function escapeHtml(
     value
 ) {
+
 
     return String(
         value ?? ""
@@ -3272,22 +3864,32 @@ function escapeHtml(
 }
 
 
+
+
 /* ============================================================
    OPTIONAL DEBUG HELPERS
 ============================================================ */
 
+
 function getCurrentFarmer() {
+
 
     return currentActiveFarmer;
 }
 
 
+
+
 function getAllFarmers() {
+
 
     return FARMERS_DATA;
 }
 
 
+
+
 /* ============================================================
    END OF AEW.JS
 ============================================================ */
+

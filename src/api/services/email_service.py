@@ -7,6 +7,10 @@ from brevo.transactional_emails import (
 from src.core.config import settings
 
 
+# ============================================================
+# TEST EMAIL
+# ============================================================
+
 async def send_test_email(recipient_email: str):
     client = AsyncBrevo(
         api_key=settings.BREVO_API_KEY
@@ -59,6 +63,10 @@ async def send_test_email(recipient_email: str):
     return result.message_id
 
 
+# ============================================================
+# OFFTAKE REQUEST EMAIL
+# ============================================================
+
 async def send_offtake_request_email(
     buyer_email: str,
     buyer_name: str,
@@ -77,7 +85,9 @@ async def send_offtake_request_email(
         <body>
             <h2>eSaka - New Offtake Request</h2>
 
-            <p>Hello <strong>{buyer_name}</strong>,</p>
+            <p>
+                Hello <strong>{buyer_name}</strong>,
+            </p>
 
             <p>
                 A farmer has submitted a new offtake request
@@ -123,6 +133,92 @@ async def send_offtake_request_email(
             SendTransacEmailRequestToItem(
                 email=buyer_email,
                 name=buyer_name,
+            )
+        ],
+    )
+
+    return result.message_id
+
+
+# ============================================================
+# PASSWORD RESET EMAIL
+# ============================================================
+
+async def send_password_reset_email(
+    recipient_email: str,
+    reset_link: str,
+):
+    client = AsyncBrevo(
+        api_key=settings.BREVO_API_KEY
+    )
+
+    html_content = f"""
+    <html>
+        <body>
+
+            <h2>eSaka - Password Reset</h2>
+
+            <p>Hello,</p>
+
+            <p>
+                We received a request to reset your
+                eSaka account password.
+            </p>
+
+            <p>
+                Click the button below to create
+                a new password:
+            </p>
+
+            <p>
+                <a href="{reset_link}"
+                   style="
+                   display:inline-block;
+                   padding:12px 20px;
+                   background-color:#2e7d32;
+                   color:white;
+                   text-decoration:none;
+                   border-radius:6px;
+                   font-weight:bold;">
+                    Reset Password
+                </a>
+            </p>
+
+            <p>
+                This password reset link will expire
+                in <strong>30 minutes</strong>.
+            </p>
+
+            <p>
+                If you did not request a password reset,
+                you can safely ignore this email.
+            </p>
+
+            <br>
+
+            <p>
+                Regards,<br>
+                <strong>eSaka Region 3</strong>
+            </p>
+
+        </body>
+    </html>
+    """
+
+    result = await client.transactional_emails.send_transac_email(
+        subject="eSaka - Password Reset",
+
+        html_content=html_content,
+
+        sender=SendTransacEmailRequestSender(
+            name=settings.BREVO_SENDER_NAME,
+            email=settings.BREVO_SENDER_EMAIL,
+        ),
+
+        to=[
+            SendTransacEmailRequestToItem(
+                email=recipient_email,
+                name="eSaka User",
             )
         ],
     )

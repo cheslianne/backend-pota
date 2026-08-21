@@ -5,13 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEW — eSaka</title>
 
+
+
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+
+
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
+
+
+
 
   <style>
     :root{
@@ -33,7 +42,13 @@
       --radius-md:8px;
     }
 
+
+
+
     *{ margin:0; padding:0; box-sizing:border-box; }
+
+
+
 
     html, body{
       width:100%;
@@ -43,11 +58,14 @@
       color:var(--ink);
     }
 
-    a{ color:inherit; }
 
-    button, input, select, textarea{
-      font-family:'Inter', sans-serif;
-    }
+
+
+    a{ color:inherit; }
+    button, input, select, textarea{ font-family:'Inter', sans-serif; }
+
+
+
 
     .topbar{
       display:flex;
@@ -61,11 +79,13 @@
       z-index:2100;
     }
 
-    .topbar-left{
-      display:flex;
-      align-items:center;
-      gap:16px;
-    }
+
+
+
+    .topbar-left{ display:flex; align-items:center; gap:16px; }
+
+
+
 
     .hamburger{
       background:none;
@@ -77,6 +97,9 @@
       gap:5px;
     }
 
+
+
+
     .hamburger span{
       display:block;
       width:26px;
@@ -85,16 +108,14 @@
       border-radius:2px;
     }
 
-    .logos{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
 
-    .seal{
-      width:44px;
-      height:44px;
-    }
+
+
+    .logos{ display:flex; align-items:center; gap:10px; }
+    .seal{ width:44px; height:44px; }
+
+
+
 
     .brand-word{
       font-family:'Dancing Script', cursive;
@@ -104,16 +125,14 @@
       margin-left:-6px;
     }
 
-    .brand-logo svg{
-      width:60px;
-      height:50px;
-    }
 
-    .topbar-right{
-      display:flex;
-      align-items:center;
-      gap:18px;
-    }
+
+
+    .brand-logo svg{ width:60px; height:50px; }
+    .topbar-right{ display:flex; align-items:center; gap:18px; }
+
+
+
 
     .bell-wrap{
       position:relative;
@@ -128,11 +147,13 @@
       flex-shrink:0;
     }
 
-    .bell-wrap svg{
-      width:18px;
-      height:18px;
-      fill:#fff;
-    }
+
+
+
+    .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
+
+
 
     .bell-dot{
       position:absolute;
@@ -145,28 +166,16 @@
       border:2px solid var(--cream);
     }
 
-    .user-info{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
 
-    .user-text{
-      text-align:right;
-      line-height:1.25;
-    }
 
-    .user-name{
-      font-size:14px;
-      font-weight:700;
-      color:var(--ink);
-    }
 
-    .user-role{
-      font-size:12px;
-      font-weight:600;
-      color:var(--gold);
-    }
+    .user-info{ display:flex; align-items:center; gap:10px; }
+    .user-text{ text-align:right; line-height:1.25; }
+    .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
+    .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
+
+
 
     .avatar{
       width:38px;
@@ -178,16 +187,18 @@
       justify-content:center;
     }
 
-    .avatar svg{
-      width:20px;
-      height:20px;
-      fill:#fff;
-    }
 
-    .layout{
-      display:flex;
-      min-height:calc(100vh - 73px);
-    }
+
+
+    .avatar svg{ width:20px; height:20px; fill:#fff; }
+
+
+
+
+    .layout{ display:flex; min-height:calc(100vh - 73px); }
+
+
+
 
     .sidebar{
       width:230px;
@@ -206,15 +217,18 @@
       transition:left .28s ease;
     }
 
-    .sidebar.open{
-      left:0;
-    }
 
-    .nav-list{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
+
+
+    .sidebar.open{ left:0; }
+
+
+
+
+    .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
+
+
 
     .nav-item{
       display:flex;
@@ -232,21 +246,15 @@
       text-align:left;
     }
 
-    .nav-item svg{
-      width:19px;
-      height:19px;
-      fill:#fff;
-      flex-shrink:0;
-    }
 
-    .nav-item:hover{
-      background:rgba(255,255,255,0.08);
-    }
 
-    .nav-item.active{
-      background:var(--green-dark);
-      font-weight:700;
-    }
+
+    .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
+    .nav-item:hover{ background:rgba(255,255,255,0.08); }
+    .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
+
+
 
     .signout{
       display:flex;
@@ -263,29 +271,21 @@
       width:100%;
     }
 
-    .signout svg{
-      width:18px;
-      height:18px;
-      fill:#fff;
-    }
 
-    .signout:hover{
-      opacity:0.8;
-    }
 
-    .main{
-      flex:1;
-      padding:36px 40px;
-      min-width:0;
-    }
 
-    .view{
-      display:none;
-    }
+    .signout svg{ width:18px; height:18px; fill:#fff; }
+    .signout:hover{ opacity:0.8; }
 
-    .view.active-view{
-      display:block;
-    }
+
+
+
+    .main{ flex:1; padding:36px 40px; min-width:0; }
+    .view{ display:none; }
+    .view.active-view{ display:block; }
+
+
+
 
     .main-header{
       display:flex;
@@ -296,6 +296,9 @@
       margin-bottom:22px;
     }
 
+
+
+
     .main-header h1{
       font-family:'Oswald', sans-serif;
       font-weight:700;
@@ -305,6 +308,9 @@
       margin:0;
     }
 
+
+
+
     .card{
       background:var(--white);
       border:1px solid var(--border);
@@ -312,12 +318,10 @@
       padding:24px 28px;
     }
 
-    .search-row{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
 
+
+
+    .search-row{ display:flex; gap:10px; align-items:center; }
     .search-box{
       display:flex;
       align-items:center;
@@ -328,51 +332,14 @@
       padding:8px 14px;
       min-width:260px;
     }
+    .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
+    .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
 
-    .search-box svg{
-      width:16px;
-      height:16px;
-      fill:none;
-      stroke:var(--ink);
-      stroke-width:2;
-    }
 
-    .search-box input{
-      border:none;
-      outline:none;
-      font-size:14px;
-      width:100%;
-      background:transparent;
-    }
 
-    .filter-btn{
-      width:38px;
-      height:38px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#fff;
-      border:1.5px solid var(--ink);
-      border-radius:8px;
-      cursor:pointer;
-    }
 
-    .filter-btn svg{
-      width:18px;
-      height:18px;
-      fill:var(--ink);
-    }
-
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-    }
-
-    thead tr{
-      background:#DEDDDC;
-    }
-
+    table{ width:100%; border-collapse:separate; border-spacing:0; }
+    thead tr{ background:#DEDDDC; }
     thead th{
       text-align:center;
       font-size:13px;
@@ -380,16 +347,11 @@
       color:#222;
       padding:14px 10px;
     }
+    thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
+    thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
 
-    thead th:first-child{
-      border-top-left-radius:8px;
-      border-bottom-left-radius:8px;
-    }
 
-    thead th:last-child{
-      border-top-right-radius:8px;
-      border-bottom-right-radius:8px;
-    }
+
 
     tbody td{
       padding:14px 8px;
@@ -397,6 +359,9 @@
       text-align:center;
       vertical-align:middle;
     }
+
+
+
 
     .pill{
       display:inline-block;
@@ -408,6 +373,9 @@
       white-space:nowrap;
     }
 
+
+
+
     .status-pill{
       display:inline-block;
       padding:6px 20px;
@@ -416,45 +384,33 @@
       font-weight:700;
       color:#fff;
     }
+    .status-pill.active, .status-pill.confirmed, .status-pill.harvested{ background:#118308; }
+    .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
+    .status-pill.planted{ background:#E06030; }
 
-    .status-pill.active,
-    .status-pill.confirmed,
-    .status-pill.harvested{
-      background:#118308;
-    }
 
-    .status-pill.submitted,
-    .status-pill.mediating{
-      background:#E5A510;
-    }
 
-    .status-pill.planted{
-      background:#E06030;
-    }
 
-    .status-text-approved{
-      color:#118308;
-      font-weight:700;
-    }
+    .status-text-approved{ color:#118308; font-weight:700; }
+    .status-text-rejected{ color:#C0392B; font-weight:700; }
 
-    .status-text-rejected{
-      color:#C0392B;
-      font-weight:700;
-    }
 
-    .clickable-row{
-      cursor:pointer;
-    }
 
-    .clickable-row:hover td{
-      background:#F6F3EB;
-    }
+
+    .clickable-row{ cursor:pointer; }
+    .clickable-row:hover td{ background:#F6F3EB; }
+
+
+
 
     .form-grid-two{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:18px 32px;
     }
+
+
+
 
     .form-field-item label{
       display:block;
@@ -463,39 +419,35 @@
       margin-bottom:6px;
       color:var(--ink);
     }
+    .form-field-item label .req{ color:#C0392B; }
 
-    .form-field-item label .req{
-      color:#C0392B;
-    }
 
-    .form-field-item input,
-    .form-field-item select,
-    .form-field-item textarea{
+
+
+    .form-field-item input, .form-field-item select, .form-field-item textarea{
       width:100%;
       padding:10px 14px;
       border:1.5px solid #888;
       border-radius:6px;
       font-size:13.5px;
-      font-family:'Inter', sans-serif;
       outline:none;
       background:#fff;
     }
 
-    .form-field-item textarea{
-      resize:vertical;
-      height:90px;
-    }
 
-    .form-field-full{
-      grid-column:1 / -1;
-    }
+
+
+    .form-field-item textarea{ resize:vertical; height:90px; }
+    .form-field-full{ grid-column:1 / -1; }
+
+
+
 
     .btn-outline-report{
       appearance:none;
       border:1.5px solid #5A6B52;
       background:#EFEAE0;
       color:#333;
-      font-family:'Inter', sans-serif;
       font-size:13.5px;
       font-weight:600;
       padding:10px 24px;
@@ -503,53 +455,17 @@
       cursor:pointer;
       transition:all .2s ease;
     }
+    .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
 
-    .btn-outline-report:hover:not(:disabled){
-      background:#DEDDDC;
-    }
 
-    .actions-right-row{
-      display:flex;
-      justify-content:flex-end;
-      gap:14px;
-      margin-top:24px;
-    }
 
-    .actions-between-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-top:24px;
-    }
 
-    .status-badge-flagged{
-      display:inline-block;
-      background:#C0281D;
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-      padding:8px 18px;
-      border-radius:4px;
-      letter-spacing:0.04em;
-    }
+    .actions-right-row{ display:flex; justify-content:flex-end; gap:14px; margin-top:24px; }
 
-    .status-badge-approved{
-      display:inline-block;
-      background:#118308;
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-      padding:8px 24px;
-      border-radius:4px;
-      letter-spacing:0.04em;
-    }
 
-    .tab-filter-row{
-      display:flex;
-      gap:16px;
-      margin-bottom:24px;
-    }
 
+
+    .tab-filter-row{ display:flex; gap:16px; margin-bottom:24px; }
     .tab-filter-btn{
       flex:1;
       text-align:center;
@@ -564,34 +480,46 @@
       cursor:pointer;
       transition:all .2s ease;
     }
+    .tab-filter-btn:hover{ background:#DEDDDC; }
+    .tab-filter-btn.active{ background:#C4C3C2; border-color:var(--ink); }
 
-    .tab-filter-btn:hover{
-      background:#DEDDDC;
-    }
 
-    .tab-filter-btn.active{
-      background:#C4C3C2;
-      border-color:var(--ink);
-    }
 
-    .confirm-offtake-grid{
-      display:grid;
-      grid-template-columns:1.8fr 1fr;
-      gap:24px;
-    }
 
-    .offtake-letter-body{
-      font-size:13.5px;
-      line-height:1.7;
-      color:#333;
-    }
-
-    .offtake-preview-box{
-      border:1.5px solid #888;
-      border-radius:8px;
-      height:220px;
+    .confirm-offtake-box{
       background:#fff;
+      border:1.5px solid #CCC;
+      border-radius:10px;
+      padding:28px 32px;
+      font-size:14px;
+      line-height:1.6;
+      color:var(--ink);
     }
+    .confirm-offtake-box h3{
+      font-size:16px;
+      font-weight:700;
+      color:var(--green);
+      margin-bottom:16px;
+      border-bottom:1px solid #E0E0E0;
+      padding-bottom:8px;
+      text-transform:uppercase;
+    }
+    .offtake-spec-table{
+      width:100%;
+      margin:18px 0;
+      border:1px solid #E0E0E0;
+      border-radius:6px;
+    }
+    .offtake-spec-table td{
+      text-align:left;
+      padding:10px 14px;
+      border-bottom:1px solid #EEE;
+    }
+    .offtake-spec-table tr:last-child td{ border-bottom:none; }
+    .offtake-spec-table td.label-col{ font-weight:700; width:30%; background:#FAF8F5; }
+
+
+
 
     .fair-price-grid{
       display:grid;
@@ -603,20 +531,8 @@
       padding:24px;
       margin-bottom:20px;
     }
-
-    .crop-photo-wrap img{
-      width:100%;
-      height:180px;
-      object-fit:cover;
-      border-radius:8px;
-    }
-
-    .price-stats-boxes{
-      display:flex;
-      gap:14px;
-      margin-top:20px;
-    }
-
+    .crop-photo-wrap img{ width:100%; height:180px; object-fit:cover; border-radius:8px; }
+    .price-stats-boxes{ display:flex; gap:14px; margin-top:20px; }
     .price-stat-box{
       flex:1;
       background:#5D4037;
@@ -625,51 +541,17 @@
       padding:14px 10px;
       text-align:center;
     }
+    .price-stat-box .label{ font-size:11px; text-transform:uppercase; font-weight:700; opacity:0.9; }
+    .price-stat-box .price{ font-size:22px; font-weight:700; margin:4px 0 2px; }
+    .price-stat-box .unit{ font-size:11px; opacity:0.85; }
 
-    .price-stat-box .label{
-      font-size:11px;
-      text-transform:uppercase;
-      font-weight:700;
-      opacity:0.9;
-    }
 
-    .price-stat-box .price{
-      font-size:22px;
-      font-weight:700;
-      margin:4px 0 2px;
-    }
 
-    .price-stat-box .unit{
-      font-size:11px;
-      opacity:0.85;
-    }
 
-    .chart-container-card{
-      background:#fff;
-      border:1.5px solid #CCC;
-      border-radius:12px;
-      padding:20px 24px;
-    }
+    #map{ width:100%; height:360px; border-radius:8px; border:1px solid var(--border); }
 
-    .chart-title-row{
-      display:flex;
-      justify-content:space-between;
-      font-size:12px;
-      color:#666;
-      margin-bottom:12px;
-    }
 
-    .chart-title-row b{
-      color:#222;
-      font-size:14px;
-    }
 
-    #map{
-      width:100%;
-      height:360px;
-      border-radius:8px;
-      border:1px solid var(--border);
-    }
 
     .crop-reports-banner{
       background:#C4986C;
@@ -681,13 +563,7 @@
       border-radius:10px;
       margin-bottom:20px;
     }
-
-    .report-list-box{
-      border:1px solid #E0E0E0;
-      border-radius:8px;
-      overflow:hidden;
-    }
-
+    .report-list-box{ border:1px solid #E0E0E0; border-radius:8px; overflow:hidden; }
     .report-list-row{
       display:flex;
       justify-content:space-between;
@@ -697,47 +573,11 @@
       font-size:13.5px;
       cursor:pointer;
     }
+    .report-list-row:last-child{ border-bottom:none; }
+    .report-list-row:hover{ background:#F6F3EB; }
 
-    .report-list-row:last-child{
-      border-bottom:none;
-    }
 
-    .report-list-row:hover{
-      background:#F6F3EB;
-    }
 
-    .report-notes-step-grid{
-      display:grid;
-      grid-template-columns:1.8fr 1fr;
-      gap:28px;
-      align-items:flex-start;
-    }
-
-    .report-notes-textarea{
-      width:100%;
-      height:180px;
-      border:1.5px solid #888;
-      border-radius:6px;
-      padding:14px;
-      font-size:14px;
-      outline:none;
-      resize:vertical;
-    }
-
-    .report-upload-box{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-
-    .report-upload-input{
-      width:100%;
-      padding:8px 12px;
-      border:1.5px solid #888;
-      border-radius:6px;
-      font-size:13px;
-      background:#fff;
-    }
 
     .modal-overlay{
       display:none;
@@ -748,52 +588,38 @@
       justify-content:center;
       z-index:3000;
     }
-
-    .modal-overlay.show{
-      display:flex;
-    }
-
+    .modal-overlay.show{ display:flex; }
     .modal-box{
       background:#DEDDDC;
       border-radius:8px;
-      padding:36px 48px;
+      padding:32px 42px;
       text-align:center;
       box-shadow:0 14px 40px rgba(0,0,0,0.3);
-      max-width:480px;
+      max-width:440px;
       width:90%;
     }
-
     .modal-box h2{
       font-family:'Oswald', sans-serif;
-      font-size:28px;
+      font-size:26px;
       font-weight:700;
       color:#536B5C;
-      margin:0 0 16px;
+      margin-bottom:12px;
     }
-
-    .modal-box p{
-      font-size:15px;
-      color:var(--ink);
-      margin-bottom:24px;
-      line-height:1.4;
-    }
-
-    .modal-actions{
-      display:flex;
-      justify-content:center;
-      gap:16px;
-    }
-
+    .modal-box p{ font-size:14.5px; color:var(--ink); margin-bottom:22px; line-height:1.4; }
+    .modal-actions{ display:flex; justify-content:center; gap:14px; }
     .modal-btn-confirm{
       border:none;
       background:#5A7365;
       color:#fff;
-      font-size:14px;
+      font-size:13.5px;
       font-weight:600;
-      padding:10px 32px;
+      padding:10px 24px;
       border-radius:6px;
       cursor:pointer;
     }
+
+
+
 
     .pagination-container{
       display:flex;
@@ -805,18 +631,8 @@
       font-size:12.5px;
       color:#666;
     }
-
-    .pagination-controls{
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-
-    .page-numbers-wrap{
-      display:flex;
-      gap:4px;
-    }
-
+    .pagination-controls{ display:flex; align-items:center; gap:6px; }
+    .page-numbers-wrap{ display:flex; gap:4px; }
     .btn-page{
       padding:5px 11px;
       border:1px solid #CCC;
@@ -827,52 +643,15 @@
       cursor:pointer;
       color:var(--ink);
     }
+    .btn-page:hover:not(:disabled){ background:#EDE7D8; border-color:var(--green); }
+    .btn-page.active{ background:var(--green); color:#FFF; border-color:var(--green); }
+    .btn-page:disabled{ opacity:0.4; cursor:not-allowed; }
 
-    .btn-page:hover:not(:disabled){
-      background:#EDE7D8;
-      border-color:var(--green);
-    }
 
-    .btn-page.active{
-      background:var(--green);
-      color:#FFF;
-      border-color:var(--green);
-    }
 
-    .btn-page:disabled{
-      opacity:0.4;
-      cursor:not-allowed;
-    }
 
-    .badge-auto{
-      font-size:10.5px;
-      background:#E0E7DA;
-      color:#2D6A4F;
-      padding:2px 7px;
-      border-radius:4px;
-      margin-left:6px;
-      font-weight:600;
-    }
-
-    .text-optional{
-      font-size:11px;
-      font-weight:normal;
-      color:#777;
-    }
-
-    .input-readonly{
-      background:#F5F5F5 !important;
-      border-color:#DDD !important;
-      color:#555 !important;
-      cursor:default;
-    }
-
-    .input-editable-active{
-      background:#FFF !important;
-      border-color:var(--green) !important;
-      color:var(--ink) !important;
-    }
-
+    .input-readonly{ background:#F5F5F5 !important; border-color:#DDD !important; color:#555 !important; cursor:default; }
+    .input-editable-active{ background:#FFF !important; border-color:var(--green) !important; color:var(--ink) !important; }
     .higher-ups-note{
       background:#F7F5F0;
       border-left:3px solid var(--green);
@@ -883,112 +662,41 @@
       border-radius:0 6px 6px 0;
     }
 
-    .hidden-element{
-      display:none;
-    }
 
-    .btn-add-row{
-      font-size:12px;
-      padding:6px 14px;
-    }
 
-    .align-right-spacing{
-      margin-top:16px;
-      text-align:right;
-    }
 
-    .btn-group-row{
-      display:flex;
-      gap:12px;
-    }
-
-    .btn-select-doc{
-      font-size:12px;
-      padding:6px 14px;
-    }
-
-    .label-upload-doc{
-      font-size:13px;
-      font-weight:700;
-      color:var(--ink);
-    }
-
-    .req-star{
-      color:#C0392B;
-    }
-
-    .flex-gap-sm{
-      display:flex;
-      gap:8px;
-    }
-
-    .card-map-title{
-      font-size:15px;
-      font-weight:700;
-      margin-bottom:14px;
-    }
-
-    .chart-svg{
-      width:100%;
-      height:160px;
-      overflow:visible;
-    }
-
-    .chart-subtitle{
-      font-size:11px;
-      color:#888;
-    }
-
-    .select-crop-box{
-      margin-bottom:14px;
-    }
-
-    .select-crop-input{
-      padding:8px 14px;
-      border:1.5px solid var(--ink);
-      border-radius:6px;
-      font-weight:700;
-      font-size:14px;
-      outline:none;
-    }
-
-    .fair-price-desc{
-      font-size:13px;
-      color:#555;
-      line-height:1.6;
-      margin:0;
-    }
-
-    .section-buyer-title{
-      font-weight:700;
-      font-size:14px;
-      margin-top:10px;
-    }
+    .hidden-element{ display:none; }
+    .select-crop-input{ padding:8px 14px; border:1.5px solid var(--ink); border-radius:6px; font-weight:700; font-size:14px; outline:none; }
+    .fair-price-desc{ font-size:13px; color:#555; line-height:1.6; margin:0; }
   </style>
 </head>
 
+
+
+
 <body>
+
+
+
 
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span></span><span></span><span></span>
       </button>
 
-      <div class="logos">
 
-        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+
+
+      <div class="logos">
+        <svg class="seal" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
           <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
           <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
         </svg>
-
         <div class="brand-logo">
-          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 200 170">
             <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
               <path d="M8 90 C 40 40, 90 20, 150 15"/>
               <path d="M8 90 C 45 55, 95 40, 155 45"/>
@@ -998,1346 +706,687 @@
             </g>
           </svg>
         </div>
-
         <span class="brand-word">eSaka</span>
       </div>
     </div>
 
-    <div class="topbar-right">
 
+
+
+    <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
+
+
 
       <div class="user-info">
         <div class="user-text">
           <div class="user-name" id="userDisplayName">Juan Dela Cruz</div>
           <div class="user-role" id="userDisplayRole">AEW</div>
         </div>
-
         <div class="avatar">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
         </div>
       </div>
     </div>
   </div>
 
 
-  <div class="layout">
 
+
+  <div class="layout">
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
-
       <div class="nav-list">
-
         <button class="nav-item active" type="button" data-view="farmers">
-          <svg viewBox="0 0 24 24">
-            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Farmers
         </button>
-
         <button class="nav-item" type="button" data-view="planting-intent">
-          <svg viewBox="0 0 24 24">
-            <path d="M17 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zM5 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M17 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zM5 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>
           Planting Intent
         </button>
-
         <button class="nav-item" type="button" data-view="offtake-request">
-          <svg viewBox="0 0 24 24">
-            <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
           Offtake Request
         </button>
-
         <button class="nav-item" type="button" data-view="fair-prices">
-          <svg viewBox="0 0 24 24">
-            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
           Fair Prices
         </button>
-
         <button class="nav-item" type="button" data-view="map">
-          <svg viewBox="0 0 24 24">
-            <path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
           View Map
         </button>
-
         <button class="nav-item" type="button" data-view="reports">
-          <svg viewBox="0 0 24 24">
-            <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
           Reports
         </button>
-
       </div>
 
+
+
+
       <button class="signout" id="signoutBtn" type="button">
-        <svg viewBox="0 0 24 24">
-          <path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
       </button>
-
     </nav>
+
+
 
 
     <!-- MAIN CONTENT -->
     <main class="main">
 
+
+
+
       <!-- VIEW 1: Farmers -->
       <section class="view active-view" id="view-farmers">
-
         <div id="farmersListSubview">
-
           <div class="main-header">
             <h1>All Farmers</h1>
-
             <div class="search-row">
-
               <div class="search-box">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="7"/>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-
-                <input
-                  type="text"
-                  id="searchFarmersInput"
-                  placeholder="Search farmers..."
-                >
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchFarmersInput" placeholder="Search farmers...">
               </div>
-
-              <button class="filter-btn" aria-label="Filter" type="button">
-                <svg viewBox="0 0 24 24">
-                  <path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/>
-                </svg>
-              </button>
-
             </div>
           </div>
 
 
+
+
           <div class="card">
-
             <table>
-
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>RSBSA-ID</th>
-                  <th>Region</th>
                   <th>Municipality</th>
                   <th>Barangay</th>
                   <th>Status</th>
                 </tr>
               </thead>
-
               <tbody id="farmersTableBody"></tbody>
-
             </table>
 
 
+
+
             <div class="pagination-container">
-
-              <span
-                class="pagination-info"
-                id="paginationInfo"
-              >
-                Showing 0 of 0
-              </span>
-
-              <div
-                class="pagination-controls"
-                id="paginationControls"
-              >
-
-                <button
-                  class="btn-page"
-                  id="prevPageBtn"
-                  type="button"
-                  disabled
-                >
-                  &laquo; Prev
-                </button>
-
-                <div
-                  id="pageNumberBtns"
-                  class="page-numbers-wrap"
-                ></div>
-
-                <button
-                  class="btn-page"
-                  id="nextPageBtn"
-                  type="button"
-                >
-                  Next &raquo;
-                </button>
-
+              <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+              <div class="pagination-controls" id="paginationControls">
+                <button class="btn-page" id="prevPageBtn" type="button" disabled>&laquo; Prev</button>
+                <div id="pageNumberBtns" class="page-numbers-wrap"></div>
+                <button class="btn-page" id="nextPageBtn" type="button">Next &raquo;</button>
               </div>
             </div>
-
           </div>
+
+
 
 
           <div class="actions-right-row">
-            <button
-              class="btn-outline-report"
-              id="addFarmerBtn"
-              type="button"
-            >
-              Add a Farmer
-            </button>
+            <button class="btn-outline-report" id="addFarmerBtn" type="button">Add a Farmer</button>
           </div>
-
         </div>
 
 
-        <!-- Register Farmer -->
-        <div
-          id="registerFarmerSubview"
-          class="hidden-element"
-        >
 
+
+        <!-- Register Farmer -->
+        <div id="registerFarmerSubview" class="hidden-element">
           <div class="main-header">
             <h1>Register a Farmer</h1>
           </div>
 
 
+
+
           <div class="card">
-
             <form id="registerFarmerForm">
-
               <div class="form-grid-two">
-
-                <!-- CHANGED: RSBSA ID IS NOW MANUAL INPUT -->
                 <div class="form-field-item">
-                  <label>
-                    Farmer ID (RSBSA ID)
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="regFarmerId"
-                    placeholder="Enter RSBSA ID"
-                    required
-                  >
+                  <label>Farmer ID (RSBSA ID) <span class="req">*</span></label>
+                  <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Address <span class="req">*</span></label>
+                  <input type="text" id="regAddress" placeholder="Brgy. 243 Sta. Barbara, San Jose City" required>
+                </div>
+               
+                <div class="form-field-item">
+                  <label>First Name <span class="req">*</span></label>
+                  <input type="text" id="regFirstName" placeholder="Pancho" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Middle Name</label>
+                  <input type="text" id="regMiddleName" placeholder="Reyes">
                 </div>
 
 
-                <div class="form-field-item">
-                  <label>
-                    Address
-                    <span class="req">*</span>
-                  </label>
 
-                  <input
-                    type="text"
-                    id="regAddress"
-                    placeholder="Brgy. 243 Sta. Barbara, San Jose City"
-                    required
-                  >
+
+                <div class="form-field-item">
+                  <label>Last Name <span class="req">*</span></label>
+                  <input type="text" id="regLastName" placeholder="De Jesus" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Suffix</label>
+                  <input type="text" id="regSuffix" placeholder="Jr.">
                 </div>
 
 
-                <div class="form-field-item">
-                  <label>
-                    First Name
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="regFirstName"
-                    placeholder="Pancho"
-                    required
-                  >
-                </div>
 
 
                 <div class="form-field-item">
-                  <label>
-                    Middle Name
-                    <span class="text-optional">(Optional)</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="regMiddleName"
-                    placeholder="Reyes"
-                  >
-                </div>
-
-
-                <div class="form-field-item">
-                  <label>
-                    Last Name
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="regLastName"
-                    placeholder="De Jesus"
-                    required
-                  >
-                </div>
-
-
-                <div class="form-field-item">
-                  <label>
-                    Suffix
-                    <span class="text-optional">(Optional)</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="regSuffix"
-                    placeholder="Jr."
-                  >
-                </div>
-
-
-                <div class="form-field-item">
-                  <label>
-                    Sex
-                    <span class="req">*</span>
-                  </label>
-
+                  <label>Sex <span class="req">*</span></label>
                   <select id="regSex" required>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Birthdate
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="date"
-                    id="regBirthdate"
-                    required
-                  >
+                  <label>Birthdate <span class="req">*</span></label>
+                  <input type="date" id="regBirthdate" required>
                 </div>
 
 
-                <div class="form-field-item">
-                  <label>
-                    Phone Number
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="tel"
-                    id="regPhone"
-                    placeholder="0999654399"
-                    required
-                  >
-                </div>
 
 
                 <div class="form-field-item">
-                  <label>
-                    Email
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="email"
-                    id="regEmail"
-                    placeholder="panchodj@gmail.com"
-                    required
-                  >
+                  <label>Phone Number <span class="req">*</span></label>
+                  <input type="tel" id="regPhone" placeholder="0999654399" required>
                 </div>
-
+                <div class="form-field-item">
+                  <label>Email <span class="req">*</span></label>
+                  <input type="email" id="regEmail" placeholder="panchodj@gmail.com" required>
+                </div>
               </div>
+
+
 
 
               <div class="actions-right-row">
-
-                <button
-                  class="btn-outline-report"
-                  id="cancelRegisterFarmerBtn"
-                  type="button"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  class="btn-outline-report"
-                  type="submit"
-                >
-                  Submit
-                </button>
-
+                <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
+                <button class="btn-outline-report" type="submit">Submit</button>
               </div>
-
             </form>
-
           </div>
         </div>
 
 
-        <!-- Manage Farmer -->
-        <div
-          id="manageFarmerSubview"
-          class="hidden-element"
-        >
 
+
+        <!-- Manage Farmer -->
+        <div id="manageFarmerSubview" class="hidden-element">
           <div class="main-header">
             <h1>Manage Farmer</h1>
           </div>
 
 
-          <div class="card">
 
+
+          <div class="card">
             <div class="higher-ups-note">
-              <b>Official Record Notice:</b>
-              Official identity fields are verified against the DA/RSBSA Masterlist and locked from direct arbitrary alteration.
+              <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from direct arbitrary alteration.
             </div>
 
 
-            <div class="form-grid-two">
 
+
+            <div class="form-grid-two">
               <div class="form-field-item">
                 <label>Farmer ID (RSBSA ID)</label>
-
-                <input
-                  type="text"
-                  id="manFarmerId"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manFarmerId" readonly class="input-readonly">
               </div>
-
-
               <div class="form-field-item">
                 <label>Address</label>
-
-                <input
-                  type="text"
-                  id="manAddress"
-                  readonly
-                  class="man-editable input-readonly"
-                >
+                <input type="text" id="manAddress" readonly class="man-editable input-readonly">
               </div>
+
+
 
 
               <div class="form-field-item">
                 <label>First Name</label>
-
-                <input
-                  type="text"
-                  id="manFirstName"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manFirstName" readonly class="input-readonly">
               </div>
-
-
               <div class="form-field-item">
                 <label>Middle Name</label>
-
-                <input
-                  type="text"
-                  id="manMiddleName"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manMiddleName" readonly class="input-readonly">
               </div>
+
+
 
 
               <div class="form-field-item">
                 <label>Last Name</label>
-
-                <input
-                  type="text"
-                  id="manLastName"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manLastName" readonly class="input-readonly">
               </div>
-
-
               <div class="form-field-item">
                 <label>Suffix</label>
-
-                <input
-                  type="text"
-                  id="manSuffix"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manSuffix" readonly class="input-readonly">
               </div>
+
+
 
 
               <div class="form-field-item">
                 <label>Sex</label>
-
-                <input
-                  type="text"
-                  id="manSex"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manSex" readonly class="input-readonly">
               </div>
-
-
               <div class="form-field-item">
                 <label>Birthdate</label>
-
-                <input
-                  type="text"
-                  id="manBirthdate"
-                  readonly
-                  class="input-readonly"
-                >
+                <input type="text" id="manBirthdate" readonly class="input-readonly">
               </div>
+
+
 
 
               <div class="form-field-item">
                 <label>Phone Number</label>
-
-                <input
-                  type="tel"
-                  id="manPhone"
-                  readonly
-                  class="man-editable input-readonly"
-                >
+                <input type="tel" id="manPhone" readonly class="man-editable input-readonly">
               </div>
-
-
               <div class="form-field-item">
                 <label>Email</label>
-
-                <input
-                  type="email"
-                  id="manEmail"
-                  readonly
-                  class="man-editable input-readonly"
-                >
+                <input type="email" id="manEmail" readonly class="man-editable input-readonly">
               </div>
-
             </div>
+
+
 
 
             <div class="actions-right-row">
-
-              <button
-                class="btn-outline-report"
-                id="backFromManageFarmerBtn"
-                type="button"
-              >
-                Back
-              </button>
-
-              <button
-                class="btn-outline-report"
-                id="toggleEditFarmerBtn"
-                type="button"
-              >
-                Edit Contact Info
-              </button>
-
-              <button
-                class="btn-outline-report"
-                id="deleteFarmerBtn"
-                type="button"
-              >
-                Delete
-              </button>
-
+              <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
+              <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
+              <button class="btn-outline-report" id="deleteFarmerBtn" type="button">Delete</button>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
 
+
+
       <!-- VIEW 2: Planting Intent -->
-      <section
-        class="view"
-        id="view-planting-intent"
-      >
-
+      <section class="view" id="view-planting-intent">
         <div id="plantingIntentListSubview">
-
           <div class="main-header">
             <h1>Planting Intents</h1>
           </div>
-
           <div class="card">
-
             <table>
-
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Commodity</th>
-                  <th>Volume</th>
+                  <th>Estimated Volume</th>
                   <th>Location</th>
                   <th>Planting Date</th>
                   <th>Harvest Date</th>
                 </tr>
               </thead>
-
-              <tbody id="plantingIntentsTableBody">
-    <!-- Planting intents will be loaded here by aew.js -->
-</tbody>
-
-
+              <tbody id="plantingIntentsTableBody"></tbody>
             </table>
-
           </div>
-
-
           <div class="actions-right-row">
-
-            <button
-              class="btn-outline-report"
-              id="addPlantIntentBtn"
-              type="button"
-            >
-              Add Plant Intent
-            </button>
-
+            <button class="btn-outline-report" id="addPlantIntentBtn" type="button">Add Plant Intent</button>
           </div>
-
         </div>
 
 
-        <div
-          id="submitPlantIntentSubview"
-          class="hidden-element"
-        >
 
-          <div class="main-header">
-            <h1>Submit Planting Intent</h1>
-          </div>
 
+        <div id="submitPlantIntentSubview" class="hidden-element">
+          <div class="main-header"><h1>Submit Planting Intent</h1></div>
           <div class="card">
-
             <form id="submitPlantIntentForm">
-
               <div class="form-grid-two">
-
                 <div class="form-field-item">
-                  <label>
-                    Farmer Name
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    required
-                  >
+                  <label>Farmer Name <span class="req">*</span></label>
+                  <input type="text" id="piFarmerName" required>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Planting Date
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="date"
-                    required
-                  >
+                  <label>Planting Date <span class="req">*</span></label>
+                  <input type="date" id="piPlantDate" required>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Farmer ID
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    required
-                  >
+                  <label>Farmer ID <span class="req">*</span></label>
+                  <input type="text" id="piFarmerId" required>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Harvest Date
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="date"
-                    required
-                  >
+                  <label>Harvest Date <span class="req">*</span></label>
+                  <input type="date" id="piHarvestDate" required>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Commodity
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    required
-                  >
+                  <label>Commodity <span class="req">*</span></label>
+                  <input type="text" id="piCommodity" required>
                 </div>
-
-
                 <div class="form-field-item">
-                  <label>
-                    Volume (kg)
-                    <span class="req">*</span>
-                  </label>
-
-                  <input
-                    type="number"
-                    required
-                  >
+                  <label>Estimated Volume (kg) <span class="req">*</span></label>
+                  <input type="number" id="piVolume" placeholder="e.g. 15000" required>
                 </div>
-
-
                 <div class="form-field-item form-field-full">
                   <label>Remarks</label>
-
-                  <textarea></textarea>
+                  <textarea id="piRemarks"></textarea>
                 </div>
-
               </div>
-
-
               <div class="actions-right-row">
-
-                <button
-                  class="btn-outline-report"
-                  id="cancelPlantIntentBtn"
-                  type="button"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  class="btn-outline-report"
-                  type="submit"
-                >
-                  Submit
-                </button>
-
+                <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
+                <button class="btn-outline-report" type="submit">Submit</button>
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       </section>
 
 
+
+
       <!-- VIEW 3: Offtake Request -->
-      <section
-        class="view"
-        id="view-offtake-request"
-      >
-
+      <section class="view" id="view-offtake-request">
         <div id="offtakeListSubview">
-
-          <div class="main-header">
-            <h1>Offtake Requests</h1>
-          </div>
-
-
+          <div class="main-header"><h1>Offtake Requests</h1></div>
           <div class="tab-filter-row">
-
-            <button
-              class="tab-filter-btn active"
-              data-tab="all"
-              type="button"
-            >
-              VIEW ALL
-            </button>
-
-            <button
-              class="tab-filter-btn"
-              data-tab="cancelled"
-              type="button"
-            >
-              CANCELLED
-            </button>
-
-            <button
-              class="tab-filter-btn"
-              data-tab="pending"
-              type="button"
-            >
-              PENDING
-            </button>
-
-            <button
-              class="tab-filter-btn"
-              data-tab="sold"
-              type="button"
-            >
-              SOLD
-            </button>
-
+            <button class="tab-filter-btn active" data-tab="all" type="button">VIEW ALL</button>
+            <button class="tab-filter-btn" data-tab="cancelled" type="button">CANCELLED</button>
+            <button class="tab-filter-btn" data-tab="confirmed" type="button">CONFIRMED</button>
+            <button class="tab-filter-btn" data-tab="sold" type="button">SOLD</button>
           </div>
-
-
           <div class="card">
-
             <table>
-
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Farmer Name</th>
                   <th>Commodity</th>
                   <th>Volume</th>
                   <th>Location</th>
-                  <th>Planting Date</th>
                   <th>Harvest Date</th>
                   <th>Status</th>
                 </tr>
               </thead>
-
-              <tbody>
-
-                <tr>
-
-                  <td>
-                    <span class="pill">
-                      Pedro Manalang
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      Onion
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      15,000kg
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      Sta. Monica
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      2/1/2026
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="pill">
-                      6/15/2026
-                    </span>
-                  </td>
-
-                  <td>
-                    <span class="status-pill confirmed">
-                      Confirmed
-                    </span>
-                  </td>
-
-                </tr>
-
-              </tbody>
-
+              <tbody id="offtakeTableBody"></tbody>
             </table>
-
           </div>
-
-
           <div class="actions-right-row">
-
-            <button
-              class="btn-outline-report"
-              id="createOfftakeBtn"
-              type="button"
-            >
-              Create Offtake Request
-            </button>
-
+            <button class="btn-outline-report" id="createOfftakeBtn" type="button">Create Offtake Request</button>
           </div>
-
         </div>
 
 
-        <div
-          id="submitOfftakeSubview"
-          class="hidden-element"
-        >
 
-          <div class="main-header">
-            <h1>Submit Offtake Request</h1>
-          </div>
 
+        <div id="submitOfftakeSubview" class="hidden-element">
+          <div class="main-header"><h1>Submit Offtake Request</h1></div>
           <div class="card">
-
-            <div class="form-grid-two">
-
-              <div class="form-field-item">
-                <label>
-                  Farmer Name
-                  <span class="req">*</span>
-                </label>
-
-                <input type="text">
+            <form id="submitOfftakeForm">
+              <div class="form-grid-two">
+                <div class="form-field-item">
+                  <label>Farmer Name <span class="req">*</span></label>
+                  <input type="text" id="offtakeFarmerName" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Farmer ID <span class="req">*</span></label>
+                  <input type="text" id="offtakeFarmerId" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Commodity <span class="req">*</span></label>
+                  <input type="text" id="offtakeCommodity" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Quantity (kg) <span class="req">*</span></label>
+                  <input type="number" id="offtakeQty" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Selling Price (₱ / kg) <span class="req">*</span></label>
+                  <input type="number" id="offtakePrice" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Harvest Date <span class="req">*</span></label>
+                  <input type="date" id="offtakeHarvestDate" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Buyer Name / Organization <span class="req">*</span></label>
+                  <input type="text" id="offtakeBuyerName" placeholder="e.g. San Jose Traders Hub" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Delivery Location <span class="req">*</span></label>
+                  <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
+                </div>
               </div>
-
-
-              <div class="form-field-item">
-                <label>
-                  Farmer ID
-                  <span class="req">*</span>
-                </label>
-
-                <input type="text">
+              <div class="actions-right-row">
+                <button class="btn-outline-report" id="returnFromSubmitOfftakeBtn" type="button">Return</button>
+                <button class="btn-outline-report" type="submit">Proceed</button>
               </div>
+            </form>
+          </div>
+        </div>
 
 
-              <div class="form-field-item">
-                <label>
-                  Commodity
-                  <span class="req">*</span>
-                </label>
-
-                <input type="text">
-              </div>
 
 
-              <div class="form-field-item">
-                <label>
-                  Quantity
-                  <span class="req">*</span>
-                </label>
+        <!-- FORMAL OFFTAKE LETTER VIEW -->
+        <div id="confirmOfftakeSubview" class="hidden-element">
+          <div class="main-header"><h1>Review & Confirm Offtake Letter</h1></div>
+          <div class="card">
+            <div class="confirm-offtake-box">
+              <h3>Official Agricultural Offtake Memorandum</h3>
+              <p><b>Date:</b> <span id="letterDate">August 21, 2026</span></p>
+              <p><b>To:</b> <span id="confirmBuyerName">Buyer Organization</span></p>
+              <p><b>From:</b> Office of the Agricultural Extension Worker (AEW)</p>
+              <p><b>Subject:</b> Offtake Agreement & Purchase Commitment Confirmation</p>
+             
+              <table class="offtake-spec-table">
+                <tr>
+                  <td class="label-col">Farmer Beneficiary</td>
+                  <td id="confirmFarmerName">—</td>
+                </tr>
+                <tr>
+                  <td class="label-col">RSBSA ID</td>
+                  <td id="confirmFarmerId">—</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Commodity Scheduled</td>
+                  <td id="confirmCommodity">—</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Commitment Volume</td>
+                  <td><span id="confirmQuantity">—</span> kg</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Agreed Farmgate Price</td>
+                  <td>₱<span id="confirmSellingPrice">—</span> / kg</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Projected Harvest / Pick-up</td>
+                  <td id="confirmHarvestDate">—</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Location</td>
+                  <td id="confirmLocation">—</td>
+                </tr>
+              </table>
 
-                <input type="number">
-              </div>
 
+
+
+              <p style="font-size:12.5px; color:#666;">
+                This document certifies that the produce listed above has undergone technical monitoring and meets municipal standards.
+              </p>
             </div>
+
+
 
 
             <div class="actions-right-row">
-
-              <button
-                class="btn-outline-report"
-                id="returnFromSubmitOfftakeBtn"
-                type="button"
-              >
-                Return
-              </button>
-
-              <button
-                class="btn-outline-report"
-                id="proceedOfftakeBtn"
-                type="button"
-              >
-                Proceed
-              </button>
-
+              <button class="btn-outline-report" id="backToSubmitOfftakeBtn" type="button">Edit Details</button>
+              <button class="btn-outline-report" id="sendOfftakeBtn" type="button">Submit Request</button>
             </div>
-
           </div>
-
         </div>
-
-
-        <div
-          id="confirmOfftakeSubview"
-          class="hidden-element"
-        >
-
-          <div class="main-header">
-            <h1>Confirm Offtake Request</h1>
-          </div>
-
-          <div class="card">
-
-            <div class="confirm-offtake-grid">
-<div class="offtake-letter-body">
-
-  <p>
-    <b>To:</b>
-    <span id="confirmBuyerName">Buyer Organization</span>
-  </p>
-
-  <br>
-
-  <p>
-    <b>Farmer:</b>
-    <span id="confirmFarmerName">—</span>
-  </p>
-
-  <p>
-    <b>Farmer ID:</b>
-    <span id="confirmFarmerId">—</span>
-  </p>
-
-  <p>
-    <b>Commodity:</b>
-    <span id="confirmCommodity">—</span>
-  </p>
-
-  <p>
-    <b>Quantity:</b>
-    <span id="confirmQuantity">—</span> kg
-  </p>
-
-  <p>
-    <b>Selling Price:</b>
-    ₱<span id="confirmSellingPrice">—</span> / kg
-  </p>
-
-  <p>
-    <b>Harvest Date:</b>
-    <span id="confirmHarvestDate">—</span>
-  </p>
-
-  <br>
-
-  <p>
-    We are officially submitting an offtake request for the upcoming harvest.
-  </p>
-
-</div>
-
-              </div>
-
-              <div class="offtake-preview-box"></div>
-
-            </div>
-
-
-            <div class="actions-right-row">
-
-              <button
-                class="btn-outline-report"
-                id="backToSubmitOfftakeBtn"
-                type="button"
-              >
-                Review Details
-              </button>
-
-              <button
-                class="btn-outline-report"
-                id="sendOfftakeBtn"
-                type="button"
-              >
-                Send
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
       </section>
+
+
 
 
       <!-- VIEW 4: Fair Prices -->
-      <section
-        class="view"
-        id="view-fair-prices"
-      >
-
-        <div class="main-header">
-          <h1>Fair Price Dashboard</h1>
-        </div>
-
-
+      <section class="view" id="view-fair-prices">
+        <div class="main-header"><h1>Fair Price Dashboard</h1></div>
         <div class="fair-price-grid">
-
           <div class="crop-photo-wrap">
-
-            <img
-              src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80"
-              alt="Crop Image"
-              id="cropImageDisplay"
-            >
-
+            <img src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop Image" id="cropImageDisplay">
           </div>
-
-
           <div>
-
-            <div class="select-crop-box">
-
-              <select
-                id="fairPriceCropSelect"
-                class="select-crop-input"
-              >
-
-                <option value="onion">
-                  Red Onion
-                </option>
-
-                <option value="tomato">
-                  Tomato
-                </option>
-
+            <div style="margin-bottom:14px;">
+              <select id="fairPriceCropSelect" class="select-crop-input">
+                <option value="onion">Red Onion</option>
+                <option value="tomato">Tomato</option>
               </select>
-
             </div>
-
-
+            <p class="fair-price-desc">
+              Daily monitored farmgate and market wholesale prices based on DA Agribusiness and Marketing Assistance Division (DA-AMAD).
+            </p>
             <div class="price-stats-boxes">
-
-              <div class="price-stat-box">
-                <div class="label">Minimum</div>
-                <div class="price">P34</div>
-                <div class="unit">per kg</div>
-              </div>
-
-              <div class="price-stat-box">
-                <div class="label">Average</div>
-                <div class="price">P45</div>
-                <div class="unit">per kg</div>
-              </div>
-
-              <div class="price-stat-box">
-                <div class="label">Maximum</div>
-                <div class="price">P55</div>
-                <div class="unit">per kg</div>
-              </div>
-
+              <div class="price-stat-box"><div class="label">Minimum</div><div class="price">P34</div><div class="unit">per kg</div></div>
+              <div class="price-stat-box"><div class="label">Average</div><div class="price">P45</div><div class="unit">per kg</div></div>
+              <div class="price-stat-box"><div class="label">Maximum</div><div class="price">P55</div><div class="unit">per kg</div></div>
             </div>
-
           </div>
-
         </div>
-
       </section>
+
+
 
 
       <!-- VIEW 5: Map -->
-      <section
-        class="view"
-        id="view-map"
-      >
-
-        <div class="main-header">
-          <h1>Map</h1>
-        </div>
-
+      <section class="view" id="view-map">
+        <div class="main-header"><h1>Map</h1></div>
         <div class="card">
-
-          <div class="card-title card-map-title">
-            Regional Supply-Demand Map
-          </div>
-
+          <div style="font-size:15px; font-weight:700; margin-bottom:14px;">Regional Supply-Demand Map</div>
           <div id="map"></div>
-
         </div>
-
       </section>
+
+
 
 
       <!-- VIEW 6: Reports -->
-      <section
-        class="view"
-        id="view-reports"
-      >
-
+      <section class="view" id="view-reports">
         <div id="reportsListSubview">
-
-          <div class="main-header">
-            <h1>All Reports</h1>
-          </div>
-
-
+          <div class="main-header"><h1>All Reports</h1></div>
           <div class="card">
-
-            <div class="crop-reports-banner">
-              Crop Reports
-            </div>
-
-
+            <div class="crop-reports-banner">Crop Reports</div>
             <div class="report-list-box">
-
-              <div
-                class="report-list-row"
-                data-status="approved"
-              >
-
-                <span>
-                  Onion Harvest Report - Sta. Monica
-                </span>
-
-                <span>
-                  2026-2-1
-                </span>
-
-                <span class="status-text-approved">
-                  Approved
-                </span>
-
+              <div class="report-list-row" data-status="approved">
+                <span>Onion Harvest Report - Sta. Monica</span>
+                <span>2026-2-1</span>
+                <span class="status-text-approved">Approved</span>
               </div>
-
             </div>
-
           </div>
-
-
-          <div class="actions-right-row">
-
-            <button
-              class="btn-outline-report"
-              id="openSubmitReportBtn"
-              type="button"
-            >
-              Submit Report
-            </button>
-
-          </div>
-
         </div>
-
       </section>
 
-    </main>
 
+
+
+    </main>
   </div>
+
+
 
 
   <!-- MODALS -->
-
-  <div
-    class="modal-overlay"
-    id="farmerAddedModal"
-  >
-
+  <div class="modal-overlay" id="confirmFarmerModal">
     <div class="modal-box">
+      <h2>Confirm Farmer Registration</h2>
+      <p id="confirmFarmerText">Are you sure all details are accurate before submitting this farmer record?</p>
+      <div class="modal-actions">
+        <button class="btn-outline-report" id="reviewFarmerBtn" type="button">Review / Edit</button>
+        <button class="modal-btn-confirm" id="confirmSaveFarmerBtn" type="button">Confirm & Save</button>
+      </div>
+    </div>
+  </div>
 
+
+
+
+  <div class="modal-overlay" id="farmerAddedModal">
+    <div class="modal-box">
       <h2>Farmer Added!</h2>
-
-      <div class="modal-actions">
-
-        <button
-          class="modal-btn-confirm"
-          id="closeFarmerAddedBtn"
-          type="button"
-        >
-          Confirm
-        </button>
-
-      </div>
-
+      <p>The farmer record has been verified and registered.</p>
+      <div class="modal-actions"><button class="modal-btn-confirm" id="closeFarmerAddedBtn" type="button">OK</button></div>
     </div>
-
   </div>
 
 
-  <div
-    class="modal-overlay"
-    id="deleteFarmerModal"
-  >
 
+
+  <div class="modal-overlay" id="deleteFarmerModal">
     <div class="modal-box">
-
       <h2>Delete Farmer?</h2>
-
-      <p>
-        This cannot be undone.
-      </p>
-
+      <p>This cannot be undone.</p>
       <div class="modal-actions">
-
-        <button
-          class="modal-btn-confirm"
-          id="confirmDeleteFarmerBtn"
-          type="button"
-        >
-          Confirm
-        </button>
-
+        <button class="btn-outline-report" id="cancelDeleteFarmerBtn" type="button">Cancel</button>
+        <button class="modal-btn-confirm" id="confirmDeleteFarmerBtn" style="background:#A1382B;" type="button">Confirm</button>
       </div>
-
     </div>
-
   </div>
 
 
-  <div
-    class="modal-overlay"
-    id="plantIntentSubmittedModal"
-  >
 
+
+  <div class="modal-overlay" id="plantIntentSubmittedModal">
     <div class="modal-box">
-
       <h2>Planting Intent Submitted!</h2>
-
-      <div class="modal-actions">
-
-        <button
-          class="modal-btn-confirm"
-          id="closePlantIntentSubmittedBtn"
-          type="button"
-        >
-          Confirm
-        </button>
-
-      </div>
-
+      <p>Your planting intent data has been logged for regional aggregation.</p>
+      <div class="modal-actions"><button class="modal-btn-confirm" id="closePlantIntentSubmittedBtn" type="button">OK</button></div>
     </div>
-
   </div>
 
 
-  <div
-    class="modal-overlay"
-    id="offtakeSubmittedModal"
-  >
 
+
+  <div class="modal-overlay" id="confirmSendOfftakeModal">
     <div class="modal-box">
-
-      <h2>Offtake Submitted!</h2>
-
+      <h2>Confirm Offtake Submission</h2>
+      <p>Are you sure you want to officially dispatch this offtake memorandum to the buyer?</p>
       <div class="modal-actions">
-
-        <button
-          class="modal-btn-confirm"
-          id="closeOfftakeSubmittedBtn"
-          type="button"
-        >
-          Confirm
-        </button>
-
+        <button class="btn-outline-report" id="cancelSendOfftakeBtn" type="button">Back</button>
+        <button class="modal-btn-confirm" id="finalSendOfftakeBtn" type="button">Confirm Dispatch</button>
       </div>
-
     </div>
-
   </div>
 
 
-  <!-- Scripts -->
+
+
+  <div class="modal-overlay" id="offtakeSubmittedModal">
+    <div class="modal-box">
+      <h2>Offtake Submitted!</h2>
+      <p>The offtake request has been dispatched to the recipient buyer.</p>
+      <div class="modal-actions"><button class="modal-btn-confirm" id="closeOfftakeSubmittedBtn" type="button">OK</button></div>
+    </div>
+  </div>
+
+
+
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-
-  <script src="../assets/js/aew.js"></script>
-
+ <script src="../assets/js/aew.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+

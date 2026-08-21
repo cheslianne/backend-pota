@@ -7,6 +7,9 @@
    GET  /api/buyer-status/verified
    PUT  /api/buyer-status/{buyer_status_id}/verify
    PUT  /api/buyer-status/{buyer_status_id}/reject
+
+   Buyer Attachment:
+   GET  /api/buyer-registry/{buyer_registry_id}/attachment
 ============================================================ */
 
 
@@ -25,32 +28,46 @@ const VERIFIED_BUYERS_ENDPOINT =
 const BUYER_STATUS_ENDPOINT =
     `${API_BASE_URL}/api/buyer-status`;
 
+const BUYER_ATTACHMENT_ENDPOINT =
+    `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
+
 
 /* ============================================================
    AUTH
 ============================================================ */
 
 function getAuthToken() {
+
     return (
         localStorage.getItem("access_token") ||
         localStorage.getItem("token")
     );
+
 }
 
 
-function getAuthHeaders() {
+function getAuthHeaders(includeContentType = true) {
 
     const token = getAuthToken();
 
-    const headers = {
-        "Content-Type": "application/json"
-    };
+    const headers = {};
+
+    if (includeContentType) {
+
+        headers["Content-Type"] =
+            "application/json";
+
+    }
 
     if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+
+        headers["Authorization"] =
+            `Bearer ${token}`;
+
     }
 
     return headers;
+
 }
 
 
@@ -63,6 +80,7 @@ let mapInstance = null;
 let currentSelectedBuyer = null;
 
 let pendingBuyersCache = [];
+
 let verifiedBuyersCache = [];
 
 
@@ -115,23 +133,36 @@ function loadUserInformation() {
 
 
     if (userName && userDisplayName) {
-        userDisplayName.textContent = userName;
+
+        userDisplayName.textContent =
+            userName;
+
     }
+
 
     if (role && userDisplayRole) {
 
         const roleMap = {
+
             admin: "System Administrator",
+
             darfo: "DA-RFO Officer",
+
             aew: "Agricultural Extension Worker",
+
             farmer: "Farmer",
+
             coop: "Cooperative",
+
             lgu: "LGU"
+
         };
 
         userDisplayRole.textContent =
             roleMap[role] || role;
+
     }
+
 }
 
 
@@ -149,24 +180,35 @@ function initSidebar() {
 
 
     if (!hamburgerBtn || !sidebar) {
+
         return;
+
     }
 
 
-    hamburgerBtn.addEventListener("click", () => {
+    hamburgerBtn.addEventListener(
+        "click",
+        () => {
 
-        sidebar.classList.toggle("open");
+            sidebar.classList.toggle("open");
 
 
-        setTimeout(() => {
+            setTimeout(
+                () => {
 
-            if (mapInstance) {
-                mapInstance.invalidateSize();
-            }
+                    if (mapInstance) {
 
-        }, 300);
+                        mapInstance.invalidateSize();
 
-    });
+                    }
+
+                },
+                300
+            );
+
+        }
+    );
+
 }
 
 
@@ -187,70 +229,95 @@ function initViewNavigation() {
 
     navButtons.forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-            const targetViewKey =
-                button.dataset.view;
-
-
-            views.forEach(view => {
-                view.classList.remove(
-                    "active-view"
-                );
-            });
+                const targetViewKey =
+                    button.dataset.view;
 
 
-            const targetView =
-                document.getElementById(
-                    "view-" + targetViewKey
-                );
+                /* --------------------------------------------
+                   HIDE ALL VIEWS
+                -------------------------------------------- */
+
+                views.forEach(view => {
+
+                    view.classList.remove(
+                        "active-view"
+                    );
+
+                });
 
 
-            if (targetView) {
+                /* --------------------------------------------
+                   SHOW TARGET VIEW
+                -------------------------------------------- */
 
-                targetView.classList.add(
-                    "active-view"
-                );
+                const targetView =
+                    document.getElementById(
+                        "view-" + targetViewKey
+                    );
+
+
+                if (targetView) {
+
+                    targetView.classList.add(
+                        "active-view"
+                    );
+
+                }
+
+
+                /* --------------------------------------------
+                   UPDATE ACTIVE NAV BUTTON
+                -------------------------------------------- */
+
+                navButtons.forEach(navButton => {
+
+                    navButton.classList.toggle(
+                        "active",
+                        navButton === button
+                    );
+
+                });
+
+
+                /* --------------------------------------------
+                   FIX MAP SIZE
+                -------------------------------------------- */
+
+                if (
+                    targetViewKey === "map" &&
+                    mapInstance
+                ) {
+
+                    setTimeout(
+                        () => {
+
+                            mapInstance.invalidateSize();
+
+                        },
+                        100
+                    );
+
+                }
+
+
+                /* --------------------------------------------
+                   REFRESH BUYER REGISTRY
+                -------------------------------------------- */
+
+                if (
+                    targetViewKey === "buyer-registry"
+                ) {
+
+                    loadBuyerRegistry();
+
+                }
 
             }
-
-
-            navButtons.forEach(navButton => {
-
-                navButton.classList.toggle(
-                    "active",
-                    navButton === button
-                );
-
-            });
-
-
-            if (
-                targetViewKey === "map" &&
-                mapInstance
-            ) {
-
-                setTimeout(() => {
-
-                    mapInstance.invalidateSize();
-
-                }, 100);
-
-            }
-
-
-            /*
-             * Refresh buyer data whenever
-             * Buyer Registry is opened.
-             */
-
-            if (targetViewKey === "buyer-registry") {
-
-                loadBuyerRegistry();
-
-            }
-
-        });
+        );
 
     });
 
@@ -268,18 +335,23 @@ function initSignout() {
 
 
     if (!signoutBtn) {
+
         return;
+
     }
 
 
-    signoutBtn.addEventListener("click", () => {
+    signoutBtn.addEventListener(
+        "click",
+        () => {
 
-        localStorage.clear();
+            localStorage.clear();
 
-        window.location.href =
-            "../index.html";
+            window.location.href =
+                "../index.html";
 
-    });
+        }
+    );
 
 }
 
@@ -294,8 +366,13 @@ function initMap() {
         document.getElementById("map");
 
 
-    if (!mapEl || typeof L === "undefined") {
+    if (
+        !mapEl ||
+        typeof L === "undefined"
+    ) {
+
         return;
+
     }
 
 
@@ -307,16 +384,19 @@ function initMap() {
 
 
     mapInstance =
-        L.map("map", {
+        L.map(
+            "map",
+            {
 
-            maxBounds:
-                pampangaBounds,
+                maxBounds:
+                    pampangaBounds,
 
-            maxBoundsViscosity: 1.0,
+                maxBoundsViscosity: 1.0,
 
-            minZoom: 10
+                minZoom: 10
 
-        }).setView(
+            }
+        ).setView(
             [15.0794, 120.6200],
             10
         );
@@ -338,21 +418,21 @@ function initMap() {
 
 
 /* ============================================================
-   BUYER REGISTRY
+   BUYER REGISTRY INITIALIZATION
 ============================================================ */
 
 function initBuyerRegistry() {
 
-    /*
-     * Initial load from PostgreSQL
-     */
+    /* --------------------------------------------
+       INITIAL LOAD
+    -------------------------------------------- */
 
     loadBuyerRegistry();
 
 
-    /*
-     * Return from review details
-     */
+    /* --------------------------------------------
+       RETURN TO BUYER LIST
+    -------------------------------------------- */
 
     const returnBuyerListBtn =
         document.getElementById(
@@ -370,9 +450,42 @@ function initBuyerRegistry() {
     );
 
 
-    /*
-     * Approve
-     */
+    /* --------------------------------------------
+       VIEW BUYER ATTACHMENT
+    -------------------------------------------- */
+
+    const viewBuyerAttachmentBtn =
+        document.getElementById(
+            "viewBuyerAttachmentBtn"
+        );
+
+
+    viewBuyerAttachmentBtn?.addEventListener(
+        "click",
+        async () => {
+
+            if (!currentSelectedBuyer) {
+
+                showError(
+                    "No buyer application selected."
+                );
+
+                return;
+
+            }
+
+
+            await viewBuyerAttachment(
+                currentSelectedBuyer
+            );
+
+        }
+    );
+
+
+    /* --------------------------------------------
+       APPROVE BUYER BUTTON
+    -------------------------------------------- */
 
     const approveBuyerBtn =
         document.getElementById(
@@ -385,11 +498,13 @@ function initBuyerRegistry() {
         () => {
 
             if (!currentSelectedBuyer) {
+
                 showError(
                     "No buyer application selected."
                 );
 
                 return;
+
             }
 
 
@@ -405,9 +520,9 @@ function initBuyerRegistry() {
     );
 
 
-    /*
-     * Reject
-     */
+    /* --------------------------------------------
+       REJECT BUYER BUTTON
+    -------------------------------------------- */
 
     const rejectBuyerBtn =
         document.getElementById(
@@ -420,11 +535,13 @@ function initBuyerRegistry() {
         () => {
 
             if (!currentSelectedBuyer) {
+
                 showError(
                     "No buyer application selected."
                 );
 
                 return;
+
             }
 
 
@@ -440,9 +557,9 @@ function initBuyerRegistry() {
     );
 
 
-    /*
-     * Confirm approve
-     */
+    /* --------------------------------------------
+       CONFIRM APPROVE
+    -------------------------------------------- */
 
     const confirmApproveBtn =
         document.getElementById(
@@ -460,9 +577,9 @@ function initBuyerRegistry() {
     );
 
 
-    /*
-     * Confirm reject
-     */
+    /* --------------------------------------------
+       CONFIRM REJECT
+    -------------------------------------------- */
 
     const confirmRejectBtn =
         document.getElementById(
@@ -483,15 +600,326 @@ function initBuyerRegistry() {
 
 
 /* ============================================================
+   VIEW BUYER ATTACHMENT
+============================================================ */
+
+async function viewBuyerAttachment(buyer) {
+
+    if (!buyer) {
+
+        showError(
+            "No buyer application selected."
+        );
+
+        return;
+
+    }
+
+
+    /* --------------------------------------------
+       GET BUYER REGISTRY ID
+    -------------------------------------------- */
+
+    const buyerRegistryId =
+        buyer.buyer_registry_id ||
+        buyer.buyerRegistryId ||
+        buyer.id;
+
+
+    if (!buyerRegistryId) {
+
+        console.error(
+            "BUYER OBJECT:",
+            buyer
+        );
+
+        showError(
+            "Buyer registry ID is missing."
+        );
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "viewBuyerAttachmentBtn"
+        );
+
+
+    try {
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.dataset.originalText =
+                button.textContent;
+
+            button.textContent =
+                "Opening...";
+
+        }
+
+
+        /* --------------------------------------------
+           ATTACHMENT ENDPOINT
+        -------------------------------------------- */
+
+        const endpoint =
+            `${BUYER_ATTACHMENT_ENDPOINT}/${buyerRegistryId}/attachment`;
+
+
+        console.log(
+            "VIEW BUYER ATTACHMENT:",
+            endpoint
+        );
+
+
+        const response =
+            await fetch(
+                endpoint,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders(false)
+                }
+            );
+
+
+        /* --------------------------------------------
+           HANDLE API ERROR
+        -------------------------------------------- */
+
+        if (!response.ok) {
+
+            const errorText =
+                await response.text();
+
+            let errorMessage =
+                "Unable to load buyer attachment.";
+
+
+            try {
+
+                const errorData =
+                    JSON.parse(errorText);
+
+
+                errorMessage =
+                    errorData.detail ||
+                    errorData.message ||
+                    errorMessage;
+
+            } catch {
+
+                if (errorText) {
+
+                    errorMessage =
+                        errorText;
+
+                }
+
+            }
+
+
+            throw new Error(
+                `Status ${response.status}: ${errorMessage}`
+            );
+
+        }
+
+
+        /* --------------------------------------------
+           CHECK CONTENT TYPE
+        -------------------------------------------- */
+
+        const contentType =
+            response.headers.get(
+                "content-type"
+            ) || "";
+
+
+        /* --------------------------------------------
+           IF DIRECT FILE RESPONSE
+        -------------------------------------------- */
+
+        if (
+            !contentType.includes(
+                "application/json"
+            )
+        ) {
+
+            const blob =
+                await response.blob();
+
+
+            if (!blob.size) {
+
+                throw new Error(
+                    "The buyer attachment is empty."
+                );
+
+            }
+
+
+            const blobUrl =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            window.open(
+                blobUrl,
+                "_blank"
+            );
+
+
+            setTimeout(
+                () => {
+
+                    URL.revokeObjectURL(
+                        blobUrl
+                    );
+
+                },
+                60000
+            );
+
+
+            return;
+
+        }
+
+
+        /* --------------------------------------------
+           IF JSON RESPONSE
+        -------------------------------------------- */
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "BUYER ATTACHMENT DATA:",
+            data
+        );
+
+
+        const attachmentUrl =
+            data.attachment_url ||
+            data.file_url ||
+            data.document_url ||
+            data.url ||
+            data.attachment_path ||
+            data.file_path ||
+            data.document_path;
+
+
+        if (!attachmentUrl) {
+
+            throw new Error(
+                "No attachment was found for this buyer."
+            );
+
+        }
+
+
+        /* --------------------------------------------
+           HANDLE RELATIVE URL
+        -------------------------------------------- */
+
+        let finalUrl =
+            attachmentUrl;
+
+
+        if (
+            !attachmentUrl.startsWith(
+                "http://"
+            ) &&
+            !attachmentUrl.startsWith(
+                "https://"
+            ) &&
+            !attachmentUrl.startsWith(
+                "blob:"
+            ) &&
+            !attachmentUrl.startsWith(
+                "data:"
+            )
+        ) {
+
+            if (
+                attachmentUrl.startsWith("/")
+            ) {
+
+                finalUrl =
+                    `${API_BASE_URL}${attachmentUrl}`;
+
+            } else {
+
+                finalUrl =
+                    `${API_BASE_URL}/${attachmentUrl}`;
+
+            }
+
+        }
+
+
+        console.log(
+            "OPENING ATTACHMENT:",
+            finalUrl
+        );
+
+
+        window.open(
+            finalUrl,
+            "_blank"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "VIEW BUYER ATTACHMENT ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Failed to open buyer attachment."
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.textContent =
+                button.dataset.originalText ||
+                "View Attachment";
+
+        }
+
+    }
+
+}
+
+
+/* ============================================================
    LOAD BUYER REGISTRY
 ============================================================ */
 
 async function loadBuyerRegistry() {
 
-    await Promise.all([
-        loadPendingBuyers(),
-        loadVerifiedBuyers()
-    ]);
+    await Promise.all(
+        [
+            loadPendingBuyers(),
+            loadVerifiedBuyers()
+        ]
+    );
 
 }
 
@@ -509,13 +937,11 @@ async function loadPendingBuyers() {
 
 
     if (!tbody) {
+
         return;
+
     }
 
-
-    /*
-     * Loading state
-     */
 
     tbody.innerHTML = `
         <tr>
@@ -545,8 +971,8 @@ async function loadPendingBuyers() {
 
             throw new Error(
                 `Failed to fetch pending buyers.
-                 Status: ${response.status}
-                 ${errorText}`
+Status: ${response.status}
+${errorText}`
             );
 
         }
@@ -578,13 +1004,18 @@ async function loadPendingBuyers() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="2">
+
                     <strong>
                         Unable to load pending buyers.
                     </strong>
+
                     <br>
+
                     <small>
-                        Check if FastAPI is running.
+                        Check if FastAPI is running
+                        and the endpoint is available.
                     </small>
+
                 </td>
             </tr>
         `;
@@ -607,7 +1038,9 @@ function renderPendingBuyers(buyers) {
 
 
     if (!tbody) {
+
         return;
+
     }
 
 
@@ -625,61 +1058,64 @@ function renderPendingBuyers(buyers) {
         `;
 
         return;
+
     }
 
 
-    buyers.forEach(buyer => {
+    buyers.forEach(
+        buyer => {
 
-        const row =
-            document.createElement("tr");
-
-
-        row.className =
-            "clickable-row";
+            const row =
+                document.createElement("tr");
 
 
-        row.dataset.buyerStatusId =
-            buyer.buyer_status_id ?? "";
+            row.className =
+                "clickable-row";
 
 
-        row.dataset.buyerRegistryId =
-            buyer.buyer_registry_id ?? "";
+            row.dataset.buyerStatusId =
+                buyer.buyer_status_id ?? "";
 
 
-        row.innerHTML = `
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        buyer.organization || "N/A"
-                    )}
-                </span>
-            </td>
-
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        buyer.contact_person || "N/A"
-                    )}
-                </span>
-            </td>
-        `;
+            row.dataset.buyerRegistryId =
+                buyer.buyer_registry_id ?? "";
 
 
-        row.addEventListener(
-            "click",
-            () => {
+            row.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            buyer.organization || "N/A"
+                        )}
+                    </span>
+                </td>
 
-                openBuyerReview(
-                    buyer
-                );
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            buyer.contact_person || "N/A"
+                        )}
+                    </span>
+                </td>
+            `;
 
-            }
-        );
+
+            row.addEventListener(
+                "click",
+                () => {
+
+                    openBuyerReview(
+                        buyer
+                    );
+
+                }
+            );
 
 
-        tbody.appendChild(row);
+            tbody.appendChild(row);
 
-    });
+        }
+    );
 
 }
 
@@ -697,7 +1133,9 @@ async function loadVerifiedBuyers() {
 
 
     if (!tbody) {
+
         return;
+
     }
 
 
@@ -729,8 +1167,8 @@ async function loadVerifiedBuyers() {
 
             throw new Error(
                 `Failed to fetch verified buyers.
-                 Status: ${response.status}
-                 ${errorText}`
+Status: ${response.status}
+${errorText}`
             );
 
         }
@@ -762,13 +1200,18 @@ async function loadVerifiedBuyers() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5">
+
                     <strong>
                         Unable to load verified buyers.
                     </strong>
+
                     <br>
+
                     <small>
-                        Check if FastAPI is running.
+                        Check if FastAPI is running
+                        and the endpoint is available.
                     </small>
+
                 </td>
             </tr>
         `;
@@ -791,7 +1234,9 @@ function renderVerifiedBuyers(buyers) {
 
 
     if (!tbody) {
+
         return;
+
     }
 
 
@@ -809,63 +1254,64 @@ function renderVerifiedBuyers(buyers) {
         `;
 
         return;
+
     }
 
 
-    buyers.forEach(buyer => {
+    buyers.forEach(
+        buyer => {
 
-        const row =
-            document.createElement("tr");
-
-
-        row.innerHTML = `
-
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        buyer.organization || "N/A"
-                    )}
-                </span>
-            </td>
-
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        buyer.contact_person || "N/A"
-                    )}
-                </span>
-            </td>
-
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        buyer.email_address || "N/A"
-                    )}
-                </span>
-            </td>
-
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        getBuyerCommodities(
-                            buyer
-                        )
-                    )}
-                </span>
-            </td>
-
-            <td>
-                <span class="status-text-verified">
-                    Verified
-                </span>
-            </td>
-
-        `;
+            const row =
+                document.createElement("tr");
 
 
-        tbody.appendChild(row);
+            row.innerHTML = `
 
-    });
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            buyer.organization || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            buyer.contact_person || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            buyer.email_address || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            getBuyerCommodities(buyer)
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-text-verified">
+                        Verified
+                    </span>
+                </td>
+
+            `;
+
+
+            tbody.appendChild(row);
+
+        }
+    );
 
 }
 
@@ -892,9 +1338,9 @@ function openBuyerReview(buyer) {
         );
 
 
-    /*
-     * Organization
-     */
+    /* --------------------------------------------
+       ORGANIZATION
+    -------------------------------------------- */
 
     const reviewOrg =
         document.getElementById(
@@ -910,9 +1356,9 @@ function openBuyerReview(buyer) {
     }
 
 
-    /*
-     * Contact
-     */
+    /* --------------------------------------------
+       CONTACT PERSON
+    -------------------------------------------- */
 
     const reviewContact =
         document.getElementById(
@@ -928,9 +1374,9 @@ function openBuyerReview(buyer) {
     }
 
 
-    /*
-     * Email
-     */
+    /* --------------------------------------------
+       EMAIL
+    -------------------------------------------- */
 
     const reviewEmail =
         document.getElementById(
@@ -946,18 +1392,18 @@ function openBuyerReview(buyer) {
     }
 
 
-    /*
-     * Commodities
-     */
+    /* --------------------------------------------
+       COMMODITIES
+    -------------------------------------------- */
 
     renderReviewCommodities(
         buyer
     );
 
 
-    /*
-     * Message
-     */
+    /* --------------------------------------------
+       MESSAGE
+    -------------------------------------------- */
 
     const messageTextarea =
         document.querySelector(
@@ -974,9 +1420,9 @@ function openBuyerReview(buyer) {
     }
 
 
-    /*
-     * Show review screen
-     */
+    /* --------------------------------------------
+       SHOW REVIEW
+    -------------------------------------------- */
 
     buyerRegistryList?.classList.add(
         "hidden-element"
@@ -1003,7 +1449,9 @@ function renderReviewCommodities(buyer) {
 
 
     if (!container) {
+
         return;
+
     }
 
 
@@ -1019,17 +1467,26 @@ function renderReviewCommodities(buyer) {
     if (!commodities.length) {
 
         const span =
-            document.createElement("span");
+            document.createElement(
+                "span"
+            );
+
 
         span.className =
             "pill";
 
+
         span.textContent =
             "Not specified";
 
-        container.appendChild(span);
+
+        container.appendChild(
+            span
+        );
+
 
         return;
+
     }
 
 
@@ -1041,11 +1498,14 @@ function renderReviewCommodities(buyer) {
                     "span"
                 );
 
+
             span.className =
                 "pill";
 
+
             span.textContent =
                 commodity;
+
 
             container.appendChild(
                 span
@@ -1058,17 +1518,21 @@ function renderReviewCommodities(buyer) {
 
 
 /* ============================================================
-   GET COMMODITIES
+   GET COMMODITY ARRAY
 ============================================================ */
 
 function getCommodityArray(buyer) {
 
-    /*
-     * Your current buyer_status API
-     * does NOT return commodities.
-     *
-     * This supports possible future fields.
-     */
+    if (!buyer) {
+
+        return [];
+
+    }
+
+
+    /* --------------------------------------------
+       ARRAY
+    -------------------------------------------- */
 
     if (
         Array.isArray(
@@ -1076,30 +1540,45 @@ function getCommodityArray(buyer) {
         )
     ) {
 
-        return buyer.commodities;
-
-    }
-
-
-    if (
-        typeof buyer.commodities ===
-        "string"
-    ) {
-
         return buyer.commodities
-            .split(",")
-            .map(item => item.trim())
+            .map(
+                item =>
+                    String(item).trim()
+            )
             .filter(Boolean);
 
     }
 
 
+    /* --------------------------------------------
+       STRING
+    -------------------------------------------- */
+
     if (
-        buyer.commodity
+        typeof buyer.commodities === "string"
     ) {
 
+        return buyer.commodities
+            .split(",")
+            .map(
+                item =>
+                    item.trim()
+            )
+            .filter(Boolean);
+
+    }
+
+
+    /* --------------------------------------------
+       SINGLE COMMODITY
+    -------------------------------------------- */
+
+    if (buyer.commodity) {
+
         return [
-            buyer.commodity
+            String(
+                buyer.commodity
+            ).trim()
         ];
 
     }
@@ -1123,11 +1602,15 @@ function getBuyerCommodities(buyer) {
 
 
     if (!commodities.length) {
+
         return "Not specified";
+
     }
 
 
-    return commodities.join(", ");
+    return commodities.join(
+        ", "
+    );
 
 }
 
@@ -1262,10 +1745,9 @@ async function approveSelectedBuyer() {
         showBuyerList();
 
 
-        /*
-         * IMPORTANT:
-         * Reload both tables from PostgreSQL.
-         */
+        /* --------------------------------------------
+           REFRESH BOTH TABLES
+        -------------------------------------------- */
 
         await loadBuyerRegistry();
 
@@ -1391,9 +1873,9 @@ async function rejectSelectedBuyer() {
         showBuyerList();
 
 
-        /*
-         * Refresh database data.
-         */
+        /* --------------------------------------------
+           REFRESH BOTH TABLES
+        -------------------------------------------- */
 
         await loadBuyerRegistry();
 
@@ -1434,7 +1916,9 @@ async function parseResponse(response) {
 
 
     if (!text) {
+
         return {};
+
     }
 
 
@@ -1465,15 +1949,19 @@ function setButtonLoading(
 ) {
 
     if (!button) {
+
         return;
+
     }
 
 
     button.disabled =
         true;
 
+
     button.dataset.originalText =
         button.textContent;
+
 
     button.textContent =
         text;
@@ -1491,7 +1979,9 @@ function resetButton(
 ) {
 
     if (!button) {
+
         return;
+
     }
 
 
@@ -1509,9 +1999,7 @@ function resetButton(
    CLOSE MODAL
 ============================================================ */
 
-function closeModal(
-    modalId
-) {
+function closeModal(modalId) {
 
     const modal =
         document.getElementById(
@@ -1535,6 +2023,7 @@ function showError(message) {
     console.error(
         message
     );
+
 
     alert(
         message
@@ -1560,22 +2049,27 @@ function escapeHtml(value) {
 
 
     return String(value)
+
         .replace(
             /&/g,
             "&amp;"
         )
+
         .replace(
             /</g,
             "&lt;"
         )
+
         .replace(
             />/g,
             "&gt;"
         )
+
         .replace(
             /"/g,
             "&quot;"
         )
+
         .replace(
             /'/g,
             "&#039;"
@@ -1614,6 +2108,10 @@ function initAlertThreshold() {
         );
 
 
+    /* --------------------------------------------
+       UPDATE THRESHOLD UI
+    -------------------------------------------- */
+
     function updateThreshold(value) {
 
         if (thresholdRange) {
@@ -1627,7 +2125,7 @@ function initAlertThreshold() {
         if (thresholdValue) {
 
             thresholdValue.textContent =
-                value + "%";
+                `${value}%`;
 
         }
 
@@ -1647,6 +2145,10 @@ function initAlertThreshold() {
     }
 
 
+    /* --------------------------------------------
+       RANGE INPUT
+    -------------------------------------------- */
+
     thresholdRange?.addEventListener(
         "input",
         event => {
@@ -1658,6 +2160,10 @@ function initAlertThreshold() {
         }
     );
 
+
+    /* --------------------------------------------
+       THRESHOLD CHIPS
+    -------------------------------------------- */
 
     chips.forEach(
         chip => {
@@ -1676,6 +2182,10 @@ function initAlertThreshold() {
         }
     );
 
+
+    /* --------------------------------------------
+       SAVE CONFIGURATION
+    -------------------------------------------- */
 
     saveBtn?.addEventListener(
         "click",
@@ -1705,13 +2215,17 @@ function initAlertThreshold() {
 
             const payload = {
 
-                commodity,
+                commodity:
+                    commodity || null,
 
-                baseDemand,
+                baseDemand:
+                    baseDemand || null,
 
-                oversupplyThreshold,
+                oversupplyThreshold:
+                    oversupplyThreshold || null,
 
-                etlSchedule
+                etlSchedule:
+                    etlSchedule || null
 
             };
 
@@ -1780,9 +2294,9 @@ function initReportsSection() {
         );
 
 
-    /*
-     * Report list
-     */
+    /* --------------------------------------------
+       REPORT LIST
+    -------------------------------------------- */
 
     document
         .querySelectorAll(".report-item")
@@ -1820,9 +2334,9 @@ function initReportsSection() {
         });
 
 
-    /*
-     * Return
-     */
+    /* --------------------------------------------
+       RETURN TO REPORT LIST
+    -------------------------------------------- */
 
     returnReportListBtn?.addEventListener(
         "click",
@@ -1841,9 +2355,9 @@ function initReportsSection() {
     );
 
 
-    /*
-     * Flag
-     */
+    /* --------------------------------------------
+       FLAG REPORT
+    -------------------------------------------- */
 
     flagReportBtn?.addEventListener(
         "click",
@@ -1865,9 +2379,9 @@ function initReportsSection() {
     );
 
 
-    /*
-     * Approve report
-     */
+    /* --------------------------------------------
+       APPROVE REPORT
+    -------------------------------------------- */
 
     approveReportBtn?.addEventListener(
         "click",
@@ -1881,9 +2395,9 @@ function initReportsSection() {
     );
 
 
-    /*
-     * Close approved modal
-     */
+    /* --------------------------------------------
+       CLOSE APPROVED MODAL
+    -------------------------------------------- */
 
     closeReportApprovedBtn?.addEventListener(
         "click",
@@ -1915,10 +2429,12 @@ function initReportsSection() {
 
 function initModalListeners() {
 
+    /* --------------------------------------------
+       CLICK OUTSIDE MODAL
+    -------------------------------------------- */
+
     document
-        .querySelectorAll(
-            ".modal-overlay"
-        )
+        .querySelectorAll(".modal-overlay")
         .forEach(modal => {
 
             modal.addEventListener(
@@ -1926,8 +2442,7 @@ function initModalListeners() {
                 event => {
 
                     if (
-                        event.target ===
-                        modal
+                        event.target === modal
                     ) {
 
                         modal.classList.remove(
@@ -1942,10 +2457,12 @@ function initModalListeners() {
         });
 
 
+    /* --------------------------------------------
+       CANCEL BUTTONS
+    -------------------------------------------- */
+
     document
-        .querySelectorAll(
-            ".modal-cancel-btn"
-        )
+        .querySelectorAll(".modal-cancel-btn")
         .forEach(button => {
 
             button.addEventListener(

@@ -2,6 +2,7 @@ import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -248,7 +249,63 @@ def read_buyer_registry(
         )
 
     return db_buyer
+# ============================================================
+# VIEW / DOWNLOAD BUYER REGISTRY ATTACHMENT
+# ============================================================
 
+@router.get(
+    "/buyer-registry/{buyer_registry_id}/attachment"
+)
+def view_buyer_registry_attachment(
+    buyer_registry_id: int,
+    db: Session = Depends(get_db)
+):
+
+    db_buyer = (
+        db.query(BuyerRegistry)
+        .filter(
+            BuyerRegistry.buyer_registry_id
+            == buyer_registry_id
+        )
+        .first()
+    )
+
+    if not db_buyer:
+        raise HTTPException(
+            status_code=404,
+            detail="Buyer registry not found."
+        )
+
+    if not db_buyer.document:
+        raise HTTPException(
+            status_code=404,
+            detail="No attachment found for this buyer registry."
+        )
+
+    file_path = os.path.abspath(db_buyer.document)
+
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=404,
+            detail="Attachment file does not exist on the server."
+        )
+
+    extension = os.path.splitext(file_path)[1].lower()
+
+    media_type = "application/octet-stream"
+
+    if extension == ".pdf":
+        media_type = "application/pdf"
+
+    elif extension in [".jpg", ".jpeg"]:
+        media_type = "image/jpeg"
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=os.path.basename(file_path),
+        content_disposition_type="inline"
+    )
 # ============================================================
 # UPDATE BUYER REGISTRY
 # ============================================================

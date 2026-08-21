@@ -59,7 +59,21 @@ class User(Base):
         String(255),
         nullable=False
     )
+    # ============================================================
+    # PASSWORD RESET
+    # ============================================================
 
+    reset_token = Column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+
+    reset_token_expires = Column(
+        DateTime,
+        nullable=True
+    )
     # ============================================================
     # ROLE
     # ============================================================
