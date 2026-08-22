@@ -15,13 +15,15 @@ from src.api.schemas.offtake_requests import (
 
 router = APIRouter()
 
-
 @router.post("/", response_model=OfftakeRequestResponse)
 async def create_offtake_request(
     request: OfftakeRequestCreate,
     db: Session = Depends(get_db)
 ):
-    # 1. Check if farmer exists
+    # ============================================================
+    # 1. CHECK IF FARMER EXISTS
+    # ============================================================
+
     farmer = (
         db.query(Farmer)
         .filter(Farmer.farmer_id == request.farmer_id)
@@ -34,21 +36,41 @@ async def create_offtake_request(
             detail="Farmer not found"
         )
 
-    # 2. Create offtake request
-    db_request = OfftakeRequest(**request.model_dump())
+    # ============================================================
+    # 2. CREATE OFFTAKE REQUEST
+    # ============================================================
 
-    # 3. Save to database
+    db_request = OfftakeRequest(
+        **request.model_dump()
+    )
+
+    # ============================================================
+    # 3. SAVE TO DATABASE
+    # ============================================================
+
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
 
-    # 4. Get all buyers
-    buyers = db.query(Buyer).all()
+    # ============================================================
+    # 4. GET ALL BUYERS
+    # ============================================================
 
-    # 5. Notify buyers
+    buyers = (
+        db.query(Buyer)
+        .filter(Buyer.email_address.isnot(None))
+        .all()
+    )
+
+    # ============================================================
+    # 5. SEND EMAIL NOTIFICATION TO BUYERS
+    # ============================================================
+
     for buyer in buyers:
+
         try:
-            await send_offtake_request_email(
+
+            message_id = await send_offtake_request_email(
                 buyer_email=buyer.email_address,
                 buyer_name=buyer.buyer_name,
                 commodity=db_request.commodity,
@@ -58,14 +80,24 @@ async def create_offtake_request(
                 farmer_location=farmer.address,
             )
 
-        except Exception as e:
             print(
-                f"Failed to send email to "
-                f"{buyer.email_address}: {str(e)}"
+                f"Offtake request email sent successfully "
+                f"to {buyer.email_address} "
+                f"| message_id: {message_id}"
             )
 
-    return db_request
+        except Exception as e:
 
+            print(
+                f"Failed to send offtake request email "
+                f"to {buyer.email_address}: {str(e)}"
+            )
+
+    # ============================================================
+    # 6. RETURN CREATED REQUEST
+    # ============================================================
+
+    return db_request
 
 @router.get(
     "/{offtake_request_id}",
