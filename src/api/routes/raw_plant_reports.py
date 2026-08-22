@@ -2,59 +2,192 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
+
 from src.models.raw_plant_reports import RawPlantReport
+from src.models.planting_intents import PlantingIntent
+from src.models.report_planting_intents import ReportPlantingIntent
+from src.models.report_submission import ReportSubmission
+from src.models.users import User
+
 from src.api.schemas.raw_plant_reports import (
     RawPlantReportCreate,
     RawPlantReportUpdate,
     RawPlantReportResponse,
 )
 
+# IMPORTANT:
+# Palitan ang import na ito depende sa location ng
+# get_current_user function mo.
+#
+# Example:
+# from src.api.dependencies.auth import get_current_user
+
+from src.core.auth import get_current_user
+
+
 router = APIRouter()
 
 
-@router.post("/", response_model=RawPlantReportResponse)
-def create_raw_plant_report(
-    raw_plant_report: RawPlantReportCreate,
-    db: Session = Depends(get_db)
+# ============================================================
+# CREATE REPORT FROM PLANTING INTENT
+# ============================================================
+
+@router.post("/from-planting-intent/{planting_intent_id}")
+def create_report_from_planting_intent(
+    planting_intent_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    db_report = RawPlantReport(**raw_plant_report.model_dump())
 
-    db.add(db_report)
-    db.commit()
-    db.refresh(db_report)
+    # --------------------------------------------------------
+    # CHECK CURRENT USER
+    # --------------------------------------------------------
 
-    return db_report
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
 
+    # --------------------------------------------------------
+    # CHECK PLANTING INTENT
+    # --------------------------------------------------------
 
-@router.get("/{report_id}", response_model=RawPlantReportResponse)
-def read_raw_plant_report(
-    report_id: int,
-    db: Session = Depends(get_db)
-):
-    db_report = (
-        db.query(RawPlantReport)
-        .filter(RawPlantReport.report_id == report_id)
+    planting_intent = (
+        db.query(PlantingIntent)
+        .filter(
+            PlantingIntent.planting_intent_id
+            == planting_intent_id
+        )
         .first()
     )
 
-    if not db_report:
+    if not planting_intent:
         raise HTTPException(
             status_code=404,
-            detail="Raw plant report not found"
+            detail="Planting intent not found."
         )
 
-    return db_report
+    # --------------------------------------------------------
+    # CHECK IF REPORT ALREADY EXISTS
+    # --------------------------------------------------------
 
+    existing_link = (
+        db.query(ReportPlantingIntent)
+        .filter(
+            ReportPlantingIntent.planting_intent_id
+            == planting_intent_id
+        )
+        .first()
+    )
 
-@router.put("/{report_id}", response_model=RawPlantReportResponse)
+    if existing_link:
+        raise HTTPException(
+            status_code=400,
+            detail="A report already exists for this planting intent."
+        )
+# ============================================================
+# CREATE RAW PLANT REPORT
+# ============================================================
+
+@router.post("/")
+def create_raw_plant_report(
+    raw_plant_report: RawPlantReportCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+
+    # --------------------------------------------------------
+    # CHECK CURRENT USER
+    # --------------------------------------------------------
+
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
+
+    # --------------------------------------------------------
+    # CREATE RAW PLANT REPORT
+    #
+    # encoded_by = currently logged-in user
+    # municipal_coordinator_id = can be None
+    # --------------------------------------------------------
+
+    db_report = RawPlantReport(
+        planting_date=raw_plant_report.planting_date,
+        estimated_yield=raw_plant_report.estimated_yield,
+        municipal_coordinator_id=(
+            raw_plant_report.municipal_coordinator_id
+        ),
+        encoded_by=current_user.user_id,
+    )
+
+    db.add(db_report)
+
+    # Generate report_id
+    db.flush()
+
+    # --------------------------------------------------------
+    # CREATE REPORT SUBMISSION
+    # --------------------------------------------------------
+
+    submission = ReportSubmission(
+        report_id=db_report.report_id,
+        status="DRAFT",
+        current_validator_id=None,
+        current_validator_role=None,
+        revision_remarks=None,
+        revision_count=0,
+    )
+
+    db.add(submission)
+
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
+
+    db.commit()
+
+    db.refresh(db_report)
+    db.refresh(submission)
+
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
+
+    return {
+        "message": "Raw plant report created successfully.",
+        "report_id": db_report.report_id,
+        "submission_id": submission.submission_id,
+        "status": submission.status,
+        "planting_date": db_report.planting_date,
+        "estimated_yield": db_report.estimated_yield,
+        "municipal_coordinator_id": (
+            db_report.municipal_coordinator_id
+        ),
+        "encoded_by": db_report.encoded_by,
+    }
+
+# ============================================================
+# UPDATE RAW PLANT REPORT
+# ============================================================
+
+@router.put(
+    "/{report_id}",
+    response_model=RawPlantReportResponse
+)
 def update_raw_plant_report(
     report_id: int,
     raw_plant_report: RawPlantReportUpdate,
     db: Session = Depends(get_db)
 ):
+
     db_report = (
         db.query(RawPlantReport)
-        .filter(RawPlantReport.report_id == report_id)
+        .filter(
+            RawPlantReport.report_id == report_id
+        )
         .first()
     )
 
@@ -64,23 +197,38 @@ def update_raw_plant_report(
             detail="Raw plant report not found"
         )
 
-    for key, value in raw_plant_report.model_dump(exclude_unset=True).items():
-        setattr(db_report, key, value)
+    for key, value in raw_plant_report.model_dump(
+        exclude_unset=True
+    ).items():
+
+        setattr(
+            db_report,
+            key,
+            value
+        )
 
     db.commit()
+
     db.refresh(db_report)
 
     return db_report
 
+
+# ============================================================
+# DELETE RAW PLANT REPORT
+# ============================================================
 
 @router.delete("/{report_id}")
 def delete_raw_plant_report(
     report_id: int,
     db: Session = Depends(get_db)
 ):
+
     db_report = (
         db.query(RawPlantReport)
-        .filter(RawPlantReport.report_id == report_id)
+        .filter(
+            RawPlantReport.report_id == report_id
+        )
         .first()
     )
 
@@ -91,8 +239,10 @@ def delete_raw_plant_report(
         )
 
     db.delete(db_report)
+
     db.commit()
 
     return {
-        "message": "Raw plant report deleted successfully."
+        "message":
+            "Raw plant report deleted successfully."
     }

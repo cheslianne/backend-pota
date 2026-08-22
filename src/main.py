@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from src.models.report_submission import ReportSubmission
+from src.models.report_validation_history import ReportValidationHistory
 from src.api.routes import (
     users,
     auth,
@@ -14,6 +15,7 @@ from src.api.routes import (
     price_data,
     raw_plant_reports,
     report_planting_intents,
+    report_submission,
     audit_logs,
     email,
 )
@@ -130,6 +132,11 @@ app.include_router(
     tags=["Email"]
 )
 
+app.include_router(
+    report_submission.router,
+    prefix="/api/report-submissions",
+    tags=["Report Submissions"]
+)
 
 # =========================================================
 # ROOT

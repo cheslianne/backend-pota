@@ -1011,83 +1011,169 @@
         </div>
       </section>
 
-
-
-
       <!-- VIEW 2: Planting Intent -->
-      <section class="view" id="view-planting-intent">
-        <div id="plantingIntentListSubview">
-          <div class="main-header">
-            <h1>Planting Intents</h1>
+<section class="view" id="view-planting-intent">
+
+  <!-- PLANTING INTENT LIST -->
+  <div id="plantingIntentListSubview">
+
+    <div class="main-header">
+      <h1>Planting Intents</h1>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Commodity</th>
+            <th>Estimated Volume</th>
+            <th>Location</th>
+            <th>Planting Date</th>
+            <th>Harvest Date</th>
+          </tr>
+        </thead>
+        <tbody id="plantingIntentsTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions-right-row">
+      <button class="btn-outline-report" id="addPlantIntentBtn" type="button">
+        Add Plant Intent
+      </button>
+    </div>
+
+  </div>
+
+  <!-- SUBMIT PLANTING INTENT -->
+  <div id="submitPlantIntentSubview" class="hidden-element">
+
+    <div class="main-header">
+      <h1>Submit Planting Intent</h1>
+    </div>
+
+    <div class="card">
+
+      <form id="submitPlantIntentForm">
+
+        <div class="form-grid-two">
+
+          <div class="form-field-item">
+            <label>Farmer Name <span class="req">*</span></label>
+            <input type="text" id="piFarmerName" required>
           </div>
-          <div class="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Commodity</th>
-                  <th>Estimated Volume</th>
-                  <th>Location</th>
-                  <th>Planting Date</th>
-                  <th>Harvest Date</th>
-                </tr>
-              </thead>
-              <tbody id="plantingIntentsTableBody"></tbody>
-            </table>
+
+          <div class="form-field-item">
+            <label>Planting Date <span class="req">*</span></label>
+            <input type="date" id="piPlantDate" required>
           </div>
-          <div class="actions-right-row">
-            <button class="btn-outline-report" id="addPlantIntentBtn" type="button">Add Plant Intent</button>
+
+          <div class="form-field-item">
+            <label>Farmer ID <span class="req">*</span></label>
+            <input type="text" id="piFarmerId" required>
           </div>
+
+          <div class="form-field-item">
+            <label>Harvest Date <span class="req">*</span></label>
+            <input type="date" id="piHarvestDate" required>
+          </div>
+
+          <div class="form-field-item">
+            <label>Commodity <span class="req">*</span></label>
+            <input type="text" id="piCommodity" required>
+          </div>
+
+          <div class="form-field-item">
+            <label>Estimated Volume (kg) <span class="req">*</span></label>
+            <input type="number" id="piVolume" placeholder="e.g. 15000" required>
+          </div>
+
+          <div class="form-field-item form-field-full">
+            <label>Remarks</label>
+            <textarea id="piRemarks"></textarea>
+          </div>
+
         </div>
 
-
-
-
-        <div id="submitPlantIntentSubview" class="hidden-element">
-          <div class="main-header"><h1>Submit Planting Intent</h1></div>
-          <div class="card">
-            <form id="submitPlantIntentForm">
-              <div class="form-grid-two">
-                <div class="form-field-item">
-                  <label>Farmer Name <span class="req">*</span></label>
-                  <input type="text" id="piFarmerName" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Planting Date <span class="req">*</span></label>
-                  <input type="date" id="piPlantDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Farmer ID <span class="req">*</span></label>
-                  <input type="text" id="piFarmerId" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Harvest Date <span class="req">*</span></label>
-                  <input type="date" id="piHarvestDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Commodity <span class="req">*</span></label>
-                  <input type="text" id="piCommodity" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Estimated Volume (kg) <span class="req">*</span></label>
-                  <input type="number" id="piVolume" placeholder="e.g. 15000" required>
-                </div>
-                <div class="form-field-item form-field-full">
-                  <label>Remarks</label>
-                  <textarea id="piRemarks"></textarea>
-                </div>
-              </div>
-              <div class="actions-right-row">
-                <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
-                <button class="btn-outline-report" type="submit">Submit</button>
-              </div>
-            </form>
-          </div>
+        <div class="actions-right-row">
+          <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
+          <button class="btn-outline-report" type="submit">Submit</button>
         </div>
-      </section>
 
+      </form>
 
+    </div>
 
+  </div>
+
+  <!-- PLANTING INTENT DETAILS -->
+  <div id="plantingIntentDetailsSubview" class="hidden-element">
+
+    <div class="main-header">
+      <h1>Planting Intent Details</h1>
+    </div>
+
+    <div class="card">
+
+      <div class="form-grid-two">
+
+        <div class="form-field-item">
+          <label>Planting Intent ID</label>
+          <input type="text" id="detailPlantingIntentId" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Farmer Name</label>
+          <input type="text" id="detailFarmerName" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Farmer ID</label>
+          <input type="text" id="detailFarmerId" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Commodity</label>
+          <input type="text" id="detailCommodity" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Estimated Volume</label>
+          <input type="text" id="detailVolume" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Location</label>
+          <input type="text" id="detailLocation" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Planting Date</label>
+          <input type="text" id="detailPlantingDate" readonly>
+        </div>
+
+        <div class="form-field-item">
+          <label>Harvest Date</label>
+          <input type="text" id="detailHarvestDate" readonly>
+        </div>
+
+        <div class="form-field-item form-field-full">
+          <label>Remarks</label>
+          <textarea id="detailRemarks" readonly></textarea>
+        </div>
+
+      </div>
+
+      <div class="actions-right-row">
+        <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
+        <button class="btn-outline-report" id="submitPlantingIntentBtn" type="button">Submit Planting Intent</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
 
       <!-- VIEW 3: Offtake Request -->
       <section class="view" id="view-offtake-request">
@@ -1273,25 +1359,24 @@
 
 
 
-
-      <!-- VIEW 6: Reports -->
-      <section class="view" id="view-reports">
-        <div id="reportsListSubview">
-          <div class="main-header"><h1>All Reports</h1></div>
-          <div class="card">
-            <div class="crop-reports-banner">Crop Reports</div>
-            <div class="report-list-box">
-              <div class="report-list-row" data-status="approved">
-                <span>Onion Harvest Report - Sta. Monica</span>
-                <span>2026-2-1</span>
-                <span class="status-text-approved">Approved</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
+<!-- VIEW 6: Reports -->
+<section class="view" id="view-reports">
+  <div id="reportsListSubview">
+    <div class="main-header">
+      <h1>All Reports</h1>
+    </div>
+    
+    <div class="card">
+      <div class="crop-reports-banner">Crop Reports</div>
+      
+      <!-- ✅ ITO ANG BAGONG CONTAINER -->
+      <div id="allReportsContainer">
+        <!-- Dynamic reports will be rendered here -->
+      </div>
+      
+    </div>
+  </div>
+</section>
 
 
     </main>
@@ -1380,11 +1465,3 @@
  <script src="../assets/js/aew.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

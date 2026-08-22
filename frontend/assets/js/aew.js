@@ -22,6 +22,12 @@ const FARMERS_ENDPOINT =
 const PLANTING_INTENTS_ENDPOINT =
     `${API_BASE_URL}/api/planting-intents/`;
 
+const RAW_PLANT_REPORTS_ENDPOINT =
+    `${API_BASE_URL}/api/raw-plant-reports`;
+
+const REPORT_SUBMISSIONS_ENDPOINT =
+    `${API_BASE_URL}/api/report-submissions`;
+
 
 
 
@@ -131,6 +137,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     await fetchFarmers();
+
+    await loadAllReports();
 });
 
 
@@ -2745,6 +2753,306 @@ function initPlantingIntent() {
             }
         );
 
+        /* --------------------------------------------------------
+   BACK FROM DETAILS
+-------------------------------------------------------- */
+
+document
+    .getElementById(
+        "backFromPlantingIntentDetailsBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            document
+                .getElementById(
+                    "plantingIntentDetailsSubview"
+                )
+                ?.classList.add(
+                    "hidden-element"
+                );
+
+            list?.classList.remove(
+                "hidden-element"
+            );
+
+            window.currentSelectedPlantingIntent =
+                null;
+        }
+    );
+
+    /* ============================================================
+   SUBMIT PLANTING INTENT → RAW PLANT REPORT
+   FLOW:
+   Planting Intent
+        ↓
+   Create RawPlantReport
+        ↓
+   Get report_id
+        ↓
+   Submit Report
+        ↓
+   FOR_MUNICIPAL_VALIDATION
+============================================================ */
+
+document
+    .getElementById(
+        "submitPlantingIntentBtn"
+    )
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const intent =
+                window.currentSelectedPlantingIntent;
+
+
+            if (!intent) {
+
+                alert(
+                    "No planting intent selected."
+                );
+
+                return;
+            }
+
+
+            console.log(
+                "Submitting Planting Intent:",
+                intent
+            );
+
+
+            /* ====================================================
+               VALIDATE PLANTING DATE
+            ==================================================== */
+
+            if (!intent.planting_date) {
+
+                alert(
+                    "Planting date is required."
+                );
+
+                return;
+            }
+
+
+            /* ====================================================
+               ESTIMATED YIELD
+               
+               For now:
+               Planting Intent volume = Estimated Yield
+            ==================================================== */
+
+            const estimatedYield =
+                String(
+                    intent.volume ?? ""
+                )
+                .replace(/,/g, "")
+                .replace(/kg/gi, "")
+                .trim();
+
+
+            if (
+                !estimatedYield ||
+                !/^\d+(\.\d+)?$/.test(
+                    estimatedYield
+                )
+            ) {
+
+                alert(
+                    "Estimated yield must be a valid number."
+                );
+
+                return;
+            }
+
+
+            /* ====================================================
+               RAW PLANT REPORT PAYLOAD
+               
+               municipal_coordinator_id = NULL
+               encoded_by = handled by backend
+            ==================================================== */
+
+           const encodedBy =
+    localStorage.getItem("user_id");
+
+if (!encodedBy) {
+
+    alert(
+        "Logged-in user ID was not found."
+    );
+
+    return;
+}
+
+
+const rawPlantReportData = {
+
+    planting_date:
+        intent.planting_date,
+
+    estimated_yield:
+        estimatedYield,
+
+    municipal_coordinator_id:
+        null,
+
+    encoded_by:
+        Number(encodedBy)
+};
+
+
+            console.log(
+                "Raw Plant Report payload:",
+                rawPlantReportData
+            );
+
+
+            try {
+
+                /* =================================================
+                   STEP 1 — CREATE RAW PLANT REPORT
+                ================================================= */
+
+                const createdReport =
+                    await apiRequest(
+                        RAW_PLANT_REPORTS_ENDPOINT,
+                        {
+                            method: "POST",
+
+                            body:
+                                JSON.stringify(
+                                    rawPlantReportData
+                                )
+                        }
+                    );
+
+
+                console.log(
+                    "Raw Plant Report created:",
+                    createdReport
+                );
+
+
+                /* =================================================
+                   STEP 2 — GET REPORT ID
+                ================================================= */
+
+                const reportId =
+                    createdReport?.report_id ??
+                    createdReport?.id;
+
+
+                if (!reportId) {
+
+                    throw new Error(
+                        "Raw Plant Report was created, but no report ID was returned by the API."
+                    );
+                }
+
+
+                console.log(
+                    "Created Raw Plant Report ID:",
+                    reportId
+                );
+
+
+                /* =================================================
+                   STEP 3 — SUBMIT REPORT
+                   
+                   POST:
+                   /api/report-submissions/{report_id}/submit
+                ================================================= */
+
+                const submissionResponse =
+                    await apiRequest(
+                        `${REPORT_SUBMISSIONS_ENDPOINT}/${reportId}/submit`,
+                        {
+                            method: "POST"
+                        }
+                    );
+
+
+                console.log(
+                    "Report Submission response:",
+                    submissionResponse
+                );
+
+
+                /* =================================================
+                   SUCCESS
+                ================================================= */
+
+                alert(
+                    "Planting Report submitted successfully.\n\n" +
+                    "Status: FOR_MUNICIPAL_VALIDATION"
+                );
+
+
+                /* =================================================
+                   RETURN TO PLANTING INTENT LIST
+                ================================================= */
+
+                document
+                    .getElementById(
+                        "plantingIntentDetailsSubview"
+                    )
+                    ?.classList.add(
+                        "hidden-element"
+                    );
+
+
+                document
+                    .getElementById(
+                        "plantingIntentListSubview"
+                    )
+                    ?.classList.remove(
+                        "hidden-element"
+                    );
+
+
+                /* =================================================
+                   CLEAR SELECTED INTENT
+                ================================================= */
+
+                window.currentSelectedPlantingIntent =
+                    null;
+
+
+                /* =================================================
+                   RELOAD PLANTING INTENTS
+                ================================================= */
+
+                await fetchPlantingIntents();
+
+
+            } catch (error) {
+
+                console.error(
+                    "Submit Planting Report error:",
+                    error
+                );
+
+
+                handleAuthError(
+                    error
+                );
+
+
+                alert(
+                    "Failed to submit planting report.\n\n" +
+                    (
+                        error.message ||
+                        "Please check the FastAPI server."
+                    )
+                );
+            }
+        }
+    );
+    ;
 
     /* --------------------------------------------------------
        SUBMIT
@@ -2793,8 +3101,6 @@ function initPlantingIntent() {
             }
         );
 }
-
-
 /* ============================================================
    FETCH PLANTING INTENTS FROM FASTAPI
 ============================================================ */
@@ -2806,13 +3112,11 @@ async function fetchPlantingIntents() {
             "plantingIntentsTableBody"
         );
 
-
     if (tbody) {
 
         tbody.innerHTML = `
             <tr>
-                <td
-                    colspan="6"
+                <td colspan="6"
                     style="
                         padding:30px;
                         text-align:center;
@@ -2824,14 +3128,12 @@ async function fetchPlantingIntents() {
         `;
     }
 
-
     try {
 
         console.log(
             "Fetching planting intents:",
             PLANTING_INTENTS_ENDPOINT
         );
-
 
         const data =
             await apiRequest(
@@ -2841,12 +3143,10 @@ async function fetchPlantingIntents() {
                 }
             );
 
-
         console.log(
             "Planting Intents API response:",
             data
         );
-
 
         if (!Array.isArray(data)) {
 
@@ -2854,7 +3154,6 @@ async function fetchPlantingIntents() {
                 "Invalid planting intents response. Expected an array."
             );
         }
-
 
         PLANTING_INTENTS_DATA =
             data.map(
@@ -2864,17 +3163,13 @@ async function fetchPlantingIntents() {
                     )
             );
 
-
         renderPlantingIntentsTable();
-
 
         console.log(
             `Successfully loaded ${PLANTING_INTENTS_DATA.length} planting intent(s).`
         );
 
-
         return PLANTING_INTENTS_DATA;
-
 
     } catch (error) {
 
@@ -2883,16 +3178,13 @@ async function fetchPlantingIntents() {
             error
         );
 
-
         PLANTING_INTENTS_DATA = [];
-
 
         if (tbody) {
 
             tbody.innerHTML = `
                 <tr>
-                    <td
-                        colspan="6"
+                    <td colspan="6"
                         style="
                             padding:30px;
                             text-align:center;
@@ -2912,14 +3204,237 @@ async function fetchPlantingIntents() {
             `;
         }
 
-
         handleAuthError(error);
-
 
         return [];
     }
 }
 
+// ============================================================
+// FETCH ALL SUBMITTED REPORTS
+// ============================================================
+
+async function loadAllReports() {
+    try {
+        const endpoint =
+            `${API_BASE_URL}/api/report-submissions/all-reports`;
+
+        console.log("Fetching all submitted reports:", endpoint);
+
+        const reports = await apiRequest(endpoint);
+
+        console.log("All Reports API response:", reports);
+
+        renderAllReports(reports);
+
+    } catch (error) {
+        console.error(
+            "Failed to load all submitted reports:",
+            error
+        );
+    }
+}
+// ============================================================
+// RENDER ALL REPORTS - TABLE FORMAT
+// ============================================================
+
+function renderAllReports(reports) {
+
+    const container =
+        document.getElementById("allReportsContainer");
+
+    if (!container) {
+        console.error(
+            "allReportsContainer not found."
+        );
+        return;
+    }
+
+    // Clear container
+    container.innerHTML = "";
+
+    if (!reports || reports.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="
+                padding: 40px;
+                text-align: center;
+                color: #777;
+                font-size: 15px;
+            ">
+                No submitted reports found.
+            </div>
+        `;
+        return;
+    }
+
+    // Create table
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "separate";
+    table.style.borderSpacing = "0";
+    table.style.marginTop = "8px";
+
+    // Table Header
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr style="background: #DEDDDC;">
+            <th style="
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #222;
+                padding: 14px 10px;
+                border-top-left-radius: 8px;
+                border-bottom-left-radius: 8px;
+            ">#</th>
+            <th style="
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #222;
+                padding: 14px 10px;
+            ">Title</th>
+            <th style="
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #222;
+                padding: 14px 10px;
+            ">Planting Date</th>
+            <th style="
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #222;
+                padding: 14px 10px;
+            ">Estimated Yield</th>
+            <th style="
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #222;
+                padding: 14px 10px;
+                border-top-right-radius: 8px;
+                border-bottom-right-radius: 8px;
+            ">Status</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // Table Body
+    const tbody = document.createElement("tbody");
+    
+    reports.forEach((report, index) => {
+        
+        const title =
+            report.title ||
+            `${report.commodity || "Crop"} Harvest Report`;
+
+        const plantingDate =
+            report.planting_date
+                ? new Date(report.planting_date)
+                    .toLocaleDateString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric"
+                    })
+                : "N/A";
+
+        const estimatedYield =
+            report.estimated_yield ?? "N/A";
+
+        // Get status with proper color styling
+        const status = report.status || "UNKNOWN";
+        let statusColor = "#8a8a8a"; // default gray
+        let statusBg = "#f0f0f0";
+        
+        if (status === "FINAL_APPROVED") {
+            statusColor = "#118308";
+            statusBg = "#e8f5e9";
+        } else if (status === "FOR_MUNICIPAL_VALIDATION") {
+            statusColor = "#E5A510";
+            statusBg = "#fff8e1";
+        } else if (status === "REJECTED") {
+            statusColor = "#C0392B";
+            statusBg = "#fde8e5";
+        }
+
+        const tr = document.createElement("tr");
+        tr.style.cursor = "default";
+        
+        // Add hover effect
+        tr.addEventListener("mouseenter", () => {
+            tr.style.backgroundColor = "#F6F3EB";
+        });
+        tr.addEventListener("mouseleave", () => {
+            tr.style.backgroundColor = "transparent";
+        });
+
+        tr.innerHTML = `
+            <td style="
+                padding: 14px 8px;
+                font-size: 13.5px;
+                text-align: center;
+                vertical-align: middle;
+            ">${index + 1}</td>
+            <td style="
+                padding: 14px 8px;
+                font-size: 13.5px;
+                text-align: center;
+                vertical-align: middle;
+                font-weight: 500;
+            ">${title}</td>
+            <td style="
+                padding: 14px 8px;
+                font-size: 13.5px;
+                text-align: center;
+                vertical-align: middle;
+            ">${plantingDate}</td>
+            <td style="
+                padding: 14px 8px;
+                font-size: 13.5px;
+                text-align: center;
+                vertical-align: middle;
+            ">${estimatedYield} kg</td>
+            <td style="
+                padding: 14px 8px;
+                text-align: center;
+                vertical-align: middle;
+            ">
+                <span style="
+                    display: inline-block;
+                    padding: 6px 20px;
+                    border-radius: 999px;
+                    font-size: 12.5px;
+                    font-weight: 700;
+                    color: ${statusColor};
+                    background: ${statusBg};
+                    border: 1px solid ${statusColor}33;
+                ">
+                    ${status}
+                </span>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    // Add summary
+    const summary = document.createElement("div");
+    summary.style.cssText = `
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #E5E5E5;
+        font-size: 13px;
+        color: #666;
+        text-align: right;
+    `;
+    summary.textContent = `Total: ${reports.length} report(s) found.`;
+    container.appendChild(summary);
+}
 
 /* ============================================================
    NORMALIZE PLANTING INTENT
@@ -2995,8 +3510,6 @@ function normalizePlantingIntent(intent) {
             null
     };
 }
-
-
 /* ============================================================
    RENDER PLANTING INTENTS TABLE
 ============================================================ */
@@ -3010,7 +3523,6 @@ function renderPlantingIntentsTable() {
 
 
     if (!tbody) {
-
         console.warn(
             "plantingIntentsTableBody not found."
         );
@@ -3022,12 +3534,7 @@ function renderPlantingIntentsTable() {
     tbody.innerHTML = "";
 
 
-    /* ========================================================
-       NO DATA
-    ======================================================== */
-
     if (
-        !PLANTING_INTENTS_DATA ||
         PLANTING_INTENTS_DATA.length === 0
     ) {
 
@@ -3050,18 +3557,8 @@ function renderPlantingIntentsTable() {
     }
 
 
-    /* ========================================================
-       RENDER EACH PLANTING INTENT
-    ======================================================== */
-
     PLANTING_INTENTS_DATA.forEach(
-        rawIntent => {
-
-            const intent =
-                normalizePlantingIntent(
-                    rawIntent
-                );
-
+        intent => {
 
             const tr =
                 document.createElement(
@@ -3069,62 +3566,76 @@ function renderPlantingIntentsTable() {
                 );
 
 
+            tr.className =
+                "clickable-row";
+
+
             tr.innerHTML = `
-
-                <!-- FARMER NAME -->
                 <td>
-                    ${escapeHtml(
-                        intent.farmer_name || "-"
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            intent.farmer_name || "-"
+                        )}
+                    </span>
                 </td>
 
-
-                <!-- COMMODITY -->
                 <td>
-                    ${escapeHtml(
-                        intent.commodity || "-"
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            intent.commodity || "-"
+                        )}
+                    </span>
                 </td>
 
-
-                <!-- VOLUME -->
                 <td>
-                    ${escapeHtml(
-                        formatPlantingVolume(
-                            intent.volume
-                        )
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            formatPlantingVolume(
+                                intent.volume
+                            )
+                        )}
+                    </span>
                 </td>
 
-
-                <!-- LOCATION -->
                 <td>
-                    ${escapeHtml(
-                        intent.location || "-"
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            intent.location || "-"
+                        )}
+                    </span>
                 </td>
 
-
-                <!-- PLANTING DATE -->
                 <td>
-                    ${escapeHtml(
-                        formatPlantingDate(
-                            intent.planting_date
-                        )
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            formatPlantingDate(
+                                intent.planting_date
+                            )
+                        )}
+                    </span>
                 </td>
 
-
-                <!-- HARVEST DATE -->
                 <td>
-                    ${escapeHtml(
-                        formatPlantingDate(
-                            intent.harvest_date
-                        )
-                    )}
+                    <span class="pill">
+                        ${escapeHtml(
+                            formatPlantingDate(
+                                intent.harvest_date
+                            )
+                        )}
+                    </span>
                 </td>
-
             `;
+
+
+            tr.addEventListener(
+                "click",
+                () => {
+
+                    openPlantingIntentDetails(
+                        intent
+                    );
+                }
+            );
 
 
             tbody.appendChild(
@@ -3133,7 +3644,118 @@ function renderPlantingIntentsTable() {
         }
     );
 }
+/* ============================================================
+   OPEN PLANTING INTENT DETAILS
+============================================================ */
 
+function openPlantingIntentDetails(intent) {
+
+    console.log(
+        "Selected Planting Intent:",
+        intent
+    );
+
+    const list =
+        document.getElementById(
+            "plantingIntentListSubview"
+        );
+
+    const details =
+        document.getElementById(
+            "plantingIntentDetailsSubview"
+        );
+
+    if (!details) {
+
+        console.warn(
+            "plantingIntentDetailsSubview not found."
+        );
+
+        return;
+    }
+
+
+    /* ========================================================
+       SAVE SELECTED PLANTING INTENT
+    ======================================================== */
+
+    window.currentSelectedPlantingIntent =
+        intent;
+
+
+    /* ========================================================
+       HIDE LIST
+    ======================================================== */
+
+    list?.classList.add(
+        "hidden-element"
+    );
+
+
+    /* ========================================================
+       SHOW DETAILS
+    ======================================================== */
+
+    details.classList.remove(
+        "hidden-element"
+    );
+
+
+    /* ========================================================
+       DISPLAY DATA
+    ======================================================== */
+
+    setValue(
+        "detailPlantingIntentId",
+        intent.planting_intent_id || ""
+    );
+
+    setValue(
+        "detailFarmerName",
+        intent.farmer_name || ""
+    );
+
+    setValue(
+        "detailFarmerId",
+        intent.farmer_id || ""
+    );
+
+    setValue(
+        "detailCommodity",
+        intent.commodity || ""
+    );
+
+    setValue(
+        "detailVolume",
+        formatPlantingVolume(
+            intent.volume
+        )
+    );
+
+    setValue(
+        "detailLocation",
+        intent.location || ""
+    );
+
+    setValue(
+        "detailPlantingDate",
+        formatPlantingDate(
+            intent.planting_date
+        )
+    );
+
+    setValue(
+        "detailHarvestDate",
+        formatPlantingDate(
+            intent.harvest_date
+        )
+    );
+
+    setValue(
+        "detailRemarks",
+        intent.remarks || ""
+    );
+}
 
 /* ============================================================
    SUBMIT PLANTING INTENT TO FASTAPI
@@ -4861,36 +5483,49 @@ function getValue(id) {
 
 
 
-
 /* ============================================================
-   HELPER — SET INPUT VALUE
+   HELPER — SET INPUT / TEXT VALUE
 ============================================================ */
-
 
 function setValue(
     id,
     value
 ) {
 
-
     const element =
         document.getElementById(
             id
         );
 
+    if (!element) {
+        console.warn(
+            `Element with id "${id}" not found.`
+        );
+        return;
+    }
 
+    const safeValue =
+        value ?? "";
 
-
-    if (element) {
-
+    /*
+     * INPUT / SELECT / TEXTAREA
+     */
+    if (
+        "value" in element
+    ) {
 
         element.value =
-            value ?? "";
+            safeValue;
+
+        return;
     }
+
+    /*
+     * DIV / SPAN / P / TD / LABEL / etc.
+     */
+    element.textContent =
+        safeValue;
 }
-
-
-
 
 /* ============================================================
    HELPER — ESCAPE HTML

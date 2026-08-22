@@ -2,10 +2,11 @@ from pydantic import BaseModel
 from datetime import date
 from decimal import Decimal
 
+
 class RawPlantReportBase(BaseModel):
     planting_date: date
     estimated_yield: Decimal
-    municipal_coordinator_id: int
+    municipal_coordinator_id: int | None = None
     encoded_by: int
 
 
