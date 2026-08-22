@@ -3500,40 +3500,67 @@ function formatPlantingVolume(
 }
 /* ============================================================
    OFFTAKE REQUEST
+   FLOW:
+   Create Request
+        ↓
+   Fill-up Details
+        ↓
+   Proceed
+        ↓
+   Review & Confirm Offtake Letter
+        ↓
+   Edit Details OR Submit Request
+        ↓
+   Confirm Offtake Submission Modal
+        ↓
+   Confirm Dispatch
+        ↓
+   API POST
+        ↓
+   Offtake Submitted
 ============================================================ */
 
+const OFFTAKE_REQUESTS_ENDPOINT =
+    `${API_BASE_URL}/api/offtake-requests/`;
+
+
+/* ============================================================
+   OFFTAKE STATE
+============================================================ */
+
+let currentOfftakeRequest = null;
+
+
+/* ============================================================
+   INITIALIZE OFFTAKE REQUEST
+============================================================ */
 
 function initOfftakeRequest() {
-
 
     const list =
         document.getElementById(
             "offtakeListSubview"
         );
 
-
     const submitSub =
         document.getElementById(
             "submitOfftakeSubview"
         );
-
 
     const confirmSub =
         document.getElementById(
             "confirmOfftakeSubview"
         );
 
-
-    const modal =
+    const submittedModal =
         document.getElementById(
             "offtakeSubmittedModal"
         );
 
 
-
-
-    /* CREATE */
-
+    /* ========================================================
+       CREATE OFFTAKE REQUEST
+    ======================================================== */
 
     document
         .getElementById(
@@ -3543,25 +3570,26 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+                currentOfftakeRequest = null;
 
                 list?.classList.add(
                     "hidden-element"
                 );
 
-
-
-
                 submitSub?.classList.remove(
+                    "hidden-element"
+                );
+
+                confirmSub?.classList.add(
                     "hidden-element"
                 );
             }
         );
 
 
-
-
-    /* RETURN */
-
+    /* ========================================================
+       RETURN FROM SUBMIT FORM
+    ======================================================== */
 
     document
         .getElementById(
@@ -3571,13 +3599,13 @@ function initOfftakeRequest() {
             "click",
             () => {
 
-
                 submitSub?.classList.add(
                     "hidden-element"
                 );
 
-
-
+                confirmSub?.classList.add(
+                    "hidden-element"
+                );
 
                 list?.classList.remove(
                     "hidden-element"
@@ -3586,10 +3614,9 @@ function initOfftakeRequest() {
         );
 
 
-
-
-    /* PROCEED */
-
+    /* ========================================================
+       PROCEED TO REVIEW
+    ======================================================== */
 
     document
         .getElementById(
@@ -3599,13 +3626,31 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+                const data =
+                    collectOfftakeFormData();
+
+
+                if (
+                    !validateOfftakeForm(
+                        data
+                    )
+                ) {
+                    return;
+                }
+
+
+                currentOfftakeRequest =
+                    data;
+
+
+                populateOfftakeReview(
+                    data
+                );
+
 
                 submitSub?.classList.add(
                     "hidden-element"
                 );
-
-
-
 
                 confirmSub?.classList.remove(
                     "hidden-element"
@@ -3614,38 +3659,41 @@ function initOfftakeRequest() {
         );
 
 
+    /* ========================================================
+       EDIT DETAILS
+       REVIEW → FORM
+    ======================================================== */
+document
+    .getElementById(
+        "backToSubmitOfftakeBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
 
+            if (
+                currentOfftakeRequest
+            ) {
 
-    /* BACK */
-
-
-    document
-        .getElementById(
-            "backToSubmitOfftakeBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-
-                confirmSub?.classList.add(
-                    "hidden-element"
-                );
-
-
-
-
-                submitSub?.classList.remove(
-                    "hidden-element"
+                populateOfftakeForm(
+                    currentOfftakeRequest
                 );
             }
-        );
 
+            confirmSub?.classList.add(
+                "hidden-element"
+            );
 
-
-
-    /* SEND */
-
+            submitSub?.classList.remove(
+                "hidden-element"
+            );
+        }
+    );
+    
+    /* ========================================================
+       SUBMIT REQUEST
+       REVIEW → CONFIRM MODAL
+    ======================================================== */
 
     document
         .getElementById(
@@ -3655,18 +3703,151 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+                if (
+                    !currentOfftakeRequest
+                ) {
 
-                modal?.classList.add(
+                    const data =
+                        collectOfftakeFormData();
+
+
+                    if (
+                        !validateOfftakeForm(
+                            data
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    currentOfftakeRequest =
+                        data;
+                }
+
+
+                submittedModal?.classList.add(
                     "show"
                 );
             }
         );
 
 
+    document
+        .getElementById(
+            "submitOfftakeRequestBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    !currentOfftakeRequest
+                ) {
+
+                    const data =
+                        collectOfftakeFormData();
 
 
-    /* CLOSE */
+                    if (
+                        !validateOfftakeForm(
+                            data
+                        )
+                    ) {
+                        return;
+                    }
 
+
+                    currentOfftakeRequest =
+                        data;
+                }
+
+
+                submittedModal?.classList.add(
+                    "show"
+                );
+            }
+        );
+
+
+    /* ========================================================
+       CLOSE CONFIRMATION MODAL
+    ======================================================== */
+
+    document
+        .getElementById(
+            "closeOfftakeConfirmBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                submittedModal?.classList.remove(
+                    "show"
+                );
+            }
+        );
+
+
+    document
+        .getElementById(
+            "cancelOfftakeDispatchBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                submittedModal?.classList.remove(
+                    "show"
+                );
+            }
+        );
+
+
+    /* ========================================================
+       CONFIRM DISPATCH
+       FINAL API SUBMISSION
+    ======================================================== */
+
+    document
+        .getElementById(
+            "confirmDispatchBtn"
+        )
+        ?.addEventListener(
+            "click",
+            async () => {
+
+                await submitOfftakeRequest();
+            }
+        );
+
+
+    /*
+     * Alternative confirmation button.
+     */
+
+    if (
+        !document.getElementById(
+            "confirmDispatchBtn"
+        )
+    ) {
+
+        document
+            .getElementById(
+                "confirmOfftakeDispatchBtn"
+            )
+            ?.addEventListener(
+                "click",
+                async () => {
+
+                    await submitOfftakeRequest();
+                }
+            );
+    }
+
+
+    /* ========================================================
+       CLOSE SUCCESS MODAL
+    ======================================================== */
 
     document
         .getElementById(
@@ -3676,12 +3857,18 @@ function initOfftakeRequest() {
             "click",
             () => {
 
+                document
+                    .getElementById(
+                        "offtakeSuccessModal"
+                    )
+                    ?.classList.remove(
+                        "show"
+                    );
 
-                modal?.classList.remove(
+
+                submittedModal?.classList.remove(
                     "show"
                 );
-
-
 
 
                 confirmSub?.classList.add(
@@ -3689,17 +3876,894 @@ function initOfftakeRequest() {
                 );
 
 
+                submitSub?.classList.add(
+                    "hidden-element"
+                );
 
 
                 list?.classList.remove(
                     "hidden-element"
                 );
+
+
+                currentOfftakeRequest =
+                    null;
+
+
+                resetOfftakeForm();
             }
         );
 }
 
 
+/* ============================================================
+   COLLECT OFFTAKE FORM DATA
+============================================================ */
 
+function collectOfftakeFormData() {
+
+    return {
+
+        farmer_name:
+            getOfftakeValue(
+                [
+                    "offtakeFarmerName",
+                    "farmerName",
+                    "offtakeFarmer"
+                ]
+            ),
+
+        farmer_id:
+            getOfftakeValue(
+                [
+                    "offtakeFarmerId",
+                    "farmerId",
+                    "offtakeFarmerID"
+                ]
+            ),
+
+        commodity:
+            getOfftakeValue(
+                [
+                    "offtakeCommodity",
+                    "commodity"
+                ]
+            ),
+quantity:
+    getOfftakeValue(
+        [
+            "offtakeQty",
+            "offtakeQuantity",
+            "quantity"
+        ]
+    ),
+selling_price:
+    getOfftakeValue(
+        [
+            "offtakePrice",
+            "offtakeSellingPrice",
+            "sellingPrice"
+        ]
+    ),
+
+        harvest_date:
+            getOfftakeValue(
+                [
+                    "offtakeHarvestDate",
+                    "harvestDate"
+                ]
+            ),
+
+        commodity_photo:
+            getOfftakeValue(
+                [
+                    "offtakeCommodityPhoto",
+                    "commodityPhoto"
+                ]
+            ),
+
+        /*
+         * These can still be collected for display
+         * if your HTML has them.
+         *
+         * They will NOT be sent to the API because
+         * they are not included in the API schema
+         * shown in your JSON response.
+         */
+
+        buyer:
+            getOfftakeValue(
+                [
+                    "offtakeBuyer",
+                    "buyer"
+                ]
+            ),
+delivery_location:
+    getOfftakeValue(
+        [
+            "offtakeLocation",
+            "offtakeDeliveryLocation",
+            "deliveryLocation"
+        ]
+    )
+    };
+}
+
+
+/* ============================================================
+   GET OFFTAKE VALUE
+============================================================ */
+
+function getOfftakeValue(ids) {
+
+    for (
+        const id of ids
+    ) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (element) {
+
+            return (
+                element.value ??
+                ""
+            )
+            .toString()
+            .trim();
+        }
+    }
+
+
+    return "";
+}
+
+
+/* ============================================================
+   SET OFFTAKE VALUE
+============================================================ */
+
+function setOfftakeValue(
+    ids,
+    value
+) {
+
+    for (
+        const id of ids
+    ) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (element) {
+
+            element.value =
+                value ?? "";
+
+            return;
+        }
+    }
+}
+
+
+/* ============================================================
+   VALIDATE OFFTAKE FORM
+============================================================ */
+
+function validateOfftakeForm(
+    data
+) {
+
+    if (!data.farmer_name) {
+
+        alert(
+            "Please enter Farmer Name."
+        );
+
+        return false;
+    }
+
+
+    if (!data.farmer_id) {
+
+        alert(
+            "Please enter Farmer ID."
+        );
+
+        return false;
+    }
+
+
+    if (!/^\d+$/.test(
+        data.farmer_id
+    )) {
+
+        alert(
+            "Farmer ID must be a valid whole number."
+        );
+
+        return false;
+    }
+
+
+    if (!data.commodity) {
+
+        alert(
+            "Please enter Commodity."
+        );
+
+        return false;
+    }
+
+
+    if (!data.quantity) {
+
+        alert(
+            "Please enter Quantity."
+        );
+
+        return false;
+    }
+
+
+    /*
+     * Decimal validation.
+     *
+     * Allows:
+     * 100
+     * 100.50
+     * 1,000
+     * 1,000.50
+     */
+
+    const quantityValue =
+        data.quantity
+            .replace(/,/g, "")
+            .trim();
+
+
+    if (
+        !/^\d+(\.\d+)?$/.test(
+            quantityValue
+        )
+    ) {
+
+        alert(
+            "Quantity must be a valid number."
+        );
+
+        return false;
+    }
+
+
+    if (!data.selling_price) {
+
+        alert(
+            "Please enter Selling Price."
+        );
+
+        return false;
+    }
+
+
+    const sellingPriceValue =
+        data.selling_price
+            .replace(/,/g, "")
+            .replace(/₱/g, "")
+            .trim();
+
+
+    if (
+        !/^\d+(\.\d+)?$/.test(
+            sellingPriceValue
+        )
+    ) {
+
+        alert(
+            "Selling Price must be a valid number."
+        );
+
+        return false;
+    }
+
+
+    if (!data.harvest_date) {
+
+        alert(
+            "Please select Harvest Date."
+        );
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+/* ============================================================
+   POPULATE REVIEW
+============================================================ */
+
+function populateOfftakeReview(
+    data
+) {
+
+    const values = {
+
+        farmer_name:
+            data.farmer_name,
+
+        farmer_id:
+            data.farmer_id,
+
+        commodity:
+            data.commodity,
+
+        quantity:
+            data.quantity,
+
+        selling_price:
+            data.selling_price,
+
+        harvest_date:
+            formatPlantingDate(
+                data.harvest_date
+            ),
+
+        commodity_photo:
+            data.commodity_photo || "",
+
+        buyer:
+            data.buyer || "",
+
+        delivery_location:
+            data.delivery_location || ""
+    };
+
+
+    setReviewValue(
+        [
+            "reviewFarmerName",
+            "confirmFarmerName",
+            "reviewOfftakeFarmerName"
+        ],
+        values.farmer_name
+    );
+
+
+
+    setReviewValue(
+        [
+            "reviewFarmerId",
+            "confirmFarmerId",
+            "reviewOfftakeFarmerId"
+        ],
+        values.farmer_id
+    );
+
+
+    setReviewValue(
+        [
+            "reviewCommodity",
+            "confirmCommodity",
+            "reviewOfftakeCommodity"
+        ],
+        values.commodity
+    );
+
+
+    setReviewValue(
+        [
+            "reviewQuantity",
+            "confirmQuantity",
+            "reviewOfftakeQuantity"
+        ],
+        values.quantity
+    );
+
+
+    setReviewValue(
+        [
+            "reviewSellingPrice",
+            "confirmSellingPrice",
+            "reviewOfftakeSellingPrice"
+        ],
+        values.selling_price
+    );
+
+
+    setReviewValue(
+        [
+            "reviewHarvestDate",
+            "confirmHarvestDate",
+            "reviewOfftakeHarvestDate"
+        ],
+        values.harvest_date
+    );
+
+
+    setReviewValue(
+        [
+            "reviewCommodityPhoto",
+            "confirmCommodityPhoto",
+            "reviewOfftakeCommodityPhoto"
+        ],
+        values.commodity_photo
+    );
+
+
+    /*
+     * Optional UI fields.
+     * These are only displayed if they exist.
+     */
+
+    setReviewValue(
+        [
+            "reviewBuyer",
+            "confirmBuyer",
+            "reviewOfftakeBuyer"
+        ],
+        values.buyer
+    );
+
+setReviewValue(
+    [
+        "reviewDeliveryLocation",
+        "confirmLocation",
+        "confirmDeliveryLocation",
+        "reviewOfftakeDeliveryLocation"
+    ],
+    values.delivery_location
+);
+}
+
+
+/* ============================================================
+   SET REVIEW VALUE
+============================================================ */
+
+function setReviewValue(
+    ids,
+    value
+) {
+
+    for (
+        const id of ids
+    ) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+
+        if (element) {
+
+            const safeValue =
+                value || "-";
+
+
+            /*
+             * Works for normal text elements.
+             */
+
+            element.textContent =
+                safeValue;
+
+
+            /*
+             * Also works for input elements.
+             */
+
+            if (
+                "value" in element
+            ) {
+
+                element.value =
+                    value || "";
+            }
+
+
+            return;
+        }
+    }
+}
+
+
+/* ============================================================
+   POPULATE FORM AFTER EDIT
+============================================================ */
+
+function populateOfftakeForm(
+    data
+) {
+
+    setOfftakeValue(
+        [
+            "offtakeFarmerName",
+            "farmerName",
+            "offtakeFarmer"
+        ],
+        data.farmer_name
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeFarmerId",
+            "farmerId",
+            "offtakeFarmerID"
+        ],
+        data.farmer_id
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeCommodity",
+            "commodity"
+        ],
+        data.commodity
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeQuantity",
+            "quantity"
+        ],
+        data.quantity
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeSellingPrice",
+            "sellingPrice"
+        ],
+        data.selling_price
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeHarvestDate",
+            "harvestDate"
+        ],
+        data.harvest_date
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeCommodityPhoto",
+            "commodityPhoto"
+        ],
+        data.commodity_photo
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeBuyer",
+            "buyer"
+        ],
+        data.buyer
+    );
+
+
+    setOfftakeValue(
+        [
+            "offtakeDeliveryLocation",
+            "deliveryLocation"
+        ],
+        data.delivery_location
+    );
+}
+
+
+/* ============================================================
+   FINAL API SUBMISSION
+============================================================ */
+
+async function submitOfftakeRequest() {
+
+    if (
+        !currentOfftakeRequest
+    ) {
+
+        alert(
+            "No Offtake Request data found."
+        );
+
+        return;
+    }
+
+
+    const confirmDispatchBtn =
+        document.getElementById(
+            "confirmDispatchBtn"
+        );
+
+
+    if (confirmDispatchBtn) {
+
+        confirmDispatchBtn.disabled =
+            true;
+
+        confirmDispatchBtn.textContent =
+            "Submitting...";
+    }
+
+
+    try {
+
+        const data =
+            currentOfftakeRequest;
+
+
+        /* ====================================================
+           FARMER ID
+        ==================================================== */
+
+        const farmerId =
+            parseInt(
+                data.farmer_id,
+                10
+            );
+
+
+        if (
+            !Number.isInteger(
+                farmerId
+            )
+        ) {
+
+            throw new Error(
+                "Farmer ID must be a valid whole number."
+            );
+        }
+
+
+        /* ====================================================
+           DECIMAL VALUES
+           
+           IMPORTANT:
+           DO NOT use Number() here.
+           
+           FastAPI/Pydantic Decimal can safely receive
+           decimal values as strings.
+           ==================================================== */
+
+        const quantity =
+            String(
+                data.quantity
+            )
+            .replace(/,/g, "")
+            .trim();
+
+
+        const sellingPrice =
+            String(
+                data.selling_price
+            )
+            .replace(/,/g, "")
+            .replace(/₱/g, "")
+            .trim();
+
+
+        /* ====================================================
+           VALIDATE DECIMAL VALUES
+        ==================================================== */
+
+        if (
+            !/^\d+(\.\d+)?$/.test(
+                quantity
+            )
+        ) {
+
+            throw new Error(
+                "Quantity must be a valid decimal number."
+            );
+        }
+
+
+        if (
+            !/^\d+(\.\d+)?$/.test(
+                sellingPrice
+            )
+        ) {
+
+            throw new Error(
+                "Selling Price must be a valid decimal number."
+            );
+        }
+
+
+        /* ====================================================
+           API PAYLOAD
+           
+           MATCHES THE OFFTAKE API RESPONSE/SCHEMA:
+           
+           farmer_id
+           commodity
+           quantity
+           selling_price
+           harvest_date
+           commodity_photo
+           ==================================================== */
+
+        const payload = {
+
+            farmer_id:
+                farmerId,
+
+            commodity:
+                data.commodity,
+
+            quantity:
+                quantity,
+
+            selling_price:
+                sellingPrice,
+
+            harvest_date:
+                data.harvest_date,
+
+            commodity_photo:
+                data.commodity_photo || null
+        };
+
+
+        console.log(
+            "================================="
+        );
+
+        console.log(
+            "Submitting Offtake Request:"
+        );
+
+        console.log(
+            payload
+        );
+
+        console.log(
+            "================================="
+        );
+
+
+        /* ====================================================
+           FINAL API CALL
+        ==================================================== */
+
+        const response =
+            await apiRequest(
+                OFFTAKE_REQUESTS_ENDPOINT,
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify(
+                            payload
+                        )
+                }
+            );
+
+
+        console.log(
+            "Offtake Request API response:",
+            response
+        );
+
+
+        /* ====================================================
+           CLOSE CONFIRMATION MODAL
+        ==================================================== */
+
+        document
+            .getElementById(
+                "offtakeSubmittedModal"
+            )
+            ?.classList.remove(
+                "show"
+            );
+
+
+        /* ====================================================
+           SHOW SUCCESS MODAL
+        ==================================================== */
+
+        document
+            .getElementById(
+                "offtakeSuccessModal"
+            )
+            ?.classList.add(
+                "show"
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "Create Offtake Request error:",
+            error
+        );
+
+
+        handleAuthError(
+            error
+        );
+
+
+        alert(
+            "Failed to submit Offtake Request.\n\n" +
+            (
+                error.message ||
+                "Please check the FastAPI server."
+            )
+        );
+
+
+    } finally {
+
+        if (confirmDispatchBtn) {
+
+            confirmDispatchBtn.disabled =
+                false;
+
+            confirmDispatchBtn.textContent =
+                "Confirm Dispatch";
+        }
+    }
+}
+
+
+/* ============================================================
+   RESET OFFTAKE FORM
+============================================================ */
+
+function resetOfftakeForm() {
+
+    const possibleFormIds = [
+
+        "offtakeRequestForm",
+
+        "submitOfftakeForm",
+
+        "createOfftakeForm"
+
+    ];
+
+
+    for (
+        const id of possibleFormIds
+    ) {
+
+        const form =
+            document.getElementById(
+                id
+            );
+
+
+        if (form) {
+
+            form.reset();
+
+            break;
+        }
+    }
+
+
+    currentOfftakeRequest =
+        null;
+}
 
 /* ============================================================
    FAIR PRICE
@@ -3892,4 +4956,3 @@ function getAllFarmers() {
 /* ============================================================
    END OF AEW.JS
 ============================================================ */
-

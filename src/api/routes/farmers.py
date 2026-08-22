@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,73 @@ router = APIRouter(
     prefix="/farmers",
     tags=["Farmers"]
 )
+
+
+# ============================================================
+# ADDRESS EXTRACTION
+# ============================================================
+
+def extract_location_from_address(address: str):
+    """
+    Extract barangay and municipality from an address.
+
+    Examples:
+        "Brgy Mabait, San Jose"
+        -> barangay: Mabait
+        -> municipality: San Jose
+
+        "Brgy. Mabait, San Jose"
+        -> barangay: Mabait
+        -> municipality: San Jose
+
+        "Barangay Mabait, San Jose"
+        -> barangay: Mabait
+        -> municipality: San Jose
+    """
+
+    if not address:
+        return None, None
+
+    # Clean extra spaces
+    address = " ".join(address.strip().split())
+
+    # Split address by comma
+    parts = [part.strip() for part in address.split(",") if part.strip()]
+
+    if len(parts) < 2:
+        return None, None
+
+    barangay = None
+    municipality = None
+
+    # --------------------------------------------------------
+    # FIRST PART = BARANGAY
+    # --------------------------------------------------------
+
+    barangay_match = re.match(
+        r"^(?:Brgy\.?|Barangay)\s+(.+)$",
+        parts[0],
+        re.IGNORECASE
+    )
+
+    if barangay_match:
+        barangay = barangay_match.group(1).strip()
+
+    # --------------------------------------------------------
+    # SECOND PART = MUNICIPALITY
+    # --------------------------------------------------------
+
+    municipality = parts[1].strip()
+
+    # Remove unnecessary suffixes
+    municipality = re.sub(
+        r"\s+City$",
+        "",
+        municipality,
+        flags=re.IGNORECASE
+    ).strip()
+
+    return barangay, municipality
 
 
 # ============================================================
@@ -41,10 +110,41 @@ def create_farmer(
             detail="RSBSA ID already exists."
         )
 
+    # ========================================================
+    # EXTRACT BARANGAY + MUNICIPALITY FROM ADDRESS
+    # ========================================================
+
+    extracted_barangay, extracted_municipality = (
+        extract_location_from_address(farmer.address)
+    )
+
+    # If extraction fails, use the submitted values
+    barangay = extracted_barangay or farmer.barangay
+    municipality = extracted_municipality or farmer.municipality
+
+    # Validate required location values
+    if not barangay:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to extract barangay from address."
+        )
+
+    if not municipality:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to extract municipality from address."
+        )
+
+    # ========================================================
+    # CREATE FARMER
+    # ========================================================
+
     new_farmer = Farmer(
         rsbsa_id=farmer.rsbsa_id,
         first_name=farmer.first_name,
         last_name=farmer.last_name,
+        municipality=municipality,
+        barangay=barangay,
         address=farmer.address,
         sex=farmer.sex,
         birthdate=farmer.birthdate,
@@ -79,11 +179,50 @@ def create_farmer(
 def get_farmers(
     db: Session = Depends(get_db)
 ):
-    return (
+    farmers = (
         db.query(Farmer)
         .order_by(Farmer.farmer_id.desc())
         .all()
     )
+
+    # ========================================================
+    # REPAIR EXISTING NULL LOCATION DATA
+    # ========================================================
+
+    updated = False
+
+    for farmer in farmers:
+
+        if (
+            (farmer.municipality is None or farmer.barangay is None)
+            and farmer.address
+        ):
+            extracted_barangay, extracted_municipality = (
+                extract_location_from_address(farmer.address)
+            )
+
+            if farmer.barangay is None and extracted_barangay:
+                farmer.barangay = extracted_barangay
+                updated = True
+
+            if farmer.municipality is None and extracted_municipality:
+                farmer.municipality = extracted_municipality
+                updated = True
+
+    # Save repaired records
+    if updated:
+        try:
+            db.commit()
+
+        except Exception as e:
+            db.rollback()
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update farmer location data: {str(e)}"
+            )
+
+    return farmers
 
 
 # ============================================================
@@ -109,6 +248,33 @@ def get_farmer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Farmer not found."
         )
+
+    # Repair missing location data
+    if (
+        (farmer.municipality is None or farmer.barangay is None)
+        and farmer.address
+    ):
+        extracted_barangay, extracted_municipality = (
+            extract_location_from_address(farmer.address)
+        )
+
+        if farmer.barangay is None and extracted_barangay:
+            farmer.barangay = extracted_barangay
+
+        if farmer.municipality is None and extracted_municipality:
+            farmer.municipality = extracted_municipality
+
+        try:
+            db.commit()
+            db.refresh(farmer)
+
+        except Exception as e:
+            db.rollback()
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update farmer location data: {str(e)}"
+            )
 
     return farmer
 
@@ -138,6 +304,7 @@ def update_farmer(
             detail="Farmer not found."
         )
 
+    # Check duplicate RSBSA ID
     if farmer_data.rsbsa_id is not None:
         existing_farmer = (
             db.query(Farmer)
@@ -154,10 +321,33 @@ def update_farmer(
                 detail="RSBSA ID already exists."
             )
 
+    # ========================================================
+    # UPDATE FIELDS
+    # ========================================================
+
     update_data = farmer_data.model_dump(
         exclude_unset=True
     )
 
+    # ========================================================
+    # IF ADDRESS IS UPDATED, EXTRACT LOCATION AGAIN
+    # ========================================================
+
+    if "address" in update_data and update_data["address"]:
+
+        extracted_barangay, extracted_municipality = (
+            extract_location_from_address(
+                update_data["address"]
+            )
+        )
+
+        if extracted_barangay:
+            update_data["barangay"] = extracted_barangay
+
+        if extracted_municipality:
+            update_data["municipality"] = extracted_municipality
+
+    # Apply updates
     for field, value in update_data.items():
         setattr(farmer, field, value)
 
