@@ -3496,6 +3496,10 @@ function normalizePlantingIntent(intent) {
         remarks:
             intent.remarks ??
             "",
+       
+            status:
+            intent.status ??
+             "Pending",
 
 
         // CREATED AT
@@ -3618,6 +3622,14 @@ function renderPlantingIntentsTable() {
                         )}
                     </span>
                 </td>
+
+                <td>
+    <span class="status-pill pending">
+        ${escapeHtml(
+            intent.status || "Pending"
+        )}
+    </span>
+</td>
             `;
 
 

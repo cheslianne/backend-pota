@@ -5,6 +5,9 @@ from src.core.database import get_db
 
 from src.models.planting_intents import PlantingIntent
 from src.models.farmers import Farmer
+from src.models.report_submission import ReportSubmission
+from src.models.report_planting_intents import ReportPlantingIntent
+from src.models.raw_plant_reports import RawPlantReport
 
 from src.api.schemas.planting_intents import (
     PlantingIntentCreate,
@@ -14,7 +17,6 @@ from src.api.schemas.planting_intents import (
 
 router = APIRouter()
 
-
 # ============================================================
 # HELPER
 # BUILD FRONTEND-FRIENDLY RESPONSE
@@ -22,7 +24,8 @@ router = APIRouter()
 
 def build_planting_intent_response(
     planting_intent: PlantingIntent,
-    farmer: Farmer
+    farmer: Farmer,
+    status: str,  # Fixed: removed quotes around "status"
 ):
     return {
         "planting_intent_id":
@@ -53,12 +56,11 @@ def build_planting_intent_response(
             planting_intent.remarks,
 
         "status":
-            "Pending",
+            status,  # Fixed: using the status parameter instead of "Pending"
 
         "created_at":
             planting_intent.created_at,
     }
-
 
 # ============================================================
 # CREATE PLANTING INTENT
@@ -131,16 +133,31 @@ def create_planting_intent(
 def read_planting_intents(
     db: Session = Depends(get_db)
 ):
-
     results = (
         db.query(
             PlantingIntent,
-            Farmer
+            Farmer,
+            ReportSubmission.status
         )
         .join(
             Farmer,
             PlantingIntent.farmer_id
             == Farmer.farmer_id
+        )
+        .outerjoin(
+            ReportPlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            RawPlantReport,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .outerjoin(
+            ReportSubmission,
+            RawPlantReport.report_id
+            == ReportSubmission.report_id
         )
         .order_by(
             PlantingIntent.planting_intent_id.desc()
@@ -148,15 +165,14 @@ def read_planting_intents(
         .all()
     )
 
-
     return [
         build_planting_intent_response(
             planting_intent,
-            farmer
+            farmer,
+            status or "Pending"
         )
-        for planting_intent, farmer in results
+        for planting_intent, farmer, status in results
     ]
-
 
 # ============================================================
 # GET SINGLE PLANTING INTENT
