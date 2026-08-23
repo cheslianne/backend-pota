@@ -27,7 +27,6 @@ from src.core.auth import get_current_user
 
 router = APIRouter()
 
-
 # ============================================================
 # CREATE REPORT FROM PLANTING INTENT
 # ============================================================
@@ -39,19 +38,11 @@ def create_report_from_planting_intent(
     db: Session = Depends(get_db),
 ):
 
-    # --------------------------------------------------------
-    # CHECK CURRENT USER
-    # --------------------------------------------------------
-
     if not current_user:
         raise HTTPException(
             status_code=401,
             detail="Authentication required."
         )
-
-    # --------------------------------------------------------
-    # CHECK PLANTING INTENT
-    # --------------------------------------------------------
 
     planting_intent = (
         db.query(PlantingIntent)
@@ -68,10 +59,6 @@ def create_report_from_planting_intent(
             detail="Planting intent not found."
         )
 
-    # --------------------------------------------------------
-    # CHECK IF REPORT ALREADY EXISTS
-    # --------------------------------------------------------
-
     existing_link = (
         db.query(ReportPlantingIntent)
         .filter(
@@ -86,42 +73,62 @@ def create_report_from_planting_intent(
             status_code=400,
             detail="A report already exists for this planting intent."
         )
-# ============================================================
-# CREATE RAW PLANT REPORT
-# ============================================================
 
-@router.post("/")
-def create_raw_plant_report(
-    raw_plant_report: RawPlantReportCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-
-    # --------------------------------------------------------
-    # CHECK CURRENT USER
-    # --------------------------------------------------------
-
-    if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required."
-        )
-
-    # --------------------------------------------------------
-    # CREATE RAW PLANT REPORT
-    #
-    # encoded_by = currently logged-in user
-    # municipal_coordinator_id = can be None
-    # --------------------------------------------------------
+    # CREATE REPORT
+    # IMPORTANT: commodity comes from PlantingIntent
 
     db_report = RawPlantReport(
-        planting_date=raw_plant_report.planting_date,
-        estimated_yield=raw_plant_report.estimated_yield,
-        municipal_coordinator_id=(
-            raw_plant_report.municipal_coordinator_id
-        ),
+        commodity=planting_intent.commodity,
+        planting_date=planting_intent.planting_date,
+        estimated_yield=planting_intent.volume,
+        municipal_coordinator_id=None,
         encoded_by=current_user.user_id,
     )
+
+    db.add(db_report)
+
+    db.flush()
+
+    # CREATE SUBMISSION
+
+    submission = ReportSubmission(
+        report_id=db_report.report_id,
+        status="DRAFT",
+        current_validator_id=None,
+        current_validator_role=None,
+        revision_remarks=None,
+        revision_count=0,
+    )
+
+    db.add(submission)
+
+    # LINK REPORT TO PLANTING INTENT
+
+    report_link = ReportPlantingIntent(
+        report_id=db_report.report_id,
+        planting_intent_id=planting_intent.planting_intent_id,
+    )
+
+    db.add(report_link)
+
+    db.commit()
+
+    db.refresh(db_report)
+    db.refresh(submission)
+
+    return {
+        "message": "Report created from planting intent successfully.",
+        "report_id": db_report.report_id,
+        "submission_id": submission.submission_id,
+        "status": submission.status,
+        "commodity": db_report.commodity,
+        "planting_date": db_report.planting_date,
+        "estimated_yield": db_report.estimated_yield,
+        "municipal_coordinator_id": (
+            db_report.municipal_coordinator_id
+        ),
+        "encoded_by": db_report.encoded_by,
+    }
 
     db.add(db_report)
 

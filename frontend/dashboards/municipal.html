@@ -8,8 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+
 
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
@@ -25,7 +27,9 @@
     z-index:2100;
   }
 
+
   .topbar-left{ display:flex; align-items:center; gap:16px; }
+
 
   .hamburger{
     background:none;
@@ -37,6 +41,7 @@
     gap:5px;
   }
 
+
   .hamburger span{
     display:block;
     width:26px;
@@ -45,8 +50,10 @@
     border-radius:2px;
   }
 
+
   .logos{ display:flex; align-items:center; gap:10px; }
   .seal{ width:44px; height:44px; }
+
 
   .brand-word{
     font-family:'Dancing Script', cursive;
@@ -56,9 +63,12 @@
     margin-left:-6px;
   }
 
+
   .brand-logo svg{ width:60px; height:50px; }
 
+
   .topbar-right{ display:flex; align-items:center; gap:18px; }
+
 
   .bell-wrap{
     position:relative;
@@ -73,7 +83,9 @@
     flex-shrink:0;
   }
 
+
   .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
 
   .bell-dot{
     position:absolute;
@@ -86,10 +98,12 @@
     border:2px solid var(--cream);
   }
 
+
   .user-info{ display:flex; align-items:center; gap:10px; }
   .user-text{ text-align:right; line-height:1.25; }
   .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
   .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
 
   .avatar{
     width:38px;
@@ -101,9 +115,12 @@
     justify-content:center;
   }
 
+
   .avatar svg{ width:20px; height:20px; fill:#fff; }
 
+
   .layout{ display:flex; min-height:calc(100vh - 73px); }
+
 
   /* SIDEBAR STYLES */
   .sidebar{
@@ -123,9 +140,12 @@
     transition:left .28s ease;
   }
 
+
   .sidebar.open{ left:0; }
 
+
   .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
 
   .nav-item{
     display:flex;
@@ -143,9 +163,11 @@
     text-align:left;
   }
 
+
   .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
   .nav-item:hover{ background:rgba(255,255,255,0.08); }
   .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
 
   .signout{
     display:flex;
@@ -158,8 +180,10 @@
     font-weight:500;
   }
 
+
   .signout svg{ width:18px; height:18px; fill:#fff; }
   .signout:hover{ opacity:0.8; }
+
 
   .main{
     flex:1;
@@ -167,8 +191,10 @@
     min-width:0;
   }
 
+
   .view{ display:none; }
   .view.active-view{ display:block; }
+
 
   .main-header{
     display:flex;
@@ -179,6 +205,7 @@
     margin-bottom:22px;
   }
 
+
   .main-header h1{
     font-family:'Oswald', sans-serif;
     font-weight:700;
@@ -188,12 +215,14 @@
     margin:0;
   }
 
+
   .card{
     background:var(--white);
     border:1px solid var(--border);
     border-radius:12px;
     padding:24px 28px;
   }
+
 
   /* MAP DESIGN */
   #map{
@@ -202,6 +231,7 @@
     border-radius:8px;
     border:1px solid var(--border);
   }
+
 
   /* SEARCH & FILTER BAR */
   .search-row{ display:flex; gap:10px; align-items:center; }
@@ -218,6 +248,7 @@
   .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
   .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
 
+
   /* TAB BUTTONS (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING) */
   .tab-buttons-row{
     display:flex;
@@ -225,6 +256,7 @@
     margin-bottom:24px;
     align-items:center;
   }
+
 
   .tab-btn{
     padding:12px 24px;
@@ -239,11 +271,13 @@
     transition:all 0.2s ease;
   }
 
+
   .tab-btn:hover{ background:#DEDDDC; }
   .tab-btn.active{
     background:#C4C3C2;
     border-color:var(--ink);
   }
+
 
   /* SUMMARY TAB CONTENT DESIGN */
   .summary-grid{
@@ -252,6 +286,7 @@
     gap:24px;
   }
 
+
   .summary-left-box, .summary-right-card{
     background:#fff;
     border:1px solid #D0D0D0;
@@ -259,12 +294,14 @@
     padding:20px;
   }
 
+
   .summary-stat-chips{
     display:flex;
     gap:10px;
     margin:14px 0 20px;
     flex-wrap:wrap;
   }
+
 
   .stat-chip{
     padding:10px 14px;
@@ -275,13 +312,16 @@
     min-width:70px;
   }
 
+
   .stat-chip.gray{ background:#F2EFE9; border:1px solid #CCC; color:#333; }
   .stat-chip.black{ background:#000; color:#fff; }
   .stat-chip.green{ background:#0B823A; color:#fff; }
   .stat-chip.gold{ background:#D69E3D; color:#fff; }
   .stat-chip.red{ background:#B82218; color:#fff; }
 
+
   .stat-chip span{ display:block; font-size:14px; margin-top:2px; }
+
 
   .placeholder-line{
     height:24px;
@@ -290,6 +330,7 @@
     margin-bottom:10px;
   }
 
+
   .top-commodity-body{
     display:flex;
     align-items:center;
@@ -297,6 +338,7 @@
     gap:16px;
     margin-top:12px;
   }
+
 
   .top-commodity-img{
     width:120px;
@@ -307,6 +349,7 @@
     align-items:center;
     justify-content:center;
   }
+
 
   /* TABLE COMMON DESIGN */
   table{ width:100%; border-collapse:separate; border-spacing:0; }
@@ -321,12 +364,14 @@
   thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
   thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
 
+
   tbody td{
     padding:14px 8px;
     font-size:13.5px;
     text-align:center;
     vertical-align:middle;
   }
+
 
   .pill{
     display:inline-block;
@@ -338,6 +383,7 @@
     white-space:nowrap;
   }
 
+
   .status-pill{
     display:inline-block;
     padding:6px 20px;
@@ -347,10 +393,12 @@
     color:#fff;
   }
 
+
   .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#118308; }
   .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
   .status-pill.planted{ background:#E06030; }
   .status-pill.pending{ background:#C48D53; }
+
 
   /* REMARKS / NOTES SECTION */
   .notes-row{
@@ -362,8 +410,10 @@
     border-top:1px solid #E0E0E0;
   }
 
+
   .notes-field{ flex:1; }
   .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
+
 
   .btn-outline-report{
     appearance:none;
@@ -379,7 +429,9 @@
     transition:all .2s ease;
   }
 
+
   .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
+
 
   .detail-actions-row{
     display:flex;
@@ -388,8 +440,10 @@
     margin-top:24px;
   }
 
+
   .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
   .approve-btn.active{ background:#5A7365; border-color:#5A7365; color:#fff; }
+
 
   /* MODAL OVERLAY */
   .modal-overlay{
@@ -402,7 +456,9 @@
     z-index:3000;
   }
 
+
   .modal-overlay.show{ display:flex; }
+
 
   .modal-box{
     background:#DEDDDC;
@@ -414,6 +470,7 @@
     width:90%;
   }
 
+
   .modal-box p{
     font-family:'Oswald', sans-serif;
     font-size:28px;
@@ -422,6 +479,7 @@
     margin-bottom:24px;
     line-height:1.25;
   }
+
 
   .modal-confirm-btn{
     border:none;
@@ -435,8 +493,10 @@
     cursor:pointer;
   }
 
+
   .clickable-row{ cursor:pointer; }
   .clickable-row:hover td{ background:#F6F3EB; }
+
 
   /* HELPER CLASSES PARANG WALA NANG INLINE STYLE WARNINGS */
   .text-loc { font-size: 12px; color: #666; }
@@ -445,10 +505,12 @@
   .text-narrative-title { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
   .textarea-narrative { width: 100%; height: 80px; border: 1.5px solid #666; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; resize: vertical; }
 
+
   .text-top-commodity { font-size: 13px; font-weight: 700; }
   .text-green-highlight { color: #0B823A; }
   .top-commodity-text { font-size: 12.5px; line-height: 1.6; }
   .text-as-of { font-size: 11px; color: #888; text-align: right; margin-top: 20px; }
+
 
   .upload-section { margin-top: 28px; border-top: 1px solid #EEE; padding-top: 16px; }
   .upload-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
@@ -456,8 +518,10 @@
   .input-required { flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #CCC; border-radius: 4px; }
   .btn-select-file { padding: 6px 12px; font-size: 12px; }
 
+
   .actions-right-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
   .btn-submit-bg { background: #E5E4E3; }
+
 
   .hidden-element { display: none; }
   .notes-row-clean { border-top: none; padding-top: 0; }
@@ -466,11 +530,13 @@
 </head>
 <body>
 
+
   <div class="topbar">
     <div class="topbar-left">
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
+
 
       <div class="logos">
         <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -493,11 +559,13 @@
       </div>
     </div>
 
+
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
 
       <div class="user-info">
         <div class="user-text">
@@ -511,23 +579,22 @@
     </div>
   </div>
 
+
   <div class="layout">
+
 
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="intents">
-          <svg viewBox="0 0 24 24"><path d="M17 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zM5 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>
-          View Plant Intents
+        <button class="nav-item active" type="button" data-view="reports">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          View Reports
         </button>
         <button class="nav-item" type="button" data-view="map">
           <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
           View Map
         </button>
-        <button class="nav-item" type="button" data-view="reports">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-          View Reports
-        </button>
       </div>
+
 
       <a class="signout" href="../index.html">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
@@ -535,237 +602,89 @@
       </a>
     </nav>
 
+
     <main class="main">
 
-      <!-- ===================== VIEW 1: Plant Intents ===================== -->
-      <section class="view active-view" id="view-intents">
-        <div class="main-header">
-          <h1>Planting Intents</h1>
-        </div>
 
-        <div class="card">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Commodity</th>
-                <th>Volume</th>
-                <th>Location</th>
-                <th>Planting Date</th>
-                <th>Harvest Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="pill">Pedro Manalang</span></td>
-                <td><span class="pill">Onion</span></td>
-                <td><span class="pill">15,000kg</span></td>
-                <td><span class="pill">Sta. Monica</span></td>
-                <td><span class="pill">2/1/2026</span></td>
-                <td><span class="pill">6/15/2026</span></td>
-                <td><span class="status-pill confirmed">Confirmed</span></td>
-              </tr>
-              <tr>
-                <td><span class="pill">Juan Dela Cruz</span></td>
-                <td><span class="pill">Tomato</span></td>
-                <td><span class="pill">8,000kg</span></td>
-                <td><span class="pill">Sta. Barbara</span></td>
-                <td><span class="pill">3/1/2026</span></td>
-                <td><span class="pill">5/20/2026</span></td>
-                <td><span class="status-pill confirmed">Confirmed</span></td>
-              </tr>
-              <tr>
-                <td><span class="pill">Ben Bernardo</span></td>
-                <td><span class="pill">Cabbage</span></td>
-                <td><span class="pill">16,000kg</span></td>
-                <td><span class="pill">Sta. Lucia</span></td>
-                <td><span class="pill">3/15/2026</span></td>
-                <td><span class="pill">5/30/2026</span></td>
-                <td><span class="status-pill submitted">Submitted</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <!-- ===================== VIEW 1: View Reports ===================== -->
+      <section class="view active-view" id="view-reports">
 
-      <!-- ===================== VIEW 2: Map ===================== -->
-      <section class="view" id="view-map">
-        <div class="main-header">
-          <h1>Map</h1>
-        </div>
 
-        <div class="card">
-          <div id="map"></div>
-        </div>
-      </section>
-
-      <!-- ===================== VIEW 3: View Reports ===================== -->
-      <section class="view" id="view-reports">
-        
-        <!-- Tab Nav Buttons -->
+        <!-- REPORTS HEADER -->
         <div class="main-header">
           <h1>Reports</h1>
+
+
           <div class="search-row">
             <div class="search-box">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" placeholder="Search...">
+              <svg viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+
+
+              <input
+                type="text"
+                id="reportSearchInput"
+                placeholder="Search reports..."
+                autocomplete="off"
+              >
             </div>
           </div>
         </div>
 
-        <div class="tab-buttons-row">
-          <button class="tab-btn active" data-tab="summary" type="button">SUMMARY</button>
-          <button class="tab-btn" data-tab="individual" type="button">VIEW INDIVIDUAL</button>
-          <button class="tab-btn" data-tab="approved" type="button">APPROVED</button>
-          <button class="tab-btn" data-tab="pending" type="button">PENDING</button>
-        </div>
 
-        <!-- TAB 1: SUMMARY -->
-        <div class="tab-content" id="tab-summary">
+        <!-- ===================== PENDING REPORTS ===================== -->
+        <div id="pendingReportsView">
+
+
           <div class="card">
-            <div class="summary-grid">
-              <div class="summary-left-box">
-                <div class="text-loc">Location: <b>Municipality, Province</b></div>
-                <div class="text-section-title">AEW Summary Report:</div>
 
-                <div class="summary-stat-chips">
-                  <div class="stat-chip gray">AEWs <span>12345</span></div>
-                  <div class="stat-chip black">Submissions <span>12345</span></div>
-                  <div class="stat-chip green">Approved <span>652</span></div>
-                  <div class="stat-chip gold">Pending <span>100</span></div>
-                  <div class="stat-chip red">Revised <span>45</span></div>
-                </div>
 
-                <div class="text-alert-title">Oversupply Alerts:</div>
-                <div class="placeholder-line"></div>
-                <div class="placeholder-line"></div>
-
-                <div class="text-narrative-title">Narrative Report</div>
-                <textarea class="textarea-narrative"></textarea>
-              </div>
-
-              <div class="summary-right-card">
-                <div class="text-top-commodity">Top Commodity: <span class="text-green-highlight">Onion</span></div>
-                <div class="top-commodity-body">
-                  <div class="top-commodity-text">
-                    <div>Total Planted: <b>—</b></div>
-                    <div>Total Harvested: <b>—</b></div>
-                  </div>
-                  <div class="top-commodity-img">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#88A060"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-                  </div>
-                </div>
-                <div class="text-as-of">Data as of June 30, 2026</div>
-
-                <div class="upload-section">
-                  <div class="upload-title">Upload Documents</div>
-                  <div class="upload-flex">
-                    <input type="text" placeholder="required" readonly class="input-required">
-                    <button class="btn-outline-report btn-select-file" type="button">Select File</button>
-                  </div>
-                </div>
-              </div>
+            <div class="text-section-title" style="font-size:16px; margin-bottom:16px;">
+              Pending Reports
             </div>
 
-            <div class="actions-right-row">
-              <button class="btn-outline-report" type="button">Export as PDF</button>
-              <button class="btn-outline-report btn-submit-bg" id="submitReportToProvBtn" type="button">Submit Report</button>
-            </div>
-          </div>
-        </div>
 
-        <!-- TAB 2: VIEW INDIVIDUAL LIST -->
-        <div class="tab-content hidden-element" id="tab-individual">
-          <div class="card">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Report ID</th>
+                  <th>Title</th>
                   <th>Commodity</th>
-                  <th>Volume</th>
-                  <th>Location</th>
                   <th>Planting Date</th>
-                  <th>Harvesting Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="clickable-row" data-id="1">
-                  <td><span class="pill">Pedro Manalang</span></td>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">15,000kg</span></td>
-                  <td><span class="pill">Sta. Monica</span></td>
-                  <td><span class="pill">February 1, 2026</span></td>
-                  <td><span class="pill">San Juan</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- TAB 3: APPROVED -->
-        <div class="tab-content hidden-element" id="tab-approved">
-          <div class="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Commodity</th>
-                  <th>Volume</th>
-                  <th>Location</th>
-                  <th>Planting Date</th>
-                  <th>Harvesting Date</th>
+                  <th>Estimated Yield (kg)</th>
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="clickable-row" data-id="1">
-                  <td><span class="pill">Pedro Manalang</span></td>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">15,000kg</span></td>
-                  <td><span class="pill">Sta. Monica</span></td>
-                  <td><span class="pill">February 1, 2026</span></td>
-                  <td><span class="pill">San Juan</span></td>
-                  <td><span class="status-pill approved">Approved</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        <!-- TAB 4: PENDING -->
-        <div class="tab-content hidden-element" id="tab-pending">
-          <div class="card">
-            <table>
-              <thead>
+
+              <tbody id="pendingReportsBody">
                 <tr>
-                  <th>Name</th>
-                  <th>Commodity</th>
-                  <th>Volume</th>
-                  <th>Location</th>
-                  <th>Planting Date</th>
-                  <th>Harvesting Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="clickable-row" data-id="2">
-                  <td><span class="pill">Lisa Enriquez</span></td>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">15,000kg</span></td>
-                  <td><span class="pill">Sta. Monica</span></td>
-                  <td><span class="pill">February 1, 2026</span></td>
-                  <td><span class="pill">San Pedro</span></td>
-                  <td><span class="status-pill pending">Pending</span></td>
+                  <td colspan="6">
+                    Loading reports...
+                  </td>
                 </tr>
               </tbody>
             </table>
+
+
           </div>
+
+
         </div>
 
-        <!-- SUBVIEW: INDIVIDUAL DETAIL VIEW -->
-        <div id="individualDetailView" class="hidden-element">
+
+        <!-- ===================== REPORT DETAIL ===================== -->
+        <div
+          id="individualDetailView"
+          class="hidden-element"
+        >
+
+
           <div class="card">
+
+
             <table>
               <thead>
                 <tr>
@@ -773,67 +692,109 @@
                   <th>Planting Date</th>
                   <th>Harvest Date</th>
                   <th>Estimated Yield (kg)</th>
-                  <th>Location</th>
+                  <th>Encoded By</th>
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">67</span></td>
-                  <td><span class="pill">San Juan</span></td>
-                  <td><span class="status-pill harvested">Harvested</span></td>
-                </tr>
-                <tr>
-                  <td><span class="pill">Tomato</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">67</span></td>
-                  <td><span class="pill">San Pablo</span></td>
-                  <td><span class="status-pill planted">Planted</span></td>
-                </tr>
-                <tr>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">select</span></td>
-                  <td><span class="pill">67</span></td>
-                  <td><span class="pill">San Juan</span></td>
-                  <td><span class="status-pill mediating">Mediating</span></td>
-                </tr>
+
+
+              <tbody id="reportDetailBody">
               </tbody>
             </table>
 
+
+            <!-- NOTES -->
             <div class="notes-row">
               <div class="notes-field">
                 <label>Notes</label>
-                <textarea class="textarea-notes" readonly></textarea>
+                <textarea
+                  id="reportNotesTextarea"
+                  class="textarea-notes"
+                  readonly
+                ></textarea>
               </div>
+
+
               <div>
-                <button class="btn-outline-report" type="button">View Attachments</button>
+                <button
+                  class="btn-outline-report"
+                  id="viewAttachmentsBtn"
+                  type="button"
+                >
+                  View Attachments
+                </button>
               </div>
             </div>
 
+
+            <!-- REMARKS -->
             <div class="notes-row notes-row-clean">
               <div class="notes-field">
                 <label>Remarks</label>
-                <textarea id="remarksTextarea" class="textarea-notes"></textarea>
+                <textarea
+                  id="remarksTextarea"
+                  class="textarea-notes"
+                  placeholder="Enter remarks..."
+                ></textarea>
               </div>
             </div>
+
+
           </div>
 
+
+          <!-- ACTION BUTTONS -->
           <div class="detail-actions-row">
-            <button class="btn-outline-report" id="backToTabsBtn" type="button">Return</button>
-            <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
-            <button class="btn-outline-report approve-btn" id="approveBtn" type="button">Approve</button>
+            <button
+              class="btn-outline-report"
+              id="backToPendingBtn"
+              type="button"
+            >
+              Return
+            </button>
+
+
+            <button
+              class="btn-outline-report flag-btn"
+              id="flagBtn"
+              type="button"
+            >
+              Flag for Revision
+            </button>
+
+
+            <button
+              class="btn-outline-report approve-btn"
+              id="approveBtn"
+              type="button"
+            >
+              Approve
+            </button>
           </div>
+
+
         </div>
+
 
       </section>
 
+
+      <!-- ===================== VIEW 2: Map ===================== -->
+      <section class="view" id="view-map">
+        <div class="main-header">
+          <h1>Map</h1>
+        </div>
+
+
+        <div class="card">
+          <div id="map"></div>
+        </div>
+      </section>
+
+
     </main>
   </div>
+
 
   <!-- CONFIRMATION MODAL -->
   <div class="modal-overlay" id="reportModal">
@@ -843,13 +804,16 @@
     </div>
   </div>
 
+
 <!-- Leaflet-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
 
 <script>
   // SIDEBAR & VIEW SWITCHING
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const sidebar = document.getElementById('sidebar');
+
 
   hamburgerBtn.addEventListener('click', () => {
     sidebar.classList.toggle('open');
@@ -858,22 +822,27 @@
     }, 300);
   });
 
+
   const navButtons = document.querySelectorAll('.nav-item[data-view]');
   const views = document.querySelectorAll('.view');
+
 
   function switchView(viewKey){
     views.forEach(v => v.classList.remove('active-view'));
     document.getElementById('view-' + viewKey).classList.add('active-view');
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewKey));
 
+
     if (viewKey === 'map' && window.leafletMap){
       setTimeout(() => window.leafletMap.invalidateSize(), 50);
     }
   }
 
+
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
+
 
   // MAP INITIALIZATION
   const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
@@ -884,71 +853,901 @@
   }).setView([15.0794, 120.6200], 10);
   window.leafletMap = map;
 
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 18
   }).addTo(map);
 
-  // TAB SWITCHING (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING)
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  const tabContents = document.querySelectorAll('.tab-content');
-  const individualDetailView = document.getElementById('individualDetailView');
 
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabContents.forEach(c => c.style.display = 'none');
-      individualDetailView.style.display = 'none';
+// ============================================================
+// MUNICIPAL REPORTS
+// PENDING REPORTS + SEARCH + DETAIL VIEW
+// ============================================================
 
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
-    });
-  });
 
-  // OPEN INDIVIDUAL DETAIL VIEW
-  document.querySelectorAll('.clickable-row').forEach(row => {
-    row.addEventListener('click', () => {
-      tabContents.forEach(c => c.style.display = 'none');
-      individualDetailView.style.display = 'block';
-    });
-  });
+const API_BASE_URL = "http://127.0.0.1:8000";
 
-  document.getElementById('backToTabsBtn').addEventListener('click', () => {
-    individualDetailView.style.display = 'none';
-    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
-    document.getElementById('tab-' + activeTab).style.display = 'block';
-  });
 
-  // MODAL & ACTIONS
-  const reportModal = document.getElementById('reportModal');
-  const reportModalText = document.getElementById('reportModalText');
-  const flagBtn = document.getElementById('flagBtn');
-  const approveBtn = document.getElementById('approveBtn');
+const MUNICIPAL_REPORTS_ENDPOINT =
+  `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
 
-  function openModal(msg) {
-    reportModalText.textContent = msg;
-    reportModal.classList.add('show');
+
+
+
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+
+const pendingReportsBody =
+  document.getElementById("pendingReportsBody");
+
+
+const pendingReportsView =
+  document.getElementById("pendingReportsView");
+
+
+const individualDetailView =
+  document.getElementById("individualDetailView");
+
+
+const reportSearchInput =
+  document.getElementById("reportSearchInput");
+
+
+const reportDetailBody =
+  document.getElementById("reportDetailBody");
+
+
+const reportNotesTextarea =
+  document.getElementById("reportNotesTextarea");
+
+
+const remarksTextarea =
+  document.getElementById("remarksTextarea");
+
+
+const backToPendingBtn =
+  document.getElementById("backToPendingBtn");
+
+
+const flagBtn =
+  document.getElementById("flagBtn");
+
+
+const approveBtn =
+  document.getElementById("approveBtn");
+
+
+
+
+// ============================================================
+// DATA
+// ============================================================
+
+
+let municipalReports = [];
+
+
+let selectedReport = null;
+
+
+
+
+// ============================================================
+// LOAD REPORTS
+// ============================================================
+
+
+async function loadMunicipalReports() {
+
+
+  if (!pendingReportsBody) {
+    return;
   }
 
-  document.getElementById('submitReportToProvBtn').addEventListener('click', () => {
-    openModal('Report Submitted to Provincial Level');
+
+  pendingReportsBody.innerHTML = `
+    <tr>
+      <td colspan="6">
+        Loading reports...
+      </td>
+    </tr>
+  `;
+
+
+  try {
+
+
+    const response = await fetch(
+      MUNICIPAL_REPORTS_ENDPOINT,
+      {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      }
+    );
+
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load reports. Status: ${response.status}`
+      );
+    }
+
+
+    municipalReports = await response.json();
+
+
+    console.log(
+      "Municipal reports:",
+      municipalReports
+    );
+
+
+    renderMunicipalReports(
+      municipalReports
+    );
+
+
+  } catch (error) {
+
+
+    console.error(
+      "Error loading municipal reports:",
+      error
+    );
+
+
+    pendingReportsBody.innerHTML = `
+      <tr>
+        <td colspan="6">
+          Failed to load reports.
+        </td>
+      </tr>
+    `;
+
+
+  }
+
+
+}
+
+
+
+
+// ============================================================
+// RENDER PENDING REPORTS
+// ============================================================
+
+
+function renderMunicipalReports(
+  reports = municipalReports
+) {
+
+
+  if (!pendingReportsBody) {
+    return;
+  }
+
+
+  pendingReportsBody.innerHTML = "";
+
+
+  if (!reports || reports.length === 0) {
+
+
+    pendingReportsBody.innerHTML = `
+      <tr>
+        <td colspan="6">
+          No reports waiting for municipal validation.
+        </td>
+      </tr>
+    `;
+
+
+    return;
+  }
+
+
+  reports.forEach(report => {
+
+
+    const row =
+      document.createElement("tr");
+
+
+    row.classList.add(
+      "clickable-row"
+    );
+
+
+    row.dataset.id =
+      report.report_id;
+
+
+    row.innerHTML = `
+
+
+      <td>
+        <span class="pill">
+          ${report.report_id ?? "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${report.title || "Crop Harvest Report"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${report.commodity || "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${formatDate(report.planting_date)}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${report.estimated_yield ?? "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="status-pill pending">
+          For Municipal Validation
+        </span>
+      </td>
+
+
+    `;
+
+
+    row.addEventListener(
+      "click",
+      () => openReportDetail(report)
+    );
+
+
+    pendingReportsBody.appendChild(row);
+
+
   });
 
-  flagBtn.addEventListener('click', () => {
-    flagBtn.classList.add('active');
-    flagBtn.textContent = 'Flagged';
-    openModal('Report Flagged for Revision');
+
+}
+
+
+
+
+// ============================================================
+// SEARCH REPORTS
+// ============================================================
+
+
+if (reportSearchInput) {
+
+
+  reportSearchInput.addEventListener(
+    "input",
+    () => {
+
+
+      const searchTerm =
+        reportSearchInput.value
+          .trim()
+          .toLowerCase();
+
+
+      if (!searchTerm) {
+
+
+        renderMunicipalReports(
+          municipalReports
+        );
+
+
+        return;
+      }
+
+
+      const filteredReports =
+        municipalReports.filter(report => {
+
+
+          const reportId =
+            String(
+              report.report_id ?? ""
+            ).toLowerCase();
+
+
+          const title =
+            String(
+              report.title ?? ""
+            ).toLowerCase();
+
+
+          const commodity =
+            String(
+              report.commodity ?? ""
+            ).toLowerCase();
+
+
+          const plantingDate =
+            String(
+              report.planting_date ?? ""
+            ).toLowerCase();
+
+
+          const yieldValue =
+            String(
+              report.estimated_yield ?? ""
+            ).toLowerCase();
+
+
+          return (
+            reportId.includes(searchTerm) ||
+            title.includes(searchTerm) ||
+            commodity.includes(searchTerm) ||
+            plantingDate.includes(searchTerm) ||
+            yieldValue.includes(searchTerm)
+          );
+
+
+        });
+
+
+      renderMunicipalReports(
+        filteredReports
+      );
+
+
+    }
+  );
+
+
+}
+
+
+
+
+// ============================================================
+// DATE FORMAT
+// ============================================================
+
+
+function formatDate(dateString) {
+
+
+  if (!dateString) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(dateString);
+
+
+  if (isNaN(date.getTime())) {
+    return dateString;
+  }
+
+
+  return date.toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }
+  );
+
+
+}
+
+
+
+
+// ============================================================
+// OPEN REPORT DETAIL
+// ============================================================
+
+
+function openReportDetail(report) {
+
+
+  selectedReport = report;
+
+
+  // Hide pending list
+  pendingReportsView.style.display =
+    "none";
+
+
+  // Show detail
+  individualDetailView.style.display =
+    "block";
+
+
+  // Reset buttons
+  flagBtn.classList.remove("active");
+  flagBtn.textContent =
+    "Flag for Revision";
+
+
+  approveBtn.classList.remove("active");
+  approveBtn.textContent =
+    "Approve";
+
+
+  // Fill report details
+  reportDetailBody.innerHTML = `
+
+
+    <tr>
+
+
+      <td>
+        <span class="pill">
+          ${report.commodity || "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${formatDate(
+            report.planting_date
+          )}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${formatDate(
+            report.harvest_date
+          )}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${report.estimated_yield ?? "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="pill">
+          ${report.encoded_by_name || "—"}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="status-pill pending">
+          For Municipal Validation
+        </span>
+      </td>
+
+
+    </tr>
+
+
+  `;
+
+
+  // Notes
+  reportNotesTextarea.value =
+    report.notes ||
+    report.narrative ||
+    "";
+
+
+  // Remarks
+  remarksTextarea.value =
+    report.revision_remarks ||
+    "";
+
+
+  // Scroll to top of reports
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
   });
 
-  approveBtn.addEventListener('click', () => {
-    approveBtn.classList.add('active');
-    openModal('Report Approved Successfully');
-  });
 
-  document.getElementById('reportModalConfirmBtn').addEventListener('click', () => {
-    reportModal.classList.remove('show');
-  });
+}
+
+
+
+
+// ============================================================
+// RETURN TO PENDING LIST
+// ============================================================
+
+
+backToPendingBtn.addEventListener(
+  "click",
+  () => {
+
+
+    selectedReport = null;
+
+
+    individualDetailView.style.display =
+      "none";
+
+
+    pendingReportsView.style.display =
+      "block";
+
+
+    flagBtn.classList.remove("active");
+    flagBtn.textContent =
+      "Flag for Revision";
+
+
+    approveBtn.classList.remove("active");
+    approveBtn.textContent =
+      "Approve";
+
+
+  }
+);
+
+
+
+// ============================================================
+// FLAG FOR REVISION - WITH ACTUAL API CALL
+// ============================================================
+
+flagBtn.addEventListener("click", async () => {
+
+  if (!selectedReport) {
+    return;
+  }
+
+  // Disable button
+  flagBtn.disabled = true;
+  flagBtn.textContent = "Processing...";
+
+  try {
+    const reportId = selectedReport.report_id;
+    const remarks = remarksTextarea.value.trim() || "Revision needed. Please update the report.";
+
+    // I-send ang FLAG request sa backend
+    const response = await fetch(
+      `${API_BASE_URL}/api/report-submissions/${reportId}/flag`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          status: "revision_requested",
+          remarks: remarks,
+          action: "flag"
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Failed to flag report. Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Flag result:", result);
+
+    // Update local data
+    selectedReport.status = "revision_requested";
+    selectedReport.revision_remarks = remarks;
+
+    // Update button appearance
+    flagBtn.classList.add("active");
+    flagBtn.textContent = "Flagged ✓";
+
+    // I-update ang status sa detail view
+    const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
+    if (statusCell) {
+      statusCell.className = "status-pill pending";
+      statusCell.textContent = "Revision Requested";
+    }
+
+    openModal("Report Flagged for Revision");
+
+    // I-reload ang pending reports list
+    await loadMunicipalReports();
+
+  } catch (error) {
+    console.error("Error flagging report:", error);
+    openModal(`Error: ${error.message}`);
+    
+    flagBtn.classList.remove("active");
+    flagBtn.textContent = "Flag for Revision";
+  } finally {
+    flagBtn.disabled = false;
+  }
+
+});
+// ============================================================
+// APPROVE REPORT - WITH ACTUAL API CALL
+// ============================================================
+
+approveBtn.addEventListener("click", async () => {
+
+  if (!selectedReport) {
+    return;
+  }
+
+  approveBtn.disabled = true;
+  approveBtn.textContent = "Processing...";
+
+  try {
+
+    // ============================================================
+    // GET LOGGED-IN USER
+    // ============================================================
+
+    const currentUser = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
+
+    const validatorId = currentUser.user_id;
+
+    if (!validatorId) {
+      throw new Error(
+        "No logged-in user found. Please log in again."
+      );
+    }
+
+    console.log("Current validator ID:", validatorId);
+
+    // ============================================================
+    // REPORT DATA
+    // ============================================================
+
+    const reportId = selectedReport.report_id;
+
+    const remarks =
+      remarksTextarea.value.trim() ||
+      "Approved by Municipal Coordinator";
+
+    // ============================================================
+    // APPROVE API
+    // ============================================================
+
+    const approveUrl =
+      `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
+      `?validator_id=${validatorId}` +
+      `&validator_role=municipal_coordinator` +
+      `&remarks=${encodeURIComponent(remarks)}`;
+
+    console.log("Approve URL:", approveUrl);
+
+    const response = await fetch(
+      approveUrl,
+      {
+        method: "POST",
+        headers: {
+          "Accept": "application/json"
+        }
+      }
+    );
+
+    // ============================================================
+    // HANDLE ERROR
+    // ============================================================
+
+    if (!response.ok) {
+
+      const errorData =
+        await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.detail ||
+        `Failed to approve report. Status: ${response.status}`
+      );
+    }
+
+    // ============================================================
+    // SUCCESS RESPONSE
+    // ============================================================
+
+    const result = await response.json();
+
+    console.log("Approve result:", result);
+
+    // ============================================================
+    // UPDATE LOCAL DATA
+    // ============================================================
+
+    selectedReport.status =
+      "FOR_PROVINCIAL_VALIDATION";
+
+    selectedReport.revision_remarks =
+      remarks;
+
+    // ============================================================
+    // UPDATE BUTTON
+    // ============================================================
+
+    approveBtn.classList.add("active");
+    approveBtn.textContent = "Approved ✓";
+
+    // ============================================================
+    // UPDATE STATUS IN DETAIL VIEW
+    // ============================================================
+
+    const statusCell =
+      document.querySelector(
+        "#reportDetailBody td:last-child .status-pill"
+      );
+
+    if (statusCell) {
+
+      statusCell.className =
+        "status-pill approved";
+
+      statusCell.textContent =
+        "For Provincial Validation";
+    }
+
+    // ============================================================
+    // SUCCESS MODAL
+    // ============================================================
+
+    openModal(
+      "Report Approved Successfully"
+    );
+
+    // ============================================================
+    // RELOAD REPORT LIST
+    // ============================================================
+
+    await loadMunicipalReports();
+
+  } catch (error) {
+
+    console.error(
+      "Error approving report:",
+      error
+    );
+
+    openModal(
+      `Error: ${error.message}`
+    );
+
+    approveBtn.classList.remove("active");
+    approveBtn.textContent = "Approve";
+
+  } finally {
+
+    approveBtn.disabled = false;
+
+  }
+
+});
+
+// ============================================================
+// SUBMIT REPORT TO PROVINCIAL LEVEL
+// ============================================================
+
+
+const submitReportToProvBtn =
+  document.getElementById(
+    "submitReportToProvBtn"
+  );
+
+
+if (submitReportToProvBtn) {
+
+
+  submitReportToProvBtn.addEventListener(
+    "click",
+    () => {
+
+
+      openModal(
+        "Report Submitted to Provincial Level"
+      );
+
+
+    }
+  );
+
+
+}
+
+
+
+
+// ============================================================
+// MODAL
+// ============================================================
+
+
+const reportModal =
+  document.getElementById(
+    "reportModal"
+  );
+
+
+const reportModalText =
+  document.getElementById(
+    "reportModalText"
+  );
+
+
+const reportModalConfirmBtn =
+  document.getElementById(
+    "reportModalConfirmBtn"
+  );
+
+
+
+
+function openModal(message) {
+
+
+  reportModalText.textContent =
+    message;
+
+
+  reportModal.classList.add(
+    "show"
+  );
+
+
+}
+
+
+
+
+reportModalConfirmBtn.addEventListener(
+  "click",
+  () => {
+
+
+    reportModal.classList.remove(
+      "show"
+    );
+
+
+  }
+);
+
+
+
+
+// ============================================================
+// LOAD REPORTS WHEN PAGE OPENS
+// ============================================================
+
+
+loadMunicipalReports();
+
+
 </script>
+
 
 </body>
 </html>
+

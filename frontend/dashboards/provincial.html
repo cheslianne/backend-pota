@@ -638,12 +638,11 @@
 
           <div class="card report-list-card">
             <div class="crop-reports-banner">Crop Reports</div>
-            <div class="report-item-list" id="reportItemList">
-              <button class="report-item" data-report-id="1">Onion Harvest Report - Sta. Monica</button>
-              <button class="report-item" data-report-id="2">Tomato Harvest Report - Sta. Barbara</button>
-              <button class="report-item" data-report-id="3">Cabbage Harvest Report - Sta. Lucia</button>
-            </div>
-          </div>
+           <div class="report-item-list" id="reportItemList">
+  <div style="padding:20px; text-align:center;">
+    Loading reports...
+  </div>
+</div>
 
           <div class="submit-report-row">
             <button class="btn-outline-report" id="submitReportBtn">Submit Report</button>
@@ -727,7 +726,156 @@
 <!-- Leaflet JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
+
 <script>
+  
+  // ====== API CONFIGURATION ======
+  const API_BASE_URL = "http://127.0.0.1:8000";
+  const PROVINCIAL_REPORTS_ENDPOINT =
+    `${API_BASE_URL}/api/report-submissions/for-provincial-validation`;
+  let provincialReports = [];
+  let selectedReportId = null;
+
+  const returnBtn = document.getElementById('returnBtn');
+  const flagBtn = document.getElementById('flagBtn');
+  const approveBtn = document.getElementById('approveBtn');
+
+  // ================================
+
+  async function loadProvincialReports() {
+
+  const reportItemList =
+    document.getElementById("reportItemList");
+
+  reportItemList.innerHTML = `
+    <div style="padding:20px; text-align:center;">
+      Loading reports...
+    </div>
+  `;
+
+  try {
+
+    const response = await fetch(
+      PROVINCIAL_REPORTS_ENDPOINT
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    provincialReports = await response.json();
+
+    console.log("PROVINCIAL REPORTS:", provincialReports);
+
+    reportItemList.innerHTML = "";
+
+    if (provincialReports.length === 0) {
+
+      reportItemList.innerHTML = `
+        <div style="padding:20px; text-align:center;">
+          No reports for provincial validation.
+        </div>
+      `;
+
+      return;
+    }
+
+    provincialReports.forEach(report => {
+
+      const button = document.createElement("button");
+
+      button.className = "report-item";
+
+      button.dataset.reportId = report.report_id;
+
+      button.textContent =
+        `${report.title} — ${report.commodity}`;
+
+      button.addEventListener("click", () => {
+        console.log("SELECTED REPORT:", report);
+        openReportDetails(report);
+      });
+
+      reportItemList.appendChild(button);
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Failed to load provincial reports:",
+      error
+    );
+
+    reportItemList.innerHTML = `
+      <div style="padding:20px; text-align:center; color:#C0392B;">
+        Failed to load provincial reports.
+      </div>
+    `;
+  }
+}
+
+
+// ==========================================
+// OPEN REPORT DETAILS
+// ==========================================
+
+function openReportDetails(report) {
+
+  selectedReportId = report.submission_id || report.report_id;
+
+  document.getElementById('detailName').textContent =
+    report.encoded_by_name || 'Unknown';
+
+  document.getElementById('detailCommodity').textContent =
+    report.commodity || '—';
+
+  document.getElementById('detailVolume').textContent =
+    report.estimated_yield
+      ? `${Number(report.estimated_yield).toLocaleString()} kg`
+      : '—';
+
+  document.getElementById('detailLocation').textContent =
+    report.location || '—';
+
+  document.getElementById('detailPlanting').textContent =
+    formatDate(report.planting_date);
+
+  document.getElementById('detailHarvesting').textContent =
+    formatDate(report.harvest_date);
+
+  document.getElementById('reportNotes').value =
+    report.revision_remarks || '';
+
+  flagBtn.classList.remove('active');
+  approveBtn.classList.remove('active');
+
+  flagBtn.textContent = 'Flag for Revision';
+
+  flagBtn.disabled = false;
+  approveBtn.disabled = false;
+  returnBtn.disabled = false;
+
+  showReportSubview(reportDetailSubview);
+}
+
+
+// ==========================================
+// FORMAT DATE
+// ==========================================
+
+function formatDate(dateString) {
+
+  if (!dateString) return '—';
+
+  const date = new Date(dateString);
+
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const sidebar = document.getElementById('sidebar');
 
@@ -838,44 +986,12 @@
   const reportModal = document.getElementById('reportModal');
   const reportModalText = document.getElementById('reportModalText');
 
-  const REPORT_DATA = {
-    '1': { name: 'Pedro Manalang', commodity: 'Onion',   volume: '15,000kg', location: 'Sta. Monica', planting: 'February 1, 2026', harvesting: 'San Juan' },
-    '2': { name: 'Ana Reyes',      commodity: 'Tomato',  volume: '9,200kg',  location: 'Sta. Barbara', planting: 'January 20, 2026', harvesting: 'Sta. Barbara' },
-    '3': { name: 'Rico Villanueva',commodity: 'Cabbage', volume: '6,500kg',  location: 'Sta. Lucia',   planting: 'January 15, 2026', harvesting: 'Sta. Lucia' }
-  };
 
   function showReportSubview(subview){
     reportListSubview.classList.remove('active-subview');
     reportDetailSubview.classList.remove('active-subview');
     subview.classList.add('active-subview');
   }
-
-  document.querySelectorAll('.report-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const data = REPORT_DATA[btn.dataset.reportId];
-      if (data){
-        document.getElementById('detailName').textContent = data.name;
-        document.getElementById('detailCommodity').textContent = data.commodity;
-        document.getElementById('detailVolume').textContent = data.volume;
-        document.getElementById('detailLocation').textContent = data.location;
-        document.getElementById('detailPlanting').textContent = data.planting;
-        document.getElementById('detailHarvesting').textContent = data.harvesting;
-      }
-
-      flagBtn.classList.remove('active');
-      approveBtn.classList.remove('active');
-      flagBtn.textContent = 'Flag for Revision';
-      flagBtn.disabled = false;
-      approveBtn.disabled = false;
-      returnBtn.disabled = false;
-
-      showReportSubview(reportDetailSubview);
-    });
-  });
-
-  const returnBtn = document.getElementById('returnBtn');
-  const flagBtn = document.getElementById('flagBtn');
-  const approveBtn = document.getElementById('approveBtn');
 
   returnBtn.addEventListener('click', () => {
     showReportSubview(reportListSubview);
@@ -913,6 +1029,10 @@
   document.getElementById('submitReportBtn').addEventListener('click', () => {
     alert('Submit Report form not built yet.');
   });
+
+  document.addEventListener("DOMContentLoaded", () => {
+  loadProvincialReports();
+});
 </script>
 
 </body>

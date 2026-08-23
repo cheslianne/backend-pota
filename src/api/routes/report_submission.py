@@ -8,7 +8,9 @@ from src.core.database import get_db
 from src.models.raw_plant_reports import RawPlantReport
 from src.models.report_submission import ReportSubmission
 from src.models.report_validation_history import ReportValidationHistory
-
+from src.models.planting_intents import PlantingIntent
+from src.models.report_planting_intents import ReportPlantingIntent
+from src.models.users import User
 
 router = APIRouter()
 
@@ -582,6 +584,177 @@ def get_all_submitted_reports(
             ),
         }
         for submission, report in reports
+    ]
+# ============================================================
+# GET REPORTS FOR MUNICIPAL VALIDATION
+# ============================================================
+
+@router.get("/for-municipal-validation")
+def get_reports_for_municipal_validation(
+    db: Session = Depends(get_db),
+):
+    reports = (
+        db.query(
+            ReportSubmission,
+            RawPlantReport,
+            PlantingIntent,
+            User,
+        )
+        .join(
+            RawPlantReport,
+            RawPlantReport.report_id
+            == ReportSubmission.report_id
+        )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            User,
+            User.user_id
+            == RawPlantReport.encoded_by
+        )
+        .filter(
+            ReportSubmission.status
+            == FOR_MUNICIPAL_VALIDATION
+        )
+        .order_by(
+            ReportSubmission.submitted_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": submission.submission_id,
+
+            "report_id": submission.report_id,
+
+            "title": (
+                getattr(report, "title", None)
+                or getattr(report, "report_title", None)
+                or f"{getattr(report, 'commodity', 'Crop')} Harvest Report"
+            ),
+
+            "commodity": report.commodity,
+
+            "planting_date": report.planting_date,
+
+            # FROM PLANTING INTENT
+            "harvest_date": planting_intent.harvest_date,
+
+            "estimated_yield": report.estimated_yield,
+
+            # ENCODED BY
+            "encoded_by": report.encoded_by,
+
+            "encoded_by_name": (
+                f"{user.first_name} {user.last_name}"
+                if user
+                else None
+            ),
+
+            "status": submission.status,
+
+            "submitted_at": submission.submitted_at,
+
+            "revision_remarks": submission.revision_remarks,
+
+            "revision_count": submission.revision_count,
+        }
+
+        for submission, report, planting_intent, user in reports
+    ]
+
+# ============================================================
+# GET REPORTS FOR PROVINCIAL VALIDATION
+# ============================================================
+
+@router.get("/for-provincial-validation")
+def get_reports_for_provincial_validation(
+    db: Session = Depends(get_db),
+):
+    reports = (
+        db.query(
+            ReportSubmission,
+            RawPlantReport,
+            PlantingIntent,
+            User,
+        )
+        .join(
+            RawPlantReport,
+            RawPlantReport.report_id
+            == ReportSubmission.report_id
+        )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            User,
+            User.user_id
+            == RawPlantReport.encoded_by
+        )
+        .filter(
+            ReportSubmission.status
+            == FOR_PROVINCIAL_VALIDATION
+        )
+        .order_by(
+            ReportSubmission.submitted_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": submission.submission_id,
+
+            "report_id": submission.report_id,
+
+            "title": (
+                getattr(report, "title", None)
+                or getattr(report, "report_title", None)
+                or f"{getattr(report, 'commodity', 'Crop')} Harvest Report"
+            ),
+
+            "commodity": report.commodity,
+
+            "planting_date": report.planting_date,
+
+            "harvest_date": planting_intent.harvest_date,
+
+            "estimated_yield": report.estimated_yield,
+
+            "encoded_by": report.encoded_by,
+
+            "encoded_by_name": (
+                f"{user.first_name} {user.last_name}"
+                if user
+                else None
+            ),
+
+            "status": submission.status,
+
+            "submitted_at": submission.submitted_at,
+
+            "revision_remarks": submission.revision_remarks,
+
+            "revision_count": submission.revision_count,
+        }
+
+        for submission, report, planting_intent, user in reports
     ]
 
 # ============================================================

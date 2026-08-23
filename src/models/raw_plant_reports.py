@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Date, DECIMAL, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, DECIMAL, ForeignKey
 from sqlalchemy.orm import relationship
 
 from src.core.database import Base
@@ -13,6 +13,11 @@ class RawPlantReport(Base):
         index=True
     )
 
+    commodity = Column(
+        String(100),
+        nullable=True
+    )
+
     planting_date = Column(
         Date
     )
@@ -22,18 +27,14 @@ class RawPlantReport(Base):
     )
 
     municipal_coordinator_id = Column(
-    Integer,
-    nullable=True
-)
+        Integer,
+        nullable=True
+    )
 
     encoded_by = Column(
         Integer,
         ForeignKey("users.user_id")
     )
-
-    # ============================================================
-    # RELATIONSHIPS
-    # ============================================================
 
     user = relationship(
         "User",

@@ -23,8 +23,7 @@ const PLANTING_INTENTS_ENDPOINT =
     `${API_BASE_URL}/api/planting-intents/`;
 
 const RAW_PLANT_REPORTS_ENDPOINT =
-    `${API_BASE_URL}/api/raw-plant-reports`;
-
+    `${API_BASE_URL}/api/raw-plant-reports/from-planting-intent`;
 const REPORT_SUBMISSIONS_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions`;
 
@@ -2918,17 +2917,12 @@ const rawPlantReportData = {
                 ================================================= */
 
                 const createdReport =
-                    await apiRequest(
-                        RAW_PLANT_REPORTS_ENDPOINT,
-                        {
-                            method: "POST",
-
-                            body:
-                                JSON.stringify(
-                                    rawPlantReportData
-                                )
-                        }
-                    );
+    await apiRequest(
+        `${RAW_PLANT_REPORTS_ENDPOINT}/${intent.planting_intent_id}`,
+        {
+            method: "POST"
+        }
+    );
 
 
                 console.log(
