@@ -8,6 +8,10 @@
 
 
 
+
+
+
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,9 +19,17 @@
 
 
 
+
+
+
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
+
+
+
+
 
 
 
@@ -45,7 +57,15 @@
 
 
 
+
+
+
+
     *{ margin:0; padding:0; box-sizing:border-box; }
+
+
+
+
 
 
 
@@ -61,8 +81,16 @@
 
 
 
+
+
+
+
     a{ color:inherit; }
     button, input, select, textarea{ font-family:'Inter', sans-serif; }
+
+
+
+
 
 
 
@@ -82,7 +110,15 @@
 
 
 
+
+
+
+
     .topbar-left{ display:flex; align-items:center; gap:16px; }
+
+
+
+
 
 
 
@@ -100,6 +136,10 @@
 
 
 
+
+
+
+
     .hamburger span{
       display:block;
       width:26px;
@@ -111,8 +151,16 @@
 
 
 
+
+
+
+
     .logos{ display:flex; align-items:center; gap:10px; }
     .seal{ width:44px; height:44px; }
+
+
+
+
 
 
 
@@ -128,8 +176,16 @@
 
 
 
+
+
+
+
     .brand-logo svg{ width:60px; height:50px; }
     .topbar-right{ display:flex; align-items:center; gap:18px; }
+
+
+
+
 
 
 
@@ -150,7 +206,15 @@
 
 
 
+
+
+
+
     .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
+
+
+
 
 
 
@@ -169,10 +233,18 @@
 
 
 
+
+
+
+
     .user-info{ display:flex; align-items:center; gap:10px; }
     .user-text{ text-align:right; line-height:1.25; }
     .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
     .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
+
+
+
 
 
 
@@ -190,12 +262,24 @@
 
 
 
+
+
+
+
     .avatar svg{ width:20px; height:20px; fill:#fff; }
 
 
 
 
+
+
+
+
     .layout{ display:flex; min-height:calc(100vh - 73px); }
+
+
+
+
 
 
 
@@ -220,12 +304,24 @@
 
 
 
+
+
+
+
     .sidebar.open{ left:0; }
 
 
 
 
+
+
+
+
     .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
+
+
+
 
 
 
@@ -249,9 +345,17 @@
 
 
 
+
+
+
+
     .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
     .nav-item:hover{ background:rgba(255,255,255,0.08); }
     .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
+
+
+
 
 
 
@@ -274,8 +378,16 @@
 
 
 
+
+
+
+
     .signout svg{ width:18px; height:18px; fill:#fff; }
     .signout:hover{ opacity:0.8; }
+
+
+
+
 
 
 
@@ -283,6 +395,10 @@
     .main{ flex:1; padding:36px 40px; min-width:0; }
     .view{ display:none; }
     .view.active-view{ display:block; }
+
+
+
+
 
 
 
@@ -299,6 +415,10 @@
 
 
 
+
+
+
+
     .main-header h1{
       font-family:'Oswald', sans-serif;
       font-weight:700;
@@ -311,12 +431,20 @@
 
 
 
+
+
+
+
     .card{
       background:var(--white);
       border:1px solid var(--border);
       border-radius:12px;
       padding:24px 28px;
     }
+
+
+
+
 
 
 
@@ -338,6 +466,10 @@
 
 
 
+
+
+
+
     table{ width:100%; border-collapse:separate; border-spacing:0; }
     thead tr{ background:#DEDDDC; }
     thead th{
@@ -353,12 +485,20 @@
 
 
 
+
+
+
+
     tbody td{
       padding:14px 8px;
       font-size:13.5px;
       text-align:center;
       vertical-align:middle;
     }
+
+
+
+
 
 
 
@@ -372,6 +512,10 @@
       color:#222;
       white-space:nowrap;
     }
+
+
+
+
 
 
 
@@ -391,14 +535,26 @@
 
 
 
+
+
+
+
     .status-text-approved{ color:#118308; font-weight:700; }
     .status-text-rejected{ color:#C0392B; font-weight:700; }
 
 
 
 
+
+
+
+
     .clickable-row{ cursor:pointer; }
     .clickable-row:hover td{ background:#F6F3EB; }
+
+
+
+
 
 
 
@@ -412,6 +568,10 @@
 
 
 
+
+
+
+
     .form-field-item label{
       display:block;
       font-size:13px;
@@ -420,6 +580,10 @@
       color:var(--ink);
     }
     .form-field-item label .req{ color:#C0392B; }
+
+
+
+
 
 
 
@@ -437,8 +601,16 @@
 
 
 
+
+
+
+
     .form-field-item textarea{ resize:vertical; height:90px; }
     .form-field-full{ grid-column:1 / -1; }
+
+
+
+
 
 
 
@@ -460,7 +632,15 @@
 
 
 
+
+
+
+
     .actions-right-row{ display:flex; justify-content:flex-end; gap:14px; margin-top:24px; }
+
+
+
+
 
 
 
@@ -482,6 +662,10 @@
     }
     .tab-filter-btn:hover{ background:#DEDDDC; }
     .tab-filter-btn.active{ background:#C4C3C2; border-color:var(--ink); }
+
+
+
+
 
 
 
@@ -521,6 +705,10 @@
 
 
 
+
+
+
+
     .fair-price-grid{
       display:grid;
       grid-template-columns:1fr 1.5fr;
@@ -548,7 +736,15 @@
 
 
 
+
+
+
+
     #map{ width:100%; height:360px; border-radius:8px; border:1px solid var(--border); }
+
+
+
+
 
 
 
@@ -575,6 +771,10 @@
     }
     .report-list-row:last-child{ border-bottom:none; }
     .report-list-row:hover{ background:#F6F3EB; }
+
+
+
+
 
 
 
@@ -621,6 +821,10 @@
 
 
 
+
+
+
+
     .pagination-container{
       display:flex;
       justify-content:space-between;
@@ -650,6 +854,10 @@
 
 
 
+
+
+
+
     .input-readonly{ background:#F5F5F5 !important; border-color:#DDD !important; color:#555 !important; cursor:default; }
     .input-editable-active{ background:#FFF !important; border-color:var(--green) !important; color:var(--ink) !important; }
     .higher-ups-note{
@@ -665,6 +873,10 @@
 
 
 
+
+
+
+
     .hidden-element{ display:none; }
     .select-crop-input{ padding:8px 14px; border:1.5px solid var(--ink); border-radius:6px; font-weight:700; font-size:14px; outline:none; }
     .fair-price-desc{ font-size:13px; color:#555; line-height:1.6; margin:0; }
@@ -674,7 +886,15 @@
 
 
 
+
+
+
+
 <body>
+
+
+
+
 
 
 
@@ -685,6 +905,10 @@
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
+
+
+
+
 
 
 
@@ -713,11 +937,19 @@
 
 
 
+
+
+
+
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
+
+
+
 
 
 
@@ -733,6 +965,10 @@
       </div>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -770,6 +1006,10 @@
 
 
 
+
+
+
+
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -779,8 +1019,16 @@
 
 
 
+
+
+
+
     <!-- MAIN CONTENT -->
     <main class="main">
+
+
+
+
 
 
 
@@ -797,6 +1045,10 @@
               </div>
             </div>
           </div>
+
+
+
+
 
 
 
@@ -818,6 +1070,10 @@
 
 
 
+
+
+
+
             <div class="pagination-container">
               <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
               <div class="pagination-controls" id="paginationControls">
@@ -831,10 +1087,18 @@
 
 
 
+
+
+
+
           <div class="actions-right-row">
             <button class="btn-outline-report" id="addFarmerBtn" type="button">Add a Farmer</button>
           </div>
         </div>
+
+
+
+
 
 
 
@@ -844,6 +1108,10 @@
           <div class="main-header">
             <h1>Register a Farmer</h1>
           </div>
+
+
+
+
 
 
 
@@ -872,6 +1140,10 @@
 
 
 
+
+
+
+
                 <div class="form-field-item">
                   <label>Last Name <span class="req">*</span></label>
                   <input type="text" id="regLastName" placeholder="De Jesus" required>
@@ -880,6 +1152,10 @@
                   <label>Suffix</label>
                   <input type="text" id="regSuffix" placeholder="Jr.">
                 </div>
+
+
+
+
 
 
 
@@ -899,6 +1175,10 @@
 
 
 
+
+
+
+
                 <div class="form-field-item">
                   <label>Phone Number <span class="req">*</span></label>
                   <input type="tel" id="regPhone" placeholder="0999654399" required>
@@ -908,6 +1188,10 @@
                   <input type="email" id="regEmail" placeholder="panchodj@gmail.com" required>
                 </div>
               </div>
+
+
+
+
 
 
 
@@ -923,6 +1207,10 @@
 
 
 
+
+
+
+
         <!-- Manage Farmer -->
         <div id="manageFarmerSubview" class="hidden-element">
           <div class="main-header">
@@ -932,10 +1220,18 @@
 
 
 
+
+
+
+
           <div class="card">
             <div class="higher-ups-note">
               <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from direct arbitrary alteration.
             </div>
+
+
+
+
 
 
 
@@ -953,6 +1249,10 @@
 
 
 
+
+
+
+
               <div class="form-field-item">
                 <label>First Name</label>
                 <input type="text" id="manFirstName" readonly class="input-readonly">
@@ -961,6 +1261,10 @@
                 <label>Middle Name</label>
                 <input type="text" id="manMiddleName" readonly class="input-readonly">
               </div>
+
+
+
+
 
 
 
@@ -977,6 +1281,10 @@
 
 
 
+
+
+
+
               <div class="form-field-item">
                 <label>Sex</label>
                 <input type="text" id="manSex" readonly class="input-readonly">
@@ -985,6 +1293,10 @@
                 <label>Birthdate</label>
                 <input type="text" id="manBirthdate" readonly class="input-readonly">
               </div>
+
+
+
+
 
 
 
@@ -1002,6 +1314,10 @@
 
 
 
+
+
+
+
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
               <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
@@ -1011,15 +1327,19 @@
         </div>
       </section>
 
+
       <!-- VIEW 2: Planting Intent -->
 <section class="view" id="view-planting-intent">
+
 
   <!-- PLANTING INTENT LIST -->
   <div id="plantingIntentListSubview">
 
+
     <div class="main-header">
       <h1>Planting Intents</h1>
     </div>
+
 
     <div class="card">
       <table>
@@ -1038,143 +1358,181 @@
       </table>
     </div>
 
+
     <div class="actions-right-row">
       <button class="btn-outline-report" id="addPlantIntentBtn" type="button">
         Add Plant Intent
       </button>
     </div>
 
+
   </div>
+
 
   <!-- SUBMIT PLANTING INTENT -->
   <div id="submitPlantIntentSubview" class="hidden-element">
+
 
     <div class="main-header">
       <h1>Submit Planting Intent</h1>
     </div>
 
+
     <div class="card">
+
 
       <form id="submitPlantIntentForm">
 
+
         <div class="form-grid-two">
+
 
           <div class="form-field-item">
             <label>Farmer Name <span class="req">*</span></label>
             <input type="text" id="piFarmerName" required>
           </div>
 
+
           <div class="form-field-item">
             <label>Planting Date <span class="req">*</span></label>
             <input type="date" id="piPlantDate" required>
           </div>
+
 
           <div class="form-field-item">
             <label>Farmer ID <span class="req">*</span></label>
             <input type="text" id="piFarmerId" required>
           </div>
 
+
           <div class="form-field-item">
             <label>Harvest Date <span class="req">*</span></label>
             <input type="date" id="piHarvestDate" required>
           </div>
+
 
           <div class="form-field-item">
             <label>Commodity <span class="req">*</span></label>
             <input type="text" id="piCommodity" required>
           </div>
 
+
           <div class="form-field-item">
             <label>Estimated Volume (kg) <span class="req">*</span></label>
             <input type="number" id="piVolume" placeholder="e.g. 15000" required>
           </div>
+
 
           <div class="form-field-item form-field-full">
             <label>Remarks</label>
             <textarea id="piRemarks"></textarea>
           </div>
 
+
         </div>
+
 
         <div class="actions-right-row">
           <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
           <button class="btn-outline-report" type="submit">Submit</button>
         </div>
 
+
       </form>
+
 
     </div>
 
+
   </div>
+
 
   <!-- PLANTING INTENT DETAILS -->
   <div id="plantingIntentDetailsSubview" class="hidden-element">
+
 
     <div class="main-header">
       <h1>Planting Intent Details</h1>
     </div>
 
+
     <div class="card">
 
+
       <div class="form-grid-two">
+
 
         <div class="form-field-item">
           <label>Planting Intent ID</label>
           <input type="text" id="detailPlantingIntentId" readonly>
         </div>
 
+
         <div class="form-field-item">
           <label>Farmer Name</label>
           <input type="text" id="detailFarmerName" readonly>
         </div>
+
 
         <div class="form-field-item">
           <label>Farmer ID</label>
           <input type="text" id="detailFarmerId" readonly>
         </div>
 
+
         <div class="form-field-item">
           <label>Commodity</label>
           <input type="text" id="detailCommodity" readonly>
         </div>
+
 
         <div class="form-field-item">
           <label>Estimated Volume</label>
           <input type="text" id="detailVolume" readonly>
         </div>
 
+
         <div class="form-field-item">
           <label>Location</label>
           <input type="text" id="detailLocation" readonly>
         </div>
+
 
         <div class="form-field-item">
           <label>Planting Date</label>
           <input type="text" id="detailPlantingDate" readonly>
         </div>
 
+
         <div class="form-field-item">
           <label>Harvest Date</label>
           <input type="text" id="detailHarvestDate" readonly>
         </div>
+
 
         <div class="form-field-item form-field-full">
           <label>Remarks</label>
           <textarea id="detailRemarks" readonly></textarea>
         </div>
 
+
       </div>
+
 
       <div class="actions-right-row">
         <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
         <button class="btn-outline-report" id="submitPlantingIntentBtn" type="button">Submit Planting Intent</button>
       </div>
 
+
     </div>
+
 
   </div>
 
+
 </section>
+
 
       <!-- VIEW 3: Offtake Request -->
       <section class="view" id="view-offtake-request">
@@ -1208,19 +1566,35 @@
 
 
 
+
+
+
 <div id="submitOfftakeSubview" class="hidden-element">
   <div class="main-header"><h1>Submit Offtake Request</h1></div>
   <div class="card">
     <form id="submitOfftakeForm">
       <div class="form-grid-two">
-        <div class="form-field-item">
-          <label>Farmer Name <span class="req">*</span></label>
-          <input type="text" id="offtakeFarmerName" required>
-        </div>
-        <div class="form-field-item">
-          <label>Farmer ID <span class="req">*</span></label>
-          <input type="text" id="offtakeFarmerId" required>
-        </div>
+       <div class="form-field-item">
+  <label>Farmer Name <span class="req">*</span></label>
+
+
+  <select id="offtakeFarmerSelect" required>
+    <option value="">Select Farmer</option>
+  </select>
+</div>
+
+
+<div class="form-field-item">
+  <label>Farmer ID</label>
+
+
+  <input
+    type="text"
+    id="offtakeFarmerId"
+    class="input-readonly"
+    readonly
+  >
+</div>
         <div class="form-field-item">
           <label>Commodity <span class="req">*</span></label>
           <input type="text" id="offtakeCommodity" required>
@@ -1237,10 +1611,15 @@
           <label>Harvest Date <span class="req">*</span></label>
           <input type="date" id="offtakeHarvestDate" required>
         </div>
-        <div class="form-field-item">
-          <label>Buyer Name / Organization <span class="req">*</span></label>
-          <input type="text" id="offtakeBuyerName" placeholder="e.g. San Jose Traders Hub" required>
-        </div>
+       <div class="form-field-item">
+  <label>Buyer Name / Organization <span class="req">*</span></label>
+  <input
+    type="text"
+    id="offtakeBuyerName"
+    placeholder="e.g. San Jose Traders Hub"
+    required
+  >
+</div>
         <div class="form-field-item">
           <label>Delivery Location <span class="req">*</span></label>
           <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
@@ -1254,7 +1633,8 @@
     </form>
   </div>
 </div>
-      
+     
+
 
         <!-- FORMAL OFFTAKE LETTER VIEW -->
         <div id="confirmOfftakeSubview" class="hidden-element">
@@ -1301,10 +1681,18 @@
 
 
 
+
+
+
+
               <p style="font-size:12.5px; color:#666;">
                 This document certifies that the produce listed above has undergone technical monitoring and meets municipal standards.
               </p>
             </div>
+
+
+
+
 
 
 
@@ -1316,6 +1704,10 @@
           </div>
         </div>
       </section>
+
+
+
+
 
 
 
@@ -1349,6 +1741,10 @@
 
 
 
+
+
+
+
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
         <div class="main-header"><h1>Map</h1></div>
@@ -1360,28 +1756,37 @@
 
 
 
+
+
+
 <!-- VIEW 6: Reports -->
 <section class="view" id="view-reports">
   <div id="reportsListSubview">
     <div class="main-header">
       <h1>All Reports</h1>
     </div>
-    
+   
     <div class="card">
       <div class="crop-reports-banner">Crop Reports</div>
-      
+     
       <!-- ✅ ITO ANG BAGONG CONTAINER -->
       <div id="allReportsContainer">
         <!-- Dynamic reports will be rendered here -->
       </div>
-      
+     
     </div>
   </div>
 </section>
 
 
+
+
     </main>
   </div>
+
+
+
+
 
 
 
@@ -1401,6 +1806,10 @@
 
 
 
+
+
+
+
   <div class="modal-overlay" id="farmerAddedModal">
     <div class="modal-box">
       <h2>Farmer Added!</h2>
@@ -1408,6 +1817,10 @@
       <div class="modal-actions"><button class="modal-btn-confirm" id="closeFarmerAddedBtn" type="button">OK</button></div>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -1426,6 +1839,10 @@
 
 
 
+
+
+
+
   <div class="modal-overlay" id="plantIntentSubmittedModal">
     <div class="modal-box">
       <h2>Planting Intent Submitted!</h2>
@@ -1433,6 +1850,10 @@
       <div class="modal-actions"><button class="modal-btn-confirm" id="closePlantIntentSubmittedBtn" type="button">OK</button></div>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -1451,13 +1872,32 @@
 
 
 
+
+
+
+
   <div class="modal-overlay" id="offtakeSubmittedModal">
     <div class="modal-box">
       <h2>Offtake Submitted!</h2>
       <p>The offtake request has been dispatched to the recipient buyer.</p>
       <div class="modal-actions"><button class="modal-btn-confirm" id="closeOfftakeSubmittedBtn" type="button">OK</button></div>
+    <!-- Add this button to the offtakeSubmittedModal -->
+<div class="modal-overlay" id="offtakeSubmittedModal">
+    <div class="modal-box">
+        <h2>Confirm Offtake Submission</h2>
+        <p>Are you sure you want to officially dispatch this offtake memorandum to the buyer?</p>
+        <div class="modal-actions">
+            <button class="btn-outline-report" id="cancelOfftakeDispatchBtn" type="button">Cancel</button>
+            <button class="modal-btn-confirm" id="confirmDispatchBtn" type="button">Confirm Dispatch</button>
+        </div>
+    </div>
+</div>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -1466,3 +1906,4 @@
  <script src="../assets/js/aew.js"></script>
 </body>
 </html>
+

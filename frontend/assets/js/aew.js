@@ -76,6 +76,8 @@ function getAuthHeaders() {
 
 
 let FARMERS_DATA = [];
+let allFarmers = []; 
+let allBuyers =[];
 
 
 let currentFarmersPage = 1;
@@ -138,6 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await fetchFarmers();
 
     await loadAllReports();
+    await fetchOfftakeRequests();
 });
 
 
@@ -441,6 +444,11 @@ async function fetchFarmers() {
             data
         );
 
+        allFarmers = data;
+
+populateOfftakeFarmerSelect();
+setupOfftakeFarmerDropdown();
+
 
 
 
@@ -617,9 +625,59 @@ function normalizeFarmer(farmer) {
     };
 }
 
+function populateOfftakeFarmerSelect() {
 
+    const select = document.getElementById("offtakeFarmerSelect");
 
+    if (!select) {
+        console.error("offtakeFarmerSelect not found.");
+        return;
+    }
 
+    select.innerHTML = `
+        <option value="">Select Farmer</option>
+    `;
+
+    if (!Array.isArray(allFarmers) || allFarmers.length === 0) {
+        console.warn("No farmers available.");
+        return;
+    }
+
+    allFarmers.forEach(farmer => {
+
+        const fullName = [
+            farmer.first_name,
+            farmer.middle_name,
+            farmer.last_name,
+            farmer.suffix
+        ]
+        .filter(Boolean)
+        .join(" ");
+
+        const option = document.createElement("option");
+
+        option.value = farmer.farmer_id;
+        option.textContent = fullName;
+
+        select.appendChild(option);
+    });
+}
+
+function setupOfftakeFarmerDropdown() {
+
+    const select = document.getElementById("offtakeFarmerSelect");
+    const farmerIdInput = document.getElementById("offtakeFarmerId");
+
+    if (!select || !farmerIdInput) {
+        return;
+    }
+
+    select.addEventListener("change", function () {
+
+        farmerIdInput.value = this.value || "";
+
+    });
+}
 /* ============================================================
    SIDEBAR
 ============================================================ */
@@ -4157,6 +4215,7 @@ const OFFTAKE_REQUESTS_ENDPOINT =
 ============================================================ */
 
 let currentOfftakeRequest = null;
+let OFFTAKE_REQUESTS_DATA = [];
 
 
 /* ============================================================
@@ -4184,6 +4243,8 @@ function initOfftakeRequest() {
         document.getElementById(
             "offtakeSubmittedModal"
         );
+    
+        fetchOfftakeRequests();
 
 
     /* ========================================================
@@ -4241,52 +4302,66 @@ function initOfftakeRequest() {
             }
         );
 
+/* ========================================================
+   PROCEED TO REVIEW
+======================================================== */
 
-    /* ========================================================
-       PROCEED TO REVIEW
-    ======================================================== */
+document
+    .getElementById("proceedOfftakeBtn")
+    ?.addEventListener("click", () => {
 
-    document
-        .getElementById(
-            "proceedOfftakeBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
+        const farmerSelect =
+            document.getElementById("offtakeFarmerSelect");
 
-                const data =
-                    collectOfftakeFormData();
+        const farmerId =
+            document.getElementById("offtakeFarmerId");
 
+        /* CHECK FARMER */
+        if (!farmerSelect || !farmerSelect.value) {
 
-                if (
-                    !validateOfftakeForm(
-                        data
-                    )
-                ) {
-                    return;
-                }
+            alert("Please select a farmer.");
 
+            return;
+        }
 
-                currentOfftakeRequest =
-                    data;
+        /* MAKE SURE FARMER ID IS SET */
+        if (farmerId) {
+            farmerId.value = farmerSelect.value;
+        }
 
+        /* COLLECT OTHER FORM DATA */
+        const data =
+            collectOfftakeFormData();
 
-                populateOfftakeReview(
-                    data
-                );
+        /* OVERRIDE FARMER DATA */
+        data.farmer_id =
+            Number(farmerSelect.value);
 
+        data.farmer_name =
+            farmerSelect.options[
+                farmerSelect.selectedIndex
+            ].text;
 
-                submitSub?.classList.add(
-                    "hidden-element"
-                );
+        /* VALIDATE */
+        if (!validateOfftakeForm(data)) {
+            return;
+        }
 
-                confirmSub?.classList.remove(
-                    "hidden-element"
-                );
-            }
+        /* SAVE CURRENT REQUEST */
+        currentOfftakeRequest = data;
+
+        /* POPULATE REVIEW */
+        populateOfftakeReview(data);
+
+        /* SHOW REVIEW */
+        submitSub?.classList.add(
+            "hidden-element"
         );
 
-
+        confirmSub?.classList.remove(
+            "hidden-element"
+        );
+    });
     /* ========================================================
        EDIT DETAILS
        REVIEW → FORM
@@ -4523,6 +4598,316 @@ document
         );
 }
 
+/* ============================================================
+   FETCH ALL OFFTAKE REQUESTS
+============================================================ */
+/* ============================================================
+   FETCH ALL OFFTAKE REQUESTS
+============================================================ */
+async function fetchOfftakeRequests() {
+
+    const tbody = document.getElementById("offtakeTableBody");
+
+    if (!tbody) {
+        console.error("offtakeTableBody not found.");
+        return;
+    }
+
+    // Show loading state
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" style="padding:30px; text-align:center;">
+                Loading offtake requests...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const url = `${API_BASE_URL}/api/offtake-requests/`;
+
+        console.log("Fetching offtake requests:", url);
+
+        const requests = await apiRequest(url, { method: "GET" });
+
+        console.log("Offtake Requests API response:", requests);
+
+        // ========================================================
+        // IMPORTANT: Ensure farmers are loaded first
+        // ========================================================
+        
+        // If allFarmers is empty, try to fetch farmers first
+        if (!Array.isArray(allFarmers) || allFarmers.length === 0) {
+            console.warn("allFarmers is empty. Fetching farmers first...");
+            await fetchFarmers();
+        }
+
+        // Normalize farmers for lookup
+        const farmersMap = new Map();
+        
+        if (Array.isArray(allFarmers)) {
+            allFarmers.forEach(farmer => {
+                // Store both string and number versions for lookup
+                const farmerId = farmer.farmer_id;
+                farmersMap.set(String(farmerId), farmer);
+                farmersMap.set(Number(farmerId), farmer);
+            });
+        }
+
+        console.log("Farmers Map:", farmersMap);
+
+        tbody.innerHTML = "";
+
+        if (!Array.isArray(requests) || requests.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="padding:30px; text-align:center; color:#777;">
+                        No offtake requests found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        // ========================================================
+        // RENDER OFFTAKE REQUESTS
+        // ========================================================
+
+        requests.forEach(request => {
+
+            // Find farmer using both string and number comparison
+            let farmer = null;
+            const requestFarmerId = request.farmer_id;
+            
+            if (requestFarmerId) {
+                // Try both string and number versions
+                farmer = farmersMap.get(String(requestFarmerId)) || 
+                        farmersMap.get(Number(requestFarmerId));
+            }
+
+            // ====================================================
+            // FARMER NAME
+            // ====================================================
+
+            let farmerName = "Unknown Farmer";
+            let farmerLocation = "—";
+
+            if (farmer) {
+
+                farmerName = [
+                    farmer.first_name,
+                    farmer.middle_name,
+                    farmer.last_name,
+                    farmer.suffix
+                ]
+                .filter(Boolean)
+                .join(" ");
+
+                // Build location
+                farmerLocation = 
+                    farmer.address ||
+                    [farmer.barangay, farmer.municipality]
+                        .filter(Boolean)
+                        .join(", ") ||
+                    "—";
+
+                console.log(`Found farmer: ${farmerName} (ID: ${farmer.farmer_id}) for request ID: ${requestFarmerId}`);
+            } else {
+                console.warn(`No farmer found for ID: ${requestFarmerId}`);
+            }
+
+            // ====================================================
+            // CREATE TABLE ROW
+            // ====================================================
+
+            const row = document.createElement("tr");
+            row.className = "clickable-row";
+
+            row.innerHTML = `
+                <td>
+                    <span class="pill">${escapeHtml(farmerName)}</span>
+                </td>
+
+                <td>
+                    <span class="pill">${escapeHtml(request.commodity || "—")}</span>
+                </td>
+
+                <td>
+                    <span class="pill">${escapeHtml(request.quantity || "—")} kg</span>
+                </td>
+
+                <td>
+                    <span class="pill">${escapeHtml(farmerLocation)}</span>
+                </td>
+
+                <td>
+                    <span class="pill">${escapeHtml(request.harvest_date || "—")}</span>
+                </td>
+
+                <td>
+                    <span class="status-pill submitted">Submitted</span>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        console.log(`Successfully rendered ${requests.length} offtake request(s).`);
+
+    } catch (error) {
+
+        console.error("Unable to load offtake requests:", error);
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">
+                    Failed to load offtake requests.
+                    <br>
+                    <small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small>
+                </td>
+            </tr>
+        `;
+
+        handleAuthError(error);
+
+        return [];
+    }
+}
+/* ============================================================
+   RENDER OFFTAKE REQUESTS TABLE
+============================================================ */
+
+function renderOfftakeRequestsTable() {
+
+    const tbody =
+        document.getElementById(
+            "offtakeRequestsTableBody"
+        );
+
+    if (!tbody) {
+
+        console.warn(
+            "offtakeRequestsTableBody not found."
+        );
+
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    if (
+        OFFTAKE_REQUESTS_DATA.length === 0
+    ) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    style="
+                        padding:30px;
+                        text-align:center;
+                        color:#777;
+                    ">
+                    No offtake requests found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    OFFTAKE_REQUESTS_DATA.forEach(
+        request => {
+
+            const tr =
+                document.createElement("tr");
+
+            const farmerName =
+                request.farmer_name ||
+                request.name ||
+                "-";
+
+            const commodity =
+                request.commodity ||
+                "-";
+
+            const quantity =
+                request.quantity ??
+                request.volume ??
+                "-";
+
+            const location =
+                request.location ||
+                request.delivery_location ||
+                request.municipality ||
+                "-";
+
+            const harvestDate =
+                request.harvest_date
+                    ? formatPlantingDate(
+                        request.harvest_date
+                    )
+                    : "-";
+
+            const status =
+                request.status ||
+                "PENDING";
+
+            tr.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            farmerName
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            commodity
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            quantity
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            location
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            harvestDate
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-pill pending">
+                        ${escapeHtml(
+                            status
+                        )}
+                    </span>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        }
+    );
+}
 
 /* ============================================================
    COLLECT OFFTAKE FORM DATA
@@ -5289,6 +5674,8 @@ async function submitOfftakeRequest() {
             "Offtake Request API response:",
             response
         );
+
+        await fetchOfftakeRequests();
 
 
         /* ====================================================
