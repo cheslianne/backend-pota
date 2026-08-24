@@ -4397,115 +4397,27 @@ document
        SUBMIT REQUEST
        REVIEW → CONFIRM MODAL
     ======================================================== */
+document
+    .getElementById("sendOfftakeBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
 
-    document
-        .getElementById(
-            "sendOfftakeBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
+            if (!currentOfftakeRequest) {
 
-                if (
-                    !currentOfftakeRequest
-                ) {
+                const data =
+                    collectOfftakeFormData();
 
-                    const data =
-                        collectOfftakeFormData();
-
-
-                    if (
-                        !validateOfftakeForm(
-                            data
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    currentOfftakeRequest =
-                        data;
+                if (!validateOfftakeForm(data)) {
+                    return;
                 }
 
-
-                submittedModal?.classList.add(
-                    "show"
-                );
+                currentOfftakeRequest = data;
             }
-        );
 
-
-    document
-        .getElementById(
-            "submitOfftakeRequestBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    !currentOfftakeRequest
-                ) {
-
-                    const data =
-                        collectOfftakeFormData();
-
-
-                    if (
-                        !validateOfftakeForm(
-                            data
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    currentOfftakeRequest =
-                        data;
-                }
-
-
-                submittedModal?.classList.add(
-                    "show"
-                );
-            }
-        );
-
-
-    /* ========================================================
-       CLOSE CONFIRMATION MODAL
-    ======================================================== */
-
-    document
-        .getElementById(
-            "closeOfftakeConfirmBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                submittedModal?.classList.remove(
-                    "show"
-                );
-            }
-        );
-
-
-    document
-        .getElementById(
-            "cancelOfftakeDispatchBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                submittedModal?.classList.remove(
-                    "show"
-                );
-            }
-        );
-
-
+            await submitOfftakeRequest();
+        }
+    );
     /* ========================================================
        CONFIRM DISPATCH
        FINAL API SUBMISSION
@@ -5500,20 +5412,13 @@ async function submitOfftakeRequest() {
     }
 
 
-    const confirmDispatchBtn =
-        document.getElementById(
-            "confirmDispatchBtn"
-        );
+    const sendOfftakeBtn =
+    document.getElementById("sendOfftakeBtn");
 
-
-    if (confirmDispatchBtn) {
-
-        confirmDispatchBtn.disabled =
-            true;
-
-        confirmDispatchBtn.textContent =
-            "Submitting...";
-    }
+if (sendOfftakeBtn) {
+    sendOfftakeBtn.disabled = true;
+    sendOfftakeBtn.textContent = "Submitting...";
+}
 
 
     try {
@@ -5632,6 +5537,7 @@ async function submitOfftakeRequest() {
 
             commodity_photo:
                 data.commodity_photo || null
+                
         };
 
 
@@ -5728,14 +5634,10 @@ async function submitOfftakeRequest() {
 
     } finally {
 
-        if (confirmDispatchBtn) {
-
-            confirmDispatchBtn.disabled =
-                false;
-
-            confirmDispatchBtn.textContent =
-                "Confirm Dispatch";
-        }
+       if (sendOfftakeBtn) {
+    sendOfftakeBtn.disabled = false;
+    sendOfftakeBtn.textContent = "Submit Request";
+}
     }
 }
 

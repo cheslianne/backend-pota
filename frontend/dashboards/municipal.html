@@ -1416,6 +1416,9 @@ backToPendingBtn.addEventListener(
 // ============================================================
 // FLAG FOR REVISION - WITH ACTUAL API CALL
 // ============================================================
+// ============================================================
+// FLAG FOR REVISION - WITH ACTUAL API CALL
+// ============================================================
 
 flagBtn.addEventListener("click", async () => {
 
@@ -1423,70 +1426,194 @@ flagBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Disable button
   flagBtn.disabled = true;
   flagBtn.textContent = "Processing...";
 
   try {
-    const reportId = selectedReport.report_id;
-    const remarks = remarksTextarea.value.trim() || "Revision needed. Please update the report.";
 
-    // I-send ang FLAG request sa backend
+    // ============================================================
+    // GET LOGGED-IN USER
+    // ============================================================
+
+    const validatorId = localStorage.getItem("user_id");
+    const accessToken = localStorage.getItem("access_token");
+    const tokenType =
+      localStorage.getItem("token_type") || "bearer";
+
+    const userRole = localStorage.getItem("role");
+
+    console.log("Validator ID:", validatorId);
+    console.log("User Role:", userRole);
+    console.log("Has Access Token:", !!accessToken);
+
+    if (!validatorId) {
+      throw new Error(
+        "No logged-in user found. Please log in again."
+      );
+    }
+
+    if (!accessToken) {
+      throw new Error(
+        "No access token found. Please log in again."
+      );
+    }
+
+    // ============================================================
+    // CHECK ROLE
+    // ============================================================
+
+    if (
+      userRole !== "Municipal Coordinator" &&
+      userRole !== "Municipal"
+    ) {
+      throw new Error(
+        "Only a Municipal Coordinator can request revision."
+      );
+    }
+
+    // ============================================================
+    // REPORT DATA
+    // ============================================================
+
+    const reportId = selectedReport.report_id;
+
+    const remarks =
+      remarksTextarea.value.trim();
+
+    if (!remarks) {
+      throw new Error(
+        "Revision remarks are required."
+      );
+    }
+
+    // ============================================================
+    // REQUEST REVISION API
+    // ============================================================
+
+    const revisionUrl =
+      `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
+      `?validator_id=${encodeURIComponent(validatorId)}` +
+      `&validator_role=municipal_coordinator` +
+      `&remarks=${encodeURIComponent(remarks)}`;
+
+    console.log(
+      "Revision URL:",
+      revisionUrl
+    );
+
     const response = await fetch(
-      `${API_BASE_URL}/api/report-submissions/${reportId}/flag`,
+      revisionUrl,
       {
-        method: "PATCH",
+        method: "POST",
+
         headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          status: "revision_requested",
-          remarks: remarks,
-          action: "flag"
-        })
+          "Accept": "application/json",
+          "Authorization":
+            `${tokenType} ${accessToken}`
+        }
       }
     );
 
+    // ============================================================
+    // HANDLE ERROR
+    // ============================================================
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to flag report. Status: ${response.status}`);
+
+      const errorData =
+        await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData.detail ||
+        `Failed to request revision. Status: ${response.status}`
+      );
     }
 
-    const result = await response.json();
-    console.log("Flag result:", result);
+    // ============================================================
+    // SUCCESS RESPONSE
+    // ============================================================
 
-    // Update local data
-    selectedReport.status = "revision_requested";
-    selectedReport.revision_remarks = remarks;
+    const result =
+      await response.json();
 
-    // Update button appearance
+    console.log(
+      "Revision result:",
+      result
+    );
+
+    // ============================================================
+    // UPDATE LOCAL DATA
+    // ============================================================
+
+    selectedReport.status =
+      "REVISION_REQUIRED";
+
+    selectedReport.revision_remarks =
+      remarks;
+
+    // ============================================================
+    // UPDATE BUTTON
+    // ============================================================
+
     flagBtn.classList.add("active");
-    flagBtn.textContent = "Flagged ✓";
+    flagBtn.textContent =
+      "Flagged ✓";
 
-    // I-update ang status sa detail view
-    const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
+    // ============================================================
+    // UPDATE STATUS IN DETAIL VIEW
+    // ============================================================
+
+    const statusCell =
+      document.querySelector(
+        "#reportDetailBody td:last-child .status-pill"
+      );
+
     if (statusCell) {
-      statusCell.className = "status-pill pending";
-      statusCell.textContent = "Revision Requested";
+
+      statusCell.className =
+        "status-pill pending";
+
+      statusCell.textContent =
+        "Revision Required";
     }
 
-    openModal("Report Flagged for Revision");
+    // ============================================================
+    // SUCCESS MODAL
+    // ============================================================
 
-    // I-reload ang pending reports list
+    openModal(
+      "Report Flagged for Revision"
+    );
+
+    // ============================================================
+    // RELOAD REPORT LIST
+    // ============================================================
+
     await loadMunicipalReports();
 
   } catch (error) {
-    console.error("Error flagging report:", error);
-    openModal(`Error: ${error.message}`);
-    
+
+    console.error(
+      "Error requesting revision:",
+      error
+    );
+
+    openModal(
+      `Error: ${error.message}`
+    );
+
     flagBtn.classList.remove("active");
-    flagBtn.textContent = "Flag for Revision";
+    flagBtn.textContent =
+      "Flag for Revision";
+
   } finally {
+
     flagBtn.disabled = false;
+
   }
 
 });
+
 // ============================================================
 // APPROVE REPORT - WITH ACTUAL API CALL
 // ============================================================

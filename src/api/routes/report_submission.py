@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
+from src.core.auth import get_current_user
 
 from src.models.raw_plant_reports import RawPlantReport
 from src.models.report_submission import ReportSubmission
@@ -167,7 +168,163 @@ def submit_report(
 # APPROVE REPORT
 # MUNICIPAL → PROVINCIAL → DA-RFO → FINAL
 # ============================================================
+@router.post("/{report_id}/approve")
+def approve_report(
+    report_id: int,
+    validator_id: int,
+    validator_role: str,
+    remarks: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
 
+    # --------------------------------------------------------
+    # CHECK LOGGED-IN USER
+    # --------------------------------------------------------
+
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
+
+    # --------------------------------------------------------
+    # GET SUBMISSION
+    # --------------------------------------------------------
+
+    submission = (
+        db.query(ReportSubmission)
+        .filter(
+            ReportSubmission.report_id == report_id
+        )
+        .first()
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Report submission not found."
+        )
+
+    # --------------------------------------------------------
+    # SECURITY CHECK
+    # Logged-in user must match validator_id
+    # --------------------------------------------------------
+
+    if current_user.user_id != validator_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to approve this report."
+        )
+
+    # --------------------------------------------------------
+    # MUNICIPAL APPROVAL
+    # --------------------------------------------------------
+
+    if validator_role == "municipal_coordinator":
+
+        if submission.status != FOR_MUNICIPAL_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "municipal validation."
+                )
+            )
+
+        submission.status = FOR_PROVINCIAL_VALIDATION
+
+        submission.current_validator_id = None
+
+        submission.current_validator_role = (
+            "provincial_coordinator"
+        )
+
+    # --------------------------------------------------------
+    # PROVINCIAL APPROVAL
+    # --------------------------------------------------------
+
+    elif validator_role == "provincial_coordinator":
+
+        if submission.status != FOR_PROVINCIAL_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "provincial validation."
+                )
+            )
+
+        submission.status = FOR_DA_RFO_VALIDATION
+
+        submission.current_validator_id = None
+
+        submission.current_validator_role = "darfo"
+
+    # --------------------------------------------------------
+    # DA-RFO FINAL APPROVAL
+    # --------------------------------------------------------
+
+    elif validator_role == "darfo":
+
+        if submission.status != FOR_DA_RFO_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "DA-RFO validation."
+                )
+            )
+
+        submission.status = FINAL_APPROVED
+
+        submission.current_validator_id = None
+
+        submission.current_validator_role = None
+
+        submission.approved_at = datetime.utcnow()
+
+    else:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid validator role."
+        )
+
+    # --------------------------------------------------------
+    # ADD VALIDATION HISTORY
+    # USE ACTUAL LOGGED-IN USER
+    # --------------------------------------------------------
+
+    history = ReportValidationHistory(
+        submission_id=submission.submission_id,
+        action="APPROVED",
+        performed_by=current_user.user_id,
+        role=validator_role,
+        remarks=remarks,
+    )
+
+    db.add(history)
+
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
+
+    db.commit()
+    db.refresh(submission)
+
+    return {
+        "message": "Report approved successfully.",
+        "report_id": report_id,
+        "status": submission.status,
+        "current_validator_id": (
+            submission.current_validator_id
+        ),
+        "current_validator_role": (
+            submission.current_validator_role
+        ),
+    }
+    
 @router.post("/{report_id}/approve")
 def approve_report(
     report_id: int,
