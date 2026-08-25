@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from src.core.config import settings
 from src.models.report_submission import ReportSubmission
 from src.models.report_validation_history import ReportValidationHistory
 from src.api.routes import (
@@ -34,10 +35,15 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
+    allow_origins=list({
+        *(
+            origin.strip()
+            for origin in settings.allowed_origins.split(",")
+            if origin.strip()
+        ),
         "http://localhost:5500",
-    ],
+        "http://127.0.0.1:5500",
+    }),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

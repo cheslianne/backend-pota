@@ -1,8 +1,12 @@
+from urllib.parse import quote_plus
+
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from contextvars import ContextVar
 from datetime import date, datetime
 from decimal import Decimal
+
+from src.core.config import settings
 
 
 # =========================================================
@@ -10,7 +14,8 @@ from decimal import Decimal
 # =========================================================
 
 SQLALCHEMY_DATABASE_URL = (
-    "postgresql://postgres:1234@localhost:5432/esaka_db"
+    f"postgresql://{settings.db_user}:{quote_plus(settings.db_password)}"
+    f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 )
 
 engine = create_engine(

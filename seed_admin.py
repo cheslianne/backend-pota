@@ -10,6 +10,8 @@ from src.core.database import SessionLocal
 from src.models.users import User
 from src.models.audit_logs import AuditLog
 from src.models.raw_plant_reports import RawPlantReport
+from src.models.report_submission import ReportSubmission
+from src.models.report_validation_history import ReportValidationHistory
 
 from src.core.security import hash_password
 
