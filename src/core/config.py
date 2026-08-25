@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
 
     # CORS
     allowed_origins: str
+    frontend_url: Optional[str] = None
 
     # Brevo Email
     BREVO_API_KEY: str

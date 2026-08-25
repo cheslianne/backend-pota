@@ -1,5 +1,3 @@
-from urllib.parse import quote_plus
-
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from contextvars import ContextVar
@@ -13,9 +11,12 @@ from src.core.config import settings
 # DATABASE CONNECTION
 # =========================================================
 
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{settings.db_user}:{quote_plus(settings.db_password)}"
-    f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+SQLALCHEMY_DATABASE_URL = settings.database_url.replace(
+    "postgresql+asyncpg://",
+    "postgresql://",
+).replace(
+    "postgres://",
+    "postgresql://",
 )
 
 engine = create_engine(

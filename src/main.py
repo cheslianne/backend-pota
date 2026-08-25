@@ -41,6 +41,7 @@ app.add_middleware(
             for origin in settings.allowed_origins.split(",")
             if origin.strip()
         ),
+        *(origin.strip() for origin in [settings.frontend_url or ""] if origin.strip()),
         "http://localhost:5500",
         "http://127.0.0.1:5500",
     }),
