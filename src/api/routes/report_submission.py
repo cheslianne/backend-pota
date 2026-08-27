@@ -738,7 +738,6 @@ def request_revision(
         )
 
     remarks = remarks.strip()
-
     # --------------------------------------------------------
     # MUNICIPAL COORDINATOR
     # FOR_MUNICIPAL_VALIDATION
@@ -773,6 +772,24 @@ def request_revision(
                 )
             )
 
+    # --------------------------------------------------------
+    # DA-RFO OFFICER
+    # FOR_DA_RFO_VALIDATION
+    # → REVISION_REQUIRED
+    # --------------------------------------------------------
+
+    elif validator_role == "darfo":
+
+        if submission.status != FOR_DA_RFO_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "DA-RFO validation."
+                )
+            )
+
+    
     # --------------------------------------------------------
     # INVALID ROLE
     # --------------------------------------------------------

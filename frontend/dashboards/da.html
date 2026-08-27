@@ -752,93 +752,100 @@
         </div>
       </section>
 
-
-      <!-- VIEW 4: View Reports -->
+ <!-- VIEW 4: View Reports (MATCHED PROVINCIAL / MUNICIPAL TABLE & DETAIL DESIGN) -->
       <section class="view" id="view-reports">
+       
+        <!-- PENDING REPORTS TABLE SUBVIEW -->
         <div id="reportListSubview">
           <div class="main-header">
-            <h1>All Reports</h1>
+            <h1>Reports</h1>
             <div class="search-row">
               <div class="search-box">
                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Search reports...">
+                <input type="text" id="reportSearchInput" placeholder="Search reports...">
               </div>
-              <button class="filter-btn" aria-label="Filter" type="button">
-                <svg viewBox="0 0 24 24"><path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/></svg>
-              </button>
             </div>
           </div>
 
 
           <div class="card">
-            <div class="crop-reports-banner">Crop Reports</div>
-            <div class="report-item-list">
-              <button class="report-item" data-id="1" type="button">Onion Harvest Report - Sta. Monica</button>
-              <button class="report-item" data-id="2" type="button">Tomato Harvest Report - Sta. Barbara</button>
-              <button class="report-item" data-id="3" type="button">Cabbage Harvest Report - Sta. Lucia</button>
-            </div>
-          </div>
-
-
-          <div class="actions-right">
-            <button class="btn-outline-report" type="button">Submit Report</button>
+            <div style="font-size:16px; font-weight:700; margin-bottom:16px; color:var(--ink);">Pending Reports</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Report ID</th>
+                  <th>Title</th>
+                  <th>Commodity</th>
+                  <th>Planting Date</th>
+                  <th>Estimated Yield (kg)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="pendingReportsBody">
+                <tr>
+                  <td colspan="6" style="text-align:center;">Loading reports...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
 
+        <!-- REPORT DETAIL SUBVIEW -->
         <div id="reportDetailSubview" class="hidden-element">
-          <div class="main-header"><h1>View Reports</h1></div>
+          <p class="report-desc-subtitle">Inspect production data and provide provincial feedback.</p>
+
+
           <div class="card">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
                   <th>Commodity</th>
-                  <th>Volume</th>
-                  <th>Location</th>
                   <th>Planting Date</th>
-                  <th>Harvesting Date</th>
+                  <th>Harvest Date</th>
+                  <th>Estimated Yield (kg)</th>
+                  <th>Encoded By</th>
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><span class="pill">Pedro Manalang</span></td>
-                  <td><span class="pill">Onion</span></td>
-                  <td><span class="pill">15,000kg</span></td>
-                  <td><span class="pill">Sta. Monica</span></td>
-                  <td><span class="pill">February 1, 2026</span></td>
-                  <td><span class="pill">San Juan</span></td>
-                  <td><span class="status-pill approved">Confirmed</span></td>
-                </tr>
-              </tbody>
+              <tbody id="reportDetailBody"></tbody>
             </table>
 
 
-            <div class="notes-row">
-              <div class="notes-field">
-                <label>Notes</label>
-                <textarea rows="4" placeholder="Enter evaluation remarks..."></textarea>
+            <!-- NOTES -->
+            <div class="report-field-group">
+              <label class="report-field-label">NOTES</label>
+              <div class="notes-flex-container">
+                <textarea id="reportNotesTextarea" class="textarea-notes-readonly" readonly></textarea>
+                <button class="btn-view-attachments" id="viewAttachmentsBtn" type="button">View Attachments</button>
               </div>
-              <div>
-                <button class="btn-outline-report" type="button">View Attachments</button>
-              </div>
+            </div>
+
+
+            <!-- REMARKS -->
+            <div class="report-field-group">
+              <label class="report-field-label">REMARKS</label>
+              <textarea id="remarksTextarea" class="textarea-remarks-input" placeholder="Enter provincial feedback or revision notes..."></textarea>
             </div>
           </div>
 
 
-          <div class="actions-row">
-            <button class="btn-outline-report" id="returnReportListBtn" type="button">Return</button>
-            <button class="btn-outline-report flag-btn" id="flagReportBtn" type="button">Flag for Revision</button>
-            <button class="btn-outline-report approve-btn" id="approveReportBtn" type="button">Approve</button>
+          <!-- DETAIL ACTION BUTTONS -->
+          <div class="matched-actions-row">
+            <button class="btn-action-return" id="backToPendingBtn" type="button">Return</button>
+            <button class="btn-action-flag" id="flagReportBtn" type="button">Flag for Revision</button>
+            <button class="btn-action-approve" id="approveReportBtn" type="button">Approve & Escalate</button>
           </div>
         </div>
+
+
       </section>
+
+
 
 
     </main>
   </div>
-
 
   <!-- MODALS -->
   <div class="modal-overlay" id="confirmApproveModal">

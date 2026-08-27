@@ -15,6 +15,8 @@ from src.api.schemas.buyer_status import (
     BuyerStatusResponse,
 )
 
+from src.api.services.email_service import send_verified_buyer_email
+
 router = APIRouter()
 
 
@@ -244,11 +246,14 @@ def get_rejected_buyers(
 # ============================================================
 
 @router.put("/{buyer_status_id}/verify")
-def verify_buyer(
+async def verify_buyer(
     buyer_status_id: int,
     db: Session = Depends(get_db)
 ):
-    # Find status
+    # --------------------------------------------------------
+    # FIND BUYER STATUS
+    # --------------------------------------------------------
+
     buyer_status = (
         db.query(BuyerStatus)
         .filter(
@@ -264,7 +269,10 @@ def verify_buyer(
             detail="Buyer status not found"
         )
 
-    # Only Pending can be verified
+    # --------------------------------------------------------
+    # ONLY PENDING CAN BE VERIFIED
+    # --------------------------------------------------------
+
     if buyer_status.status != "Pending":
         raise HTTPException(
             status_code=400,
@@ -274,7 +282,10 @@ def verify_buyer(
             )
         )
 
-    # Get registry information
+    # --------------------------------------------------------
+    # GET REGISTRY INFORMATION
+    # --------------------------------------------------------
+
     registry = buyer_status.buyer_registry
 
     if not registry:
@@ -283,7 +294,10 @@ def verify_buyer(
             detail="Buyer registry not found"
         )
 
-    # Check if buyer already exists
+    # --------------------------------------------------------
+    # CHECK IF BUYER ALREADY EXISTS
+    # --------------------------------------------------------
+
     existing_buyer = (
         db.query(Buyer)
         .filter(
@@ -296,14 +310,23 @@ def verify_buyer(
     if existing_buyer:
         raise HTTPException(
             status_code=400,
-            detail="A buyer with this email already exists."
+            detail=(
+                "A buyer with this email "
+                "already exists."
+            )
         )
 
-    # Update status
+    # --------------------------------------------------------
+    # UPDATE BUYER STATUS
+    # --------------------------------------------------------
+
     buyer_status.status = "Verified"
     buyer_status.reviewed_at = datetime.utcnow()
 
-    # Create official buyer
+    # --------------------------------------------------------
+    # CREATE OFFICIAL BUYER
+    # --------------------------------------------------------
+
     db_buyer = Buyer(
         buyer_name=registry.organization,
         location=registry.address,
@@ -313,24 +336,73 @@ def verify_buyer(
 
     db.add(db_buyer)
 
-    # Save everything
+    # --------------------------------------------------------
+    # SAVE DATABASE
+    # --------------------------------------------------------
+
     db.commit()
 
     db.refresh(buyer_status)
     db.refresh(db_buyer)
 
+    # --------------------------------------------------------
+    # SEND VERIFIED BUYER EMAIL
+    # --------------------------------------------------------
+
+    email_sent = False
+    email_message_id = None
+
+    try:
+
+        email_message_id = await send_verified_buyer_email(
+            buyer_email=registry.email_address,
+            contact_person=registry.contact_person,
+            organization=registry.organization
+        )
+
+        email_sent = True
+
+        print(
+            "VERIFIED BUYER EMAIL SENT:",
+            email_message_id
+        )
+
+    except Exception as email_error:
+
+        print(
+            "VERIFIED BUYER EMAIL ERROR:",
+            email_error
+        )
+
+    # --------------------------------------------------------
+    # RETURN SUCCESS
+    # --------------------------------------------------------
+
     return {
-        "message": "Buyer verified successfully.",
+        "message":
+            "Buyer verified successfully.",
+
         "buyer_status_id":
             buyer_status.buyer_status_id,
+
         "buyer_registry_id":
             buyer_status.buyer_registry_id,
+
         "buyer_id":
             db_buyer.buyer_id,
-        "status":
-            buyer_status.status
-    }
 
+        "status":
+            buyer_status.status,
+
+        "email":
+            registry.email_address,
+
+        "email_sent":
+            email_sent,
+
+        "email_message_id":
+            email_message_id
+    }
 
 # ============================================================
 # REJECT BUYER

@@ -2349,84 +2349,333 @@ function initReportsSection() {
 // ------------------------------------------------------------
 // LOAD REPORTS FROM API
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// LOAD DA REPORTS
+// ONLY REPORTS WITH STATUS = FOR_DA_VALIDATION
+// ------------------------------------------------------------
 
 async function loadReports() {
-    try {
-        const reportList = document.querySelector('.report-item-list');
-        
-        // Show loading state
-        reportList.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: #666;">
-                Loading reports...
-            </div>
-        `;
+    const pendingReportsBody =
+        document.querySelector("#pendingReportsBody");
 
-        // TAMA: Gamitin ang /all-reports endpoint, hindi /approve
+    if (!pendingReportsBody) {
+        console.error("pendingReportsBody not found.");
+        return;
+    }
+
+    // Loading state
+    pendingReportsBody.innerHTML = `
+        <tr>
+            <td colspan="6" style="text-align:center;">
+                Loading reports...
+            </td>
+        </tr>
+    `;
+
+    try {
+
         const response = await fetch(
-            `${API_BASE_URL}/api/report-submissions/all-reports`,  // <-- ITO ANG TAMA
+            `${API_BASE_URL}/api/report-submissions/all-reports`,
             {
                 method: "GET",
                 headers: getAuthHeaders()
             }
         );
 
+        const data = await parseResponse(response);
+
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Failed to fetch reports: ${response.status} - ${error}`);
+            throw new Error(
+                data.detail ||
+                data.message ||
+                `Failed to fetch reports: ${response.status}`
+            );
         }
 
-        const reports = await response.json();
+        // Make sure response is an array
+        const reports = Array.isArray(data)
+            ? data
+            : [];
 
-        // Clear the report list
-        reportList.innerHTML = '';
+        // ----------------------------------------------------
+        // IMPORTANT:
+        // ONLY SHOW FOR_DA_VALIDATION
+        // ----------------------------------------------------
 
-        // Check if there are reports
-        if (!reports || reports.length === 0) {
-            reportList.innerHTML = `
-                <div style="padding: 20px; text-align: center; color: #666;">
-                    No reports awaiting DA-RFO validation.
-                </div>
+        const daReports = reports.filter(report => {
+
+            const status =
+                String(report.status || "")
+                    .trim()
+                    .toUpperCase();
+
+            return status === "FOR_DA_RFO_VALIDATION";
+        });
+
+        console.log("ALL REPORTS:", reports);
+        console.log("DA VALIDATION REPORTS:", daReports);
+
+        // ----------------------------------------------------
+        // NO REPORTS
+        // ----------------------------------------------------
+
+        if (daReports.length === 0) {
+
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#666;">
+                        No reports awaiting DA-RFO validation.
+                    </td>
+                </tr>
             `;
+
             return;
         }
 
-        // Display each report
-        reports.forEach((report) => {
-            const button = document.createElement('button');
-            button.className = 'report-item';
-            button.setAttribute('type', 'button');
-            
-            // Create title
-            const title = report.title || `${report.commodity || 'Crop'} Harvest Report`;
-            const location = report.municipal_coordinator_id ? ` - ID: ${report.municipal_coordinator_id}` : '';
-            
-            button.textContent = `${title}${location}`;
-            
-            // Store report data
-            button.dataset.report = JSON.stringify(report);
-            
-            // Add click event
-            button.addEventListener('click', function() {
-                const reportData = JSON.parse(this.dataset.report);
-                showReportDetail(reportData);
+        // ----------------------------------------------------
+        // DISPLAY REPORTS
+        // ----------------------------------------------------
+
+        pendingReportsBody.innerHTML = "";
+
+        daReports.forEach(report => {
+
+            const row =
+                document.createElement("tr");
+
+            row.className = "clickable-row";
+
+            row.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.report_id ??
+                            report.submission_id ??
+                            "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.title ||
+                            `${report.commodity || "Crop"} Harvest Report`
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.commodity || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.planting_date || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${
+                            report.estimated_yield != null
+                                ? escapeHtml(
+                                    String(report.estimated_yield)
+                                ) + " kg"
+                                : "N/A"
+                        }
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-pill approved">
+                        ${escapeHtml(
+                            report.status || "N/A"
+                        )}
+                    </span>
+                </td>
+            `;
+
+            // ------------------------------------------------
+            // CLICK REPORT
+            // ------------------------------------------------
+
+            row.addEventListener("click", () => {
+
+                console.log(
+                    "Selected DA report:",
+                    report
+                );
+
+                showReportDetail(report);
             });
-            
-            reportList.appendChild(button);
+
+            pendingReportsBody.appendChild(row);
         });
 
     } catch (error) {
-        console.error('LOAD REPORTS ERROR:', error);
-        const reportList = document.querySelector('.report-item-list');
-        reportList.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: #C0392B;">
-                Error loading reports: ${error.message}
-            </div>
+
+        console.error(
+            "LOAD DA REPORTS ERROR:",
+            error
+        );
+
+        pendingReportsBody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    style="text-align:center; padding:30px; color:#C0392B;">
+                    Error loading reports:
+                    ${escapeHtml(error.message)}
+                </td>
+            </tr>
         `;
     }
 }
+
+
     // ------------------------------------------------------------
     // SHOW REPORT DETAIL
     // ------------------------------------------------------------
+// ------------------------------------------------------------
+// SHOW REPORT DETAIL
+// ------------------------------------------------------------
+
+function showReportDetail(report) {
+
+    reportListSubview?.classList.add(
+        "hidden-element"
+    );
+
+    reportDetailSubview?.classList.remove(
+        "hidden-element"
+    );
+
+    // Store IDs
+    reportDetailSubview.dataset.reportId =
+        report.report_id || "";
+
+    reportDetailSubview.dataset.submissionId =
+        report.submission_id || "";
+
+    // --------------------------------------------------------
+    // DETAIL TABLE
+    // --------------------------------------------------------
+
+    const tbody =
+        document.querySelector("#reportDetailBody");
+
+    if (tbody) {
+
+        tbody.innerHTML = `
+            <tr>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.commodity || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.planting_date || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.harvest_date || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${
+                            report.estimated_yield != null
+                                ? escapeHtml(
+                                    String(
+                                        report.estimated_yield
+                                    )
+                                ) + " kg"
+                                : "N/A"
+                        }
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.encoded_by || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-pill approved">
+                        ${escapeHtml(
+                            report.status || "N/A"
+                        )}
+                    </span>
+                </td>
+
+            </tr>
+        `;
+    }
+
+    // --------------------------------------------------------
+    // NOTES
+    // --------------------------------------------------------
+
+    const notesTextarea =
+        document.querySelector(
+            "#reportNotesTextarea"
+        );
+
+    if (notesTextarea) {
+        notesTextarea.value =
+            report.notes ||
+            "";
+    }
+
+    // --------------------------------------------------------
+    // REMARKS
+    // --------------------------------------------------------
+
+    const remarksTextarea =
+        document.querySelector(
+            "#remarksTextarea"
+        );
+
+    if (remarksTextarea) {
+        remarksTextarea.value = "";
+    }
+
+    // --------------------------------------------------------
+    // RESET FLAG BUTTON
+    // --------------------------------------------------------
+
+    if (flagReportBtn) {
+
+        flagReportBtn.classList.remove(
+            "active"
+        );
+
+        flagReportBtn.textContent =
+            "Flag for Revision";
+    }
+}
 
     function showReportDetail(report) {
         // Hide list, show detail
@@ -2543,93 +2792,142 @@ const response = await fetch(
     // ------------------------------------------------------------
     // FLAG REPORT FOR REVISION
     // ------------------------------------------------------------
+async function flagReport() {
 
-    async function flagReport() {
-        const reportId = reportDetailSubview?.dataset.reportId;
-        
-        if (!reportId) {
-            alert('No report selected.');
-            return;
+    const reportId =
+        reportDetailSubview?.dataset.reportId;
+
+    if (!reportId) {
+        alert("No report selected.");
+        return;
+    }
+
+    const notesTextarea =
+        document.querySelector(
+            "#reportDetailSubview textarea"
+        );
+
+    const remarks =
+        notesTextarea?.value?.trim();
+
+    if (!remarks) {
+        alert(
+            "Please provide revision remarks in the notes field."
+        );
+        return;
+    }
+
+    const userId =
+        getCurrentUserId();
+
+    if (!userId) {
+        alert(
+            "User ID not found. Please login again."
+        );
+        return;
+    }
+
+    const flagBtn =
+        flagReportBtn;
+
+    const originalText =
+        flagBtn?.textContent;
+
+    try {
+
+        if (flagBtn) {
+            flagBtn.disabled = true;
+            flagBtn.textContent = "Flagging...";
         }
 
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        const remarks = notesTextarea?.value;
+        /* QUERY PARAMETERS */
+        const params =
+            new URLSearchParams({
+                validator_id: userId,
+                validator_role: "darfo",
+                remarks: remarks
+            });
 
-        if (!remarks || remarks.trim() === '') {
-            alert('Please provide revision remarks in the notes field.');
-            return;
-        }
-
-        // Get current user ID from localStorage
-        const userId = getCurrentUserId();
-        
-        if (!userId) {
-            alert('User ID not found. Please login again.');
-            return;
-        }
-
-        const flagBtn = flagReportBtn;
-        const originalText = flagBtn?.textContent;
-
-        try {
-            if (flagBtn) {
-                flagBtn.disabled = true;
-                flagBtn.textContent = 'Flagging...';
-            }
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/report-submissions/${reportId}/revision`,  
+        /* POST REQUEST */
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/report-submissions/${reportId}/revision?${params.toString()}`,
                 {
                     method: "POST",
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        validator_id: userId,
-                        validator_role: "darfo",
-                        remarks: remarks
-                    })
+                    headers: getAuthHeaders(false)
                 }
             );
 
-            const data = await parseResponse(response);
+        const data =
+            await parseResponse(response);
 
-            if (!response.ok) {
-                throw new Error(data.detail || data.message || 'Failed to flag report');
-            }
-
-            console.log('Report flagged for revision:', data);
-
-            alert('Report flagged for revision successfully!');
-
-            // Refresh reports list
-            await loadReports();
-
-            // Return to list
-            reportDetailSubview?.classList.add('hidden-element');
-            reportListSubview?.classList.remove('hidden-element');
-
-        } catch (error) {
-            console.error('FLAG REPORT ERROR:', error);
-            alert(error.message || 'Failed to flag report');
-        } finally {
-            if (flagBtn) {
-                flagBtn.disabled = false;
-                flagBtn.textContent = originalText || 'Flag for Revision';
-            }
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                data.message ||
+                "Failed to flag report."
+            );
         }
+
+        console.log(
+            "Report flagged for revision:",
+            data
+        );
+
+        alert(
+            "Report flagged for revision successfully!"
+        );
+
+        /* RETURN TO REPORT LIST */
+        reportDetailSubview?.classList.add(
+            "hidden-element"
+        );
+
+        reportListSubview?.classList.remove(
+            "hidden-element"
+        );
+
+        /* REFRESH REPORTS */
+        await loadReports();
+
+    } catch (error) {
+
+        console.error(
+            "FLAG REPORT ERROR:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Failed to flag report."
+        );
+
+    } finally {
+
+        if (flagBtn) {
+            flagBtn.disabled = false;
+            flagBtn.textContent =
+                originalText ||
+                "Flag for Revision";
+        }
+
     }
+}
 
     // ------------------------------------------------------------
     // GET CURRENT USER ID
     // ------------------------------------------------------------
 
     function getCurrentUserId() {
-        try {
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            return user.user_id || user.id || null;
-        } catch {
-            return null;
-        }
+    const userId = localStorage.getItem('user_id');
+
+    if (!userId) {
+        console.error('No user_id found in localStorage.');
+        return null;
     }
+
+    return userId;
+}
 
     // ------------------------------------------------------------
     // EVENT LISTENERS
