@@ -5880,7 +5880,259 @@ function getAllFarmers() {
     return FARMERS_DATA;
 }
 
+/* ============================================================
+   FARMER DROPDOWN POPULATION
+   Auto-fill Farmer ID when farmer is selected
+============================================================ */
 
+// Function to populate farmer dropdowns
+function populateFarmerDropdowns() {
+    // Use allFarmers which is already loaded from fetchFarmers()
+    const farmers = allFarmers || [];
+    const dropdowns = ['piFarmerName', 'offtakeFarmerSelect'];
+    
+    dropdowns.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            // Keep the default "Select Farmer" option
+            const defaultOption = dropdown.querySelector('option[value=""]');
+            dropdown.innerHTML = '';
+            
+            // Create default option
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Select Farmer';
+            dropdown.appendChild(defaultOpt);
+            
+            // Add farmer options
+            if (Array.isArray(farmers) && farmers.length > 0) {
+                farmers.forEach(farmer => {
+                    const option = document.createElement('option');
+                    option.value = farmer.farmer_id;
+                    
+                    // Build full name
+                    const fullName = [
+                        farmer.first_name,
+                        farmer.middle_name,
+                        farmer.last_name,
+                        farmer.suffix
+                    ]
+                    .filter(Boolean)
+                    .join(" ");
+                    
+                    option.textContent = fullName || farmer.rsbsa_id || `Farmer ${farmer.farmer_id}`;
+                    option.dataset.farmerId = farmer.farmer_id;
+                    dropdown.appendChild(option);
+                });
+            } else {
+                console.warn(`No farmers available to populate ${dropdownId}`);
+            }
+        }
+    });
+}
+
+function createDefaultOption() {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Select Farmer';
+    return option;
+}
+
+// Setup auto-fill for farmer ID when farmer is selected
+function setupFarmerDropdownAutoFill() {
+    // For Planting Intent
+    const piFarmerName = document.getElementById('piFarmerName');
+    const piFarmerId = document.getElementById('piFarmerId');
+    
+    if (piFarmerName && piFarmerId) {
+        piFarmerName.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                piFarmerId.value = selectedOption.value;
+            } else {
+                piFarmerId.value = '';
+            }
+        });
+    }
+    
+    // For Offtake Request
+    const offtakeFarmerSelect = document.getElementById('offtakeFarmerSelect');
+    const offtakeFarmerId = document.getElementById('offtakeFarmerId');
+    
+    if (offtakeFarmerSelect && offtakeFarmerId) {
+        offtakeFarmerSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                offtakeFarmerId.value = selectedOption.value;
+            } else {
+                offtakeFarmerId.value = '';
+            }
+        });
+    }
+}
+
+// Call this function after farmers are loaded
+function refreshFarmerDropdowns() {
+    populateFarmerDropdowns();
+    setupFarmerDropdownAutoFill();
+}
+
+// Override the existing populateOfftakeFarmerSelect function
+// to use the new dropdown system
+const originalPopulateOfftakeFarmerSelect = populateOfftakeFarmerSelect;
+populateOfftakeFarmerSelect = function() {
+    populateFarmerDropdowns();
+    setupFarmerDropdownAutoFill();
+};
+
+// Override the existing setupOfftakeFarmerDropdown function
+const originalSetupOfftakeFarmerDropdown = setupOfftakeFarmerDropdown;
+setupOfftakeFarmerDropdown = function() {
+    setupFarmerDropdownAutoFill();
+};
+
+/* ============================================================
+   UPDATE: Modify fetchFarmers to call refreshFarmerDropdowns
+============================================================ */
+
+// Store the original fetchFarmers function
+const originalFetchFarmers = fetchFarmers;
+
+// Override fetchFarmers to include dropdown refresh
+fetchFarmers = async function() {
+    const result = await originalFetchFarmers.call(this);
+    
+    // After farmers are loaded, refresh dropdowns
+    if (allFarmers && allFarmers.length > 0) {
+        refreshFarmerDropdowns();
+    }
+    
+    return result;
+};
+
+/* ============================================================
+   FIX: Override submitPlantingIntent to use dropdown values
+============================================================ */
+
+// Store original submitPlantingIntent
+const originalSubmitPlantingIntent = submitPlantingIntent;
+
+// Override to use dropdown for farmer name
+submitPlantingIntent = async function() {
+    const form = document.getElementById("submitPlantIntentForm");
+    
+    if (!form) {
+        alert("Planting Intent form not found.");
+        return;
+    }
+    
+    // Get values from form - using the dropdown for farmer name
+    const farmerNameSelect = document.getElementById("piFarmerName");
+    const farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
+    const farmerId = document.getElementById("piFarmerId")?.value || "";
+    const plantingDate = document.getElementById("piPlantDate")?.value || "";
+    const harvestDate = document.getElementById("piHarvestDate")?.value || "";
+    const commodity = document.getElementById("piCommodity")?.value?.trim() || "";
+    const volume = document.getElementById("piVolume")?.value || "";
+    const remarks = document.getElementById("piRemarks")?.value || "";
+    
+    // Validate required fields
+    if (!farmerName || farmerName === "Select Farmer") {
+        alert("Please select a Farmer.");
+        return;
+    }
+    
+    if (!farmerId) {
+        alert("Farmer ID is required.");
+        return;
+    }
+    
+    if (!plantingDate) {
+        alert("Please select Planting Date.");
+        return;
+    }
+    
+    if (!harvestDate) {
+        alert("Please select Harvest Date.");
+        return;
+    }
+    
+    if (!commodity) {
+        alert("Please enter Commodity.");
+        return;
+    }
+    
+    if (!volume) {
+        alert("Please enter Volume.");
+        return;
+    }
+    
+    // Parse farmer ID and volume
+    const parsedFarmerId = Number(farmerId);
+    if (!Number.isInteger(parsedFarmerId)) {
+        alert("Farmer ID must be a valid number.");
+        return;
+    }
+    
+    const parsedVolume = Number(volume);
+    if (Number.isNaN(parsedVolume) || parsedVolume <= 0) {
+        alert("Volume must be a valid positive number.");
+        return;
+    }
+    
+    // Prepare payload
+    const plantingIntentData = {
+        farmer_id: parsedFarmerId,
+        commodity: commodity,
+        volume: parsedVolume,
+        planting_date: plantingDate,
+        harvest_date: harvestDate,
+        remarks: remarks || undefined
+    };
+    
+    console.log("Submitting planting intent:", plantingIntentData);
+    
+    try {
+        const createdIntent = await apiRequest(
+            PLANTING_INTENTS_ENDPOINT,
+            {
+                method: "POST",
+                body: JSON.stringify(plantingIntentData)
+            }
+        );
+        
+        console.log("Planting intent created:", createdIntent);
+        
+        // Reload table
+        await fetchPlantingIntents();
+        
+        // Show success modal
+        document.getElementById("plantIntentSubmittedModal")?.classList.add("show");
+        
+    } catch (error) {
+        console.error("Create planting intent error:", error);
+        handleAuthError(error);
+        alert("Failed to submit planting intent.\n\n" + (error.message || "Please check the FastAPI server."));
+    }
+};
+
+/* ============================================================
+   INIT: Call refreshFarmerDropdowns on DOM load
+============================================================ */
+
+// Add to DOMContentLoaded
+document.addEventListener("DOMContentLoaded", function() {
+    // Wait a bit for farmers to load, then refresh dropdowns
+    setTimeout(function() {
+        if (allFarmers && allFarmers.length > 0) {
+            refreshFarmerDropdowns();
+        }
+    }, 1000);
+});
+
+/* ============================================================
+   END OF FARMER DROPDOWN FUNCTIONS
+============================================================ */
 
 
 /* ============================================================
