@@ -6,9 +6,10 @@
   <title>AEW — eSaka</title>
 
 
+  <!-- Clean, Modern Google Fonts for High Readability -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
   <!-- Leaflet CSS -->
@@ -21,19 +22,20 @@
       --cream: #F2EDE1;
       --white: #FBF8F1;
       --ink: #2E2A22;
-      --muted: #6b6656;
+      --muted: #625E52;
       --border: #DFD8C6;
+      --border-light: #ECE5D4;
       --green: #5B6B4F;
-      --green-dark: #495a3f;
+      --green-dark: #445439;
+      --green-light: #E7EDDF;
       --brown: #C08A4E;
       --gold: #C9A15A;
-      --status-confirmed: #3d8b40;
-      --status-submitted: #d99a1b;
-      --status-rejected: #a1382b;
-      --status-neutral: #8a8a8a;
-      --topbar-height: 73px;
-      --radius-sm: 5px;
-      --radius-md: 8px;
+      --status-confirmed: #2E7D32;
+      --status-submitted: #D97706;
+      --status-rejected: #C0392B;
+      --topbar-height: 72px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
     }
 
 
@@ -47,20 +49,15 @@
     html, body {
       width: 100%;
       min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--cream);
       color: var(--ink);
+      -webkit-font-smoothing: antialiased;
     }
 
 
-    a {
-      color: inherit;
-    }
-
-
-    button, input, select, textarea {
-      font-family: 'Inter', sans-serif;
-    }
+    a { color: inherit; }
+    button, input, select, textarea { font-family: inherit; }
 
 
     /* --- TOPBAR --- */
@@ -68,12 +65,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 24px;
+      padding: 0 32px;
       background: var(--cream);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 2100;
+      height: var(--topbar-height);
     }
 
 
@@ -85,26 +83,33 @@
 
 
     .hamburger {
-      background: none;
-      border: none;
+      background: #FFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      padding: 6px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+
+    .hamburger:hover {
+      background: var(--green-light);
+      border-color: var(--green);
     }
 
 
     .hamburger span {
       display: block;
-      width: 26px;
-      height: 3px;
+      width: 20px;
+      height: 2.5px;
       background: var(--ink);
       border-radius: 2px;
     }
 
 
-    /* --- LOGO SECTION --- */
     .logos {
       display: flex;
       align-items: center;
@@ -113,7 +118,7 @@
 
 
     .brand-logo-img {
-      height: 46px;
+      height: 42px;
       width: auto;
       object-fit: contain;
       display: block;
@@ -121,7 +126,7 @@
 
 
     .brand-name-img {
-      height: 65px;
+      height: 44px;
       width: auto;
       object-fit: contain;
       display: block;
@@ -137,8 +142,8 @@
 
     .bell-wrap {
       position: relative;
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: var(--green);
       display: flex;
@@ -146,6 +151,13 @@
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+
+    .bell-wrap:hover {
+      background: var(--green-dark);
+      transform: scale(1.04);
     }
 
 
@@ -158,8 +170,8 @@
 
     .bell-dot {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: 3px;
+      right: 3px;
       width: 9px;
       height: 9px;
       background: #C0392B;
@@ -171,52 +183,54 @@
     .user-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      background: rgba(255,255,255,0.7);
+      padding: 6px 14px 6px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
     }
 
 
     .user-text {
-      text-align: right;
-      line-height: 1.25;
+      text-align: left;
+      line-height: 1.2;
     }
 
 
     .user-name {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: var(--ink);
     }
 
 
     .user-role {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      color: var(--gold);
+      color: var(--brown);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
 
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: #4a4a4a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-
-    .avatar svg {
-      width: 20px;
-      height: 20px;
-      fill: #fff;
-    }
-
-
-    /* --- LAYOUT & SIDEBAR --- */
+    /* --- SIDEBAR --- */
     .layout {
       display: flex;
-      min-height: calc(100vh - 73px);
+      min-height: calc(100vh - var(--topbar-height));
     }
 
 
@@ -227,14 +241,14 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 22px 0;
+      padding: 24px 12px;
       flex-shrink: 0;
       position: fixed;
-      top: 73px;
+      top: var(--topbar-height);
       left: -230px;
       bottom: 0;
       z-index: 2000;
-      transition: left .28s ease;
+      transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
 
@@ -246,7 +260,7 @@
     .nav-list {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
 
@@ -254,34 +268,38 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 24px;
-      color: #fff;
+      padding: 12px 18px;
+      color: #E8E5DD;
       text-decoration: none;
-      font-size: 14.5px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       background: transparent;
       border: none;
       width: 100%;
       text-align: left;
+      transition: all 0.2s ease;
     }
 
 
     .nav-item svg {
       width: 19px;
       height: 19px;
-      fill: #fff;
+      fill: currentColor;
       flex-shrink: 0;
     }
 
 
     .nav-item:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
     }
 
 
     .nav-item.active {
       background: var(--green-dark);
+      color: #FFFFFF;
       font-weight: 700;
     }
 
@@ -290,45 +308,43 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 24px;
-      color: #fff;
+      padding: 12px 18px;
+      color: #FFC0C0;
       text-decoration: none;
-      font-size: 14.5px;
-      font-weight: 500;
+      font-size: 13.5px;
+      font-weight: 600;
       cursor: pointer;
       border: none;
-      background: none;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-sm);
       width: 100%;
+      transition: all 0.2s ease;
     }
 
 
     .signout svg {
       width: 18px;
       height: 18px;
-      fill: #fff;
+      fill: currentColor;
     }
 
 
     .signout:hover {
-      opacity: 0.8;
+      background: rgba(192, 57, 43, 0.25);
+      color: #FFF;
     }
 
 
+    /* --- MAIN CONTENT & ACTION PANELS --- */
     .main {
       flex: 1;
-      padding: 36px 40px;
+      padding: 32px 40px;
       min-width: 0;
     }
 
 
-    .view {
-      display: none;
-    }
-
-
-    .view.active-view {
-      display: block;
-    }
+    .view { display: none; }
+    .view.active-view { display: block; }
 
 
     .main-header {
@@ -337,66 +353,81 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 16px;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
 
-    .main-header h1 {
-      font-family: 'Oswald', sans-serif;
-      font-weight: 700;
-      font-size: 36px;
-      color: var(--green);
-      letter-spacing: 0.02em;
+    .header-left h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--green-dark);
+      letter-spacing: -0.01em;
       margin: 0;
+    }
+
+
+    .header-left p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
 
     .card {
       background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px 28px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
     }
 
 
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-
+    /* --- HCI SEARCH BOX AFFORDANCE --- */
     .search-box {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: #fff;
-      border: 1.5px solid var(--ink);
-      border-radius: 8px;
+      gap: 10px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
       padding: 8px 14px;
       min-width: 260px;
+      transition: all 0.2s ease;
+    }
+
+
+    .search-box:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
 
     .search-box svg {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       fill: none;
-      stroke: var(--ink);
-      stroke-width: 2;
+      stroke: var(--muted);
+      stroke-width: 2.4;
     }
 
 
     .search-box input {
       border: none;
       outline: none;
-      font-size: 14px;
+      font-size: 13.5px;
       width: 100%;
       background: transparent;
+      color: var(--ink);
     }
 
 
-    /* --- DATA TABLE DESIGN --- */
+    /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     table {
       width: 100%;
       border-collapse: separate;
@@ -404,60 +435,57 @@
     }
 
 
-    thead tr {
-      background: #DEDDDC;
-    }
-
-
     thead th {
-      text-align: center;
-      font-size: 13px;
+      text-align: left;
+      font-size: 12px;
       font-weight: 700;
-      color: #222;
-      padding: 14px 10px;
+      color: var(--muted);
+      padding: 12px 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid var(--border);
     }
 
 
-    thead th:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
-    }
-
-
-    thead th:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
+    thead th.center-col, tbody td.center-col {
+      text-align: center;
     }
 
 
     tbody td {
-      padding: 14px 8px;
+      padding: 13px 14px;
       font-size: 13.5px;
-      text-align: center;
       vertical-align: middle;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--ink);
     }
 
 
-    .pill {
-      display: inline-block;
-      padding: 6px 18px;
-      border-radius: 999px;
-      background: #EEEEEE;
-      font-size: 12.5px;
-      color: #222;
-      white-space: nowrap;
+    tbody tr {
+      transition: background 0.15s ease;
     }
 
 
-    /* --- HIGH-CONTRAST VISIBLE STATUS BADGES --- */
+    tbody tr:hover td {
+      background: #F3EEE4;
+    }
+
+
+    .clickable-row { cursor: pointer; }
+
+
+    /* --- VISIBLE HIGH-CONTRAST STATUS BADGES --- */
     .status-pill {
       display: inline-block;
-      padding: 6px 18px;
+      padding: 4px 12px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       color: #FFFFFF !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+      text-align: center;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
     }
 
 
@@ -465,14 +493,14 @@
     .status-pill.confirmed,
     .status-pill.harvested,
     .status-pill.approved {
-      background-color: #2E7D32 !important;
+      background-color: var(--status-confirmed) !important;
     }
 
 
     .status-pill.submitted,
     .status-pill.mediating,
     .status-pill.pending {
-      background-color: #D97706 !important;
+      background-color: var(--status-submitted) !important;
     }
 
 
@@ -483,40 +511,87 @@
 
     .status-pill.rejected,
     .status-pill.cancelled {
-      background-color: #C0392B !important;
+      background-color: var(--status-rejected) !important;
     }
 
 
-    .clickable-row {
+    /* --- SOLID PRIMARY & OUTLINE BUTTONS (FITTS'S LAW) --- */
+    .btn-primary {
+      appearance: none;
+      background: var(--green);
+      color: #FFF;
+      border: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
 
 
-    .clickable-row:hover td {
-      background: #F6F3EB;
+    .btn-primary:hover:not(:disabled) {
+      background: var(--green-dark);
+      transform: translateY(-1px);
     }
 
 
-    /* --- FORM STYLES --- */
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+
+    .btn-outline-report {
+      appearance: none;
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      color: var(--ink);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+
+    .btn-outline-report:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--green);
+    }
+
+
+    .actions-right-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+
+    /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 18px 32px;
+      gap: 18px 30px;
     }
 
 
     .form-field-item label {
       display: block;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       margin-bottom: 6px;
       color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
     }
 
 
-    .form-field-item label .req {
-      color: #C0392B;
-    }
+    .form-field-item label .req { color: #C0392B; }
 
 
     .form-field-item input,
@@ -524,11 +599,21 @@
     .form-field-item textarea {
       width: 100%;
       padding: 10px 14px;
-      border: 1.5px solid #888;
-      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
       font-size: 13.5px;
       outline: none;
-      background: #fff;
+      background: #FFFFFF;
+      color: var(--ink);
+      transition: all 0.2s ease;
+    }
+
+
+    .form-field-item input:focus,
+    .form-field-item select:focus,
+    .form-field-item textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
 
@@ -538,85 +623,54 @@
     }
 
 
-    .form-field-full {
-      grid-column: 1 / -1;
-    }
+    .form-field-full { grid-column: 1 / -1; }
 
 
-    .btn-outline-report {
-      appearance: none;
-      border: 1.5px solid #5A6B52;
-      background: #EFEAE0;
-      color: #333;
-      font-size: 13.5px;
-      font-weight: 600;
-      padding: 10px 24px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all .2s ease;
-    }
-
-
-    .btn-outline-report:hover:not(:disabled) {
-      background: #DEDDDC;
-    }
-
-
-    .actions-right-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 14px;
-      margin-top: 24px;
-    }
-
-
-    /* --- OFFTAKE LETTER MEMO --- */
+    /* --- OFFTAKE MEMORANDUM --- */
     .confirm-offtake-box {
-      background: #fff;
-      border: 1.5px solid #CCC;
-      border-radius: 10px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 28px 32px;
       font-size: 14px;
       line-height: 1.6;
-      color: var(--ink);
     }
 
 
     .confirm-offtake-box h3 {
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 15px;
+      font-weight: 800;
       color: var(--green);
       margin-bottom: 16px;
-      border-bottom: 1px solid #E0E0E0;
+      border-bottom: 1.5px solid var(--border);
       padding-bottom: 8px;
       text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
 
     .offtake-spec-table {
       width: 100%;
-      margin: 18px 0;
-      border: 1px solid #E0E0E0;
-      border-radius: 6px;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
     }
 
 
     .offtake-spec-table td {
-      text-align: left;
       padding: 10px 14px;
-      border-bottom: 1px solid #EEE;
+      border-bottom: 1px solid var(--border-light);
     }
 
 
-    .offtake-spec-table tr:last-child td {
-      border-bottom: none;
-    }
+    .offtake-spec-table tr:last-child td { border-bottom: none; }
 
 
     .offtake-spec-table td.label-col {
       font-weight: 700;
-      width: 30%;
-      background: #FAF8F5;
+      width: 32%;
+      background: #F4EFE6;
     }
 
 
@@ -625,19 +679,19 @@
       display: grid;
       grid-template-columns: 1fr 1.5fr;
       gap: 24px;
-      background: #fff;
-      border: 1.5px solid #CCC;
-      border-radius: 12px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 24px;
-      margin-bottom: 20px;
     }
 
 
     .crop-photo-wrap img {
       width: 100%;
-      height: 180px;
+      height: 190px;
       object-fit: cover;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
     }
 
 
@@ -652,7 +706,7 @@
       flex: 1;
       background: #5D4037;
       color: #fff;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 14px 10px;
       text-align: center;
     }
@@ -670,6 +724,7 @@
       font-size: 22px;
       font-weight: 700;
       margin: 4px 0 2px;
+      color: #FFDE9E;
     }
 
 
@@ -681,74 +736,76 @@
 
     #map {
       width: 100%;
-      height: 360px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      height: 400px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
     }
 
 
-    /* --- MODALS --- */
+    /* --- DIALOG MODALS --- */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(30, 35, 28, 0.55);
+      background: rgba(30, 35, 28, 0.6);
       align-items: center;
       justify-content: center;
       z-index: 3000;
     }
 
 
-    .modal-overlay.show {
-      display: flex;
-    }
+    .modal-overlay.show { display: flex; }
 
 
     .modal-box {
-      background: #DEDDDC;
-      border-radius: 8px;
-      padding: 32px 42px;
+      background: var(--cream);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px 38px;
       text-align: center;
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
       max-width: 440px;
       width: 90%;
     }
 
 
     .modal-box h2 {
-      font-family: 'Oswald', sans-serif;
-      font-size: 26px;
-      font-weight: 700;
-      color: #536B5C;
-      margin-bottom: 12px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 10px;
     }
 
 
     .modal-box p {
-      font-size: 14.5px;
+      font-size: 14px;
       color: var(--ink);
       margin-bottom: 22px;
-      line-height: 1.4;
+      line-height: 1.45;
     }
 
 
     .modal-actions {
       display: flex;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
     }
 
 
     .modal-btn-confirm {
       border: none;
-      background: #5A7365;
+      background: var(--green);
       color: #fff;
       font-size: 13.5px;
-      font-weight: 600;
+      font-weight: 700;
       padding: 10px 24px;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
+      transition: background 0.2s ease;
     }
+
+
+    .modal-btn-confirm:hover { background: var(--green-dark); }
 
 
     .pagination-container {
@@ -757,34 +814,26 @@
       align-items: center;
       margin-top: 18px;
       padding-top: 14px;
-      border-top: 1px solid #E5E5E5;
+      border-top: 1px solid var(--border);
       font-size: 12.5px;
-      color: #666;
+      color: var(--muted);
     }
 
 
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-
-    .page-numbers-wrap {
-      display: flex;
-      gap: 4px;
-    }
+    .pagination-controls { display: flex; align-items: center; gap: 6px; }
+    .page-numbers-wrap { display: flex; gap: 4px; }
 
 
     .btn-page {
       padding: 5px 11px;
-      border: 1px solid #CCC;
+      border: 1px solid var(--border);
       background: #FFF;
       border-radius: 4px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       color: var(--ink);
+      transition: all 0.15s ease;
     }
 
 
@@ -801,82 +850,66 @@
     }
 
 
-    .btn-page:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
 
 
     .input-readonly {
-      background: #F5F5F5 !important;
-      border-color: #DDD !important;
-      color: #555 !important;
+      background: #ECE6D8 !important;
+      border-color: var(--border) !important;
+      color: var(--muted) !important;
       cursor: default;
-    }
-
-
-    .input-editable-active {
-      background: #FFF !important;
-      border-color: var(--green) !important;
-      color: var(--ink) !important;
     }
 
 
     .higher-ups-note {
       background: #F7F5F0;
-      border-left: 3px solid var(--green);
+      border-left: 3.5px solid var(--green);
       padding: 10px 14px;
       font-size: 12px;
-      color: #555;
+      color: var(--muted);
       margin-bottom: 20px;
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      line-height: 1.45;
     }
 
 
-    .hidden-element {
-      display: none;
-    }
+    .hidden-element { display: none; }
 
 
     .select-crop-input {
       padding: 8px 14px;
-      border: 1.5px solid var(--ink);
-      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
       outline: none;
+      background: #FFFFFF;
+      color: var(--ink);
     }
 
 
     .fair-price-desc {
       font-size: 13px;
-      color: #555;
+      color: var(--muted);
       line-height: 1.6;
       margin: 0;
     }
 
 
-    .memo-disclaimer {
-      font-size: 12.5px;
-      color: #666;
-    }
-
-
-    .field-spacing {
-      margin-bottom: 14px;
-    }
-
-
+    .memo-disclaimer { font-size: 12.5px; color: var(--muted); }
+    .field-spacing { margin-bottom: 14px; }
     .map-title {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       margin-bottom: 14px;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
     }
 
 
-    .btn-danger {
-      background: #A1382B !important;
-    }
+    .btn-danger { background: #A1382B !important; }
+    .btn-danger:hover { background: #84281D !important; }
   </style>
 </head>
 <body>
@@ -890,7 +923,7 @@
       </button>
 
 
-      <!-- Updated relative paths for images from dashboards folder -->
+      <!-- PNG Logos -->
       <div class="logos">
         <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
         <img src="../images/esakaname.png" alt="eSaka" class="brand-name-img">
@@ -906,12 +939,10 @@
 
 
       <div class="user-info">
+        <div class="avatar">JD</div>
         <div class="user-text">
           <div class="user-name" id="userDisplayName">Juan Dela Cruz</div>
-          <div class="user-role" id="userDisplayRole">AEW</div>
-        </div>
-        <div class="avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+          <div class="user-role" id="userDisplayRole">AEW Field Worker</div>
         </div>
       </div>
     </div>
@@ -960,12 +991,16 @@
       <section class="view active-view" id="view-farmers">
         <div id="farmersListSubview">
           <div class="main-header">
-            <h1>All Farmers</h1>
-            <div class="search-row">
+            <div class="header-left">
+              <h1>All Farmers Directory</h1>
+              <p>Municipal masterlist and RSBSA verification records.</p>
+            </div>
+            <div class="header-actions">
               <div class="search-box">
                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" id="searchFarmersInput" placeholder="Search farmers...">
               </div>
+              <button class="btn-primary" id="addFarmerBtn" type="button">+ Add Farmer</button>
             </div>
           </div>
 
@@ -978,7 +1013,7 @@
                   <th>RSBSA-ID</th>
                   <th>Municipality</th>
                   <th>Barangay</th>
-                  <th>Status</th>
+                  <th class="center-col">Status</th>
                 </tr>
               </thead>
               <tbody id="farmersTableBody"></tbody>
@@ -994,18 +1029,16 @@
               </div>
             </div>
           </div>
-
-
-          <div class="actions-right-row">
-            <button class="btn-outline-report" id="addFarmerBtn" type="button">Add a Farmer</button>
-          </div>
         </div>
 
 
-        <!-- Register Farmer -->
+        <!-- Register Farmer Subview -->
         <div id="registerFarmerSubview" class="hidden-element">
           <div class="main-header">
-            <h1>Register a Farmer</h1>
+            <div class="header-left">
+              <h1>Register a Farmer</h1>
+              <p>Create a verified entry linked to the Department of Agriculture database.</p>
+            </div>
           </div>
 
 
@@ -1060,23 +1093,26 @@
 
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
-                <button class="btn-outline-report" type="submit">Submit</button>
+                <button class="btn-primary" type="submit">Submit Record</button>
               </div>
             </form>
           </div>
         </div>
 
 
-        <!-- Manage Farmer -->
+        <!-- Manage Farmer Subview -->
         <div id="manageFarmerSubview" class="hidden-element">
           <div class="main-header">
-            <h1>Manage Farmer</h1>
+            <div class="header-left">
+              <h1>Manage Farmer Record</h1>
+              <p>Review and update contact details for this farmer beneficiary.</p>
+            </div>
           </div>
 
 
           <div class="card">
             <div class="higher-ups-note">
-              <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from direct arbitrary alteration.
+              <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from arbitrary alteration.
             </div>
 
 
@@ -1127,7 +1163,7 @@
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
               <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
-              <button class="btn-outline-report" id="deleteFarmerBtn" type="button">Delete</button>
+              <button class="btn-primary btn-danger" id="deleteFarmerBtn" type="button">Delete</button>
             </div>
           </div>
         </div>
@@ -1136,10 +1172,13 @@
 
       <!-- VIEW 2: Planting Intent -->
       <section class="view" id="view-planting-intent">
-        <!-- PLANTING INTENT LIST -->
         <div id="plantingIntentListSubview">
           <div class="main-header">
-            <h1>Planting Intents</h1>
+            <div class="header-left">
+              <h1>Planting Intents Tracking</h1>
+              <p>Aggregated crop scheduling and yield forecasting.</p>
+            </div>
+            <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
           </div>
 
 
@@ -1147,82 +1186,79 @@
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Farmer Name</th>
                   <th>Commodity</th>
-                  <th>Estimated Volume</th>
+                  <th>Est. Volume</th>
                   <th>Location</th>
                   <th>Planting Date</th>
                   <th>Harvest Date</th>
-                  <th>Status</th>
+                  <th class="center-col">Status</th>
                 </tr>
               </thead>
               <tbody id="plantingIntentsTableBody"></tbody>
             </table>
           </div>
-
-
-          <div class="actions-right-row">
-            <button class="btn-outline-report" id="addPlantIntentBtn" type="button">
-              Add Plant Intent
-            </button>
-          </div>
         </div>
 
 
-        <!-- SUBMIT PLANTING INTENT -->
-        <div id="submitPlantIntentSubview" class="hidden-element">
-          <div class="main-header">
-            <h1>Submit Planting Intent</h1>
-          </div>
+  <!-- SUBMIT PLANTING INTENT -->
+<div id="submitPlantIntentSubview" class="hidden-element">
+  <div class="main-header">
+    <div class="header-left">
+      <h1>Submit Planting Intent</h1>
+      <p>Log a prospective crop production plan from a verified farmer.</p>
+    </div>
+  </div>
 
-
-          <div class="card">
-            <form id="submitPlantIntentForm">
-              <div class="form-grid-two">
-                <div class="form-field-item">
-                  <label>Farmer Name <span class="req">*</span></label>
-                  <input type="text" id="piFarmerName" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Planting Date <span class="req">*</span></label>
-                  <input type="date" id="piPlantDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Farmer ID <span class="req">*</span></label>
-                  <input type="text" id="piFarmerId" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Harvest Date <span class="req">*</span></label>
-                  <input type="date" id="piHarvestDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Commodity <span class="req">*</span></label>
-                  <input type="text" id="piCommodity" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Estimated Volume (kg) <span class="req">*</span></label>
-                  <input type="number" id="piVolume" placeholder="e.g. 15000" required>
-                </div>
-                <div class="form-field-item form-field-full">
-                  <label>Remarks</label>
-                  <textarea id="piRemarks"></textarea>
-                </div>
-              </div>
-
-
-              <div class="actions-right-row">
-                <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
-                <button class="btn-outline-report" type="submit">Submit</button>
-              </div>
-            </form>
-          </div>
+  <div class="card">
+    <form id="submitPlantIntentForm">
+      <div class="form-grid-two">
+        <div class="form-field-item">
+          <label>Farmer Name <span class="req">*</span></label>
+          <select id="piFarmerName" required>
+            <option value="">Select Farmer</option>
+          </select>
         </div>
+        <div class="form-field-item">
+          <label>Planting Date <span class="req">*</span></label>
+          <input type="date" id="piPlantDate" required>
+        </div>
+        <div class="form-field-item">
+          <label>Farmer ID <span class="req">*</span></label>
+          <input type="text" id="piFarmerId" class="input-readonly" readonly required>
+        </div>
+        <div class="form-field-item">
+          <label>Harvest Date <span class="req">*</span></label>
+          <input type="date" id="piHarvestDate" required>
+        </div>
+        <div class="form-field-item">
+          <label>Commodity <span class="req">*</span></label>
+          <input type="text" id="piCommodity" required>
+        </div>
+        <div class="form-field-item">
+          <label>Estimated Volume (kg) <span class="req">*</span></label>
+          <input type="number" id="piVolume" placeholder="e.g. 15000" required>
+        </div>
+        <div class="form-field-item form-field-full">
+          <label>Remarks</label>
+          <textarea id="piRemarks"></textarea>
+        </div>
+      </div>
 
-
+      <div class="actions-right-row">
+        <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
+        <button class="btn-primary" type="submit">Submit Intent</button>
+      </div>
+    </form>
+  </div>
+</div>
         <!-- PLANTING INTENT DETAILS -->
         <div id="plantingIntentDetailsSubview" class="hidden-element">
           <div class="main-header">
-            <h1>Planting Intent Details</h1>
+            <div class="header-left">
+              <h1>Planting Intent Details</h1>
+              <p>Review submitted harvest parameters.</p>
+            </div>
           </div>
 
 
@@ -1230,46 +1266,46 @@
             <div class="form-grid-two">
               <div class="form-field-item">
                 <label>Planting Intent ID</label>
-                <input type="text" id="detailPlantingIntentId" readonly>
+                <input type="text" id="detailPlantingIntentId" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Farmer Name</label>
-                <input type="text" id="detailFarmerName" readonly>
+                <input type="text" id="detailFarmerName" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Farmer ID</label>
-                <input type="text" id="detailFarmerId" readonly>
+                <input type="text" id="detailFarmerId" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Commodity</label>
-                <input type="text" id="detailCommodity" readonly>
+                <input type="text" id="detailCommodity" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Estimated Volume</label>
-                <input type="text" id="detailVolume" readonly>
+                <input type="text" id="detailVolume" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Location</label>
-                <input type="text" id="detailLocation" readonly>
+                <input type="text" id="detailLocation" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Planting Date</label>
-                <input type="text" id="detailPlantingDate" readonly>
+                <input type="text" id="detailPlantingDate" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Harvest Date</label>
-                <input type="text" id="detailHarvestDate" readonly>
+                <input type="text" id="detailHarvestDate" readonly class="input-readonly">
               </div>
               <div class="form-field-item form-field-full">
                 <label>Remarks</label>
-                <textarea id="detailRemarks" readonly></textarea>
+                <textarea id="detailRemarks" readonly class="input-readonly"></textarea>
               </div>
             </div>
 
 
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
-              <button class="btn-outline-report" id="submitPlantingIntentBtn" type="button">Submit Planting Intent</button>
+              <button class="btn-primary" id="submitPlantingIntentBtn" type="button">Confirm & Log Intent</button>
             </div>
           </div>
         </div>
@@ -1280,8 +1316,14 @@
       <section class="view" id="view-offtake-request">
         <div id="offtakeListSubview">
           <div class="main-header">
-            <h1>Offtake Requests</h1>
+            <div class="header-left">
+              <h1>Offtake Requests</h1>
+              <p>Formal buyer agreements and commitment tracking.</p>
+            </div>
+            <button class="btn-primary" id="createOfftakeBtn" type="button">+ Create Offtake Request</button>
           </div>
+
+
           <div class="card">
             <table>
               <thead>
@@ -1291,22 +1333,24 @@
                   <th>Volume</th>
                   <th>Location</th>
                   <th>Harvest Date</th>
-                  <th>Status</th>
+                  <th class="center-col">Status</th>
                 </tr>
               </thead>
               <tbody id="offtakeTableBody"></tbody>
             </table>
-          </div>
-          <div class="actions-right-row">
-            <button class="btn-outline-report" id="createOfftakeBtn" type="button">Create Offtake Request</button>
           </div>
         </div>
 
 
         <div id="submitOfftakeSubview" class="hidden-element">
           <div class="main-header">
-            <h1>Submit Offtake Request</h1>
+            <div class="header-left">
+              <h1>Submit Offtake Request</h1>
+              <p>Formulate an official supply pairing for an institutional buyer.</p>
+            </div>
           </div>
+
+
           <div class="card">
             <form id="submitOfftakeForm">
               <div class="form-grid-two">
@@ -1337,14 +1381,11 @@
                   <input type="date" id="offtakeHarvestDate" required>
                 </div>
                 <div class="form-field-item">
-  <label>Buyer Name / Organization <span class="req">*</span></label>
-  <input
-    type="text"
-    id="offtakeBuyerSelect"
-    placeholder="Enter buyer name or organization"
-    required
-  >
-</div>
+                  <label>Buyer Name / Organization <span class="req">*</span></label>
+                  <select id="offtakeBuyerSelect" required>
+                    <option value="">Select Buyer</option>
+                  </select>
+                </div>
                 <div class="form-field-item">
                   <label>Delivery Location <span class="req">*</span></label>
                   <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
@@ -1352,7 +1393,7 @@
               </div>
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="returnFromSubmitOfftakeBtn" type="button">Return</button>
-                <button class="btn-outline-report" id="proceedOfftakeBtn" type="button">Proceed</button>
+                <button class="btn-primary" id="proceedOfftakeBtn" type="button">Proceed to Memo</button>
               </div>
             </form>
           </div>
@@ -1362,12 +1403,17 @@
         <!-- FORMAL OFFTAKE LETTER VIEW -->
         <div id="confirmOfftakeSubview" class="hidden-element">
           <div class="main-header">
-            <h1>Review & Confirm Offtake Letter</h1>
+            <div class="header-left">
+              <h1>Review & Confirm Offtake Memorandum</h1>
+              <p>Validate the parameters before transmitting to buyer organization.</p>
+            </div>
           </div>
+
+
           <div class="card">
             <div class="confirm-offtake-box">
               <h3>Official Agricultural Offtake Memorandum</h3>
-              <p><b>Date:</b> <span id="letterDate">August 21, 2026</span></p>
+              <p><b>Date:</b> <span id="letterDate">August 24, 2026</span></p>
               <p><b>To:</b> <span id="confirmBuyerName">Buyer Organization</span></p>
               <p><b>From:</b> Office of the Agricultural Extension Worker (AEW)</p>
               <p><b>Subject:</b> Offtake Agreement & Purchase Commitment Confirmation</p>
@@ -1413,7 +1459,7 @@
 
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backToSubmitOfftakeBtn" type="button">Edit Details</button>
-              <button class="btn-outline-report" id="sendOfftakeBtn" type="button">Submit Request</button>
+              <button class="btn-primary" id="sendOfftakeBtn" type="button">Transmit Memorandum</button>
             </div>
           </div>
         </div>
@@ -1423,8 +1469,13 @@
       <!-- VIEW 4: Fair Prices -->
       <section class="view" id="view-fair-prices">
         <div class="main-header">
-          <h1>Fair Price Dashboard</h1>
+          <div class="header-left">
+            <h1>Fair Price Intelligence</h1>
+            <p>Daily validated price ceilings and market averages.</p>
+          </div>
         </div>
+
+
         <div class="fair-price-grid">
           <div class="crop-photo-wrap">
             <img src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop Image" id="cropImageDisplay">
@@ -1440,9 +1491,9 @@
               Daily monitored farmgate and market wholesale prices based on DA Agribusiness and Marketing Assistance Division (DA-AMAD).
             </p>
             <div class="price-stats-boxes">
-              <div class="price-stat-box"><div class="label">Minimum</div><div class="price">P34</div><div class="unit">per kg</div></div>
-              <div class="price-stat-box"><div class="label">Average</div><div class="price">P45</div><div class="unit">per kg</div></div>
-              <div class="price-stat-box"><div class="label">Maximum</div><div class="price">P55</div><div class="unit">per kg</div></div>
+              <div class="price-stat-box"><div class="label">Minimum</div><div class="price">₱34</div><div class="unit">per kg</div></div>
+              <div class="price-stat-box"><div class="label">Average</div><div class="price">₱45</div><div class="unit">per kg</div></div>
+              <div class="price-stat-box"><div class="label">Maximum</div><div class="price">₱55</div><div class="unit">per kg</div></div>
             </div>
           </div>
         </div>
@@ -1452,10 +1503,13 @@
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
         <div class="main-header">
-          <h1>Map</h1>
+          <div class="header-left">
+            <h1>Regional Field Map</h1>
+            <p>Geospatial tracking of crop production clusters.</p>
+          </div>
         </div>
         <div class="card">
-          <div class="map-title">Regional Supply-Demand Map</div>
+          <div class="map-title">Field Monitoring & Geographic Clusters</div>
           <div id="map"></div>
         </div>
       </section>
@@ -1492,7 +1546,7 @@
   <div class="modal-overlay" id="deleteFarmerModal">
     <div class="modal-box">
       <h2>Delete Farmer?</h2>
-      <p>This cannot be undone.</p>
+      <p>This action cannot be undone.</p>
       <div class="modal-actions">
         <button class="btn-outline-report" id="cancelDeleteFarmerBtn" type="button">Cancel</button>
         <button class="modal-btn-confirm btn-danger" id="confirmDeleteFarmerBtn" type="button">Confirm</button>

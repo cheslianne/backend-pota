@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
+import os
+import uuid
+from datetime import datetime
 
 from src.core.database import get_db
 
@@ -18,6 +21,17 @@ from src.api.schemas.planting_intents import (
 router = APIRouter()
 
 # ============================================================
+# UPLOAD DIRECTORY CONFIGURATION
+# ============================================================
+
+UPLOAD_DIR = "uploads/planting_intent_attachments"
+
+os.makedirs(
+    UPLOAD_DIR,
+    exist_ok=True
+)
+
+# ============================================================
 # HELPER
 # BUILD FRONTEND-FRIENDLY RESPONSE
 # ============================================================
@@ -25,7 +39,7 @@ router = APIRouter()
 def build_planting_intent_response(
     planting_intent: PlantingIntent,
     farmer: Farmer,
-    status: str,  # Fixed: removed quotes around "status"
+    status: str,
 ):
     return {
         "planting_intent_id":
@@ -56,14 +70,138 @@ def build_planting_intent_response(
             planting_intent.remarks,
 
         "status":
-            status,  # Fixed: using the status parameter instead of "Pending"
+            status,
 
         "created_at":
             planting_intent.created_at,
+            
+        "attachment_url":  # Add this field
+            f"/api/planting-intents/{planting_intent.planting_intent_id}/attachment"
+            if planting_intent.attachment_path
+            else None,
+            
+        "notes":  # Add this field
+            planting_intent.notes,
     }
 
 # ============================================================
-# CREATE PLANTING INTENT
+# CREATE PLANTING INTENT WITH ATTACHMENT (NEW ROUTE)
+# ============================================================
+
+@router.post(
+    "/with-attachment",
+    response_model=PlantingIntentResponse
+)
+async def create_planting_intent_with_attachment(
+    farmer_id: int = Form(...),
+    commodity: str = Form(...),
+    volume: float = Form(...),
+    planting_date: str = Form(...),
+    harvest_date: str = Form(...),
+    notes: str | None = Form(None),
+    attachment: UploadFile | None = File(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a planting intent with optional file attachment.
+    """
+    
+    # --------------------------------------------------------
+    # CHECK IF FARMER EXISTS
+    # --------------------------------------------------------
+    
+    farmer = (
+        db.query(Farmer)
+        .filter(
+            Farmer.farmer_id == farmer_id
+        )
+        .first()
+    )
+
+    if not farmer:
+        raise HTTPException(
+            status_code=404,
+            detail="Farmer not found"
+        )
+
+    # --------------------------------------------------------
+    # HANDLE ATTACHMENT
+    # --------------------------------------------------------
+    
+    attachment_path = None
+    
+    if attachment:
+        # Validate file extension
+        filename = attachment.filename or ""
+        extension = os.path.splitext(filename)[1].lower()
+        
+        allowed_extensions = {
+            ".pdf", ".jpg", ".jpeg", ".png", 
+            ".gif", ".doc", ".docx", ".xls", ".xlsx"
+        }
+        
+        if extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+            )
+        
+        # Validate file size (max 5MB)
+        file_content = await attachment.read()
+        if len(file_content) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="File size exceeds 5MB limit"
+            )
+        
+        # Save file with unique name
+        unique_filename = f"{uuid.uuid4()}{extension}"
+        attachment_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        with open(attachment_path, "wb") as file:
+            file.write(file_content)
+    
+    # --------------------------------------------------------
+    # CREATE PLANTING INTENT
+    # --------------------------------------------------------
+    
+    # Parse dates
+    try:
+        planting_date_obj = datetime.strptime(planting_date, "%Y-%m-%d").date()
+        harvest_date_obj = datetime.strptime(harvest_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date format. Use YYYY-MM-DD"
+        )
+    
+    db_planting = PlantingIntent(
+        farmer_id=farmer_id,
+        commodity=commodity,
+        volume=volume,
+        planting_date=planting_date_obj,
+        harvest_date=harvest_date_obj,
+        notes=notes,
+        attachment_path=attachment_path,
+        status="Pending"  # Default status
+    )
+
+    db.add(db_planting)
+    db.commit()
+    db.refresh(db_planting)
+
+    # --------------------------------------------------------
+    # RETURN WITH FARMER DETAILS
+    # --------------------------------------------------------
+    
+    return build_planting_intent_response(
+        db_planting,
+        farmer,
+        "Pending"
+    )
+
+# ============================================================
+# CREATE PLANTING INTENT (Original - without attachment)
 # ============================================================
 
 @router.post(
@@ -94,7 +232,6 @@ def create_planting_intent(
             detail="Farmer not found"
         )
 
-
     # --------------------------------------------------------
     # CREATE PLANTING INTENT
     # --------------------------------------------------------
@@ -104,11 +241,8 @@ def create_planting_intent(
     )
 
     db.add(db_planting)
-
     db.commit()
-
     db.refresh(db_planting)
-
 
     # --------------------------------------------------------
     # RETURN WITH FARMER DETAILS
@@ -116,9 +250,76 @@ def create_planting_intent(
 
     return build_planting_intent_response(
         db_planting,
-        farmer
+        farmer,
+        "Pending"
     )
 
+# ============================================================
+# GET ATTACHMENT
+# ============================================================
+
+from fastapi.responses import FileResponse
+
+@router.get("/{planting_intent_id}/attachment")
+def get_planting_intent_attachment(
+    planting_intent_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Download the attachment for a planting intent.
+    """
+    
+    planting_intent = (
+        db.query(PlantingIntent)
+        .filter(
+            PlantingIntent.planting_intent_id == planting_intent_id
+        )
+        .first()
+    )
+    
+    if not planting_intent:
+        raise HTTPException(
+            status_code=404,
+            detail="Planting intent not found"
+        )
+    
+    if not planting_intent.attachment_path:
+        raise HTTPException(
+            status_code=404,
+            detail="No attachment found for this planting intent"
+        )
+    
+    file_path = os.path.abspath(planting_intent.attachment_path)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=404,
+            detail="Attachment file does not exist on the server"
+        )
+    
+    # Determine media type
+    extension = os.path.splitext(file_path)[1].lower()
+    media_type = "application/octet-stream"
+    
+    if extension == ".pdf":
+        media_type = "application/pdf"
+    elif extension in [".jpg", ".jpeg"]:
+        media_type = "image/jpeg"
+    elif extension == ".png":
+        media_type = "image/png"
+    elif extension == ".gif":
+        media_type = "image/gif"
+    elif extension in [".doc", ".docx"]:
+        media_type = "application/msword"
+    elif extension == ".docx":
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=os.path.basename(file_path),
+        content_disposition_type="inline"  # or "attachment" to force download
+    )
 
 # ============================================================
 # GET ALL PLANTING INTENTS
@@ -204,22 +405,19 @@ def read_planting_intent(
         .first()
     )
 
-
     if not result:
         raise HTTPException(
             status_code=404,
             detail="Planting intent not found"
         )
 
-
     planting_intent, farmer = result
-
 
     return build_planting_intent_response(
         planting_intent,
-        farmer
+        farmer,
+        planting_intent.status or "Pending"
     )
-
 
 # ============================================================
 # UPDATE PLANTING INTENT
@@ -244,13 +442,11 @@ def update_planting_intent(
         .first()
     )
 
-
     if not db_planting:
         raise HTTPException(
             status_code=404,
             detail="Planting intent not found"
         )
-
 
     # --------------------------------------------------------
     # GET UPDATE DATA
@@ -259,7 +455,6 @@ def update_planting_intent(
     update_data = planting_intent.model_dump(
         exclude_unset=True
     )
-
 
     # --------------------------------------------------------
     # IF FARMER ID IS BEING UPDATED,
@@ -283,7 +478,6 @@ def update_planting_intent(
                 detail="Farmer not found"
             )
 
-
     # --------------------------------------------------------
     # APPLY UPDATES
     # --------------------------------------------------------
@@ -296,11 +490,8 @@ def update_planting_intent(
             value
         )
 
-
     db.commit()
-
     db.refresh(db_planting)
-
 
     # --------------------------------------------------------
     # GET UPDATED FARMER
@@ -315,19 +506,17 @@ def update_planting_intent(
         .first()
     )
 
-
     if not farmer:
         raise HTTPException(
             status_code=404,
             detail="Farmer not found"
         )
 
-
     return build_planting_intent_response(
         db_planting,
-        farmer
+        farmer,
+        db_planting.status or "Pending"
     )
-
 
 # ============================================================
 # DELETE PLANTING INTENT
@@ -350,18 +539,23 @@ def delete_planting_intent(
         .first()
     )
 
-
     if not db_planting:
         raise HTTPException(
             status_code=404,
             detail="Planting intent not found"
         )
-
+    
+    # Delete the attachment file if it exists
+    if db_planting.attachment_path:
+        file_path = os.path.abspath(db_planting.attachment_path)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Warning: Could not delete attachment file: {e}")
 
     db.delete(db_planting)
-
     db.commit()
-
 
     return {
         "message":

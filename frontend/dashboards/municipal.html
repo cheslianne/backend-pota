@@ -1633,20 +1633,25 @@ approveBtn.addEventListener("click", async () => {
     // GET LOGGED-IN USER
     // ============================================================
 
-    const currentUser = JSON.parse(
-      localStorage.getItem("user") || "{}"
-    );
+    // ✅ BAGONG CODE
+const validatorId = localStorage.getItem("user_id");
+const accessToken = localStorage.getItem("access_token");
+const tokenType = localStorage.getItem("token_type") || "bearer";
 
-    const validatorId = currentUser.user_id;
+console.log("Validator ID:", validatorId);
+console.log("Has Access Token:", !!accessToken);
 
-    if (!validatorId) {
-      throw new Error(
-        "No logged-in user found. Please log in again."
-      );
-    }
+if (!validatorId) {
+  throw new Error(
+    "No logged-in user found. Please log in again."
+  );
+}
 
-    console.log("Current validator ID:", validatorId);
-
+if (!accessToken) {
+  throw new Error(
+    "No access token found. Please log in again."
+  );
+}
     // ============================================================
     // REPORT DATA
     // ============================================================
@@ -1669,15 +1674,17 @@ approveBtn.addEventListener("click", async () => {
 
     console.log("Approve URL:", approveUrl);
 
-    const response = await fetch(
-      approveUrl,
-      {
-        method: "POST",
-        headers: {
-          "Accept": "application/json"
-        }
-      }
-    );
+    // ✅ BAGONG CODE
+const response = await fetch(
+  approveUrl,
+  {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Authorization": `${tokenType} ${accessToken}` // ← ITO ANG KULANG!
+    }
+  }
+);
 
     // ============================================================
     // HANDLE ERROR

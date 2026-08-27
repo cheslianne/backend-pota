@@ -2244,185 +2244,6 @@ function initAlertThreshold() {
     );
 
 }
-
-
-/* ============================================================
-   REPORTS
-============================================================ */
-
-function initReportsSection() {
-
-    const reportListSubview =
-        document.getElementById(
-            "reportListSubview"
-        );
-
-
-    const reportDetailSubview =
-        document.getElementById(
-            "reportDetailSubview"
-        );
-
-
-    const reportApprovedModal =
-        document.getElementById(
-            "reportApprovedModal"
-        );
-
-
-    const flagReportBtn =
-        document.getElementById(
-            "flagReportBtn"
-        );
-
-
-    const approveReportBtn =
-        document.getElementById(
-            "approveReportBtn"
-        );
-
-
-    const returnReportListBtn =
-        document.getElementById(
-            "returnReportListBtn"
-        );
-
-
-    const closeReportApprovedBtn =
-        document.getElementById(
-            "closeReportApprovedBtn"
-        );
-
-
-    /* --------------------------------------------
-       REPORT LIST
-    -------------------------------------------- */
-
-    document
-        .querySelectorAll(".report-item")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    reportListSubview?.classList.add(
-                        "hidden-element"
-                    );
-
-
-                    reportDetailSubview?.classList.remove(
-                        "hidden-element"
-                    );
-
-
-                    if (flagReportBtn) {
-
-                        flagReportBtn.classList.remove(
-                            "active"
-                        );
-
-
-                        flagReportBtn.textContent =
-                            "Flag for Revision";
-
-                    }
-
-                }
-            );
-
-        });
-
-
-    /* --------------------------------------------
-       RETURN TO REPORT LIST
-    -------------------------------------------- */
-
-    returnReportListBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportDetailSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-            reportListSubview?.classList.remove(
-                "hidden-element"
-            );
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       FLAG REPORT
-    -------------------------------------------- */
-
-    flagReportBtn?.addEventListener(
-        "click",
-        () => {
-
-            flagReportBtn.classList.toggle(
-                "active"
-            );
-
-
-            flagReportBtn.textContent =
-                flagReportBtn.classList.contains(
-                    "active"
-                )
-                    ? "Flagged"
-                    : "Flag for Revision";
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       APPROVE REPORT
-    -------------------------------------------- */
-
-    approveReportBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportApprovedModal?.classList.add(
-                "show"
-            );
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       CLOSE APPROVED MODAL
-    -------------------------------------------- */
-
-    closeReportApprovedBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportApprovedModal?.classList.remove(
-                "show"
-            );
-
-
-            reportDetailSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-            reportListSubview?.classList.remove(
-                "hidden-element"
-            );
-
-        }
-    );
-
-}
-
-
 /* ============================================================
    MODAL LISTENERS
 ============================================================ */
@@ -2430,7 +2251,7 @@ function initReportsSection() {
 function initModalListeners() {
 
     /* --------------------------------------------
-       CLICK OUTSIDE MODAL
+       CLICK OUTSIDE MODAL TO CLOSE
     -------------------------------------------- */
 
     document
@@ -2474,7 +2295,6 @@ function initModalListeners() {
                             ".modal-overlay"
                         );
 
-
                     modal?.classList.remove(
                         "show"
                     );
@@ -2484,4 +2304,394 @@ function initModalListeners() {
 
         });
 
+}
+
+/* ============================================================
+   REPORTS
+============================================================ */
+
+function initReportsSection() {
+
+    const reportListSubview =
+        document.getElementById(
+            "reportListSubview"
+        );
+
+    const reportDetailSubview =
+        document.getElementById(
+            "reportDetailSubview"
+        );
+
+    const reportApprovedModal =
+        document.getElementById(
+            "reportApprovedModal"
+        );
+
+    const flagReportBtn =
+        document.getElementById(
+            "flagReportBtn"
+        );
+
+    const approveReportBtn =
+        document.getElementById(
+            "approveReportBtn"
+        );
+
+    const returnReportListBtn =
+        document.getElementById(
+            "returnReportListBtn"
+        );
+
+    const closeReportApprovedBtn =
+        document.getElementById(
+            "closeReportApprovedBtn"
+        );
+// ------------------------------------------------------------
+// LOAD REPORTS FROM API
+// ------------------------------------------------------------
+
+async function loadReports() {
+    try {
+        const reportList = document.querySelector('.report-item-list');
+        
+        // Show loading state
+        reportList.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #666;">
+                Loading reports...
+            </div>
+        `;
+
+        // TAMA: Gamitin ang /all-reports endpoint, hindi /approve
+        const response = await fetch(
+            `${API_BASE_URL}/api/report-submissions/all-reports`,  // <-- ITO ANG TAMA
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to fetch reports: ${response.status} - ${error}`);
+        }
+
+        const reports = await response.json();
+
+        // Clear the report list
+        reportList.innerHTML = '';
+
+        // Check if there are reports
+        if (!reports || reports.length === 0) {
+            reportList.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #666;">
+                    No reports awaiting DA-RFO validation.
+                </div>
+            `;
+            return;
+        }
+
+        // Display each report
+        reports.forEach((report) => {
+            const button = document.createElement('button');
+            button.className = 'report-item';
+            button.setAttribute('type', 'button');
+            
+            // Create title
+            const title = report.title || `${report.commodity || 'Crop'} Harvest Report`;
+            const location = report.municipal_coordinator_id ? ` - ID: ${report.municipal_coordinator_id}` : '';
+            
+            button.textContent = `${title}${location}`;
+            
+            // Store report data
+            button.dataset.report = JSON.stringify(report);
+            
+            // Add click event
+            button.addEventListener('click', function() {
+                const reportData = JSON.parse(this.dataset.report);
+                showReportDetail(reportData);
+            });
+            
+            reportList.appendChild(button);
+        });
+
+    } catch (error) {
+        console.error('LOAD REPORTS ERROR:', error);
+        const reportList = document.querySelector('.report-item-list');
+        reportList.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #C0392B;">
+                Error loading reports: ${error.message}
+            </div>
+        `;
+    }
+}
+    // ------------------------------------------------------------
+    // SHOW REPORT DETAIL
+    // ------------------------------------------------------------
+
+    function showReportDetail(report) {
+        // Hide list, show detail
+        reportListSubview?.classList.add('hidden-element');
+        reportDetailSubview?.classList.remove('hidden-element');
+
+        // Store report ID
+        reportDetailSubview.dataset.reportId = report.report_id;
+        reportDetailSubview.dataset.submissionId = report.submission_id;
+
+        // Populate table with report data
+        const tbody = document.querySelector('#reportDetailSubview table tbody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td><span class="pill">${escapeHtml(report.encoded_by || 'N/A')}</span></td>
+                    <td><span class="pill">${escapeHtml(report.commodity || 'N/A')}</span></td>
+                    <td><span class="pill">${report.estimated_yield ? escapeHtml(report.estimated_yield) + 'kg' : 'N/A'}</span></td>
+                    <td><span class="pill">${escapeHtml(report.location || 'N/A')}</span></td>
+                    <td><span class="pill">${escapeHtml(report.planting_date || 'N/A')}</span></td>
+                    <td><span class="pill">${escapeHtml(report.harvest_date || 'N/A')}</span></td>
+                    <td><span class="status-pill approved">${escapeHtml(report.status || 'Pending')}</span></td>
+                </tr>
+            `;
+        }
+
+        // Clear notes textarea
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        if (notesTextarea) {
+            notesTextarea.value = '';
+        }
+
+        // Reset flag button
+        if (flagReportBtn) {
+            flagReportBtn.classList.remove('active');
+            flagReportBtn.textContent = 'Flag for Revision';
+        }
+    }
+
+    // ------------------------------------------------------------
+    // APPROVE REPORT
+    // ------------------------------------------------------------
+
+    async function approveReport() {
+        const reportId = reportDetailSubview?.dataset.reportId;
+        
+        if (!reportId) {
+            alert('No report selected.');
+            return;
+        }
+
+        // Get current user ID from localStorage
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+            alert('User ID not found. Please login again.');
+            return;
+        }
+
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        const remarks = notesTextarea?.value || null;
+
+        const approveBtn = approveReportBtn;
+        const originalText = approveBtn?.textContent;
+
+        try {
+            if (approveBtn) {
+                approveBtn.disabled = true;
+                approveBtn.textContent = 'Approving...';
+            }
+
+           const params = new URLSearchParams({
+    validator_id: userId,
+    validator_role: "darfo"
+});
+
+if (remarks) {
+    params.append("remarks", remarks);
+}
+
+const response = await fetch(
+    `${API_BASE_URL}/api/report-submissions/${reportId}/approve?${params.toString()}`,
+    {
+        method: "POST",
+        headers: getAuthHeaders(false)
+    }
+);
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || 'Failed to approve report');
+            }
+
+            console.log('Report approved:', data);
+
+            // Show success modal
+            reportApprovedModal?.classList.add('show');
+
+            // Refresh reports list
+            await loadReports();
+
+        } catch (error) {
+            console.error('APPROVE REPORT ERROR:', error);
+            alert(error.message || 'Failed to approve report');
+        } finally {
+            if (approveBtn) {
+                approveBtn.disabled = false;
+                approveBtn.textContent = originalText || 'Approve';
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // FLAG REPORT FOR REVISION
+    // ------------------------------------------------------------
+
+    async function flagReport() {
+        const reportId = reportDetailSubview?.dataset.reportId;
+        
+        if (!reportId) {
+            alert('No report selected.');
+            return;
+        }
+
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        const remarks = notesTextarea?.value;
+
+        if (!remarks || remarks.trim() === '') {
+            alert('Please provide revision remarks in the notes field.');
+            return;
+        }
+
+        // Get current user ID from localStorage
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+            alert('User ID not found. Please login again.');
+            return;
+        }
+
+        const flagBtn = flagReportBtn;
+        const originalText = flagBtn?.textContent;
+
+        try {
+            if (flagBtn) {
+                flagBtn.disabled = true;
+                flagBtn.textContent = 'Flagging...';
+            }
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/report-submissions/${reportId}/revision`,  
+                {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        validator_id: userId,
+                        validator_role: "darfo",
+                        remarks: remarks
+                    })
+                }
+            );
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || 'Failed to flag report');
+            }
+
+            console.log('Report flagged for revision:', data);
+
+            alert('Report flagged for revision successfully!');
+
+            // Refresh reports list
+            await loadReports();
+
+            // Return to list
+            reportDetailSubview?.classList.add('hidden-element');
+            reportListSubview?.classList.remove('hidden-element');
+
+        } catch (error) {
+            console.error('FLAG REPORT ERROR:', error);
+            alert(error.message || 'Failed to flag report');
+        } finally {
+            if (flagBtn) {
+                flagBtn.disabled = false;
+                flagBtn.textContent = originalText || 'Flag for Revision';
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // GET CURRENT USER ID
+    // ------------------------------------------------------------
+
+    function getCurrentUserId() {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.user_id || user.id || null;
+        } catch {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // EVENT LISTENERS
+    // ------------------------------------------------------------
+
+    // Load reports when view is shown
+    // Since reports view might not be the default view, we need to 
+    // listen for navigation to reports view
+    const viewReports = document.getElementById('view-reports');
+    const observer = new MutationObserver(() => {
+        if (viewReports?.classList.contains('active-view')) {
+            loadReports();
+        }
+    });
+    if (viewReports) {
+        observer.observe(viewReports, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Also load reports when page loads if reports view is active
+    if (viewReports?.classList.contains('active-view')) {
+        loadReports();
+    }
+
+    // Override existing report item click events - remove old listeners
+    // The new dynamic buttons will handle their own clicks
+
+    // Return to report list
+    returnReportListBtn?.addEventListener(
+        "click",
+        () => {
+            reportDetailSubview?.classList.add('hidden-element');
+            reportListSubview?.classList.remove('hidden-element');
+            loadReports(); // Refresh list when returning
+        }
+    );
+
+    // Flag report button
+    flagReportBtn?.addEventListener(
+        "click",
+        flagReport
+    );
+
+    // Approve report button
+    approveReportBtn?.addEventListener(
+        "click",
+        approveReport
+    );
+
+    // Close approved modal
+    closeReportApprovedBtn?.addEventListener(
+        "click",
+        () => {
+            reportApprovedModal?.classList.remove('show');
+            reportDetailSubview?.classList.add('hidden-element');
+            reportListSubview?.classList.remove('hidden-element');
+            loadReports(); // Refresh list
+        }
+    );
+
+    // Submit Report button - redirect to create report page
+    const submitReportBtn = document.querySelector('.actions-right .btn-outline-report');
+    submitReportBtn?.addEventListener('click', () => {
+        window.location.href = '/create-report.html';
+    });
 }
