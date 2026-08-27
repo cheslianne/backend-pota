@@ -11,7 +11,8 @@ class PlantingIntentBase(BaseModel):
     harvest_date: date
     volume: Decimal
     remarks: Optional[str] = None
-
+    notes: Optional[str] = None  # NEW: For additional notes/comments
+    
 
 class PlantingIntentCreate(PlantingIntentBase):
     pass
@@ -24,6 +25,7 @@ class PlantingIntentUpdate(BaseModel):
     harvest_date: Optional[date] = None
     volume: Optional[Decimal] = None
     remarks: Optional[str] = None
+    notes: Optional[str] = None  # NEW: Allow updating notes
 
 
 class PlantingIntentResponse(PlantingIntentBase):
@@ -33,6 +35,7 @@ class PlantingIntentResponse(PlantingIntentBase):
     farmer_name: Optional[str] = None
     location: Optional[str] = None
     status: str = "Pending"
+    attachment_url: Optional[str] = None  # NEW: URL to download attachment
 
     model_config = ConfigDict(
         from_attributes=True
