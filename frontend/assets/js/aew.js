@@ -1849,165 +1849,175 @@ function initFarmerSubviews() {
        REGISTER FARMER
     -------------------------------------------------------- */
 
+/* --------------------------------------------------------
+   REGISTER FARMER
+-------------------------------------------------------- */
+/* --------------------------------------------------------
+   REGISTER FARMER
+-------------------------------------------------------- */
 
-    regForm?.addEventListener(
-        "submit",
-        async event => {
+regForm?.addEventListener(
+    "submit",
+    async event => {
 
+        event.preventDefault();
 
-            event.preventDefault();
+        // ====================================================
+        // GET VALUES
+        // ====================================================
 
+        const barangay = getValue("regBarangay");
+        const municipality = getValue("regMunicipality");
 
+        // ====================================================
+        // BUILD PAYLOAD - WITH address FIELD
+        // ====================================================
 
+        const farmerData = {
+            rsbsa_id: getValue("regFarmerId"),
+            first_name: getValue("regFirstName"),
+            middle_name: getValue("regMiddleName"),
+            last_name: getValue("regLastName"),
+            suffix: getValue("regSuffix"),
+            address: `${barangay}, ${municipality}`,  // ← COMBINED ADDRESS
+            barangay: barangay,                        // ← Keep separate
+            municipality: municipality,                // ← Keep separate
+            sex: getValue("regSex"),
+            birthdate: getValue("regBirthdate"),
+            phone_number: getValue("regPhone"),
+            email_address: getValue("regEmail")
+        };
 
-            const farmerData = {
+        console.log("Submitting farmer:", farmerData);
 
+        // ====================================================
+        // VALIDATE REQUIRED FIELDS
+        // ====================================================
 
-                rsbsa_id:
-                    getValue(
-                        "regFarmerId"
-                    ),
+        if (!farmerData.rsbsa_id) {
+            alert("Please enter RSBSA ID.");
+            return;
+        }
 
+        if (!farmerData.first_name) {
+            alert("Please enter First Name.");
+            return;
+        }
 
-                first_name:
-                    getValue(
-                        "regFirstName"
-                    ),
+        if (!farmerData.last_name) {
+            alert("Please enter Last Name.");
+            return;
+        }
 
+        if (!farmerData.address) {
+            alert("Please enter Address (Barangay and Municipality).");
+            return;
+        }
 
-                middle_name:
-                    getValue(
-                        "regMiddleName"
-                    ),
+        if (!farmerData.sex) {
+            alert("Please select Sex.");
+            return;
+        }
 
+        if (!farmerData.birthdate) {
+            alert("Please select Birthdate.");
+            return;
+        }
 
-                last_name:
-                    getValue(
-                        "regLastName"
-                    ),
+        if (!farmerData.phone_number) {
+            alert("Please enter Phone Number.");
+            return;
+        }
 
+        if (!farmerData.email_address) {
+            alert("Please enter Email Address.");
+            return;
+        }
 
-                suffix:
-                    getValue(
-                        "regSuffix"
-                    ),
+        // ====================================================
+        // SHOW CONFIRMATION MODAL
+        // ====================================================
 
+        const confirmText = document.getElementById("confirmFarmerText");
+        if (confirmText) {
+            confirmText.textContent = 
+                `Register ${farmerData.first_name} ${farmerData.last_name} from ${farmerData.address}?`;
+        }
 
-                address:
-                    getValue(
-                        "regAddress"
-                    ),
+        // Store for confirmation
+        window._pendingFarmer = farmerData;
 
+        document.getElementById("confirmFarmerModal")?.classList.add("show");
+    }
+);
 
-                sex:
-                    getValue(
-                        "regSex"
-                    ),
+/* --------------------------------------------------------
+   CONFIRM SAVE FARMER
+-------------------------------------------------------- */
+/* --------------------------------------------------------
+   CONFIRM SAVE FARMER
+-------------------------------------------------------- */
 
+document.getElementById("confirmSaveFarmerBtn")?.addEventListener(
+    "click",
+    async () => {
 
-                birthdate:
-                    getValue(
-                        "regBirthdate"
-                    ),
+        const farmerData = window._pendingFarmer;
 
+        if (!farmerData) {
+            alert("No farmer data to save.");
+            return;
+        }
 
-                phone_number:
-                    getValue(
-                        "regPhone"
-                    ),
+        try {
 
+            console.log("Saving farmer:", farmerData);
 
-                email_address:
-                    getValue(
-                        "regEmail"
-                    )
-            };
-
-
-
-
-            console.log(
-                "Submitting farmer:",
-                farmerData
+            const createdFarmer = await apiRequest(
+                FARMERS_ENDPOINT,
+                {
+                    method: "POST",
+                    body: JSON.stringify(farmerData)
+                }
             );
 
+            console.log("Created farmer:", createdFarmer);
 
+            // Close confirmation modal
+            document.getElementById("confirmFarmerModal")?.classList.remove("show");
 
+            // Refresh farmers list
+            await fetchFarmers();
 
-            try {
+            // Show success modal
+            document.getElementById("farmerAddedModal")?.classList.add("show");
 
+            // Reset form
+            regForm?.reset();
 
-                const createdFarmer =
-                    await apiRequest(
-                        FARMERS_ENDPOINT,
-                        {
-                            method: "POST",
+            // Clear pending
+            window._pendingFarmer = null;
 
+        } catch (error) {
 
-                            body:
-                                JSON.stringify(
-                                    farmerData
-                                )
-                        }
-                    );
+            console.error("Create farmer error:", error);
 
+            handleAuthError(error);
 
+            document.getElementById("confirmFarmerModal")?.classList.remove("show");
 
-
-                console.log(
-                    "Created farmer:",
-                    createdFarmer
-                );
-
-
-
-
-                await fetchFarmers();
-
-
-
-
-                document
-                    .getElementById(
-                        "farmerAddedModal"
-                    )
-                    ?.classList.add(
-                        "show"
-                    );
-
-
-
-
-            } catch (error) {
-
-
-                console.error(
-                    "Create farmer error:",
-                    error
-                );
-
-
-
-
-                handleAuthError(
-                    error
-                );
-
-
-
-
-                alert(
-                    "Failed to add farmer.\n\n" +
-                    (
-                        error.message ||
-                        "Please check the FastAPI server."
-                    )
-                );
+            // Show detailed error
+            let errorMsg = error.message || "Please check the FastAPI server.";
+            
+            // If error has data, show it
+            if (error.data) {
+                errorMsg = JSON.stringify(error.data, null, 2);
             }
+
+            alert("Failed to add farmer.\n\n" + errorMsg);
         }
-    );
-
-
+    }
+);
 
 
     /* --------------------------------------------------------
