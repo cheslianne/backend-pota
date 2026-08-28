@@ -416,15 +416,33 @@ def get_all_submitted_reports(
     reports = (
         db.query(
             ReportSubmission,
-            RawPlantReport
+            RawPlantReport,
+            PlantingIntent,
+            User
         )
         .join(
             RawPlantReport,
             RawPlantReport.report_id
             == ReportSubmission.report_id
         )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            User,
+            User.user_id
+            == RawPlantReport.encoded_by
+        )
         .filter(
-        ReportSubmission.status == FOR_DA_RFO_VALIDATION
+            ReportSubmission.status
+            == FOR_DA_RFO_VALIDATION
         )
         .order_by(
             ReportSubmission.submitted_at.desc()
@@ -444,34 +462,25 @@ def get_all_submitted_reports(
                 or f"{getattr(report, 'commodity', 'Crop')} Harvest Report"
             ),
 
-            "commodity": getattr(
-                report,
-                "commodity",
-                None
+            "commodity": report.commodity,
+
+            "planting_date": report.planting_date,
+
+            # GET HARVEST DATE FROM PLANTING INTENT
+            "harvest_date": planting_intent.harvest_date,
+
+            "estimated_yield": report.estimated_yield,
+
+            "encoded_by": report.encoded_by,
+
+            "encoded_by_name": (
+                f"{user.first_name} {user.last_name}"
+                if user
+                else None
             ),
 
-            "planting_date": getattr(
-                report,
-                "planting_date",
-                None
-            ),
-
-            "estimated_yield": getattr(
-                report,
-                "estimated_yield",
-                None
-            ),
-
-            "encoded_by": getattr(
-                report,
-                "encoded_by",
-                None
-            ),
-
-            "municipal_coordinator_id": getattr(
-                report,
-                "municipal_coordinator_id",
-                None
+            "municipal_coordinator_id": (
+                report.municipal_coordinator_id
             ),
 
             "status": submission.status,
@@ -500,7 +509,8 @@ def get_all_submitted_reports(
                 submission.approved_at
             ),
         }
-        for submission, report in reports
+
+        for submission, report, planting_intent, user in reports
     ]
 # ============================================================
 # GET REPORTS FOR MUNICIPAL VALIDATION

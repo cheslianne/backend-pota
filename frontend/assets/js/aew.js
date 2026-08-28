@@ -2840,6 +2840,22 @@ document
     );
 
     /* ============================================================
+   EDIT PLANTING INTENT BUTTON
+============================================================ */
+
+document
+    .getElementById(
+        "editPlantingIntentBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            togglePlantingIntentEditMode();
+        }
+    );
+
+    /* ============================================================
    SUBMIT PLANTING INTENT → RAW PLANT REPORT
    FLOW:
    Planting Intent
@@ -3819,6 +3835,479 @@ function openPlantingIntentDetails(intent) {
         "detailRemarks",
         intent.remarks || ""
     );
+    
+    // ========================================================
+    // NEW: Reset Edit Mode
+    // ========================================================
+
+    window.isEditingPlantingIntent = false;
+
+    // Make all detail fields readonly
+    const detailInputs =
+        details.querySelectorAll(
+            "input, textarea"
+        );
+
+    detailInputs.forEach(
+        input => {
+            input.readOnly = true;
+            input.classList.add("input-readonly");
+            input.classList.remove("input-editable-active");
+        }
+    );
+
+    // Reset Edit button text
+    const editBtn =
+        document.getElementById(
+            "editPlantingIntentBtn"
+        );
+
+    if (editBtn) {
+        editBtn.textContent = "Edit Details";
+        editBtn.style.background = "#D97706";
+    }
+
+    // Show Confirm button
+    const confirmBtn =
+        document.getElementById(
+            "submitPlantingIntentBtn"
+        );
+
+    if (confirmBtn) {
+        confirmBtn.style.display = "inline-flex";
+    }
+}
+
+/* ============================================================
+   TOGGLE PLANTING INTENT EDIT MODE
+   ============================================================ 
+   ILAGAY DITO ANG CODE SA IBABA
+   ============================================================ */
+
+function togglePlantingIntentEditMode() {
+
+    const intent =
+        window.currentSelectedPlantingIntent;
+
+    if (!intent) {
+
+        alert(
+            "No planting intent selected."
+        );
+
+        return;
+    }
+
+    const details =
+        document.getElementById(
+            "plantingIntentDetailsSubview"
+        );
+
+    if (!details) {
+        return;
+    }
+
+    const editBtn =
+        document.getElementById(
+            "editPlantingIntentBtn"
+        );
+
+    const confirmBtn =
+        document.getElementById(
+            "submitPlantingIntentBtn"
+        );
+
+    const detailInputs =
+        details.querySelectorAll(
+            "input, textarea"
+        );
+
+    // Toggle edit mode
+    if (!window.isEditingPlantingIntent) {
+
+        // ====================================================
+        // ENTER EDIT MODE
+        // ====================================================
+
+        window.isEditingPlantingIntent = true;
+
+        // Make all fields editable EXCEPT ID fields
+        detailInputs.forEach(
+            input => {
+
+                const id =
+                    input.id;
+
+                // Keep ID fields readonly
+                if (
+                    id === "detailPlantingIntentId" ||
+                    id === "detailFarmerId"
+                ) {
+                    return;
+                }
+
+                input.readOnly = false;
+                input.classList.remove("input-readonly");
+                input.classList.add("input-editable-active");
+            }
+        );
+
+        // Change Edit button to Save
+        if (editBtn) {
+            editBtn.textContent = "💾 Save Changes";
+            editBtn.style.background = "#2E7D32"; // Green
+        }
+
+        // Hide Confirm button
+        if (confirmBtn) {
+            confirmBtn.style.display = "none";
+        }
+
+    } else {
+
+        // ====================================================
+        // SAVE CHANGES
+        // ====================================================
+
+        savePlantingIntentChanges();
+    }
+}
+
+/* ============================================================
+   SAVE PLANTING INTENT CHANGES
+   ============================================================ 
+   ILAGAY DITO ANG CODE SA IBABA
+   ============================================================ */
+/* ============================================================
+   SAVE PLANTING INTENT CHANGES
+============================================================ */
+
+async function savePlantingIntentChanges() {
+
+    const intent =
+        window.currentSelectedPlantingIntent;
+
+    if (!intent) {
+
+        alert(
+            "No planting intent selected."
+        );
+
+        return;
+    }
+
+    // ========================================================
+    // HELPER: Convert date from MM/DD/YYYY to YYYY-MM-DD
+    // ========================================================
+
+    function convertToAPIDate(dateString) {
+
+        if (!dateString) {
+            return "";
+        }
+
+        // Check if already in YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return dateString;
+        }
+
+        // Try to parse MM/DD/YYYY or M/D/YYYY
+        const dateParts = dateString.split('/');
+
+        if (dateParts.length === 3) {
+
+            let month = dateParts[0].trim();
+            let day = dateParts[1].trim();
+            let year = dateParts[2].trim();
+
+            // Pad month and day with leading zeros if needed
+            month = month.padStart(2, '0');
+            day = day.padStart(2, '0');
+
+            return `${year}-${month}-${day}`;
+        }
+
+        // Try using Date object as fallback
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
+
+        return dateString;
+    }
+
+    // ========================================================
+    // COLLECT UPDATED VALUES
+    // ========================================================
+
+    const rawPlantingDate =
+        document.getElementById(
+            "detailPlantingDate"
+        )?.value || intent.planting_date;
+
+    const rawHarvestDate =
+        document.getElementById(
+            "detailHarvestDate"
+        )?.value || intent.harvest_date;
+
+    const updatedData = {
+
+        planting_intent_id:
+            intent.planting_intent_id,
+
+        farmer_name:
+            document.getElementById(
+                "detailFarmerName"
+            )?.value || intent.farmer_name,
+
+        farmer_id:
+            intent.farmer_id,
+
+        commodity:
+            document.getElementById(
+                "detailCommodity"
+            )?.value || intent.commodity,
+
+        volume:
+            document.getElementById(
+                "detailVolume"
+            )?.value || intent.volume,
+
+        location:
+            document.getElementById(
+                "detailLocation"
+            )?.value || intent.location,
+
+        planting_date:
+            convertToAPIDate(rawPlantingDate),
+
+        harvest_date:
+            convertToAPIDate(rawHarvestDate),
+
+        remarks:
+            document.getElementById(
+                "detailRemarks"
+            )?.value || intent.remarks
+    };
+
+    console.log("=================================");
+    console.log("SAVING PLANTING INTENT CHANGES");
+    console.log("=================================");
+    console.log("Intent ID:", intent.planting_intent_id);
+    console.log("Updated data:", updatedData);
+
+    try {
+
+        // ====================================================
+        // VALIDATE REQUIRED FIELDS
+        // ====================================================
+
+        if (!updatedData.planting_date) {
+            alert("Planting date is required.");
+            return;
+        }
+
+        if (!updatedData.harvest_date) {
+            alert("Harvest date is required.");
+            return;
+        }
+
+        if (!updatedData.commodity) {
+            alert("Commodity is required.");
+            return;
+        }
+
+        // ====================================================
+        // PREPARE PAYLOAD
+        // ====================================================
+
+        const volumeValue =
+            String(updatedData.volume)
+                .replace(/,/g, "")
+                .replace(/kg/gi, "")
+                .trim();
+
+        const payload = {
+            farmer_id: Number(updatedData.farmer_id),
+            commodity: updatedData.commodity,
+            volume: Number(volumeValue) || 0,
+            planting_date: updatedData.planting_date,
+            harvest_date: updatedData.harvest_date,
+            remarks: updatedData.remarks || ""
+        };
+
+        console.log("Payload:", payload);
+
+        // ====================================================
+        // CONSTRUCT URL - TAMA ITO
+        // ====================================================
+
+        const url =
+            `${PLANTING_INTENTS_ENDPOINT}${intent.planting_intent_id}`;
+
+        console.log("PUT URL:", url);
+
+        // ====================================================
+        // GET AUTH TOKEN
+        // ====================================================
+
+        const token = getAuthToken();
+        console.log("Auth Token:", token ? "Present" : "Missing");
+
+        // ====================================================
+        // SEND PUT REQUEST
+        // ====================================================
+
+        const response = await fetch(url, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token ? `Bearer ${token}` : ""
+            },
+            body: JSON.stringify(payload)
+        });
+
+        console.log("Response status:", response.status);
+
+        // ====================================================
+        // PARSE RESPONSE
+        // ====================================================
+
+        let responseData = null;
+        const contentType = response.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+            responseData = await response.json();
+        } else {
+            responseData = await response.text();
+        }
+
+        console.log("Response data:", responseData);
+
+        // ====================================================
+        // CHECK IF SUCCESSFUL
+        // ====================================================
+
+        if (!response.ok) {
+
+            let errorMessage = `HTTP ${response.status}`;
+
+            if (responseData && typeof responseData === "object") {
+
+                if (responseData.detail) {
+                    errorMessage = responseData.detail;
+                } else if (responseData.message) {
+                    errorMessage = responseData.message;
+                } else {
+                    errorMessage = JSON.stringify(responseData);
+                }
+            } else if (typeof responseData === "string") {
+                errorMessage = responseData;
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        console.log("Planting intent updated:", responseData);
+
+        // ====================================================
+        // UPDATE LOCAL DATA
+        // ====================================================
+
+        intent.farmer_name = updatedData.farmer_name;
+        intent.commodity = updatedData.commodity;
+        intent.volume = updatedData.volume;
+        intent.location = updatedData.location;
+        intent.planting_date = updatedData.planting_date;
+        intent.harvest_date = updatedData.harvest_date;
+        intent.remarks = updatedData.remarks;
+
+        const index =
+            PLANTING_INTENTS_DATA.findIndex(
+                item =>
+                    item.planting_intent_id ===
+                    intent.planting_intent_id
+            );
+
+        if (index !== -1) {
+            PLANTING_INTENTS_DATA[index] = intent;
+        }
+
+        // ====================================================
+        // EXIT EDIT MODE
+        // ====================================================
+
+        window.isEditingPlantingIntent = false;
+
+        const details =
+            document.getElementById(
+                "plantingIntentDetailsSubview"
+            );
+
+        if (details) {
+            const inputs =
+                details.querySelectorAll(
+                    "input, textarea"
+                );
+
+            inputs.forEach(
+                input => {
+                    input.readOnly = true;
+                    input.classList.add("input-readonly");
+                    input.classList.remove("input-editable-active");
+                }
+            );
+        }
+
+        const editBtn =
+            document.getElementById(
+                "editPlantingIntentBtn"
+            );
+
+        if (editBtn) {
+            editBtn.textContent = "✏️ Edit";
+            editBtn.style.background = "#D97706";
+        }
+
+        const confirmBtn =
+            document.getElementById(
+                "submitPlantingIntentBtn"
+            );
+
+        if (confirmBtn) {
+            confirmBtn.style.display = "inline-flex";
+        }
+
+        await fetchPlantingIntents();
+
+        alert("Planting Intent updated successfully!");
+
+    } catch (error) {
+
+        console.error("=================================");
+        console.error("ERROR SAVING PLANTING INTENT");
+        console.error("=================================");
+        console.error("Error:", error);
+        console.error("Error message:", error.message);
+
+        // ====================================================
+        // SHOW MORE DETAILED ERROR
+        // ====================================================
+
+        let errorMessage = error.message || "Please check the FastAPI server.";
+
+        if (error.message === "Failed to fetch") {
+            errorMessage =
+                "Cannot connect to the server.\n\n" +
+                "Please make sure:\n" +
+                "1. FastAPI server is running on http://127.0.0.1:8000\n" +
+                "2. The endpoint is correct: " + url + "\n" +
+                "3. CORS is enabled in the backend\n" +
+                "4. You have a valid access token";
+        }
+
+        alert("Failed to update planting intent.\n\n" + errorMessage);
+    }
 }
 
 /* ============================================================
