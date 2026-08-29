@@ -44,11 +44,14 @@ def create_report_from_planting_intent(
             detail="Authentication required."
         )
 
+    # --------------------------------------------------------
+    # GET PLANTING INTENT
+    # --------------------------------------------------------
+
     planting_intent = (
         db.query(PlantingIntent)
         .filter(
-            PlantingIntent.planting_intent_id
-            == planting_intent_id
+            PlantingIntent.planting_intent_id == planting_intent_id
         )
         .first()
     )
@@ -58,6 +61,10 @@ def create_report_from_planting_intent(
             status_code=404,
             detail="Planting intent not found."
         )
+
+    # --------------------------------------------------------
+    # CHECK IF REPORT ALREADY EXISTS
+    # --------------------------------------------------------
 
     existing_link = (
         db.query(ReportPlantingIntent)
@@ -74,8 +81,9 @@ def create_report_from_planting_intent(
             detail="A report already exists for this planting intent."
         )
 
+    # --------------------------------------------------------
     # CREATE REPORT
-    # IMPORTANT: commodity comes from PlantingIntent
+    # --------------------------------------------------------
 
     db_report = RawPlantReport(
         commodity=planting_intent.commodity,
@@ -84,51 +92,6 @@ def create_report_from_planting_intent(
         municipal_coordinator_id=None,
         encoded_by=current_user.user_id,
     )
-
-    db.add(db_report)
-
-    db.flush()
-
-    # CREATE SUBMISSION
-
-    submission = ReportSubmission(
-        report_id=db_report.report_id,
-        status="DRAFT",
-        current_validator_id=None,
-        current_validator_role=None,
-        revision_remarks=None,
-        revision_count=0,
-    )
-
-    db.add(submission)
-
-    # LINK REPORT TO PLANTING INTENT
-
-    report_link = ReportPlantingIntent(
-        report_id=db_report.report_id,
-        planting_intent_id=planting_intent.planting_intent_id,
-    )
-
-    db.add(report_link)
-
-    db.commit()
-
-    db.refresh(db_report)
-    db.refresh(submission)
-
-    return {
-        "message": "Report created from planting intent successfully.",
-        "report_id": db_report.report_id,
-        "submission_id": submission.submission_id,
-        "status": submission.status,
-        "commodity": db_report.commodity,
-        "planting_date": db_report.planting_date,
-        "estimated_yield": db_report.estimated_yield,
-        "municipal_coordinator_id": (
-            db_report.municipal_coordinator_id
-        ),
-        "encoded_by": db_report.encoded_by,
-    }
 
     db.add(db_report)
 
@@ -151,6 +114,17 @@ def create_report_from_planting_intent(
     db.add(submission)
 
     # --------------------------------------------------------
+    # LINK REPORT TO PLANTING INTENT
+    # --------------------------------------------------------
+
+    report_link = ReportPlantingIntent(
+        report_id=db_report.report_id,
+        planting_intent_id=planting_intent.planting_intent_id,
+    )
+
+    db.add(report_link)
+
+    # --------------------------------------------------------
     # SAVE
     # --------------------------------------------------------
 
@@ -164,18 +138,22 @@ def create_report_from_planting_intent(
     # --------------------------------------------------------
 
     return {
-        "message": "Raw plant report created successfully.",
+        "message": "Report created from planting intent successfully.",
         "report_id": db_report.report_id,
         "submission_id": submission.submission_id,
         "status": submission.status,
+        "commodity": db_report.commodity,
         "planting_date": db_report.planting_date,
+
+        # IMPORTANT
+        "harvest_date": planting_intent.harvest_date,
+
         "estimated_yield": db_report.estimated_yield,
         "municipal_coordinator_id": (
             db_report.municipal_coordinator_id
         ),
         "encoded_by": db_report.encoded_by,
     }
-
 # ============================================================
 # UPDATE RAW PLANT REPORT
 # ============================================================
