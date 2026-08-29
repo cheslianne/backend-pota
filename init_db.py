@@ -1,3 +1,5 @@
+from sqlalchemy import text
+
 from src.core.database import Base, engine
 from src.models.audit_logs import AuditLog
 from src.models.buyer_registry import BuyerRegistry
@@ -15,6 +17,20 @@ from src.models.report_validation_history import ReportValidationHistory
 from src.models.users import User
 
 
+def ensure_planting_intent_columns():
+    with engine.begin() as connection:
+        connection.execute(text("""
+            ALTER TABLE planting_intents
+            ADD COLUMN IF NOT EXISTS notes TEXT;
+        """))
+
+        connection.execute(text("""
+            ALTER TABLE planting_intents
+            ADD COLUMN IF NOT EXISTS attachment_path VARCHAR(500);
+        """))
+
+
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
+    ensure_planting_intent_columns()
     print("Database tables are ready.")
