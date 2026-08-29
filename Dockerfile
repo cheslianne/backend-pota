@@ -6,7 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
-COPY seed_admin.py init_db.py start.sh ./
+COPY seed_*.py init_db.py start.sh ./
 COPY uploads ./uploads
 
 RUN chmod +x start.sh
