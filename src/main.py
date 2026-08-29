@@ -44,6 +44,7 @@ app.add_middleware(
         *(origin.strip() for origin in [settings.frontend_url or ""] if origin.strip()),
         "http://localhost:5500",
         "http://127.0.0.1:5500",
+        "https://esaka-frontend-production.up.railway.app",
     }),
     allow_credentials=True,
     allow_methods=["*"],
