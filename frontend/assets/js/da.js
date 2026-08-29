@@ -2245,184 +2245,6 @@ function initAlertThreshold() {
 
 }
 
-
-/* ============================================================
-   REPORTS
-============================================================ */
-
-function initReportsSection() {
-
-    const reportListSubview =
-        document.getElementById(
-            "reportListSubview"
-        );
-
-
-    const reportDetailSubview =
-        document.getElementById(
-            "reportDetailSubview"
-        );
-
-
-    const reportApprovedModal =
-        document.getElementById(
-            "reportApprovedModal"
-        );
-
-
-    const flagReportBtn =
-        document.getElementById(
-            "flagReportBtn"
-        );
-
-
-    const approveReportBtn =
-        document.getElementById(
-            "approveReportBtn"
-        );
-
-
-    const returnReportListBtn =
-        document.getElementById(
-            "returnReportListBtn"
-        );
-
-
-    const closeReportApprovedBtn =
-        document.getElementById(
-            "closeReportApprovedBtn"
-        );
-
-
-    /* --------------------------------------------
-       REPORT LIST
-    -------------------------------------------- */
-
-    document
-        .querySelectorAll(".report-item")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    reportListSubview?.classList.add(
-                        "hidden-element"
-                    );
-
-
-                    reportDetailSubview?.classList.remove(
-                        "hidden-element"
-                    );
-
-
-                    if (flagReportBtn) {
-
-                        flagReportBtn.classList.remove(
-                            "active"
-                        );
-
-
-                        flagReportBtn.textContent =
-                            "Flag for Revision";
-
-                    }
-
-                }
-            );
-
-        });
-
-
-    /* --------------------------------------------
-       RETURN TO REPORT LIST
-    -------------------------------------------- */
-
-    returnReportListBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportDetailSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-            reportListSubview?.classList.remove(
-                "hidden-element"
-            );
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       FLAG REPORT
-    -------------------------------------------- */
-
-    flagReportBtn?.addEventListener(
-        "click",
-        () => {
-
-            flagReportBtn.classList.toggle(
-                "active"
-            );
-
-
-            flagReportBtn.textContent =
-                flagReportBtn.classList.contains(
-                    "active"
-                )
-                    ? "Flagged"
-                    : "Flag for Revision";
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       APPROVE REPORT
-    -------------------------------------------- */
-
-    approveReportBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportApprovedModal?.classList.add(
-                "show"
-            );
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       CLOSE APPROVED MODAL
-    -------------------------------------------- */
-
-    closeReportApprovedBtn?.addEventListener(
-        "click",
-        () => {
-
-            reportApprovedModal?.classList.remove(
-                "show"
-            );
-
-
-            reportDetailSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-            reportListSubview?.classList.remove(
-                "hidden-element"
-            );
-
-        }
-    );
-
-}
-
-
 /* ============================================================
    MODAL LISTENERS
 ============================================================ */
@@ -2430,7 +2252,7 @@ function initReportsSection() {
 function initModalListeners() {
 
     /* --------------------------------------------
-       CLICK OUTSIDE MODAL
+       CLICK OUTSIDE MODAL TO CLOSE
     -------------------------------------------- */
 
     document
@@ -2474,7 +2296,6 @@ function initModalListeners() {
                             ".modal-overlay"
                         );
 
-
                     modal?.classList.remove(
                         "show"
                     );
@@ -2484,4 +2305,1534 @@ function initModalListeners() {
 
         });
 
+}
+/* ============================================================
+   REPORTS SECTION - COMPLETE WITH APPROVAL WORKFLOW
+============================================================ */
+
+function initReportsSection() {
+
+    const reportListSubview =
+        document.getElementById(
+            "reportListSubview"
+        );
+
+    const reportDetailSubview =
+        document.getElementById(
+            "reportDetailSubview"
+        );
+
+    const reportApprovedModal =
+        document.getElementById(
+            "reportApprovedModal"
+        );
+
+    const flagReportBtn =
+        document.getElementById(
+            "flagReportBtn"
+        );
+
+    const approveReportBtn =
+        document.getElementById(
+            "approveReportBtn"
+        );
+
+    const backToPendingBtn =
+        document.getElementById("backToPendingBtn");
+
+    const closeReportApprovedBtn =
+        document.getElementById(
+            "closeReportApprovedBtn"
+        );
+
+    const searchInput = document.getElementById("reportSearchInput");
+    const searchBtn = document.getElementById("reportSearchBtn");
+
+    // Store all reports for searching
+    let allReportsCache = [];
+    let currentSelectedReport = null;
+
+    // ============================================================
+    // LOAD REPORTS FROM API
+    // ============================================================
+    async function loadReports() {
+        const pendingReportsBody =
+            document.querySelector("#pendingReportsBody");
+
+        if (!pendingReportsBody) {
+            console.error("pendingReportsBody not found.");
+            return;
+        }
+
+        pendingReportsBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;">
+                    Loading reports...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/report-submissions/all-reports`,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                }
+            );
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    data.message ||
+                    `Failed to fetch reports: ${response.status}`
+                );
+            }
+
+            const reports = Array.isArray(data) ? data : [];
+
+            // Store all reports for search
+            allReportsCache = reports;
+
+            // Filter for DA validation
+            const daReports = reports.filter(report => {
+                const status =
+                    String(report.status || "")
+                        .trim()
+                        .toUpperCase();
+                return status === "FOR_DA_RFO_VALIDATION";
+            });
+
+            // Render the reports
+            renderReports(daReports);
+
+        } catch (error) {
+            console.error("LOAD DA REPORTS ERROR:", error);
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#C0392B;">
+                        Error loading reports:
+                        ${escapeHtml(error.message)}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // ============================================================
+    // RENDER REPORTS
+    // ============================================================
+    function renderReports(reportsToShow) {
+        const pendingReportsBody =
+            document.querySelector("#pendingReportsBody");
+
+        if (!pendingReportsBody) return;
+
+        if (reportsToShow.length === 0) {
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#666;">
+                        No reports awaiting DA-RFO validation.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        pendingReportsBody.innerHTML = "";
+
+        reportsToShow.forEach(report => {
+            const row = document.createElement("tr");
+            row.className = "clickable-row";
+
+            // Format dates
+            const plantingDate = report.planting_date 
+                ? new Date(report.planting_date).toLocaleDateString('en-PH')
+                : 'N/A';
+            const harvestDate = report.harvest_date 
+                ? new Date(report.harvest_date).toLocaleDateString('en-PH')
+                : 'N/A';
+
+            row.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.report_id ??
+                            report.submission_id ??
+                            "N/A"
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.commodity || "N/A"
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(plantingDate)}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(harvestDate)}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${
+                            report.estimated_yield != null
+                                ? escapeHtml(
+                                    String(report.estimated_yield)
+                                ) + " kg"
+                                : "N/A"
+                        }
+                    </span>
+                </td>
+                <td>
+                    <span class="status-pill pending">
+                        ${escapeHtml(
+                            report.status || "PENDING"
+                        )}
+                    </span>
+                </td>
+            `;
+
+            row.addEventListener("click", () => {
+                console.log("Selected DA report:", report);
+                currentSelectedReport = report;
+                showReportDetail(report);
+            });
+
+            pendingReportsBody.appendChild(row);
+        });
+    }
+
+    // ============================================================
+    // SEARCH FUNCTION
+    // ============================================================
+    function performSearch() {
+        if (!searchInput) return;
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        // Filter only FOR_DA_RFO_VALIDATION reports
+        const daReports = allReportsCache.filter(report => {
+            const status =
+                String(report.status || "")
+                    .trim()
+                    .toUpperCase();
+            return status === "FOR_DA_RFO_VALIDATION";
+        });
+
+        if (!searchTerm) {
+            renderReports(daReports);
+            return;
+        }
+
+        // Search across multiple fields
+        const filtered = daReports.filter(report => {
+            const searchableFields = [
+                report.report_id,
+                report.submission_id,
+                report.commodity,
+                report.planting_date,
+                report.harvest_date,
+                report.status,
+                report.encoded_by_name,
+                String(report.estimated_yield)
+            ];
+
+            return searchableFields.some(field => {
+                if (field === null || field === undefined) return false;
+                return String(field).toLowerCase().includes(searchTerm);
+            });
+        });
+
+        renderReports(filtered);
+    }
+
+    // ============================================================
+    // SHOW REPORT DETAIL
+    // ============================================================
+    function showReportDetail(report) {
+        // Hide list, show detail
+        reportListSubview?.classList.add('hidden-element');
+        reportDetailSubview?.classList.remove('hidden-element');
+
+        // Store report data
+        reportDetailSubview.dataset.reportId = report.report_id;
+        reportDetailSubview.dataset.submissionId = report.submission_id;
+        currentSelectedReport = report;
+
+        // Populate table with report data
+        const tbody = document.querySelector('#reportDetailSubview table tbody');
+
+        if (tbody) {
+            // Format dates
+            const plantingDate = report.planting_date 
+                ? new Date(report.planting_date).toLocaleDateString('en-PH')
+                : 'N/A';
+            const harvestDate = report.harvest_date 
+                ? new Date(report.harvest_date).toLocaleDateString('en-PH')
+                : 'N/A';
+
+            tbody.innerHTML = `
+                <tr>
+                    <td>
+                        <span class="pill">
+                            ${escapeHtml(
+                                report.report_id ??
+                                report.submission_id ??
+                                'N/A'
+                            )}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill">
+                            ${escapeHtml(
+                                report.commodity || 'N/A'
+                            )}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill">
+                            ${escapeHtml(plantingDate)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill">
+                            ${escapeHtml(harvestDate)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill">
+                            ${
+                                report.estimated_yield != null
+                                    ? escapeHtml(
+                                        String(report.estimated_yield)
+                                    ) + ' kg'
+                                    : 'N/A'
+                            }
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill">
+                            ${escapeHtml(
+                                report.encoded_by_name || 'N/A'
+                            )}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-pill pending">
+                            ${escapeHtml(
+                                report.status || 'Pending'
+                            )}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Clear notes/remarks textarea
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        if (notesTextarea) {
+            notesTextarea.value = '';
+            notesTextarea.placeholder = 'Enter provincial feedback or revision notes...';
+        }
+
+        // Reset flag button
+        if (flagReportBtn) {
+            flagReportBtn.classList.remove('active');
+            flagReportBtn.textContent = 'Flag for Revision';
+            flagReportBtn.disabled = false;
+        }
+
+        // Reset approve button
+        if (approveReportBtn) {
+            approveReportBtn.disabled = false;
+            approveReportBtn.textContent = 'Approve & Escalate';
+        }
+
+        // Show remarks required indicator
+        const remarksRequired = document.querySelector('.remarks-required');
+        if (remarksRequired) {
+            remarksRequired.style.display = 'block';
+        }
+    }
+
+    // ============================================================
+    // GET CURRENT USER ID
+    // ============================================================
+    function getCurrentUserId() {
+        const userId = localStorage.getItem('user_id') || 
+                       localStorage.getItem('userId') ||
+                       localStorage.getItem('id');
+        
+        if (!userId) {
+            console.error('No user_id found in localStorage.');
+            return null;
+        }
+        
+        return userId;
+    }
+
+    // ============================================================
+    // APPROVE & ESCALATE REPORT
+    // ============================================================
+    async function approveReport() {
+        const reportId = reportDetailSubview?.dataset.reportId;
+        
+        if (!reportId) {
+            alert('No report selected.');
+            return;
+        }
+
+        // Get remarks from textarea
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        const remarks = notesTextarea?.value?.trim();
+
+        // Validate remarks
+        if (!remarks || remarks.length < 10) {
+            alert('Please provide detailed remarks (at least 10 characters) before approving.');
+            if (notesTextarea) {
+                notesTextarea.focus();
+                notesTextarea.style.borderColor = '#C0392B';
+                setTimeout(() => {
+                    notesTextarea.style.borderColor = '';
+                }, 3000);
+            }
+            return;
+        }
+
+        // Get current user ID
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+            alert('User ID not found. Please login again.');
+            return;
+        }
+
+        const approveBtn = approveReportBtn;
+        const originalText = approveBtn?.textContent;
+
+        try {
+            if (approveBtn) {
+                approveBtn.disabled = true;
+                approveBtn.textContent = '⏳ Approving...';
+            }
+
+            // Build query parameters
+            const params = new URLSearchParams({
+                validator_id: userId,
+                validator_role: "darfo",
+                remarks: remarks
+            });
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/report-submissions/${reportId}/approve?${params.toString()}`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders(false)
+                }
+            );
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || 
+                    data.message || 
+                    'Failed to approve report'
+                );
+            }
+
+            console.log('✅ Report approved and escalated:', data);
+
+            // Show success modal
+            reportApprovedModal?.classList.add('show');
+
+            // Update the success message with the new status
+            const successMessage = document.querySelector('#reportApprovedModal .modal-body p');
+            if (successMessage) {
+                successMessage.innerHTML = `
+                    <strong>✅ Report #${escapeHtml(reportId)}</strong> has been 
+                    <span style="color: #27AE60; font-weight: bold;">APPROVED</span> and 
+                    <span style="color: #2980B9; font-weight: bold;">ESCALATED</span> 
+                    to Regional Office for further validation.
+                    <br><br>
+                    <small style="color: #7F8C8D;">
+                        Status changed from FOR_DA_RFO_VALIDATION → FOR_REGIONAL_VALIDATION
+                    </small>
+                `;
+            }
+
+            // Update the status badge in detail view
+            const statusBadge = document.querySelector('#reportDetailSubview .status-pill');
+            if (statusBadge) {
+                statusBadge.textContent = 'FOR_REGIONAL_VALIDATION';
+                statusBadge.className = 'status-pill approved';
+            }
+
+            // Refresh reports list in background
+            await loadReports();
+
+        } catch (error) {
+            console.error('❌ APPROVE REPORT ERROR:', error);
+            alert('❌ ' + (error.message || 'Failed to approve report. Please try again.'));
+        } finally {
+            if (approveBtn) {
+                approveBtn.disabled = false;
+                approveBtn.textContent = originalText || 'Approve & Escalate';
+            }
+        }
+    }
+
+    // ============================================================
+    // FLAG REPORT FOR REVISION
+    // ============================================================
+    async function flagReport() {
+        const reportId = reportDetailSubview?.dataset.reportId;
+
+        if (!reportId) {
+            alert('No report selected.');
+            return;
+        }
+
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        const remarks = notesTextarea?.value?.trim();
+
+        if (!remarks || remarks.length < 10) {
+            alert('Please provide detailed revision remarks (at least 10 characters).');
+            if (notesTextarea) {
+                notesTextarea.focus();
+                notesTextarea.style.borderColor = '#C0392B';
+                setTimeout(() => {
+                    notesTextarea.style.borderColor = '';
+                }, 3000);
+            }
+            return;
+        }
+
+        const userId = getCurrentUserId();
+
+        if (!userId) {
+            alert('User ID not found. Please login again.');
+            return;
+        }
+
+        const flagBtn = flagReportBtn;
+        const originalText = flagBtn?.textContent;
+
+        try {
+            if (flagBtn) {
+                flagBtn.disabled = true;
+                flagBtn.textContent = '⏳ Flagging...';
+            }
+
+            const params = new URLSearchParams({
+                validator_id: userId,
+                validator_role: "darfo",
+                remarks: remarks
+            });
+
+            const response = await fetch(
+                `${API_BASE_URL}/api/report-submissions/${reportId}/revision?${params.toString()}`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders(false)
+                }
+            );
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    data.message ||
+                    'Failed to flag report.'
+                );
+            }
+
+            console.log('📌 Report flagged for revision:', data);
+
+            alert('📌 Report flagged for revision successfully!');
+
+            // Return to report list
+            reportDetailSubview?.classList.add('hidden-element');
+            reportListSubview?.classList.remove('hidden-element');
+
+            // Refresh reports
+            await loadReports();
+
+        } catch (error) {
+            console.error('❌ FLAG REPORT ERROR:', error);
+            alert('❌ ' + (error.message || 'Failed to flag report.'));
+        } finally {
+            if (flagBtn) {
+                flagBtn.disabled = false;
+                flagBtn.textContent = originalText || 'Flag for Revision';
+            }
+        }
+    }
+
+    // ============================================================
+    // RETURN TO REPORT LIST
+    // ============================================================
+    function returnToReportList() {
+        reportDetailSubview?.classList.add('hidden-element');
+        reportListSubview?.classList.remove('hidden-element');
+        currentSelectedReport = null;
+        loadReports();
+    }
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+
+    // Search events
+    searchBtn?.addEventListener("click", performSearch);
+    searchInput?.addEventListener("keyup", (event) => {
+        if (event.key === "Enter") {
+            performSearch();
+        }
+    });
+
+    // Load reports when view is shown
+    const viewReports = document.getElementById('view-reports');
+    const observer = new MutationObserver(() => {
+        if (viewReports?.classList.contains('active-view')) {
+            loadReports();
+        }
+    });
+    if (viewReports) {
+        observer.observe(viewReports, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Load reports if view is already active
+    if (viewReports?.classList.contains('active-view')) {
+        loadReports();
+    }
+
+    // Back to pending button
+    backToPendingBtn?.addEventListener('click', returnToReportList);
+
+    // Flag report button
+    flagReportBtn?.addEventListener('click', flagReport);
+
+    // Approve report button
+    approveReportBtn?.addEventListener('click', approveReport);
+
+    // Close approved modal - with proper return to list
+    closeReportApprovedBtn?.addEventListener('click', () => {
+        reportApprovedModal?.classList.remove('show');
+        returnToReportList();
+    });
+
+    // Click outside modal to close
+    reportApprovedModal?.addEventListener('click', (event) => {
+        if (event.target === reportApprovedModal) {
+            reportApprovedModal.classList.remove('show');
+            returnToReportList();
+        }
+    });
+
+    // Submit Report button
+    const submitReportBtn = document.querySelector('.actions-right .btn-outline-report');
+    submitReportBtn?.addEventListener('click', () => {
+        window.location.href = '/create-report.html';
+    });
+
+    // Real-time validation for remarks textarea
+    const remarksTextarea = document.querySelector('#reportDetailSubview textarea');
+    if (remarksTextarea) {
+        remarksTextarea.addEventListener('input', () => {
+            const length = remarksTextarea.value.trim().length;
+            const charCount = document.querySelector('.char-count');
+            if (charCount) {
+                charCount.textContent = `${length}/10 characters minimum`;
+                charCount.style.color = length >= 10 ? '#27AE60' : '#C0392B';
+            }
+            // Toggle button states based on remarks length
+            if (approveReportBtn) {
+                approveReportBtn.disabled = length < 10;
+            }
+            if (flagReportBtn) {
+                flagReportBtn.disabled = length < 10;
+            }
+        });
+    }
+
+    console.log('✅ Reports section initialized with approval workflow');
+}
+
+/* ============================================================
+   REPORTS
+============================================================ */
+
+function initReportsSection() {
+
+    const reportListSubview =
+        document.getElementById(
+            "reportListSubview"
+        );
+
+    const reportDetailSubview =
+        document.getElementById(
+            "reportDetailSubview"
+        );
+
+    const reportApprovedModal =
+        document.getElementById(
+            "reportApprovedModal"
+        );
+
+    const flagReportBtn =
+        document.getElementById(
+            "flagReportBtn"
+        );
+
+    const approveReportBtn =
+        document.getElementById(
+            "approveReportBtn"
+        );
+
+    const backToPendingBtn =
+    document.getElementById("backToPendingBtn");
+
+    const closeReportApprovedBtn =
+        document.getElementById(
+            "closeReportApprovedBtn"
+        );
+
+    // ============================================================
+    // SEARCH FUNCTIONALITY - ADD THIS SECTION
+    // ============================================================
+    const searchInput = document.getElementById("reportSearchInput");
+    const searchBtn = document.getElementById("reportSearchBtn");
+
+    // Store all reports for searching
+    let allReportsCache = [];
+
+    // Modified loadReports to store data for search
+    async function loadReports() {
+        const pendingReportsBody =
+            document.querySelector("#pendingReportsBody");
+
+        if (!pendingReportsBody) {
+            console.error("pendingReportsBody not found.");
+            return;
+        }
+
+        pendingReportsBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center;">
+                    Loading reports...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/report-submissions/all-reports`,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                }
+            );
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    data.message ||
+                    `Failed to fetch reports: ${response.status}`
+                );
+            }
+
+            const reports = Array.isArray(data) ? data : [];
+
+            // Store all reports for search
+            allReportsCache = reports;
+
+            // Filter for DA validation
+            const daReports = reports.filter(report => {
+                const status =
+                    String(report.status || "")
+                        .trim()
+                        .toUpperCase();
+                return status === "FOR_DA_RFO_VALIDATION";
+            });
+
+            // Render the reports
+            renderReports(daReports);
+
+        } catch (error) {
+            console.error("LOAD DA REPORTS ERROR:", error);
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#C0392B;">
+                        Error loading reports:
+                        ${escapeHtml(error.message)}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // ============================================================
+    // RENDER REPORTS (reusable function)
+    // ============================================================
+    function renderReports(reportsToShow) {
+        const pendingReportsBody =
+            document.querySelector("#pendingReportsBody");
+
+        if (!pendingReportsBody) return;
+
+        if (reportsToShow.length === 0) {
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#666;">
+                        No reports awaiting DA-RFO validation.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        pendingReportsBody.innerHTML = "";
+
+        reportsToShow.forEach(report => {
+            const row = document.createElement("tr");
+            row.className = "clickable-row";
+
+            row.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.report_id ??
+                            report.submission_id ??
+                            "N/A"
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.title ||
+                            `${report.commodity || "Crop"} Harvest Report`
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.commodity || "N/A"
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.planting_date || "N/A"
+                        )}
+                    </span>
+                </td>
+                <td>
+                    <span class="pill">
+                        ${
+                            report.estimated_yield != null
+                                ? escapeHtml(
+                                    String(report.estimated_yield)
+                                ) + " kg"
+                                : "N/A"
+                        }
+                    </span>
+                </td>
+                <td>
+                    <span class="status-pill approved">
+                        ${escapeHtml(
+                            report.status || "N/A"
+                        )}
+                    </span>
+                </td>
+            `;
+
+            row.addEventListener("click", () => {
+                console.log("Selected DA report:", report);
+                showReportDetail(report);
+            });
+
+            pendingReportsBody.appendChild(row);
+        });
+    }
+
+    // ============================================================
+    // SEARCH FUNCTION
+    // ============================================================
+    function performSearch() {
+        if (!searchInput) return;
+
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        // Filter only FOR_DA_RFO_VALIDATION reports
+        const daReports = allReportsCache.filter(report => {
+            const status =
+                String(report.status || "")
+                    .trim()
+                    .toUpperCase();
+            return status === "FOR_DA_RFO_VALIDATION";
+        });
+
+        if (!searchTerm) {
+            // Show all reports if search is empty
+            renderReports(daReports);
+            return;
+        }
+
+        // Search across multiple fields
+        const filtered = daReports.filter(report => {
+            const searchableFields = [
+                report.report_id,
+                report.submission_id,
+                report.title,
+                report.commodity,
+                report.planting_date,
+                report.harvest_date,
+                report.status,
+                report.encoded_by_name,
+                String(report.estimated_yield)
+            ];
+
+            return searchableFields.some(field => {
+                if (field === null || field === undefined) return false;
+                return String(field).toLowerCase().includes(searchTerm);
+            });
+        });
+
+        renderReports(filtered);
+    }
+
+    // ============================================================
+    // SEARCH EVENT LISTENERS
+    // ============================================================
+    
+    // Search on button click
+    searchBtn?.addEventListener("click", performSearch);
+
+    // Search on Enter key press
+    searchInput?.addEventListener("keyup", (event) => {
+        if (event.key === "Enter") {
+            performSearch();
+        }
+    });
+
+    // Optional: Real-time search as user types (uncomment if desired)
+    // searchInput?.addEventListener("input", performSearch);
+
+// ------------------------------------------------------------
+// LOAD REPORTS FROM API
+// ------------------------------------------------------------
+// ------------------------------------------------------------
+// LOAD DA REPORTS
+// ONLY REPORTS WITH STATUS = FOR_DA_VALIDATION
+// ------------------------------------------------------------
+
+async function loadReports() {
+    const pendingReportsBody =
+        document.querySelector("#pendingReportsBody");
+
+    if (!pendingReportsBody) {
+        console.error("pendingReportsBody not found.");
+        return;
+    }
+
+    // Loading state
+    pendingReportsBody.innerHTML = `
+        <tr>
+            <td colspan="6" style="text-align:center;">
+                Loading reports...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/report-submissions/all-reports`,
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        const data = await parseResponse(response);
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                data.message ||
+                `Failed to fetch reports: ${response.status}`
+            );
+        }
+
+        // Make sure response is an array
+        const reports = Array.isArray(data)
+            ? data
+            : [];
+
+        // ----------------------------------------------------
+        // IMPORTANT:
+        // ONLY SHOW FOR_DA_VALIDATION
+        // ----------------------------------------------------
+
+        const daReports = reports.filter(report => {
+
+            const status =
+                String(report.status || "")
+                    .trim()
+                    .toUpperCase();
+
+            return status === "FOR_DA_RFO_VALIDATION";
+        });
+
+        console.log("ALL REPORTS:", reports);
+        console.log("DA VALIDATION REPORTS:", daReports);
+
+        // ----------------------------------------------------
+        // NO REPORTS
+        // ----------------------------------------------------
+
+        if (daReports.length === 0) {
+
+            pendingReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="6"
+                        style="text-align:center; padding:30px; color:#666;">
+                        No reports awaiting DA-RFO validation.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        // ----------------------------------------------------
+        // DISPLAY REPORTS
+        // ----------------------------------------------------
+
+        pendingReportsBody.innerHTML = "";
+
+        daReports.forEach(report => {
+
+            const row =
+                document.createElement("tr");
+
+            row.className = "clickable-row";
+
+            row.innerHTML = `
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.report_id ??
+                            report.submission_id ??
+                            "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.title ||
+                            `${report.commodity || "Crop"} Harvest Report`
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.commodity || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${escapeHtml(
+                            report.planting_date || "N/A"
+                        )}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="pill">
+                        ${
+                            report.estimated_yield != null
+                                ? escapeHtml(
+                                    String(report.estimated_yield)
+                                ) + " kg"
+                                : "N/A"
+                        }
+                    </span>
+                </td>
+
+                <td>
+                    <span class="status-pill approved">
+                        ${escapeHtml(
+                            report.status || "N/A"
+                        )}
+                    </span>
+                </td>
+            `;
+
+            // ------------------------------------------------
+            // CLICK REPORT
+            // ------------------------------------------------
+
+            row.addEventListener("click", () => {
+
+                console.log(
+                    "Selected DA report:",
+                    report
+                );
+
+                showReportDetail(report);
+            });
+
+            pendingReportsBody.appendChild(row);
+        });
+
+    } catch (error) {
+
+        console.error(
+            "LOAD DA REPORTS ERROR:",
+            error
+        );
+
+        pendingReportsBody.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    style="text-align:center; padding:30px; color:#C0392B;">
+                    Error loading reports:
+                    ${escapeHtml(error.message)}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+    // ------------------------------------------------------------
+    // SHOW REPORT DETAIL
+    // ------------------------------------------------------------
+// ------------------------------------------------------------
+// SHOW REPORT DETAIL
+// ------------------------------------------------------------
+
+    function showReportDetail(report) {
+        // Hide list, show detail
+        reportListSubview?.classList.add('hidden-element');
+        reportDetailSubview?.classList.remove('hidden-element');
+
+        // Store report ID
+        reportDetailSubview.dataset.reportId = report.report_id;
+        reportDetailSubview.dataset.submissionId = report.submission_id;
+
+      // Populate table with report data
+const tbody = document.querySelector('#reportDetailSubview table tbody');
+
+if (tbody) {
+    tbody.innerHTML = `
+        <tr>
+
+            <!-- REPORT ID -->
+            <td>
+                <span class="pill">
+                    ${escapeHtml(
+                        report.report_id ||
+                        report.submission_id ||
+                        'N/A'
+                    )}
+                </span>
+            </td>
+
+            <!-- COMMODITY -->
+            <td>
+                <span class="pill">
+                    ${escapeHtml(
+                        report.commodity || 'N/A'
+                    )}
+                </span>
+            </td>
+
+            <!-- PLANTING DATE -->
+            <td>
+                <span class="pill">
+                    ${escapeHtml(
+                        report.planting_date || 'N/A'
+                    )}
+                </span>
+            </td>
+
+            <!-- HARVEST DATE -->
+            <td>
+                <span class="pill">
+                    ${escapeHtml(
+                        report.harvest_date || 'N/A'
+                    )}
+                </span>
+            </td>
+
+            <!-- ESTIMATED YIELD -->
+            <td>
+                <span class="pill">
+                    ${
+                        report.estimated_yield != null
+                            ? escapeHtml(
+                                String(report.estimated_yield)
+                            ) + ' kg'
+                            : 'N/A'
+                    }
+                </span>
+            </td>
+
+            <!-- ENCODED BY -->
+            <td>
+                <span class="pill">
+                    ${escapeHtml(
+                        report.encoded_by_name || 'N/A'
+                    )}
+                </span>
+            </td>
+
+            <!-- STATUS -->
+            <td>
+                <span class="status-pill approved">
+                    ${escapeHtml(
+                        report.status || 'Pending'
+                    )}
+                </span>
+            </td>
+
+        </tr>
+    `;
+}
+        // Clear notes textarea
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        if (notesTextarea) {
+            notesTextarea.value = '';
+        }
+
+        // Reset flag button
+        if (flagReportBtn) {
+            flagReportBtn.classList.remove('active');
+            flagReportBtn.textContent = 'Flag for Revision';
+        }
+    }
+
+    // ------------------------------------------------------------
+    // APPROVE REPORT
+    // ------------------------------------------------------------
+
+    async function approveReport() {
+        const reportId = reportDetailSubview?.dataset.reportId;
+        
+        if (!reportId) {
+            alert('No report selected.');
+            return;
+        }
+
+        // Get current user ID from localStorage
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+            alert('User ID not found. Please login again.');
+            return;
+        }
+
+        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
+        const remarks = notesTextarea?.value || null;
+
+        const approveBtn = approveReportBtn;
+        const originalText = approveBtn?.textContent;
+
+        try {
+            if (approveBtn) {
+                approveBtn.disabled = true;
+                approveBtn.textContent = 'Approving...';
+            }
+
+           const params = new URLSearchParams({
+    validator_id: userId,
+    validator_role: "darfo"
+});
+
+if (remarks) {
+    params.append("remarks", remarks);
+}
+
+const response = await fetch(
+    `${API_BASE_URL}/api/report-submissions/${reportId}/approve?${params.toString()}`,
+    {
+        method: "POST",
+        headers: getAuthHeaders(false)
+    }
+);
+
+            const data = await parseResponse(response);
+
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || 'Failed to approve report');
+            }
+
+            console.log('Report approved:', data);
+
+            // Show success modal
+            reportApprovedModal?.classList.add('show');
+
+            // Refresh reports list
+            await loadReports();
+
+        } catch (error) {
+            console.error('APPROVE REPORT ERROR:', error);
+            alert(error.message || 'Failed to approve report');
+        } finally {
+            if (approveBtn) {
+                approveBtn.disabled = false;
+                approveBtn.textContent = originalText || 'Approve';
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // FLAG REPORT FOR REVISION
+    // ------------------------------------------------------------
+async function flagReport() {
+
+    const reportId =
+        reportDetailSubview?.dataset.reportId;
+
+    if (!reportId) {
+        alert("No report selected.");
+        return;
+    }
+
+    const notesTextarea =
+        document.querySelector(
+            "#reportDetailSubview textarea"
+        );
+
+    const remarks =
+        notesTextarea?.value?.trim();
+
+    if (!remarks) {
+        alert(
+            "Please provide revision remarks in the notes field."
+        );
+        return;
+    }
+
+    const userId =
+        getCurrentUserId();
+
+    if (!userId) {
+        alert(
+            "User ID not found. Please login again."
+        );
+        return;
+    }
+
+    const flagBtn =
+        flagReportBtn;
+
+    const originalText =
+        flagBtn?.textContent;
+
+    try {
+
+        if (flagBtn) {
+            flagBtn.disabled = true;
+            flagBtn.textContent = "Flagging...";
+        }
+
+        /* QUERY PARAMETERS */
+        const params =
+            new URLSearchParams({
+                validator_id: userId,
+                validator_role: "darfo",
+                remarks: remarks
+            });
+
+        /* POST REQUEST */
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/report-submissions/${reportId}/revision?${params.toString()}`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders(false)
+                }
+            );
+
+        const data =
+            await parseResponse(response);
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                data.message ||
+                "Failed to flag report."
+            );
+        }
+
+        console.log(
+            "Report flagged for revision:",
+            data
+        );
+
+        alert(
+            "Report flagged for revision successfully!"
+        );
+
+        /* RETURN TO REPORT LIST */
+        reportDetailSubview?.classList.add(
+            "hidden-element"
+        );
+
+        reportListSubview?.classList.remove(
+            "hidden-element"
+        );
+
+        /* REFRESH REPORTS */
+        await loadReports();
+
+    } catch (error) {
+
+        console.error(
+            "FLAG REPORT ERROR:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Failed to flag report."
+        );
+
+    } finally {
+
+        if (flagBtn) {
+            flagBtn.disabled = false;
+            flagBtn.textContent =
+                originalText ||
+                "Flag for Revision";
+        }
+
+    }
+}
+
+    // ------------------------------------------------------------
+    // GET CURRENT USER ID
+    // ------------------------------------------------------------
+
+    function getCurrentUserId() {
+    const userId = localStorage.getItem('user_id');
+
+    if (!userId) {
+        console.error('No user_id found in localStorage.');
+        return null;
+    }
+
+    return userId;
+}
+
+    // ------------------------------------------------------------
+    // EVENT LISTENERS
+    // ------------------------------------------------------------
+
+    // Load reports when view is shown
+    // Since reports view might not be the default view, we need to 
+    // listen for navigation to reports view
+    const viewReports = document.getElementById('view-reports');
+    const observer = new MutationObserver(() => {
+        if (viewReports?.classList.contains('active-view')) {
+            loadReports();
+        }
+    });
+    if (viewReports) {
+        observer.observe(viewReports, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Also load reports when page loads if reports view is active
+    if (viewReports?.classList.contains('active-view')) {
+        loadReports();
+    }
+
+    // Override existing report item click events - remove old listeners
+    // The new dynamic buttons will handle their own clicks
+
+    // Return to report list
+    
+
+    // Flag report button
+    flagReportBtn?.addEventListener(
+        "click",
+        flagReport
+    );
+
+    // Approve report button
+    approveReportBtn?.addEventListener(
+        "click",
+        approveReport
+    );
+
+    // Close approved modal
+    closeReportApprovedBtn?.addEventListener(
+        "click",
+        () => {
+            reportApprovedModal?.classList.remove('show');
+            reportDetailSubview?.classList.add('hidden-element');
+            reportListSubview?.classList.remove('hidden-element');
+            loadReports(); // Refresh list
+        }
+    );
+
+    // Submit Report button - redirect to create report page
+    const submitReportBtn = document.querySelector('.actions-right .btn-outline-report');
+    submitReportBtn?.addEventListener('click', () => {
+        window.location.href = '/create-report.html';
+    });
+
+    
+    // ============================================================
+    // BACK TO PENDING BUTTON - PLACE HERE
+    // ============================================================
+    backToPendingBtn?.addEventListener(
+        "click",
+        () => {
+
+            // Hide report details
+            reportDetailSubview?.classList.add(
+                "hidden-element"
+            );
+
+            // Show report list
+            reportListSubview?.classList.remove(
+                "hidden-element"
+            );
+
+            // Refresh reports list
+            loadReports();
+        }
+    );
+    
 }

@@ -31,6 +31,9 @@ class PlantingIntent(Base):
     volume = Column(DECIMAL(10, 2), nullable=False)
     remarks = Column(Text, nullable=True)
 
+    notes = Column(Text, nullable=True)  # NEW FIELD
+    attachment_path = Column(String(500), nullable=True)  # NEW FIELD
+
     created_at = Column(
         TIMESTAMP,
         server_default=text("CURRENT_TIMESTAMP"),

@@ -325,247 +325,6 @@ def approve_report(
         ),
     }
     
-@router.post("/{report_id}/approve")
-def approve_report(
-    report_id: int,
-    validator_id: int,
-    validator_role: str,
-    remarks: str | None = None,
-    db: Session = Depends(get_db),
-):
-    submission = (
-        db.query(ReportSubmission)
-        .filter(
-            ReportSubmission.report_id == report_id
-        )
-        .first()
-    )
-
-    if not submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Report submission not found."
-        )
-
-    # --------------------------------------------------------
-    # MUNICIPAL APPROVAL
-    # --------------------------------------------------------
-
-    if validator_role == "municipal_coordinator":
-
-        if submission.status != FOR_MUNICIPAL_VALIDATION:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Report is not awaiting "
-                    "municipal validation."
-                )
-            )
-
-        submission.status = FOR_PROVINCIAL_VALIDATION
-
-        submission.current_validator_id = None
-
-        submission.current_validator_role = (
-            "provincial_coordinator"
-        )
-
-    # --------------------------------------------------------
-    # PROVINCIAL APPROVAL
-    # --------------------------------------------------------
-
-    elif validator_role == "provincial_coordinator":
-
-        if submission.status != FOR_PROVINCIAL_VALIDATION:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Report is not awaiting "
-                    "provincial validation."
-                )
-            )
-
-        submission.status = FOR_DA_RFO_VALIDATION
-
-        submission.current_validator_id = None
-
-        submission.current_validator_role = "darfo"
-
-    # --------------------------------------------------------
-    # DA-RFO FINAL APPROVAL
-    # --------------------------------------------------------
-
-    elif validator_role == "darfo":
-
-        if submission.status != FOR_DA_RFO_VALIDATION:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Report is not awaiting "
-                    "DA-RFO validation."
-                )
-            )
-
-        submission.status = FINAL_APPROVED
-
-        submission.current_validator_id = None
-
-        submission.current_validator_role = None
-
-        submission.approved_at = datetime.utcnow()
-
-    else:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid validator role."
-        )
-
-    # --------------------------------------------------------
-    # ADD VALIDATION HISTORY
-    # --------------------------------------------------------
-
-    history = ReportValidationHistory(
-        submission_id=submission.submission_id,
-        action="APPROVED",
-        performed_by=validator_id,
-        role=validator_role,
-        remarks=remarks,
-    )
-
-    db.add(history)
-
-    db.commit()
-    db.refresh(submission)
-
-    return {
-        "message": "Report approved successfully.",
-        "report_id": report_id,
-        "status": submission.status,
-        "current_validator_id": (
-            submission.current_validator_id
-        ),
-        "current_validator_role": (
-            submission.current_validator_role
-        ),
-    }
-
-
-# ============================================================
-# REQUEST REVISION
-# ============================================================
-
-@router.post("/{report_id}/revision")
-def request_revision(
-    report_id: int,
-    validator_id: int,
-    validator_role: str,
-    remarks: str,
-    db: Session = Depends(get_db),
-):
-    # --------------------------------------------------------
-    # CHECK REMARKS
-    # --------------------------------------------------------
-
-    if not remarks.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Revision remarks are required."
-        )
-
-    # --------------------------------------------------------
-    # GET SUBMISSION
-    # --------------------------------------------------------
-
-    submission = (
-        db.query(ReportSubmission)
-        .filter(
-            ReportSubmission.report_id == report_id
-        )
-        .first()
-    )
-
-    if not submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Report submission not found."
-        )
-
-    # --------------------------------------------------------
-    # VALIDATE CURRENT STAGE
-    # --------------------------------------------------------
-
-    valid_stage = False
-
-    if (
-        validator_role == "municipal_coordinator"
-        and submission.status == FOR_MUNICIPAL_VALIDATION
-    ):
-        valid_stage = True
-
-    elif (
-        validator_role == "provincial_coordinator"
-        and submission.status == FOR_PROVINCIAL_VALIDATION
-    ):
-        valid_stage = True
-
-    elif (
-        validator_role == "darfo"
-        and submission.status == FOR_DA_RFO_VALIDATION
-    ):
-        valid_stage = True
-
-    if not valid_stage:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Validator is not authorized "
-                "for the current report stage."
-            )
-        )
-
-    # --------------------------------------------------------
-    # MARK REPORT FOR REVISION
-    # --------------------------------------------------------
-
-    submission.status = REVISION_REQUIRED
-
-    submission.current_validator_id = None
-
-    submission.current_validator_role = None
-
-    submission.revision_remarks = remarks
-
-    submission.revision_count += 1
-
-    # --------------------------------------------------------
-    # ADD VALIDATION HISTORY
-    # --------------------------------------------------------
-
-    history = ReportValidationHistory(
-        submission_id=submission.submission_id,
-        action="REVISION_REQUIRED",
-        performed_by=validator_id,
-        role=validator_role,
-        remarks=remarks,
-    )
-
-    db.add(history)
-
-    db.commit()
-    db.refresh(submission)
-
-    return {
-        "message": "Report marked for revision.",
-        "report_id": report_id,
-        "status": submission.status,
-        "revision_remarks": (
-            submission.revision_remarks
-        ),
-        "revision_count": (
-            submission.revision_count
-        ),
-    }
 
 # ============================================================
 # GET MY REPORTS
@@ -645,6 +404,7 @@ def get_my_reports(
         }
         for submission, report in reports
     ]
+
 # ============================================================
 # GET ALL SUBMITTED REPORTS
 # ============================================================
@@ -656,15 +416,33 @@ def get_all_submitted_reports(
     reports = (
         db.query(
             ReportSubmission,
-            RawPlantReport
+            RawPlantReport,
+            PlantingIntent,
+            User
         )
         .join(
             RawPlantReport,
             RawPlantReport.report_id
             == ReportSubmission.report_id
         )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            User,
+            User.user_id
+            == RawPlantReport.encoded_by
+        )
         .filter(
-            ReportSubmission.status != DRAFT
+            ReportSubmission.status
+            == FOR_DA_RFO_VALIDATION
         )
         .order_by(
             ReportSubmission.submitted_at.desc()
@@ -684,34 +462,25 @@ def get_all_submitted_reports(
                 or f"{getattr(report, 'commodity', 'Crop')} Harvest Report"
             ),
 
-            "commodity": getattr(
-                report,
-                "commodity",
-                None
+            "commodity": report.commodity,
+
+            "planting_date": report.planting_date,
+
+            # GET HARVEST DATE FROM PLANTING INTENT
+            "harvest_date": planting_intent.harvest_date,
+
+            "estimated_yield": report.estimated_yield,
+
+            "encoded_by": report.encoded_by,
+
+            "encoded_by_name": (
+                f"{user.first_name} {user.last_name}"
+                if user
+                else None
             ),
 
-            "planting_date": getattr(
-                report,
-                "planting_date",
-                None
-            ),
-
-            "estimated_yield": getattr(
-                report,
-                "estimated_yield",
-                None
-            ),
-
-            "encoded_by": getattr(
-                report,
-                "encoded_by",
-                None
-            ),
-
-            "municipal_coordinator_id": getattr(
-                report,
-                "municipal_coordinator_id",
-                None
+            "municipal_coordinator_id": (
+                report.municipal_coordinator_id
             ),
 
             "status": submission.status,
@@ -740,7 +509,8 @@ def get_all_submitted_reports(
                 submission.approved_at
             ),
         }
-        for submission, report in reports
+
+        for submission, report, planting_intent, user in reports
     ]
 # ============================================================
 # GET REPORTS FOR MUNICIPAL VALIDATION
@@ -913,6 +683,189 @@ def get_reports_for_provincial_validation(
 
         for submission, report, planting_intent, user in reports
     ]
+# ============================================================
+# REQUEST REVISION
+# MUNICIPAL / PROVINCIAL → AEW
+# ============================================================
+
+@router.post("/{report_id}/revision")
+def request_revision(
+    report_id: int,
+    validator_id: int,
+    validator_role: str,
+    remarks: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+
+    # --------------------------------------------------------
+    # CHECK LOGGED-IN USER
+    # --------------------------------------------------------
+
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
+
+    # --------------------------------------------------------
+    # GET SUBMISSION
+    # --------------------------------------------------------
+
+    submission = (
+        db.query(ReportSubmission)
+        .filter(
+            ReportSubmission.report_id == report_id
+        )
+        .first()
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Report submission not found."
+        )
+
+    # --------------------------------------------------------
+    # SECURITY CHECK
+    # Logged-in user must match validator_id
+    # --------------------------------------------------------
+
+    if current_user.user_id != validator_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to request revision."
+        )
+
+    # --------------------------------------------------------
+    # VALIDATE REMARKS
+    # --------------------------------------------------------
+
+    if not remarks or not remarks.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Revision remarks are required."
+        )
+
+    remarks = remarks.strip()
+    # --------------------------------------------------------
+    # MUNICIPAL COORDINATOR
+    # FOR_MUNICIPAL_VALIDATION
+    # → REVISION_REQUIRED
+    # --------------------------------------------------------
+
+    if validator_role == "municipal_coordinator":
+
+        if submission.status != FOR_MUNICIPAL_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "municipal validation."
+                )
+            )
+
+    # --------------------------------------------------------
+    # PROVINCIAL COORDINATOR
+    # FOR_PROVINCIAL_VALIDATION
+    # → REVISION_REQUIRED
+    # --------------------------------------------------------
+
+    elif validator_role == "provincial_coordinator":
+
+        if submission.status != FOR_PROVINCIAL_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "provincial validation."
+                )
+            )
+
+    # --------------------------------------------------------
+    # DA-RFO OFFICER
+    # FOR_DA_RFO_VALIDATION
+    # → REVISION_REQUIRED
+    # --------------------------------------------------------
+
+    elif validator_role == "darfo":
+
+        if submission.status != FOR_DA_RFO_VALIDATION:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Report is not awaiting "
+                    "DA-RFO validation."
+                )
+            )
+
+    
+    # --------------------------------------------------------
+    # INVALID ROLE
+    # --------------------------------------------------------
+
+    else:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid validator role."
+        )
+
+    # --------------------------------------------------------
+    # UPDATE SUBMISSION
+    # --------------------------------------------------------
+
+    submission.status = REVISION_REQUIRED
+
+    submission.current_validator_id = None
+
+    submission.current_validator_role = "aew"
+
+    submission.revision_remarks = remarks
+
+    submission.revision_count = (
+        (submission.revision_count or 0) + 1
+    )
+
+    # --------------------------------------------------------
+    # ADD VALIDATION HISTORY
+    # --------------------------------------------------------
+
+    history = ReportValidationHistory(
+        submission_id=submission.submission_id,
+        action="REVISION_REQUIRED",
+        performed_by=current_user.user_id,
+        role=validator_role,
+        remarks=remarks,
+    )
+
+    db.add(history)
+
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
+
+    db.commit()
+    db.refresh(submission)
+
+    return {
+        "message": "Report flagged for revision.",
+        "report_id": report_id,
+        "submission_id": submission.submission_id,
+        "status": submission.status,
+        "current_validator_id": (
+            submission.current_validator_id
+        ),
+        "current_validator_role": (
+            submission.current_validator_role
+        ),
+        "revision_remarks": (
+            submission.revision_remarks
+        ),
+        "revision_count": (
+            submission.revision_count
+        ),
+    }
 
 # ============================================================
 # GET REPORT SUBMISSION
@@ -1006,4 +959,88 @@ def get_validation_history(
             "created_at": item.created_at,
         }
         for item in history
+    ]
+# ============================================================
+# GET REPORTS FOR DA-RFO VALIDATION
+# ============================================================
+
+@router.get("/for-da-rfo-validation")
+def get_reports_for_da_rfo_validation(
+    db: Session = Depends(get_db),
+):
+    reports = (
+        db.query(
+            ReportSubmission,
+            RawPlantReport,
+            PlantingIntent,
+            User,
+        )
+        .join(
+            RawPlantReport,
+            RawPlantReport.report_id
+            == ReportSubmission.report_id
+        )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id
+            == RawPlantReport.report_id
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.planting_intent_id
+            == ReportPlantingIntent.planting_intent_id
+        )
+        .outerjoin(
+            User,
+            User.user_id
+            == RawPlantReport.encoded_by
+        )
+        .filter(
+            ReportSubmission.status
+            == FOR_DA_RFO_VALIDATION  # ITO ANG PINAGKAIBA
+        )
+        .order_by(
+            ReportSubmission.submitted_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": submission.submission_id,
+
+            "report_id": submission.report_id,
+
+            "title": (
+                getattr(report, "title", None)
+                or getattr(report, "report_title", None)
+                or f"{getattr(report, 'commodity', 'Crop')} Harvest Report"
+            ),
+
+            "commodity": report.commodity,
+
+            "planting_date": report.planting_date,
+
+            "harvest_date": planting_intent.harvest_date,
+
+            "estimated_yield": report.estimated_yield,
+
+            "encoded_by": report.encoded_by,
+
+            "encoded_by_name": (
+                f"{user.first_name} {user.last_name}"
+                if user
+                else None
+            ),
+
+            "status": submission.status,
+
+            "submitted_at": submission.submitted_at,
+
+            "revision_remarks": submission.revision_remarks,
+
+            "revision_count": submission.revision_count,
+        }
+
+        for submission, report, planting_intent, user in reports
     ]
