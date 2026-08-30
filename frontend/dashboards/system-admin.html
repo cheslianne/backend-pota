@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
+
+
   <title>System Admin — eSaka</title>
+
+
 
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+
 
 
   <link
@@ -18,8 +24,12 @@
   >
 
 
+
+
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
+
+
 
 
   <style>
@@ -28,10 +38,14 @@
     }
 
 
+
+
     .btn-disabled-filter {
       opacity: 0.4;
       cursor: default;
     }
+
+
 
 
     .api-error {
@@ -41,9 +55,13 @@
     }
 
 
+
+
     .alert-container-card {
       padding: 24px;
     }
+
+
 
 
     .alert-list {
@@ -51,6 +69,8 @@
       flex-direction: column;
       gap: 16px;
     }
+
+
 
 
     .alert-card {
@@ -62,10 +82,14 @@
     }
 
 
+
+
     .alert-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
+
+
 
 
     .alert-top {
@@ -76,6 +100,8 @@
     }
 
 
+
+
     .alert-title-group {
       display: flex;
       align-items: center;
@@ -83,11 +109,15 @@
     }
 
 
+
+
     .alert-title {
       font-size: 16px;
       font-weight: 700;
       color: var(--ink);
     }
+
+
 
 
     .sev-pill {
@@ -99,10 +129,14 @@
     }
 
 
+
+
     .sev-pill.high {
       background: #E8C3B9;
       color: #8C2A1C;
     }
+
+
 
 
     .sev-pill.medium {
@@ -111,10 +145,14 @@
     }
 
 
+
+
     .sev-pill.low {
       background: #D1E0D7;
       color: #2D6A4F;
     }
+
+
 
 
     .status-pill-btn {
@@ -127,10 +165,14 @@
     }
 
 
+
+
     .status-pill-btn.unresolved {
       background: #E8B4AC;
       color: #8B2D22;
     }
+
+
 
 
     .status-pill-btn.acknowledged {
@@ -139,12 +181,16 @@
     }
 
 
+
+
     .alert-desc {
       font-size: 13px;
       color: #555;
       line-height: 1.45;
       margin: 0 0 12px;
     }
+
+
 
 
     .alert-stats {
@@ -156,10 +202,14 @@
     }
 
 
+
+
     .alert-stats span b {
       color: #222;
       font-weight: 600;
     }
+
+
 
 
     .alert-date {
@@ -169,11 +219,15 @@
     }
 
 
+
+
     .alert-detail-box {
       max-width: 460px;
       text-align: left;
       padding: 28px 32px;
     }
+
+
 
 
     .alert-modal-header {
@@ -184,12 +238,16 @@
     }
 
 
+
+
     .alert-modal-header h2 {
       font-size: 18px;
       font-weight: 700;
       color: var(--green);
       margin: 0;
     }
+
+
 
 
     .modal-stats-grid {
@@ -205,9 +263,13 @@
     }
 
 
+
+
     .modal-stats-grid div {
       color: var(--muted);
     }
+
+
 
 
     .modal-stats-grid div b {
@@ -218,11 +280,15 @@
     }
 
 
+
+
     .modal-actions-row {
       display: flex;
       justify-content: flex-end;
       gap: 12px;
     }
+
+
 
 
     .action-btn:disabled {
@@ -231,10 +297,14 @@
     }
 
 
+
+
     .loading-row {
       text-align: center;
       padding: 20px;
     }
+
+
 
 
     /* ADDED:
@@ -248,13 +318,21 @@
 </head>
 
 
+
+
 <body>
+
+
 
 
 <div class="topbar">
 
 
+
+
   <div class="topbar-left">
+
+
 
 
     <button
@@ -269,7 +347,11 @@
     </button>
 
 
+
+
     <div class="logos">
+
+
 
 
       <svg class="seal" viewBox="0 0 100 100">
@@ -283,10 +365,14 @@
         />
 
 
+
+
         <path
           d="M50 20 C35 30,30 45,50 65 C70 45,65 30,50 20Z"
           fill="#5B6B4F"
         />
+
+
 
 
         <path
@@ -295,6 +381,8 @@
           stroke-width="2"
         />
       </svg>
+
+
 
 
       <div class="brand-logo">
@@ -315,14 +403,22 @@
       </div>
 
 
+
+
       <span class="brand-word">eSaka</span>
+
+
 
 
     </div>
   </div>
 
 
+
+
   <div class="topbar-right">
+
+
 
 
     <div
@@ -335,8 +431,12 @@
       </svg>
 
 
+
+
       <span class="bell-dot"></span>
     </div>
+
+
 
 
     <div
@@ -348,16 +448,24 @@
       </div>
 
 
+
+
       <button class="notif-item" type="button">
         <b>System updated</b> successfully to v1.2.
       </button>
     </div>
 
 
+
+
     <div class="user-info">
 
 
+
+
       <div class="user-text">
+
+
 
 
         <div
@@ -368,6 +476,8 @@
         </div>
 
 
+
+
         <div
           class="user-role"
           id="loggedInUserRole"
@@ -376,7 +486,11 @@
         </div>
 
 
+
+
       </div>
+
+
 
 
       <div class="avatar">
@@ -386,10 +500,16 @@
       </div>
 
 
+
+
     </div>
 
 
+
+
   </div>
+
+
 
 
 </div>
@@ -397,13 +517,23 @@
 
 
 
+
+
+
+
 <div class="layout">
+
+
 
 
   <nav class="sidebar" id="sidebar">
 
 
+
+
     <div class="nav-list">
+
+
 
 
       <button
@@ -418,6 +548,8 @@
       </button>
 
 
+
+
       <button
         class="nav-item"
         type="button"
@@ -428,6 +560,8 @@
         </svg>
         Monitor ETL Pipeline
       </button>
+
+
 
 
       <button
@@ -442,6 +576,8 @@
       </button>
 
 
+
+
       <button
         class="nav-item"
         type="button"
@@ -454,7 +590,11 @@
       </button>
 
 
+
+
     </div>
+
+
 
 
     <a
@@ -469,12 +609,20 @@
     </a>
 
 
+
+
   </nav>
 
 
 
 
+
+
+
+
   <main class="main">
+
+
 
 
     <section
@@ -483,16 +631,26 @@
     >
 
 
+
+
       <div class="main-header">
+
+
 
 
         <h1>All Users</h1>
 
 
+
+
         <div class="search-row">
 
 
+
+
           <div class="search-box">
+
+
 
 
             <svg viewBox="0 0 24 24">
@@ -506,6 +664,8 @@
             </svg>
 
 
+
+
             <input
               type="text"
               id="searchUsers"
@@ -513,7 +673,11 @@
             >
 
 
+
+
           </div>
+
+
 
 
           <button
@@ -527,13 +691,21 @@
           </button>
 
 
+
+
         </div>
+
+
 
 
       </div>
 
 
+
+
       <div class="card">
+
+
 
 
         <div class="card-title">
@@ -541,10 +713,16 @@
         </div>
 
 
+
+
         <table>
 
 
+
+
           <thead>
+
+
 
 
             <tr>
@@ -556,10 +734,16 @@
             </tr>
 
 
+
+
           </thead>
 
 
+
+
           <tbody id="userRows">
+
+
 
 
             <tr>
@@ -569,17 +753,27 @@
             </tr>
 
 
+
+
           </tbody>
+
+
 
 
         </table>
 
 
+
+
       </div>
+
+
 
 
       <!-- Add Account button is now on the RIGHT -->
       <div class="add-account-row">
+
+
 
 
         <button
@@ -591,10 +785,18 @@
         </button>
 
 
+
+
       </div>
 
 
+
+
     </section>
+
+
+
+
 
 
 
@@ -605,12 +807,18 @@
     >
 
 
+
+
       <div class="main-header">
         <h1>Add New Account</h1>
       </div>
 
 
+
+
       <div class="card">
+
+
 
 
         <form
@@ -619,15 +827,23 @@
         >
 
 
+
+
           <div class="form-grid">
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="firstName">
                 First Name *
               </label>
+
+
 
 
               <input
@@ -637,15 +853,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="lastName">
                 Last Name *
               </label>
+
+
 
 
               <input
@@ -655,15 +879,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="newUsername">
                 Username *
               </label>
+
+
 
 
               <input
@@ -673,15 +905,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="newEmail">
                 Email *
               </label>
+
+
 
 
               <input
@@ -691,15 +931,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="newPassword">
                 Password *
               </label>
+
+
 
 
               <input
@@ -709,15 +957,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="phoneNumber">
                 Phone Number *
               </label>
+
+
 
 
               <input
@@ -727,15 +983,23 @@
               >
 
 
+
+
             </div>
+
+
 
 
             <div class="form-field">
 
 
+
+
               <label for="confirmPassword">
                 Confirm Password *
               </label>
+
+
 
 
               <input
@@ -745,10 +1009,16 @@
               >
 
 
+
+
             </div>
 
 
+
+
             <div class="form-field">
+
+
 
 
               <label for="roleSelect">
@@ -756,7 +1026,11 @@
               </label>
 
 
+
+
               <select id="roleSelect" required>
+
+
 
 
                 <option
@@ -768,9 +1042,13 @@
                 </option>
 
 
+
+
                 <option value="System Administrator">
                   System Administrator
                 </option>
+
+
 
 
                 <option value="DA-RFO Officer">
@@ -778,9 +1056,13 @@
                 </option>
 
 
+
+
                 <option value="Provincial Coordinator">
                   Provincial Coordinator
                 </option>
+
+
 
 
                 <option value="Municipal Coordinator">
@@ -788,15 +1070,23 @@
                 </option>
 
 
+
+
                 <option value="AEW">
                   AEW
                 </option>
 
 
+
+
               </select>
 
 
+
+
             </div>
+
+
 
 
           </div>
@@ -804,7 +1094,13 @@
 
 
 
+
+
+
+
           <div class="form-actions">
+
+
 
 
             <button
@@ -816,6 +1112,8 @@
             </button>
 
 
+
+
             <button
               type="submit"
               class="btn-primary"
@@ -824,16 +1122,28 @@
             </button>
 
 
+
+
           </div>
+
+
 
 
         </form>
 
 
+
+
       </div>
 
 
+
+
     </section>
+
+
+
+
 
 
 
@@ -844,16 +1154,26 @@
     >
 
 
+
+
       <div class="main-header">
+
+
 
 
         <h1>ETL Pipeline Run Logs</h1>
 
 
+
+
         <div class="search-row">
 
 
+
+
           <div class="search-box">
+
+
 
 
             <svg viewBox="0 0 24 24">
@@ -867,6 +1187,8 @@
             </svg>
 
 
+
+
             <input
               type="text"
               id="searchETL"
@@ -874,10 +1196,16 @@
             >
 
 
+
+
           </div>
 
 
+
+
         </div>
+
+
 
 
       </div>
@@ -885,7 +1213,13 @@
 
 
 
+
+
+
+
       <div class="card">
+
+
 
 
         <div class="card-title">
@@ -893,10 +1227,16 @@
         </div>
 
 
+
+
         <table>
 
 
+
+
           <thead>
+
+
 
 
             <tr>
@@ -910,13 +1250,21 @@
             </tr>
 
 
+
+
           </thead>
+
+
 
 
           <tbody id="etlRows">
 
 
+
+
             <tr>
+
+
 
 
               <td
@@ -927,13 +1275,21 @@
               </td>
 
 
+
+
             </tr>
+
+
 
 
           </tbody>
 
 
+
+
         </table>
+
+
 
 
       </div>
@@ -941,7 +1297,13 @@
 
 
 
+
+
+
+
       <div class="manual-run-row">
+
+
 
 
         <button
@@ -953,10 +1315,18 @@
         </button>
 
 
+
+
       </div>
 
 
+
+
     </section>
+
+
+
+
 
 
 
@@ -967,16 +1337,26 @@
     >
 
 
+
+
       <div class="main-header">
+
+
 
 
         <h1>System Alert Logs</h1>
 
 
+
+
         <div class="search-row">
 
 
+
+
           <div class="search-box">
+
+
 
 
             <svg viewBox="0 0 24 24">
@@ -990,6 +1370,8 @@
             </svg>
 
 
+
+
             <input
               type="text"
               id="searchAlerts"
@@ -997,10 +1379,16 @@
             >
 
 
+
+
           </div>
 
 
+
+
         </div>
+
+
 
 
       </div>
@@ -1008,7 +1396,13 @@
 
 
 
+
+
+
+
       <div class="card alert-container-card">
+
+
 
 
         <div
@@ -1017,16 +1411,24 @@
         >
 
 
+
+
           <div
             class="alert-card"
             data-severity="high"
           >
 
 
+
+
             <div class="alert-top">
 
 
+
+
               <div class="alert-title-group">
+
+
 
 
                 <span class="alert-title">
@@ -1034,12 +1436,18 @@
                 </span>
 
 
+
+
                 <span class="sev-pill high">
                   High
                 </span>
 
 
+
+
               </div>
+
+
 
 
               <button
@@ -1050,7 +1458,13 @@
               </button>
 
 
+
+
             </div>
+
+
+
+
 
 
 
@@ -1064,7 +1478,13 @@
 
 
 
+
+
+
+
             <div class="alert-stats">
+
+
 
 
               <span>
@@ -1073,10 +1493,14 @@
               </span>
 
 
+
+
               <span>
                 Demand:
                 <b>200t</b>
               </span>
+
+
 
 
               <span>
@@ -1085,15 +1509,25 @@
               </span>
 
 
+
+
               <span class="alert-date">
                 2026-05-10
               </span>
 
 
+
+
             </div>
 
 
+
+
           </div>
+
+
+
+
 
 
 
@@ -1104,10 +1538,16 @@
           >
 
 
+
+
             <div class="alert-top">
 
 
+
+
               <div class="alert-title-group">
+
+
 
 
                 <span class="alert-title">
@@ -1115,12 +1555,18 @@
                 </span>
 
 
+
+
                 <span class="sev-pill medium">
                   Medium
                 </span>
 
 
+
+
               </div>
+
+
 
 
               <button
@@ -1131,7 +1577,13 @@
               </button>
 
 
+
+
             </div>
+
+
+
+
 
 
 
@@ -1145,7 +1597,13 @@
 
 
 
+
+
+
+
             <div class="alert-stats">
+
+
 
 
               <span>
@@ -1154,10 +1612,14 @@
               </span>
 
 
+
+
               <span>
                 Demand:
                 <b>160t</b>
               </span>
+
+
 
 
               <span>
@@ -1166,24 +1628,40 @@
               </span>
 
 
+
+
               <span class="alert-date">
                 2026-05-08
               </span>
 
 
+
+
             </div>
+
+
 
 
           </div>
 
 
+
+
         </div>
+
+
 
 
       </div>
 
 
+
+
     </section>
+
+
+
+
 
 
 
@@ -1194,16 +1672,26 @@
     >
 
 
+
+
       <div class="main-header">
+
+
 
 
         <h1>System Audit Logs</h1>
 
 
+
+
         <div class="search-row">
 
 
+
+
           <div class="search-box">
+
+
 
 
             <svg viewBox="0 0 24 24">
@@ -1217,6 +1705,8 @@
             </svg>
 
 
+
+
             <input
               type="text"
               id="searchAudit"
@@ -1224,10 +1714,16 @@
             >
 
 
+
+
           </div>
 
 
+
+
         </div>
+
+
 
 
       </div>
@@ -1235,7 +1731,13 @@
 
 
 
+
+
+
+
       <div class="card">
+
+
 
 
         <div class="card-title">
@@ -1243,10 +1745,16 @@
         </div>
 
 
+
+
         <table>
 
 
+
+
           <thead>
+
+
 
 
             <tr>
@@ -1260,13 +1768,21 @@
             </tr>
 
 
+
+
           </thead>
+
+
 
 
           <tbody id="auditLogRows">
 
 
+
+
             <tr>
+
+
 
 
               <td
@@ -1277,22 +1793,36 @@
               </td>
 
 
+
+
             </tr>
+
+
 
 
           </tbody>
 
 
+
+
         </table>
+
+
 
 
       </div>
 
 
+
+
     </section>
 
 
+
+
   </main>
+
+
 
 
 </div>
@@ -1300,7 +1830,13 @@
 
 
 
+
+
+
+
 <!-- SUCCESS MODAL -->
+
+
 
 
 <div
@@ -1309,12 +1845,18 @@
 >
 
 
+
+
   <div class="modal-box">
+
+
 
 
     <p class="modal-title">
       Account Created Successfully
     </p>
+
+
 
 
     <button
@@ -1326,7 +1868,11 @@
     </button>
 
 
+
+
   </div>
+
+
 
 
 </div>
@@ -1334,7 +1880,13 @@
 
 
 
+
+
+
+
 <!-- ALERT MODAL -->
+
+
 
 
 <div
@@ -1343,15 +1895,23 @@
 >
 
 
+
+
   <div class="modal-box alert-detail-box">
+
+
 
 
     <div class="alert-modal-header">
 
 
+
+
       <h2 id="modalAlertTitle">
         Alert Details
       </h2>
+
+
 
 
       <span
@@ -1362,7 +1922,11 @@
       </span>
 
 
+
+
     </div>
+
+
 
 
     <p id="modalAlertDesc"></p>
@@ -1370,7 +1934,13 @@
 
 
 
+
+
+
+
     <div class="modal-stats-grid">
+
+
 
 
       <div>
@@ -1379,10 +1949,14 @@
       </div>
 
 
+
+
       <div>
         Demand:
         <b id="modalAlertDemand"></b>
       </div>
+
+
 
 
       <div>
@@ -1391,10 +1965,14 @@
       </div>
 
 
+
+
       <div>
         Date Logged:
         <b id="modalAlertDate"></b>
       </div>
+
+
 
 
     </div>
@@ -1402,7 +1980,13 @@
 
 
 
+
+
+
+
     <div class="modal-actions-row">
+
+
 
 
       <button
@@ -1414,6 +1998,8 @@
       </button>
 
 
+
+
       <button
         class="btn-primary"
         id="toggleAlertStatusBtn"
@@ -1423,10 +2009,16 @@
       </button>
 
 
+
+
     </div>
 
 
+
+
   </div>
+
+
 
 
 </div>
@@ -1434,10 +2026,19 @@
 
 
 
+
+
+<script src="../assets/js/logout.js"></script>
 <script src="../assets/js/dashboard-common.js"></script>
 <script src="../assets/js/system-admin.js"></script>
 
 
+
+
 </body>
 </html>
+
+
+
+
 
