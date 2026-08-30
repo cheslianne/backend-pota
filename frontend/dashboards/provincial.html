@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Provincial Coordinator — eSaka</title>
 
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
 
+
 <link rel="stylesheet" href="../assets/css/base.css">
+
 
 <style>
   .topbar{
@@ -27,11 +31,13 @@
     z-index:2100;
   }
 
+
   .topbar-left{
     display:flex;
     align-items:center;
     gap:16px;
   }
+
 
   .hamburger{
     background:none;
@@ -43,6 +49,7 @@
     gap:5px;
   }
 
+
   .hamburger span{
     display:block;
     width:26px;
@@ -51,16 +58,19 @@
     border-radius:2px;
   }
 
+
   .logos{
     display:flex;
     align-items:center;
     gap:10px;
   }
 
+
   .seal{
     width:44px;
     height:44px;
   }
+
 
   .brand-word{
     font-family:'Dancing Script', cursive;
@@ -70,16 +80,19 @@
     margin-left:-6px;
   }
 
+
   .brand-logo svg{
     width:60px;
     height:50px;
   }
+
 
   .topbar-right{
     display:flex;
     align-items:center;
     gap:18px;
   }
+
 
   .bell-wrap{
     position:relative;
@@ -94,11 +107,13 @@
     flex-shrink:0;
   }
 
+
   .bell-wrap svg{
     width:18px;
     height:18px;
     fill:#fff;
   }
+
 
   .bell-dot{
     position:absolute;
@@ -111,16 +126,19 @@
     border:2px solid var(--cream);
   }
 
+
   .user-info{
     display:flex;
     align-items:center;
     gap:10px;
   }
 
+
   .user-text{
     text-align:right;
     line-height:1.25;
   }
+
 
   .user-name{
     font-size:14px;
@@ -128,11 +146,13 @@
     color:var(--ink);
   }
 
+
   .user-role{
     font-size:12px;
     font-weight:600;
     color:var(--gold);
   }
+
 
   .avatar{
     width:38px;
@@ -144,16 +164,19 @@
     justify-content:center;
   }
 
+
   .avatar svg{
     width:20px;
     height:20px;
     fill:#fff;
   }
 
+
   .layout{
     display:flex;
     min-height:calc(100vh - 73px);
   }
+
 
   .sidebar{
     width:230px;
@@ -172,15 +195,18 @@
     transition:left .28s ease;
   }
 
+
   .sidebar.open{
     left:0;
   }
+
 
   .nav-list{
     display:flex;
     flex-direction:column;
     gap:2px;
   }
+
 
   .nav-item{
     display:flex;
@@ -198,6 +224,7 @@
     text-align:left;
   }
 
+
   .nav-item svg{
     width:19px;
     height:19px;
@@ -205,14 +232,17 @@
     flex-shrink:0;
   }
 
+
   .nav-item:hover{
     background:rgba(255,255,255,0.08);
   }
+
 
   .nav-item.active{
     background:var(--green-dark);
     font-weight:700;
   }
+
 
   .signout{
     display:flex;
@@ -225,15 +255,18 @@
     font-weight:500;
   }
 
+
   .signout svg{
     width:18px;
     height:18px;
     fill:#fff;
   }
 
+
   .signout:hover{
     opacity:0.8;
   }
+
 
   .main{
     flex:1;
@@ -241,13 +274,16 @@
     min-width:0;
   }
 
+
   .view{
     display:none;
   }
 
+
   .view.active-view{
     display:block;
   }
+
 
   .main-header{
     display:flex;
@@ -258,6 +294,7 @@
     margin-bottom:22px;
   }
 
+
   .main-header h1{
     font-family:'Oswald', sans-serif;
     font-weight:700;
@@ -267,12 +304,14 @@
     margin:0;
   }
 
+
   .card{
     background:var(--white);
     border:1px solid var(--border);
     border-radius:12px;
     padding:24px 28px;
   }
+
 
   #map{
     width:100%;
@@ -281,11 +320,13 @@
     border:1px solid var(--border);
   }
 
+
   .search-row{
     display:flex;
     gap:10px;
     align-items:center;
   }
+
 
   .search-box{
     display:flex;
@@ -298,6 +339,7 @@
     min-width:260px;
   }
 
+
   .search-box svg{
     width:16px;
     height:16px;
@@ -305,6 +347,7 @@
     stroke:var(--ink);
     stroke-width:2;
   }
+
 
   .search-box input{
     border:none;
@@ -314,15 +357,18 @@
     background:transparent;
   }
 
+
   table{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
   }
 
+
   thead tr{
     background:#DEDDDC;
   }
+
 
   thead th{
     text-align:center;
@@ -332,15 +378,18 @@
     padding:14px 10px;
   }
 
+
   thead th:first-child{
     border-top-left-radius:8px;
     border-bottom-left-radius:8px;
   }
 
+
   thead th:last-child{
     border-top-right-radius:8px;
     border-bottom-right-radius:8px;
   }
+
 
   tbody td{
     padding:14px 8px;
@@ -348,6 +397,7 @@
     text-align:center;
     vertical-align:middle;
   }
+
 
   .pill{
     display:inline-block;
@@ -359,6 +409,7 @@
     white-space:nowrap;
   }
 
+
   .status-pill{
     display:inline-block;
     padding:6px 20px;
@@ -368,24 +419,29 @@
     color:#fff;
   }
 
+
   .status-pill.confirmed,
   .status-pill.approved,
   .status-pill.harvested{
     background:#118308;
   }
 
+
   .status-pill.submitted,
   .status-pill.mediating{
     background:#E5A510;
   }
 
+
   .status-pill.planted{
     background:#E06030;
   }
 
+
   .status-pill.pending{
     background:#C48D53;
   }
+
 
   .notes-row{
     display:flex;
@@ -396,9 +452,11 @@
     border-top:1px solid #E0E0E0;
   }
 
+
   .notes-field{
     flex:1;
   }
+
 
   .notes-field label{
     display:block;
@@ -407,6 +465,7 @@
     margin-bottom:8px;
     color:var(--ink);
   }
+
 
   .btn-outline-report{
     appearance:none;
@@ -422,9 +481,11 @@
     transition:all .2s ease;
   }
 
+
   .btn-outline-report:hover:not(:disabled){
     background:#DEDDDC;
   }
+
 
   .detail-actions-row{
     display:flex;
@@ -433,17 +494,20 @@
     margin-top:24px;
   }
 
+
   .flag-btn.active{
     background:#C83232;
     border-color:#C83232;
     color:#fff;
   }
 
+
   .approve-btn.active{
     background:#5A7365;
     border-color:#5A7365;
     color:#fff;
   }
+
 
   .modal-overlay{
     display:none;
@@ -455,9 +519,11 @@
     z-index:3000;
   }
 
+
   .modal-overlay.show{
     display:flex;
   }
+
 
   .modal-box{
     background:#DEDDDC;
@@ -469,6 +535,7 @@
     width:90%;
   }
 
+
   .modal-box p{
     font-family:'Oswald', sans-serif;
     font-size:28px;
@@ -477,6 +544,7 @@
     margin-bottom:24px;
     line-height:1.25;
   }
+
 
   .modal-confirm-btn{
     border:none;
@@ -490,13 +558,16 @@
     cursor:pointer;
   }
 
+
   .clickable-row{
     cursor:pointer;
   }
 
+
   .clickable-row:hover td{
     background:#F6F3EB;
   }
+
 
   .text-section-title{
     font-size:13px;
@@ -504,14 +575,17 @@
     margin-top:6px;
   }
 
+
   .hidden-element{
     display:none;
   }
+
 
   .notes-row-clean{
     border-top:none;
     padding-top:0;
   }
+
 
   .textarea-notes{
     width:100%;
@@ -529,11 +603,15 @@
 </style>
 </head>
 
+
 <body>
+
 
 <div class="topbar">
 
+
   <div class="topbar-left">
+
 
     <button
       class="hamburger"
@@ -546,7 +624,9 @@
       <span></span>
     </button>
 
+
     <div class="logos">
+
 
       <svg
         class="seal"
@@ -562,10 +642,12 @@
           stroke-width="3"
         />
 
+
         <path
           d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z"
           fill="#5B6B4F"
         />
+
 
         <path
           d="M50 30 L50 62"
@@ -573,6 +655,7 @@
           stroke-width="2"
         />
       </svg>
+
 
       <div class="brand-logo">
         <svg
@@ -595,13 +678,18 @@
         </svg>
       </div>
 
+
       <span class="brand-word">eSaka</span>
+
 
     </div>
   </div>
 
 
+
+
   <div class="topbar-right">
+
 
     <div
       class="bell-wrap"
@@ -613,23 +701,31 @@
         />
       </svg>
 
+
       <span class="bell-dot"></span>
     </div>
 
 
+
+
     <div class="user-info">
 
+
       <div class="user-text">
+
 
         <div class="user-name">
           Juan Dela Cruz
         </div>
 
+
         <div class="user-role">
           Provincial Coordinator
         </div>
 
+
       </div>
+
 
       <div class="avatar">
         <svg viewBox="0 0 24 24">
@@ -639,18 +735,26 @@
         </svg>
       </div>
 
+
     </div>
 
+
   </div>
+
 
 </div>
 
 
+
+
 <div class="layout">
+
 
   <nav class="sidebar" id="sidebar">
 
+
     <div class="nav-list">
+
 
       <button
         class="nav-item active"
@@ -663,8 +767,11 @@
           />
         </svg>
 
+
         View Reports
       </button>
+
+
 
 
       <button
@@ -678,10 +785,14 @@
           />
         </svg>
 
+
         View Map
       </button>
 
+
     </div>
+
+
 
 
     <a
@@ -694,32 +805,45 @@
         />
       </svg>
 
+
       Sign Out
     </a>
 
+
   </nav>
+
+
 
 
   <main class="main">
 
 
+
+
     <!-- ===================== VIEW REPORTS ===================== -->
+
 
     <section
       class="view active-view"
       id="view-reports"
     >
 
+
       <div class="main-header">
+
 
         <h1>
           Reports
         </h1>
 
 
+
+
         <div class="search-row">
 
+
           <div class="search-box">
+
 
             <svg viewBox="0 0 24 24">
               <circle
@@ -727,6 +851,7 @@
                 cy="11"
                 r="7"
               ></circle>
+
 
               <line
                 x1="21"
@@ -737,6 +862,8 @@
             </svg>
 
 
+
+
             <input
               type="text"
               id="reportSearchInput"
@@ -744,18 +871,26 @@
               autocomplete="off"
             >
 
+
           </div>
 
+
         </div>
+
 
       </div>
 
 
+
+
       <!-- ===================== PENDING REPORTS ===================== -->
+
 
       <div id="pendingReportsView">
 
+
         <div class="card">
+
 
           <div
             class="text-section-title"
@@ -765,11 +900,16 @@
           </div>
 
 
+
+
           <table>
+
 
             <thead>
 
+
               <tr>
+
 
                 <th>Report ID</th>
                 <th>Title</th>
@@ -778,44 +918,63 @@
                 <th>Estimated Yield (kg)</th>
                 <th>Status</th>
 
+
               </tr>
+
 
             </thead>
 
 
+
+
             <tbody id="pendingReportsBody">
 
+
               <tr>
+
 
                 <td colspan="6">
                   Loading reports...
                 </td>
 
+
               </tr>
+
 
             </tbody>
 
+
           </table>
 
+
         </div>
+
 
       </div>
 
 
+
+
       <!-- ===================== REPORT DETAIL ===================== -->
+
 
       <div
         id="individualDetailView"
         class="hidden-element"
       >
 
+
         <div class="card">
+
 
           <table>
 
+
             <thead>
 
+
               <tr>
+
 
                 <th>Commodity</th>
                 <th>Planting Date</th>
@@ -824,26 +983,37 @@
                 <th>Encoded By</th>
                 <th>Status</th>
 
+
               </tr>
 
+
             </thead>
+
+
 
 
             <tbody id="reportDetailBody">
             </tbody>
 
+
           </table>
+
+
 
 
           <!-- NOTES -->
 
+
           <div class="notes-row">
 
+
             <div class="notes-field">
+
 
               <label>
                 Notes
               </label>
+
 
               <textarea
                 id="reportNotesTextarea"
@@ -851,10 +1021,14 @@
                 readonly
               ></textarea>
 
+
             </div>
 
 
+
+
             <div>
+
 
               <button
                 class="btn-outline-report"
@@ -864,20 +1038,28 @@
                 View Attachments
               </button>
 
+
             </div>
+
 
           </div>
 
 
+
+
           <!-- REMARKS -->
+
 
           <div class="notes-row notes-row-clean">
 
+
             <div class="notes-field">
+
 
               <label>
                 Remarks
               </label>
+
 
               <textarea
                 id="remarksTextarea"
@@ -885,16 +1067,23 @@
                 placeholder="Enter remarks..."
               ></textarea>
 
+
             </div>
 
+
           </div>
+
 
         </div>
 
 
+
+
         <!-- ACTION BUTTONS -->
 
+
         <div class="detail-actions-row">
+
 
           <button
             class="btn-outline-report"
@@ -903,6 +1092,8 @@
           >
             Return
           </button>
+
+
 
 
           <button
@@ -914,6 +1105,8 @@
           </button>
 
 
+
+
           <button
             class="btn-outline-report approve-btn"
             id="approveBtn"
@@ -922,54 +1115,76 @@
             Approve
           </button>
 
+
         </div>
 
+
       </div>
+
 
     </section>
 
 
+
+
     <!-- ===================== VIEW MAP ===================== -->
+
 
     <section
       class="view"
       id="view-map"
     >
 
+
       <div class="main-header">
+
 
         <h1>
           Map
         </h1>
 
+
       </div>
+
+
 
 
       <div class="card">
 
+
         <div id="map"></div>
+
 
       </div>
 
+
     </section>
 
+
   </main>
+
 
 </div>
 
 
+
+
 <!-- CONFIRMATION MODAL -->
+
 
 <div
   class="modal-overlay"
   id="reportModal"
 >
 
+
   <div class="modal-box">
+
 
     <p id="reportModalText">
       Report Approved Successfully
     </p>
+
 
     <button
       class="modal-confirm-btn"
@@ -979,45 +1194,64 @@
       Confirm
     </button>
 
+
   </div>
+
 
 </div>
 
 
+
+
 <!-- Leaflet -->
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
 
+
+
 <script>
+
 
   // ============================================================
   // SIDEBAR & VIEW SWITCHING
   // ============================================================
 
+
   const hamburgerBtn =
     document.getElementById("hamburgerBtn");
 
+
   const sidebar =
     document.getElementById("sidebar");
+
+
 
 
   hamburgerBtn.addEventListener(
     "click",
     () => {
 
+
       sidebar.classList.toggle("open");
 
+
       setTimeout(() => {
+
 
         if (window.leafletMap) {
           window.leafletMap.invalidateSize();
         }
 
+
       }, 300);
+
 
     }
   );
+
+
 
 
   const navButtons =
@@ -1026,11 +1260,16 @@
     );
 
 
+
+
   const views =
     document.querySelectorAll(".view");
 
 
+
+
   function switchView(viewKey) {
+
 
     views.forEach(
       view =>
@@ -1040,10 +1279,14 @@
     );
 
 
+
+
     const targetView =
       document.getElementById(
         "view-" + viewKey
       );
+
+
 
 
     if (targetView) {
@@ -1051,6 +1294,8 @@
         "active-view"
       );
     }
+
+
 
 
     navButtons.forEach(
@@ -1062,10 +1307,13 @@
     );
 
 
+
+
     if (
       viewKey === "map" &&
       window.leafletMap
     ) {
+
 
       setTimeout(
         () =>
@@ -1073,13 +1321,18 @@
         50
       );
 
+
     }
+
 
   }
 
 
+
+
   navButtons.forEach(
     btn => {
+
 
       btn.addEventListener(
         "click",
@@ -1089,13 +1342,17 @@
           )
       );
 
+
     }
   );
+
+
 
 
   // ============================================================
   // MAP INITIALIZATION
   // ============================================================
+
 
   const pampangaBounds =
     L.latLngBounds(
@@ -1104,17 +1361,23 @@
     );
 
 
+
+
   const map =
     L.map("map", {
+
 
       maxBounds:
         pampangaBounds,
 
+
       maxBoundsViscosity:
         1.0,
 
+
       minZoom:
         10
+
 
     }).setView(
       [15.0794, 120.6200],
@@ -1122,44 +1385,61 @@
     );
 
 
+
+
   window.leafletMap =
     map;
+
+
 
 
   L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
 
+
       attribution:
         "&copy; OpenStreetMap contributors",
+
 
       maxZoom:
         18
 
+
     }
   ).addTo(map);
+
+
 
 
   // ============================================================
   // PROVINCIAL REPORTS
   // ============================================================
 
+
   const API_BASE_URL =
     "http://127.0.0.1:8000";
+
+
 
 
   const PROVINCIAL_REPORTS_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions/for-provincial-validation`;
 
 
+
+
   // ============================================================
   // ELEMENTS
   // ============================================================
+
 
   const pendingReportsBody =
     document.getElementById(
       "pendingReportsBody"
     );
+
+
 
 
   const pendingReportsView =
@@ -1168,10 +1448,14 @@
     );
 
 
+
+
   const individualDetailView =
     document.getElementById(
       "individualDetailView"
     );
+
+
 
 
   const reportSearchInput =
@@ -1180,10 +1464,14 @@
     );
 
 
+
+
   const reportDetailBody =
     document.getElementById(
       "reportDetailBody"
     );
+
+
 
 
   const reportNotesTextarea =
@@ -1192,10 +1480,14 @@
     );
 
 
+
+
   const remarksTextarea =
     document.getElementById(
       "remarksTextarea"
     );
+
+
 
 
   const backToPendingBtn =
@@ -1204,10 +1496,14 @@
     );
 
 
+
+
   const flagBtn =
     document.getElementById(
       "flagBtn"
     );
+
+
 
 
   const approveBtn =
@@ -1216,24 +1512,34 @@
     );
 
 
+
+
   // ============================================================
   // DATA
   // ============================================================
 
+
   let provincialReports = [];
 
+
   let selectedReport = null;
+
+
 
 
   // ============================================================
   // LOAD PROVINCIAL REPORTS
   // ============================================================
 
+
   async function loadProvincialReports() {
+
 
     if (!pendingReportsBody) {
       return;
     }
+
+
 
 
     pendingReportsBody.innerHTML = `
@@ -1245,13 +1551,17 @@
     `;
 
 
+
+
     try {
+
 
       const response =
         await fetch(
           PROVINCIAL_REPORTS_ENDPOINT,
           {
             method: "GET",
+
 
             headers: {
               "Accept":
@@ -1261,17 +1571,25 @@
         );
 
 
+
+
       if (!response.ok) {
+
 
         throw new Error(
           `Failed to load reports. Status: ${response.status}`
         );
 
+
       }
+
+
 
 
       provincialReports =
         await response.json();
+
+
 
 
       console.log(
@@ -1280,17 +1598,24 @@
       );
 
 
+
+
       renderProvincialReports(
         provincialReports
       );
 
 
+
+
     } catch (error) {
+
 
       console.error(
         "Error loading provincial reports:",
         error
       );
+
+
 
 
       pendingReportsBody.innerHTML = `
@@ -1301,32 +1626,43 @@
         </tr>
       `;
 
+
     }
 
+
   }
+
+
 
 
   // ============================================================
   // RENDER PROVINCIAL REPORTS
   // ============================================================
 
+
   function renderProvincialReports(
     reports = provincialReports
   ) {
+
 
     if (!pendingReportsBody) {
       return;
     }
 
 
+
+
     pendingReportsBody.innerHTML =
       "";
+
+
 
 
     if (
       !reports ||
       reports.length === 0
     ) {
+
 
       pendingReportsBody.innerHTML = `
         <tr>
@@ -1336,15 +1672,21 @@
         </tr>
       `;
 
+
       return;
     }
+
+
 
 
     reports.forEach(
       report => {
 
+
         const row =
           document.createElement("tr");
+
+
 
 
         row.classList.add(
@@ -1352,11 +1694,16 @@
         );
 
 
+
+
         row.dataset.id =
           report.report_id;
 
 
+
+
         row.innerHTML = `
+
 
           <td>
             <span class="pill">
@@ -1364,11 +1711,13 @@
             </span>
           </td>
 
+
           <td>
             <span class="pill">
               ${report.title || "Crop Harvest Report"}
             </span>
           </td>
+
 
           <td>
             <span class="pill">
@@ -1376,11 +1725,13 @@
             </span>
           </td>
 
+
           <td>
             <span class="pill">
               ${formatDate(report.planting_date)}
             </span>
           </td>
+
 
           <td>
             <span class="pill">
@@ -1388,13 +1739,17 @@
             </span>
           </td>
 
+
           <td>
             <span class="status-pill pending">
               For Provincial Validation
             </span>
           </td>
 
+
         `;
+
+
 
 
         row.addEventListener(
@@ -1406,25 +1761,34 @@
         );
 
 
+
+
         pendingReportsBody.appendChild(
           row
         );
 
+
       }
     );
 
+
   }
+
+
 
 
   // ============================================================
   // SEARCH REPORTS
   // ============================================================
 
+
   if (reportSearchInput) {
+
 
     reportSearchInput.addEventListener(
       "input",
       () => {
+
 
         const searchTerm =
           reportSearchInput.value
@@ -1432,24 +1796,33 @@
             .toLowerCase();
 
 
+
+
         if (!searchTerm) {
+
 
           renderProvincialReports(
             provincialReports
           );
 
+
           return;
         }
+
+
 
 
         const filteredReports =
           provincialReports.filter(
             report => {
 
+
               const reportId =
                 String(
                   report.report_id ?? ""
                 ).toLowerCase();
+
+
 
 
               const title =
@@ -1458,10 +1831,14 @@
                 ).toLowerCase();
 
 
+
+
               const commodity =
                 String(
                   report.commodity ?? ""
                 ).toLowerCase();
+
+
 
 
               const plantingDate =
@@ -1470,10 +1847,14 @@
                 ).toLowerCase();
 
 
+
+
               const yieldValue =
                 String(
                   report.estimated_yield ?? ""
                 ).toLowerCase();
+
+
 
 
               return (
@@ -1484,33 +1865,46 @@
                 yieldValue.includes(searchTerm)
               );
 
+
             }
           );
+
+
 
 
         renderProvincialReports(
           filteredReports
         );
 
+
       }
     );
 
+
   }
+
+
 
 
   // ============================================================
   // DATE FORMAT
   // ============================================================
 
+
   function formatDate(dateString) {
+
 
     if (!dateString) {
       return "—";
     }
 
 
+
+
     const date =
       new Date(dateString);
+
+
 
 
     if (
@@ -1519,9 +1913,13 @@
       )
     ) {
 
+
       return dateString;
 
+
     }
+
+
 
 
     return date.toLocaleDateString(
@@ -1530,62 +1928,84 @@
         month:
           "short",
 
+
         day:
           "numeric",
+
 
         year:
           "numeric"
       }
     );
 
+
   }
+
+
 
 
   // ============================================================
   // OPEN REPORT DETAIL
   // ============================================================
 
+
   function openReportDetail(
     report
   ) {
 
+
     selectedReport =
       report;
+
+
 
 
     pendingReportsView.style.display =
       "none";
 
 
+
+
     individualDetailView.style.display =
       "block";
+
+
 
 
     flagBtn.classList.remove(
       "active"
     );
 
+
     flagBtn.textContent =
       "Flag for Revision";
+
+
 
 
     approveBtn.classList.remove(
       "active"
     );
 
+
     approveBtn.textContent =
       "Approve";
 
 
+
+
     reportDetailBody.innerHTML = `
 
+
       <tr>
+
 
         <td>
           <span class="pill">
             ${report.commodity || "—"}
           </span>
         </td>
+
 
         <td>
           <span class="pill">
@@ -1595,6 +2015,7 @@
           </span>
         </td>
 
+
         <td>
           <span class="pill">
             ${formatDate(
@@ -1603,11 +2024,13 @@
           </span>
         </td>
 
+
         <td>
           <span class="pill">
             ${report.estimated_yield ?? "—"}
           </span>
         </td>
+
 
         <td>
           <span class="pill">
@@ -1615,15 +2038,20 @@
           </span>
         </td>
 
+
         <td>
           <span class="status-pill pending">
             For Provincial Validation
           </span>
         </td>
 
+
       </tr>
 
+
     `;
+
+
 
 
     reportNotesTextarea.value =
@@ -1632,9 +2060,13 @@
       "";
 
 
+
+
     remarksTextarea.value =
       report.revision_remarks ||
       "";
+
+
 
 
     window.scrollTo({
@@ -1642,78 +2074,107 @@
       behavior: "smooth"
     });
 
+
   }
+
+
 
 
   // ============================================================
   // RETURN TO PENDING LIST
   // ============================================================
 
+
   backToPendingBtn.addEventListener(
     "click",
     () => {
 
+
       selectedReport =
         null;
+
+
 
 
       individualDetailView.style.display =
         "none";
 
 
+
+
       pendingReportsView.style.display =
         "block";
+
+
 
 
       flagBtn.classList.remove(
         "active"
       );
 
+
       flagBtn.textContent =
         "Flag for Revision";
+
+
 
 
       approveBtn.classList.remove(
         "active"
       );
 
+
       approveBtn.textContent =
         "Approve";
 
+
     }
   );
+
+
 
 
   // ============================================================
   // FLAG FOR REVISION
   // ============================================================
 
+
   flagBtn.addEventListener(
     "click",
     async () => {
+
 
       if (!selectedReport) {
         return;
       }
 
 
+
+
       flagBtn.disabled =
         true;
+
 
       flagBtn.textContent =
         "Processing...";
 
 
+
+
       try {
+
 
         // ======================================================
         // GET LOGGED-IN USER
         // ======================================================
 
+
         const validatorId =
           localStorage.getItem(
             "user_id"
           );
+
+
 
 
         const accessToken =
@@ -1722,10 +2183,14 @@
           );
 
 
+
+
         const tokenType =
           localStorage.getItem(
             "token_type"
           ) || "bearer";
+
+
 
 
         const userRole =
@@ -1734,15 +2199,19 @@
           );
 
 
+
+
         console.log(
           "Validator ID:",
           validatorId
         );
 
+
         console.log(
           "User Role:",
           userRole
         );
+
 
         console.log(
           "Has Access Token:",
@@ -1750,27 +2219,38 @@
         );
 
 
+
+
         if (!validatorId) {
+
 
           throw new Error(
             "No logged-in user found. Please log in again."
           );
 
+
         }
 
 
+
+
         if (!accessToken) {
+
 
           throw new Error(
             "No access token found. Please log in again."
           );
 
+
         }
+
+
 
 
         // ======================================================
         // CHECK ROLE
         // ======================================================
+
 
         if (
           userRole !==
@@ -1779,37 +2259,51 @@
             "Provincial"
         ) {
 
+
           throw new Error(
             "Only a Provincial Coordinator can request revision."
           );
 
+
         }
+
+
 
 
         // ======================================================
         // REPORT DATA
         // ======================================================
 
+
         const reportId =
           selectedReport.report_id;
+
+
 
 
         const remarks =
           remarksTextarea.value.trim();
 
 
+
+
         if (!remarks) {
+
 
           throw new Error(
             "Revision remarks are required."
           );
 
+
         }
+
+
 
 
         // ======================================================
         // REQUEST REVISION API
         // ======================================================
+
 
         const revisionUrl =
           `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
@@ -1818,10 +2312,14 @@
           `&remarks=${encodeURIComponent(remarks)}`;
 
 
+
+
         console.log(
           "Revision URL:",
           revisionUrl
         );
+
+
 
 
         const response =
@@ -1831,9 +2329,11 @@
               method:
                 "POST",
 
+
               headers: {
                 "Accept":
                   "application/json",
+
 
                 "Authorization":
                   `${tokenType} ${accessToken}`
@@ -1842,7 +2342,10 @@
           );
 
 
+
+
         if (!response.ok) {
+
 
           const errorData =
             await response
@@ -1852,16 +2355,23 @@
               );
 
 
+
+
           throw new Error(
             errorData.detail ||
             `Failed to request revision. Status: ${response.status}`
           );
 
+
         }
+
+
 
 
         const result =
           await response.json();
+
+
 
 
         console.log(
@@ -1870,20 +2380,29 @@
         );
 
 
+
+
         selectedReport.status =
           "REVISION_REQUIRED";
+
+
 
 
         selectedReport.revision_remarks =
           remarks;
 
 
+
+
         flagBtn.classList.add(
           "active"
         );
 
+
         flagBtn.textContent =
           "Flagged ✓";
+
+
 
 
         const statusCell =
@@ -1892,16 +2411,24 @@
           );
 
 
+
+
         if (statusCell) {
+
 
           statusCell.className =
             "status-pill pending";
 
 
+
+
           statusCell.textContent =
             "Revision Required";
 
+
         }
+
+
 
 
         openModal(
@@ -1909,10 +2436,15 @@
         );
 
 
+
+
         await loadProvincialReports();
 
 
+
+
       } catch (error) {
+
 
         console.error(
           "Error requesting revision:",
@@ -1920,60 +2452,83 @@
         );
 
 
+
+
         openModal(
           `Error: ${error.message}`
         );
+
+
 
 
         flagBtn.classList.remove(
           "active"
         );
 
+
         flagBtn.textContent =
           "Flag for Revision";
 
 
+
+
       } finally {
+
 
         flagBtn.disabled =
           false;
 
+
       }
+
 
     }
   );
+
+
 
 
   // ============================================================
   // APPROVE REPORT
   // ============================================================
 
+
   approveBtn.addEventListener(
     "click",
     async () => {
+
 
       if (!selectedReport) {
         return;
       }
 
 
+
+
       approveBtn.disabled =
         true;
+
 
       approveBtn.textContent =
         "Processing...";
 
 
+
+
       try {
+
 
         // ======================================================
         // GET LOGGED-IN USER
         // ======================================================
 
+
         const validatorId =
           localStorage.getItem(
             "user_id"
           );
+
+
 
 
         const accessToken =
@@ -1982,10 +2537,14 @@
           );
 
 
+
+
         const tokenType =
           localStorage.getItem(
             "token_type"
           ) || "bearer";
+
+
 
 
         console.log(
@@ -1994,36 +2553,51 @@
         );
 
 
+
+
         console.log(
           "Has Access Token:",
           !!accessToken
         );
 
 
+
+
         if (!validatorId) {
+
 
           throw new Error(
             "No logged-in user found. Please log in again."
           );
 
+
         }
 
 
+
+
         if (!accessToken) {
+
 
           throw new Error(
             "No access token found. Please log in again."
           );
 
+
         }
+
+
 
 
         // ======================================================
         // REPORT DATA
         // ======================================================
 
+
         const reportId =
           selectedReport.report_id;
+
+
 
 
         const remarks =
@@ -2031,9 +2605,12 @@
           "Approved by Provincial Coordinator";
 
 
+
+
         // ======================================================
         // APPROVE API
         // ======================================================
+
 
         const approveUrl =
           `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
@@ -2042,10 +2619,14 @@
           `&remarks=${encodeURIComponent(remarks)}`;
 
 
+
+
         console.log(
           "Approve URL:",
           approveUrl
         );
+
+
 
 
         const response =
@@ -2055,9 +2636,11 @@
               method:
                 "POST",
 
+
               headers: {
                 "Accept":
                   "application/json",
+
 
                 "Authorization":
                   `${tokenType} ${accessToken}`
@@ -2066,11 +2649,15 @@
           );
 
 
+
+
         // ======================================================
         // HANDLE ERROR
         // ======================================================
 
+
         if (!response.ok) {
+
 
           const errorData =
             await response
@@ -2080,20 +2667,28 @@
               );
 
 
+
+
           throw new Error(
             errorData.detail ||
             `Failed to approve report. Status: ${response.status}`
           );
 
+
         }
+
+
 
 
         // ======================================================
         // SUCCESS RESPONSE
         // ======================================================
 
+
         const result =
           await response.json();
+
+
 
 
         console.log(
@@ -2102,33 +2697,45 @@
         );
 
 
+
+
         // ======================================================
         // UPDATE LOCAL DATA
         // ======================================================
 
+
         selectedReport.status =
           "FOR_DA_OFFICER_VALIDATION";
+
+
 
 
         selectedReport.revision_remarks =
           remarks;
 
 
+
+
         // ======================================================
         // UPDATE BUTTON
         // ======================================================
+
 
         approveBtn.classList.add(
           "active"
         );
 
+
         approveBtn.textContent =
           "Approved ✓";
+
+
 
 
         // ======================================================
         // UPDATE STATUS IN DETAIL VIEW
         // ======================================================
+
 
         const statusCell =
           document.querySelector(
@@ -2136,34 +2743,48 @@
           );
 
 
+
+
         if (statusCell) {
+
 
           statusCell.className =
             "status-pill approved";
 
 
+
+
           statusCell.textContent =
             "For DA Officer Validation";
 
+
         }
+
+
 
 
         // ======================================================
         // SUCCESS MODAL
         // ======================================================
 
+
         openModal(
           "Report Approved Successfully"
         );
+
+
 
 
         // ======================================================
         // RELOAD PROVINCIAL REPORT LIST
         // ======================================================
 
+
         await loadProvincialReports();
 
+
       } catch (error) {
+
 
         console.error(
           "Error approving report:",
@@ -2171,37 +2792,51 @@
         );
 
 
+
+
         openModal(
           `Error: ${error.message}`
         );
+
+
 
 
         approveBtn.classList.remove(
           "active"
         );
 
+
         approveBtn.textContent =
           "Approve";
 
+
       } finally {
+
 
         approveBtn.disabled =
           false;
 
+
       }
+
 
     }
   );
+
+
 
 
   // ============================================================
   // MODAL
   // ============================================================
 
+
   const reportModal =
     document.getElementById(
       "reportModal"
     );
+
+
 
 
   const reportModalText =
@@ -2210,46 +2845,65 @@
     );
 
 
+
+
   const reportModalConfirmBtn =
     document.getElementById(
       "reportModalConfirmBtn"
     );
 
 
+
+
   function openModal(
     message
   ) {
 
+
     reportModalText.textContent =
       message;
+
+
 
 
     reportModal.classList.add(
       "show"
     );
 
+
   }
+
+
 
 
   reportModalConfirmBtn.addEventListener(
     "click",
     () => {
 
+
       reportModal.classList.remove(
         "show"
       );
 
+
     }
   );
+
+
 
 
   // ============================================================
   // LOAD REPORTS WHEN PAGE OPENS
   // ============================================================
 
+
   loadProvincialReports();
 
+
 </script>
+<script src="../assets/js/logout.js"></script>
+
 
 </body>
 </html>
+
