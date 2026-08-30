@@ -9,8 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 
+
+
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+
+
 
 
 <link rel="stylesheet" href="../assets/css/base.css">
@@ -28,7 +32,11 @@
   }
 
 
+
+
   .topbar-left{ display:flex; align-items:center; gap:16px; }
+
+
 
 
   .hamburger{
@@ -42,6 +50,8 @@
   }
 
 
+
+
   .hamburger span{
     display:block;
     width:26px;
@@ -51,8 +61,12 @@
   }
 
 
+
+
   .logos{ display:flex; align-items:center; gap:10px; }
   .seal{ width:44px; height:44px; }
+
+
 
 
   .brand-word{
@@ -64,10 +78,16 @@
   }
 
 
+
+
   .brand-logo svg{ width:60px; height:50px; }
 
 
+
+
   .topbar-right{ display:flex; align-items:center; gap:18px; }
+
+
 
 
   .bell-wrap{
@@ -84,7 +104,11 @@
   }
 
 
+
+
   .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
+
+
 
 
   .bell-dot{
@@ -99,10 +123,14 @@
   }
 
 
+
+
   .user-info{ display:flex; align-items:center; gap:10px; }
   .user-text{ text-align:right; line-height:1.25; }
   .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
   .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
+
+
 
 
   .avatar{
@@ -116,10 +144,16 @@
   }
 
 
+
+
   .avatar svg{ width:20px; height:20px; fill:#fff; }
 
 
+
+
   .layout{ display:flex; min-height:calc(100vh - 73px); }
+
+
 
 
   /* SIDEBAR STYLES */
@@ -141,10 +175,16 @@
   }
 
 
+
+
   .sidebar.open{ left:0; }
 
 
+
+
   .nav-list{ display:flex; flex-direction:column; gap:2px; }
+
+
 
 
   .nav-item{
@@ -164,9 +204,13 @@
   }
 
 
+
+
   .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
   .nav-item:hover{ background:rgba(255,255,255,0.08); }
   .nav-item.active{ background:var(--green-dark); font-weight:700; }
+
+
 
 
   .signout{
@@ -181,8 +225,12 @@
   }
 
 
+
+
   .signout svg{ width:18px; height:18px; fill:#fff; }
   .signout:hover{ opacity:0.8; }
+
+
 
 
   .main{
@@ -192,8 +240,12 @@
   }
 
 
+
+
   .view{ display:none; }
   .view.active-view{ display:block; }
+
+
 
 
   .main-header{
@@ -206,6 +258,8 @@
   }
 
 
+
+
   .main-header h1{
     font-family:'Oswald', sans-serif;
     font-weight:700;
@@ -216,12 +270,16 @@
   }
 
 
+
+
   .card{
     background:var(--white);
     border:1px solid var(--border);
     border-radius:12px;
     padding:24px 28px;
   }
+
+
 
 
   /* MAP DESIGN */
@@ -231,6 +289,8 @@
     border-radius:8px;
     border:1px solid var(--border);
   }
+
+
 
 
   /* SEARCH & FILTER BAR */
@@ -249,6 +309,8 @@
   .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
 
 
+
+
   /* TAB BUTTONS (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING) */
   .tab-buttons-row{
     display:flex;
@@ -256,6 +318,8 @@
     margin-bottom:24px;
     align-items:center;
   }
+
+
 
 
   .tab-btn{
@@ -272,11 +336,15 @@
   }
 
 
+
+
   .tab-btn:hover{ background:#DEDDDC; }
   .tab-btn.active{
     background:#C4C3C2;
     border-color:var(--ink);
   }
+
+
 
 
   /* SUMMARY TAB CONTENT DESIGN */
@@ -287,6 +355,8 @@
   }
 
 
+
+
   .summary-left-box, .summary-right-card{
     background:#fff;
     border:1px solid #D0D0D0;
@@ -295,12 +365,16 @@
   }
 
 
+
+
   .summary-stat-chips{
     display:flex;
     gap:10px;
     margin:14px 0 20px;
     flex-wrap:wrap;
   }
+
+
 
 
   .stat-chip{
@@ -313,6 +387,8 @@
   }
 
 
+
+
   .stat-chip.gray{ background:#F2EFE9; border:1px solid #CCC; color:#333; }
   .stat-chip.black{ background:#000; color:#fff; }
   .stat-chip.green{ background:#0B823A; color:#fff; }
@@ -320,7 +396,11 @@
   .stat-chip.red{ background:#B82218; color:#fff; }
 
 
+
+
   .stat-chip span{ display:block; font-size:14px; margin-top:2px; }
+
+
 
 
   .placeholder-line{
@@ -329,6 +409,8 @@
     border-radius:4px;
     margin-bottom:10px;
   }
+
+
 
 
   .top-commodity-body{
@@ -340,6 +422,8 @@
   }
 
 
+
+
   .top-commodity-img{
     width:120px;
     height:80px;
@@ -349,6 +433,8 @@
     align-items:center;
     justify-content:center;
   }
+
+
 
 
   /* TABLE COMMON DESIGN */
@@ -365,12 +451,16 @@
   thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
 
 
+
+
   tbody td{
     padding:14px 8px;
     font-size:13.5px;
     text-align:center;
     vertical-align:middle;
   }
+
+
 
 
   .pill{
@@ -384,6 +474,8 @@
   }
 
 
+
+
   .status-pill{
     display:inline-block;
     padding:6px 20px;
@@ -394,10 +486,14 @@
   }
 
 
+
+
   .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#118308; }
   .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
   .status-pill.planted{ background:#E06030; }
   .status-pill.pending{ background:#C48D53; }
+
+
 
 
   /* REMARKS / NOTES SECTION */
@@ -411,8 +507,12 @@
   }
 
 
+
+
   .notes-field{ flex:1; }
   .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
+
+
 
 
   .btn-outline-report{
@@ -430,7 +530,11 @@
   }
 
 
+
+
   .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
+
+
 
 
   .detail-actions-row{
@@ -441,8 +545,12 @@
   }
 
 
+
+
   .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
   .approve-btn.active{ background:#5A7365; border-color:#5A7365; color:#fff; }
+
+
 
 
   /* MODAL OVERLAY */
@@ -457,7 +565,11 @@
   }
 
 
+
+
   .modal-overlay.show{ display:flex; }
+
+
 
 
   .modal-box{
@@ -471,6 +583,8 @@
   }
 
 
+
+
   .modal-box p{
     font-family:'Oswald', sans-serif;
     font-size:28px;
@@ -479,6 +593,8 @@
     margin-bottom:24px;
     line-height:1.25;
   }
+
+
 
 
   .modal-confirm-btn{
@@ -494,8 +610,12 @@
   }
 
 
+
+
   .clickable-row{ cursor:pointer; }
   .clickable-row:hover td{ background:#F6F3EB; }
+
+
 
 
   /* HELPER CLASSES PARANG WALA NANG INLINE STYLE WARNINGS */
@@ -506,10 +626,14 @@
   .textarea-narrative { width: 100%; height: 80px; border: 1.5px solid #666; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; resize: vertical; }
 
 
+
+
   .text-top-commodity { font-size: 13px; font-weight: 700; }
   .text-green-highlight { color: #0B823A; }
   .top-commodity-text { font-size: 12.5px; line-height: 1.6; }
   .text-as-of { font-size: 11px; color: #888; text-align: right; margin-top: 20px; }
+
+
 
 
   .upload-section { margin-top: 28px; border-top: 1px solid #EEE; padding-top: 16px; }
@@ -519,8 +643,12 @@
   .btn-select-file { padding: 6px 12px; font-size: 12px; }
 
 
+
+
   .actions-right-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
   .btn-submit-bg { background: #E5E4E3; }
+
+
 
 
   .hidden-element { display: none; }
@@ -531,11 +659,15 @@
 <body>
 
 
+
+
   <div class="topbar">
     <div class="topbar-left">
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
+
+
 
 
       <div class="logos">
@@ -560,11 +692,15 @@
     </div>
 
 
+
+
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
+
 
 
       <div class="user-info">
@@ -580,7 +716,11 @@
   </div>
 
 
+
+
   <div class="layout">
+
+
 
 
     <nav class="sidebar" id="sidebar">
@@ -596,6 +736,8 @@
       </div>
 
 
+
+
       <a class="signout" href="../index.html">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -603,16 +745,24 @@
     </nav>
 
 
+
+
     <main class="main">
+
+
 
 
       <!-- ===================== VIEW 1: View Reports ===================== -->
       <section class="view active-view" id="view-reports">
 
 
+
+
         <!-- REPORTS HEADER -->
         <div class="main-header">
           <h1>Reports</h1>
+
+
 
 
           <div class="search-row">
@@ -621,6 +771,8 @@
                 <circle cx="11" cy="11" r="7"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
+
+
 
 
               <input
@@ -634,16 +786,24 @@
         </div>
 
 
+
+
         <!-- ===================== PENDING REPORTS ===================== -->
         <div id="pendingReportsView">
+
+
 
 
           <div class="card">
 
 
+
+
             <div class="text-section-title" style="font-size:16px; margin-bottom:16px;">
               Pending Reports
             </div>
+
+
 
 
             <table>
@@ -659,6 +819,8 @@
               </thead>
 
 
+
+
               <tbody id="pendingReportsBody">
                 <tr>
                   <td colspan="6">
@@ -669,10 +831,16 @@
             </table>
 
 
+
+
           </div>
 
 
+
+
         </div>
+
+
 
 
         <!-- ===================== REPORT DETAIL ===================== -->
@@ -682,7 +850,11 @@
         >
 
 
+
+
           <div class="card">
+
+
 
 
             <table>
@@ -698,9 +870,13 @@
               </thead>
 
 
+
+
               <tbody id="reportDetailBody">
               </tbody>
             </table>
+
+
 
 
             <!-- NOTES -->
@@ -715,6 +891,8 @@
               </div>
 
 
+
+
               <div>
                 <button
                   class="btn-outline-report"
@@ -725,6 +903,8 @@
                 </button>
               </div>
             </div>
+
+
 
 
             <!-- REMARKS -->
@@ -740,7 +920,11 @@
             </div>
 
 
+
+
           </div>
+
+
 
 
           <!-- ACTION BUTTONS -->
@@ -754,6 +938,8 @@
             </button>
 
 
+
+
             <button
               class="btn-outline-report flag-btn"
               id="flagBtn"
@@ -761,6 +947,8 @@
             >
               Flag for Revision
             </button>
+
+
 
 
             <button
@@ -773,10 +961,16 @@
           </div>
 
 
+
+
         </div>
 
 
+
+
       </section>
+
+
 
 
       <!-- ===================== VIEW 2: Map ===================== -->
@@ -786,14 +980,20 @@
         </div>
 
 
+
+
         <div class="card">
           <div id="map"></div>
         </div>
       </section>
 
 
+
+
     </main>
   </div>
+
+
 
 
   <!-- CONFIRMATION MODAL -->
@@ -805,14 +1005,20 @@
   </div>
 
 
+
+
 <!-- Leaflet-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+
 
 
 <script>
   // SIDEBAR & VIEW SWITCHING
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const sidebar = document.getElementById('sidebar');
+
+
 
 
   hamburgerBtn.addEventListener('click', () => {
@@ -823,8 +1029,12 @@
   });
 
 
+
+
   const navButtons = document.querySelectorAll('.nav-item[data-view]');
   const views = document.querySelectorAll('.view');
+
+
 
 
   function switchView(viewKey){
@@ -833,15 +1043,21 @@
     navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewKey));
 
 
+
+
     if (viewKey === 'map' && window.leafletMap){
       setTimeout(() => window.leafletMap.invalidateSize(), 50);
     }
   }
 
 
+
+
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
+
+
 
 
   // MAP INITIALIZATION
@@ -854,10 +1070,14 @@
   window.leafletMap = map;
 
 
+
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 18
   }).addTo(map);
+
+
 
 
 // ============================================================
@@ -866,11 +1086,19 @@
 // ============================================================
 
 
+
+
 const API_BASE_URL = "http://127.0.0.1:8000";
+
+
 
 
 const MUNICIPAL_REPORTS_ENDPOINT =
   `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
+
+
+
+
 
 
 
@@ -880,44 +1108,68 @@ const MUNICIPAL_REPORTS_ENDPOINT =
 // ============================================================
 
 
+
+
 const pendingReportsBody =
   document.getElementById("pendingReportsBody");
+
+
 
 
 const pendingReportsView =
   document.getElementById("pendingReportsView");
 
 
+
+
 const individualDetailView =
   document.getElementById("individualDetailView");
+
+
 
 
 const reportSearchInput =
   document.getElementById("reportSearchInput");
 
 
+
+
 const reportDetailBody =
   document.getElementById("reportDetailBody");
+
+
 
 
 const reportNotesTextarea =
   document.getElementById("reportNotesTextarea");
 
 
+
+
 const remarksTextarea =
   document.getElementById("remarksTextarea");
+
+
 
 
 const backToPendingBtn =
   document.getElementById("backToPendingBtn");
 
 
+
+
 const flagBtn =
   document.getElementById("flagBtn");
 
 
+
+
 const approveBtn =
   document.getElementById("approveBtn");
+
+
+
+
 
 
 
@@ -927,10 +1179,18 @@ const approveBtn =
 // ============================================================
 
 
+
+
 let municipalReports = [];
 
 
+
+
 let selectedReport = null;
+
+
+
+
 
 
 
@@ -940,12 +1200,18 @@ let selectedReport = null;
 // ============================================================
 
 
+
+
 async function loadMunicipalReports() {
+
+
 
 
   if (!pendingReportsBody) {
     return;
   }
+
+
 
 
   pendingReportsBody.innerHTML = `
@@ -957,7 +1223,11 @@ async function loadMunicipalReports() {
   `;
 
 
+
+
   try {
+
+
 
 
     const response = await fetch(
@@ -971,6 +1241,8 @@ async function loadMunicipalReports() {
     );
 
 
+
+
     if (!response.ok) {
       throw new Error(
         `Failed to load reports. Status: ${response.status}`
@@ -978,7 +1250,11 @@ async function loadMunicipalReports() {
     }
 
 
+
+
     municipalReports = await response.json();
+
+
 
 
     console.log(
@@ -987,18 +1263,26 @@ async function loadMunicipalReports() {
     );
 
 
+
+
     renderMunicipalReports(
       municipalReports
     );
 
 
+
+
   } catch (error) {
+
+
 
 
     console.error(
       "Error loading municipal reports:",
       error
     );
+
+
 
 
     pendingReportsBody.innerHTML = `
@@ -1010,10 +1294,18 @@ async function loadMunicipalReports() {
     `;
 
 
+
+
   }
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1023,9 +1315,13 @@ async function loadMunicipalReports() {
 // ============================================================
 
 
+
+
 function renderMunicipalReports(
   reports = municipalReports
 ) {
+
+
 
 
   if (!pendingReportsBody) {
@@ -1033,10 +1329,16 @@ function renderMunicipalReports(
   }
 
 
+
+
   pendingReportsBody.innerHTML = "";
 
 
+
+
   if (!reports || reports.length === 0) {
+
+
 
 
     pendingReportsBody.innerHTML = `
@@ -1048,15 +1350,23 @@ function renderMunicipalReports(
     `;
 
 
+
+
     return;
   }
+
+
 
 
   reports.forEach(report => {
 
 
+
+
     const row =
       document.createElement("tr");
+
+
 
 
     row.classList.add(
@@ -1064,11 +1374,17 @@ function renderMunicipalReports(
     );
 
 
+
+
     row.dataset.id =
       report.report_id;
 
 
+
+
     row.innerHTML = `
+
+
 
 
       <td>
@@ -1078,11 +1394,15 @@ function renderMunicipalReports(
       </td>
 
 
+
+
       <td>
         <span class="pill">
           ${report.title || "Crop Harvest Report"}
         </span>
       </td>
+
+
 
 
       <td>
@@ -1092,11 +1412,15 @@ function renderMunicipalReports(
       </td>
 
 
+
+
       <td>
         <span class="pill">
           ${formatDate(report.planting_date)}
         </span>
       </td>
+
+
 
 
       <td>
@@ -1106,6 +1430,8 @@ function renderMunicipalReports(
       </td>
 
 
+
+
       <td>
         <span class="status-pill pending">
           For Municipal Validation
@@ -1113,7 +1439,11 @@ function renderMunicipalReports(
       </td>
 
 
+
+
     `;
+
+
 
 
     row.addEventListener(
@@ -1122,13 +1452,23 @@ function renderMunicipalReports(
     );
 
 
+
+
     pendingReportsBody.appendChild(row);
+
+
 
 
   });
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1138,12 +1478,18 @@ function renderMunicipalReports(
 // ============================================================
 
 
+
+
 if (reportSearchInput) {
+
+
 
 
   reportSearchInput.addEventListener(
     "input",
     () => {
+
+
 
 
       const searchTerm =
@@ -1152,7 +1498,11 @@ if (reportSearchInput) {
           .toLowerCase();
 
 
+
+
       if (!searchTerm) {
+
+
 
 
         renderMunicipalReports(
@@ -1160,12 +1510,18 @@ if (reportSearchInput) {
         );
 
 
+
+
         return;
       }
 
 
+
+
       const filteredReports =
         municipalReports.filter(report => {
+
+
 
 
           const reportId =
@@ -1174,10 +1530,14 @@ if (reportSearchInput) {
             ).toLowerCase();
 
 
+
+
           const title =
             String(
               report.title ?? ""
             ).toLowerCase();
+
+
 
 
           const commodity =
@@ -1186,16 +1546,22 @@ if (reportSearchInput) {
             ).toLowerCase();
 
 
+
+
           const plantingDate =
             String(
               report.planting_date ?? ""
             ).toLowerCase();
 
 
+
+
           const yieldValue =
             String(
               report.estimated_yield ?? ""
             ).toLowerCase();
+
+
 
 
           return (
@@ -1207,7 +1573,11 @@ if (reportSearchInput) {
           );
 
 
+
+
         });
+
+
 
 
       renderMunicipalReports(
@@ -1215,11 +1585,19 @@ if (reportSearchInput) {
       );
 
 
+
+
     }
   );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1229,7 +1607,11 @@ if (reportSearchInput) {
 // ============================================================
 
 
+
+
 function formatDate(dateString) {
+
+
 
 
   if (!dateString) {
@@ -1237,13 +1619,19 @@ function formatDate(dateString) {
   }
 
 
+
+
   const date =
     new Date(dateString);
+
+
 
 
   if (isNaN(date.getTime())) {
     return dateString;
   }
+
+
 
 
   return date.toLocaleDateString(
@@ -1256,7 +1644,13 @@ function formatDate(dateString) {
   );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1266,10 +1660,16 @@ function formatDate(dateString) {
 // ============================================================
 
 
+
+
 function openReportDetail(report) {
 
 
+
+
   selectedReport = report;
+
+
 
 
   // Hide pending list
@@ -1277,9 +1677,13 @@ function openReportDetail(report) {
     "none";
 
 
+
+
   // Show detail
   individualDetailView.style.display =
     "block";
+
+
 
 
   // Reset buttons
@@ -1288,16 +1692,24 @@ function openReportDetail(report) {
     "Flag for Revision";
 
 
+
+
   approveBtn.classList.remove("active");
   approveBtn.textContent =
     "Approve";
+
+
 
 
   // Fill report details
   reportDetailBody.innerHTML = `
 
 
+
+
     <tr>
+
+
 
 
       <td>
@@ -1305,6 +1717,8 @@ function openReportDetail(report) {
           ${report.commodity || "—"}
         </span>
       </td>
+
+
 
 
       <td>
@@ -1316,6 +1730,8 @@ function openReportDetail(report) {
       </td>
 
 
+
+
       <td>
         <span class="pill">
           ${formatDate(
@@ -1325,11 +1741,15 @@ function openReportDetail(report) {
       </td>
 
 
+
+
       <td>
         <span class="pill">
           ${report.estimated_yield ?? "—"}
         </span>
       </td>
+
+
 
 
       <td>
@@ -1339,6 +1759,8 @@ function openReportDetail(report) {
       </td>
 
 
+
+
       <td>
         <span class="status-pill pending">
           For Municipal Validation
@@ -1346,10 +1768,16 @@ function openReportDetail(report) {
       </td>
 
 
+
+
     </tr>
 
 
+
+
   `;
+
+
 
 
   // Notes
@@ -1359,10 +1787,14 @@ function openReportDetail(report) {
     "";
 
 
+
+
   // Remarks
   remarksTextarea.value =
     report.revision_remarks ||
     "";
+
+
 
 
   // Scroll to top of reports
@@ -1372,7 +1804,13 @@ function openReportDetail(report) {
   });
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1382,20 +1820,30 @@ function openReportDetail(report) {
 // ============================================================
 
 
+
+
 backToPendingBtn.addEventListener(
   "click",
   () => {
 
 
+
+
     selectedReport = null;
+
+
 
 
     individualDetailView.style.display =
       "none";
 
 
+
+
     pendingReportsView.style.display =
       "block";
+
+
 
 
     flagBtn.classList.remove("active");
@@ -1403,9 +1851,13 @@ backToPendingBtn.addEventListener(
       "Flag for Revision";
 
 
+
+
     approveBtn.classList.remove("active");
     approveBtn.textContent =
       "Approve";
+
+
 
 
   }
@@ -1413,6 +1865,9 @@ backToPendingBtn.addEventListener(
 
 
 
+
+
+
 // ============================================================
 // FLAG FOR REVISION - WITH ACTUAL API CALL
 // ============================================================
@@ -1420,31 +1875,40 @@ backToPendingBtn.addEventListener(
 // FLAG FOR REVISION - WITH ACTUAL API CALL
 // ============================================================
 
+
 flagBtn.addEventListener("click", async () => {
+
 
   if (!selectedReport) {
     return;
   }
 
+
   flagBtn.disabled = true;
   flagBtn.textContent = "Processing...";
 
+
   try {
+
 
     // ============================================================
     // GET LOGGED-IN USER
     // ============================================================
+
 
     const validatorId = localStorage.getItem("user_id");
     const accessToken = localStorage.getItem("access_token");
     const tokenType =
       localStorage.getItem("token_type") || "bearer";
 
+
     const userRole = localStorage.getItem("role");
+
 
     console.log("Validator ID:", validatorId);
     console.log("User Role:", userRole);
     console.log("Has Access Token:", !!accessToken);
+
 
     if (!validatorId) {
       throw new Error(
@@ -1452,15 +1916,18 @@ flagBtn.addEventListener("click", async () => {
       );
     }
 
+
     if (!accessToken) {
       throw new Error(
         "No access token found. Please log in again."
       );
     }
 
+
     // ============================================================
     // CHECK ROLE
     // ============================================================
+
 
     if (
       userRole !== "Municipal Coordinator" &&
@@ -1471,14 +1938,18 @@ flagBtn.addEventListener("click", async () => {
       );
     }
 
+
     // ============================================================
     // REPORT DATA
     // ============================================================
 
+
     const reportId = selectedReport.report_id;
+
 
     const remarks =
       remarksTextarea.value.trim();
+
 
     if (!remarks) {
       throw new Error(
@@ -1486,9 +1957,11 @@ flagBtn.addEventListener("click", async () => {
       );
     }
 
+
     // ============================================================
     // REQUEST REVISION API
     // ============================================================
+
 
     const revisionUrl =
       `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
@@ -1496,15 +1969,18 @@ flagBtn.addEventListener("click", async () => {
       `&validator_role=municipal_coordinator` +
       `&remarks=${encodeURIComponent(remarks)}`;
 
+
     console.log(
       "Revision URL:",
       revisionUrl
     );
 
+
     const response = await fetch(
       revisionUrl,
       {
         method: "POST",
+
 
         headers: {
           "Accept": "application/json",
@@ -1514,14 +1990,18 @@ flagBtn.addEventListener("click", async () => {
       }
     );
 
+
     // ============================================================
     // HANDLE ERROR
     // ============================================================
 
+
     if (!response.ok) {
+
 
       const errorData =
         await response.json().catch(() => ({}));
+
 
       throw new Error(
         errorData.detail ||
@@ -1529,123 +2009,158 @@ flagBtn.addEventListener("click", async () => {
       );
     }
 
+
     // ============================================================
     // SUCCESS RESPONSE
     // ============================================================
 
+
     const result =
       await response.json();
+
 
     console.log(
       "Revision result:",
       result
     );
 
+
     // ============================================================
     // UPDATE LOCAL DATA
     // ============================================================
 
+
     selectedReport.status =
       "REVISION_REQUIRED";
 
+
     selectedReport.revision_remarks =
       remarks;
+
 
     // ============================================================
     // UPDATE BUTTON
     // ============================================================
 
+
     flagBtn.classList.add("active");
     flagBtn.textContent =
       "Flagged ✓";
 
+
     // ============================================================
     // UPDATE STATUS IN DETAIL VIEW
     // ============================================================
+
 
     const statusCell =
       document.querySelector(
         "#reportDetailBody td:last-child .status-pill"
       );
 
+
     if (statusCell) {
+
 
       statusCell.className =
         "status-pill pending";
+
 
       statusCell.textContent =
         "Revision Required";
     }
 
+
     // ============================================================
     // SUCCESS MODAL
     // ============================================================
+
 
     openModal(
       "Report Flagged for Revision"
     );
 
+
     // ============================================================
     // RELOAD REPORT LIST
     // ============================================================
 
+
     await loadMunicipalReports();
 
+
   } catch (error) {
+
 
     console.error(
       "Error requesting revision:",
       error
     );
 
+
     openModal(
       `Error: ${error.message}`
     );
+
 
     flagBtn.classList.remove("active");
     flagBtn.textContent =
       "Flag for Revision";
 
+
   } finally {
+
 
     flagBtn.disabled = false;
 
+
   }
 
+
 });
+
 
 // ============================================================
 // APPROVE REPORT - WITH ACTUAL API CALL
 // ============================================================
 
+
 approveBtn.addEventListener("click", async () => {
+
 
   if (!selectedReport) {
     return;
   }
 
+
   approveBtn.disabled = true;
   approveBtn.textContent = "Processing...";
 
+
   try {
+
 
     // ============================================================
     // GET LOGGED-IN USER
     // ============================================================
+
 
     // ✅ BAGONG CODE
 const validatorId = localStorage.getItem("user_id");
 const accessToken = localStorage.getItem("access_token");
 const tokenType = localStorage.getItem("token_type") || "bearer";
 
+
 console.log("Validator ID:", validatorId);
 console.log("Has Access Token:", !!accessToken);
+
 
 if (!validatorId) {
   throw new Error(
     "No logged-in user found. Please log in again."
   );
 }
+
 
 if (!accessToken) {
   throw new Error(
@@ -1656,15 +2171,19 @@ if (!accessToken) {
     // REPORT DATA
     // ============================================================
 
+
     const reportId = selectedReport.report_id;
+
 
     const remarks =
       remarksTextarea.value.trim() ||
       "Approved by Municipal Coordinator";
 
+
     // ============================================================
     // APPROVE API
     // ============================================================
+
 
     const approveUrl =
       `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
@@ -1672,7 +2191,9 @@ if (!accessToken) {
       `&validator_role=municipal_coordinator` +
       `&remarks=${encodeURIComponent(remarks)}`;
 
+
     console.log("Approve URL:", approveUrl);
+
 
     // ✅ BAGONG CODE
 const response = await fetch(
@@ -1686,14 +2207,18 @@ const response = await fetch(
   }
 );
 
+
     // ============================================================
     // HANDLE ERROR
     // ============================================================
 
+
     if (!response.ok) {
+
 
       const errorData =
         await response.json().catch(() => ({}));
+
 
       throw new Error(
         errorData.detail ||
@@ -1701,88 +2226,116 @@ const response = await fetch(
       );
     }
 
+
     // ============================================================
     // SUCCESS RESPONSE
     // ============================================================
 
+
     const result = await response.json();
 
+
     console.log("Approve result:", result);
+
 
     // ============================================================
     // UPDATE LOCAL DATA
     // ============================================================
 
+
     selectedReport.status =
       "FOR_PROVINCIAL_VALIDATION";
 
+
     selectedReport.revision_remarks =
       remarks;
+
 
     // ============================================================
     // UPDATE BUTTON
     // ============================================================
 
+
     approveBtn.classList.add("active");
     approveBtn.textContent = "Approved ✓";
+
 
     // ============================================================
     // UPDATE STATUS IN DETAIL VIEW
     // ============================================================
+
 
     const statusCell =
       document.querySelector(
         "#reportDetailBody td:last-child .status-pill"
       );
 
+
     if (statusCell) {
+
 
       statusCell.className =
         "status-pill approved";
+
 
       statusCell.textContent =
         "For Provincial Validation";
     }
 
+
     // ============================================================
     // SUCCESS MODAL
     // ============================================================
+
 
     openModal(
       "Report Approved Successfully"
     );
 
+
     // ============================================================
     // RELOAD REPORT LIST
     // ============================================================
 
+
     await loadMunicipalReports();
 
+
   } catch (error) {
+
 
     console.error(
       "Error approving report:",
       error
     );
 
+
     openModal(
       `Error: ${error.message}`
     );
 
+
     approveBtn.classList.remove("active");
     approveBtn.textContent = "Approve";
 
+
   } finally {
+
 
     approveBtn.disabled = false;
 
+
   }
 
+
 });
+
 
 // ============================================================
 // SUBMIT REPORT TO PROVINCIAL LEVEL
 // ============================================================
+
+
 
 
 const submitReportToProvBtn =
@@ -1791,7 +2344,11 @@ const submitReportToProvBtn =
   );
 
 
+
+
 if (submitReportToProvBtn) {
+
+
 
 
   submitReportToProvBtn.addEventListener(
@@ -1799,16 +2356,26 @@ if (submitReportToProvBtn) {
     () => {
 
 
+
+
       openModal(
         "Report Submitted to Provincial Level"
       );
+
+
 
 
     }
   );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1818,16 +2385,22 @@ if (submitReportToProvBtn) {
 // ============================================================
 
 
+
+
 const reportModal =
   document.getElementById(
     "reportModal"
   );
 
 
+
+
 const reportModalText =
   document.getElementById(
     "reportModalText"
   );
+
+
 
 
 const reportModalConfirmBtn =
@@ -1838,11 +2411,19 @@ const reportModalConfirmBtn =
 
 
 
+
+
+
+
 function openModal(message) {
+
+
 
 
   reportModalText.textContent =
     message;
+
+
 
 
   reportModal.classList.add(
@@ -1850,7 +2431,13 @@ function openModal(message) {
   );
 
 
+
+
 }
+
+
+
+
 
 
 
@@ -1860,13 +2447,21 @@ reportModalConfirmBtn.addEventListener(
   () => {
 
 
+
+
     reportModal.classList.remove(
       "show"
     );
 
 
+
+
   }
 );
+
+
+
+
 
 
 
@@ -1876,12 +2471,21 @@ reportModalConfirmBtn.addEventListener(
 // ============================================================
 
 
+
+
 loadMunicipalReports();
+
+
 
 
 </script>
 
 
+<script src="../assets/js/logout.js"></script>
 </body>
 </html>
+
+
+
+
 

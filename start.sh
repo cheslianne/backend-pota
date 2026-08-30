@@ -1,11 +1,33 @@
 #!/bin/sh
 set -e
 
+# Ensure all frontend interface files are available in the deployed runtime.
+mkdir -p frontend/dashboards
+
+for file in index.html login.html buyer-registry.html forgot-password.html reset-password.html; do
+    if [ -f "$file" ] && [ ! -f "frontend/$file" ]; then
+        cp "$file" "frontend/$file"
+    fi
+    if [ -f "frontend/$file" ]; then
+        cp "$file" "frontend/$file"
+    fi
+done
+
+for file in frontend/dashboards/*.html; do
+    [ -e "$file" ] || continue
+    cp "$file" "frontend/dashboards/$(basename "$file")"
+done
+
+if [ -d "assets" ] && [ ! -d "frontend/assets" ]; then
+    cp -R assets frontend/assets
+fi
+
 python init_db.py
 python seed_admin.py
 python seed_aew.py
 python seed_provincial.py
 python seed_municipal.py
+python seed_darfo.py
 python seed_farmers.py
 python seed_buyers.py
 python seed_planting_intents.py
