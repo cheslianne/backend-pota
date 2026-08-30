@@ -6,6 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
+COPY frontend ./frontend
 COPY seed_*.py init_db.py start.sh ./
 COPY uploads ./uploads
 
