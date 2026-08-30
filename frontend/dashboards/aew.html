@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEW — eSaka</title>
 
-
   <!-- Clean, Modern Google Fonts for High Readability -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
-
 
   <style>
     :root {
@@ -38,13 +35,11 @@
       --radius-md: 12px;
     }
 
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
 
     html, body {
       width: 100%;
@@ -55,10 +50,8 @@
       -webkit-font-smoothing: antialiased;
     }
 
-
     a { color: inherit; }
     button, input, select, textarea { font-family: inherit; }
-
 
     /* --- TOPBAR --- */
     .topbar {
@@ -74,13 +67,11 @@
       height: var(--topbar-height);
     }
 
-
     .topbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
     }
-
 
     .hamburger {
       background: #FFF;
@@ -94,12 +85,10 @@
       transition: all 0.2s ease;
     }
 
-
     .hamburger:hover {
       background: var(--green-light);
       border-color: var(--green);
     }
-
 
     .hamburger span {
       display: block;
@@ -109,12 +98,13 @@
       border-radius: 2px;
     }
 
-
     .logos {
       display: flex;
       align-items: center;
       gap: 12px;
     }
+
+
 
 
     .brand-logo-img {
@@ -125,6 +115,8 @@
     }
 
 
+
+
     .brand-name-img {
       height: 44px;
       width: auto;
@@ -133,11 +125,15 @@
     }
 
 
+
+
     .topbar-right {
       display: flex;
       align-items: center;
       gap: 18px;
     }
+
+
 
 
     .bell-wrap {
@@ -155,10 +151,14 @@
     }
 
 
+
+
     .bell-wrap:hover {
       background: var(--green-dark);
       transform: scale(1.04);
     }
+
+
 
 
     .bell-wrap svg {
@@ -166,6 +166,8 @@
       height: 18px;
       fill: #fff;
     }
+
+
 
 
     .bell-dot {
@@ -180,6 +182,8 @@
     }
 
 
+
+
     .user-info {
       display: flex;
       align-items: center;
@@ -189,6 +193,8 @@
       border-radius: 999px;
       border: 1px solid var(--border);
     }
+
+
 
 
     .avatar {
@@ -205,10 +211,14 @@
     }
 
 
+
+
     .user-text {
       text-align: left;
       line-height: 1.2;
     }
+
+
 
 
     .user-name {
@@ -216,6 +226,8 @@
       font-weight: 700;
       color: var(--ink);
     }
+
+
 
 
     .user-role {
@@ -227,11 +239,15 @@
     }
 
 
+
+
     /* --- SIDEBAR --- */
     .layout {
       display: flex;
       min-height: calc(100vh - var(--topbar-height));
     }
+
+
 
 
     .sidebar {
@@ -252,9 +268,13 @@
     }
 
 
+
+
     .sidebar.open {
       left: 0;
     }
+
+
 
 
     .nav-list {
@@ -262,6 +282,8 @@
       flex-direction: column;
       gap: 4px;
     }
+
+
 
 
     .nav-item {
@@ -283,6 +305,8 @@
     }
 
 
+
+
     .nav-item svg {
       width: 19px;
       height: 19px;
@@ -291,10 +315,14 @@
     }
 
 
+
+
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
     }
+
+
 
 
     .nav-item.active {
@@ -302,6 +330,8 @@
       color: #FFFFFF;
       font-weight: 700;
     }
+
+
 
 
     .signout {
@@ -322,6 +352,8 @@
     }
 
 
+
+
     .signout svg {
       width: 18px;
       height: 18px;
@@ -329,10 +361,14 @@
     }
 
 
+
+
     .signout:hover {
       background: rgba(192, 57, 43, 0.25);
       color: #FFF;
     }
+
+
 
 
     /* --- MAIN CONTENT & ACTION PANELS --- */
@@ -343,8 +379,12 @@
     }
 
 
+
+
     .view { display: none; }
     .view.active-view { display: block; }
+
+
 
 
     .main-header {
@@ -357,6 +397,8 @@
     }
 
 
+
+
     .header-left h1 {
       font-size: 26px;
       font-weight: 800;
@@ -366,11 +408,15 @@
     }
 
 
+
+
     .header-left p {
       font-size: 13px;
       color: var(--muted);
       margin-top: 4px;
     }
+
+
 
 
     .header-actions {
@@ -380,12 +426,16 @@
     }
 
 
+
+
     .card {
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
       padding: 22px 24px;
     }
+
+
 
 
     /* --- HCI SEARCH BOX AFFORDANCE --- */
@@ -402,10 +452,14 @@
     }
 
 
+
+
     .search-box:focus-within {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
+
+
 
 
     .search-box svg {
@@ -415,6 +469,8 @@
       stroke: var(--muted);
       stroke-width: 2.4;
     }
+
+
 
 
     .search-box input {
@@ -427,12 +483,16 @@
     }
 
 
+
+
     /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
     }
+
+
 
 
     thead th {
@@ -447,9 +507,13 @@
     }
 
 
+
+
     thead th.center-col, tbody td.center-col {
       text-align: center;
     }
+
+
 
 
     tbody td {
@@ -461,9 +525,13 @@
     }
 
 
+
+
     tbody tr {
       transition: background 0.15s ease;
     }
+
+
 
 
     tbody tr:hover td {
@@ -471,7 +539,11 @@
     }
 
 
+
+
     .clickable-row { cursor: pointer; }
+
+
 
 
     /* --- VISIBLE HIGH-CONTRAST STATUS BADGES --- */
@@ -489,12 +561,16 @@
     }
 
 
+
+
     .status-pill.active,
     .status-pill.confirmed,
     .status-pill.harvested,
     .status-pill.approved {
       background-color: var(--status-confirmed) !important;
     }
+
+
 
 
     .status-pill.submitted,
@@ -504,15 +580,21 @@
     }
 
 
+
+
     .status-pill.planted {
       background-color: #D9531E !important;
     }
+
+
 
 
     .status-pill.rejected,
     .status-pill.cancelled {
       background-color: var(--status-rejected) !important;
     }
+
+
 
 
     /* --- SOLID PRIMARY & OUTLINE BUTTONS (FITTS'S LAW) --- */
@@ -533,15 +615,21 @@
     }
 
 
+
+
     .btn-primary:hover:not(:disabled) {
       background: var(--green-dark);
       transform: translateY(-1px);
     }
 
 
+
+
     .btn-primary:active:not(:disabled) {
       transform: translateY(0);
     }
+
+
 
 
     .btn-outline-report {
@@ -558,10 +646,14 @@
     }
 
 
+
+
     .btn-outline-report:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
     }
+
+
 
 
     .actions-right-row {
@@ -572,12 +664,16 @@
     }
 
 
+
+
     /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px 30px;
     }
+
+
 
 
     .form-field-item label {
@@ -591,7 +687,11 @@
     }
 
 
+
+
     .form-field-item label .req { color: #C0392B; }
+
+
 
 
     .form-field-item input,
@@ -609,6 +709,8 @@
     }
 
 
+
+
     .form-field-item input:focus,
     .form-field-item select:focus,
     .form-field-item textarea:focus {
@@ -617,13 +719,19 @@
     }
 
 
+
+
     .form-field-item textarea {
       resize: vertical;
       height: 90px;
     }
 
 
+
+
     .form-field-full { grid-column: 1 / -1; }
+
+
 
 
     /* --- OFFTAKE MEMORANDUM --- */
@@ -635,6 +743,8 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+
 
 
     .confirm-offtake-box h3 {
@@ -649,6 +759,8 @@
     }
 
 
+
+
     .offtake-spec-table {
       width: 100%;
       margin: 16px 0;
@@ -658,13 +770,19 @@
     }
 
 
+
+
     .offtake-spec-table td {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border-light);
     }
 
 
+
+
     .offtake-spec-table tr:last-child td { border-bottom: none; }
+
+
 
 
     .offtake-spec-table td.label-col {
@@ -672,6 +790,8 @@
       width: 32%;
       background: #F4EFE6;
     }
+
+
 
 
     /* --- FAIR PRICE DASHBOARD --- */
@@ -686,6 +806,8 @@
     }
 
 
+
+
     .crop-photo-wrap img {
       width: 100%;
       height: 190px;
@@ -695,11 +817,15 @@
     }
 
 
+
+
     .price-stats-boxes {
       display: flex;
       gap: 14px;
       margin-top: 20px;
     }
+
+
 
 
     .price-stat-box {
@@ -712,12 +838,16 @@
     }
 
 
+
+
     .price-stat-box .label {
       font-size: 11px;
       text-transform: uppercase;
       font-weight: 700;
       opacity: 0.9;
     }
+
+
 
 
     .price-stat-box .price {
@@ -728,10 +858,14 @@
     }
 
 
+
+
     .price-stat-box .unit {
       font-size: 11px;
       opacity: 0.85;
     }
+
+
 
 
     #map {
@@ -740,6 +874,8 @@
       border-radius: var(--radius-sm);
       border: 1.5px solid var(--border);
     }
+
+
 
 
     /* --- DIALOG MODALS --- */
@@ -754,7 +890,11 @@
     }
 
 
+
+
     .modal-overlay.show { display: flex; }
+
+
 
 
     .modal-box {
@@ -769,12 +909,16 @@
     }
 
 
+
+
     .modal-box h2 {
       font-size: 22px;
       font-weight: 800;
       color: var(--green);
       margin-bottom: 10px;
     }
+
+
 
 
     .modal-box p {
@@ -785,11 +929,15 @@
     }
 
 
+
+
     .modal-actions {
       display: flex;
       justify-content: center;
       gap: 12px;
     }
+
+
 
 
     .modal-btn-confirm {
@@ -805,7 +953,11 @@
     }
 
 
+
+
     .modal-btn-confirm:hover { background: var(--green-dark); }
+
+
 
 
     .pagination-container {
@@ -820,8 +972,12 @@
     }
 
 
+
+
     .pagination-controls { display: flex; align-items: center; gap: 6px; }
     .page-numbers-wrap { display: flex; gap: 4px; }
+
+
 
 
     .btn-page {
@@ -837,10 +993,14 @@
     }
 
 
+
+
     .btn-page:hover:not(:disabled) {
       background: #EDE7D8;
       border-color: var(--green);
     }
+
+
 
 
     .btn-page.active {
@@ -850,7 +1010,11 @@
     }
 
 
+
+
     .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
 
 
     .input-readonly {
@@ -859,6 +1023,8 @@
       color: var(--muted) !important;
       cursor: default;
     }
+
+
 
 
     .higher-ups-note {
@@ -873,7 +1039,11 @@
     }
 
 
+
+
     .hidden-element { display: none; }
+
+
 
 
     .select-crop-input {
@@ -888,12 +1058,16 @@
     }
 
 
+
+
     .fair-price-desc {
       font-size: 13px;
       color: var(--muted);
       line-height: 1.6;
       margin: 0;
     }
+
+
 
 
     .memo-disclaimer { font-size: 12.5px; color: var(--muted); }
@@ -908,11 +1082,15 @@
     }
 
 
+
+
     .btn-danger { background: #A1382B !important; }
     .btn-danger:hover { background: #84281D !important; }
   </style>
 </head>
 <body>
+
+
 
 
   <!-- TOPBAR -->
@@ -923,6 +1101,8 @@
       </button>
 
 
+
+
       <!-- PNG Logos -->
       <div class="logos">
         <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
@@ -931,11 +1111,15 @@
     </div>
 
 
+
+
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
+
 
 
       <div class="user-info">
@@ -947,6 +1131,8 @@
       </div>
     </div>
   </div>
+
+
 
 
   <div class="layout">
@@ -976,6 +1162,8 @@
       </div>
 
 
+
+
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -983,8 +1171,12 @@
     </nav>
 
 
+
+
     <!-- MAIN CONTENT -->
     <main class="main">
+
+
 
 
       <!-- VIEW 1: Farmers -->
@@ -1005,6 +1197,8 @@
           </div>
 
 
+
+
           <div class="card">
             <table>
               <thead>
@@ -1020,6 +1214,8 @@
             </table>
 
 
+
+
             <div class="pagination-container">
               <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
               <div class="pagination-controls" id="paginationControls">
@@ -1032,6 +1228,8 @@
         </div>
 
 
+
+
         <!-- Register Farmer Subview -->
         <div id="registerFarmerSubview" class="hidden-element">
           <div class="main-header">
@@ -1040,6 +1238,8 @@
               <p>Create a verified entry linked to the Department of Agriculture database.</p>
             </div>
           </div>
+
+
 
 
           <div class="card">
@@ -1053,7 +1253,7 @@
           <label>Municipality <span class="req">*</span></label>
           <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
         </div>
-            
+           
                 <div class="form-field-item">
                   <label>First Name <span class="req">*</span></label>
                   <input type="text" id="regFirstName" placeholder="Pancho" required>
@@ -1096,6 +1296,8 @@
               </div>
 
 
+
+
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
                 <button class="btn-primary" type="submit">Submit Record</button>
@@ -1103,6 +1305,8 @@
             </form>
           </div>
         </div>
+
+
 
 
         <!-- Manage Farmer Subview -->
@@ -1115,10 +1319,14 @@
           </div>
 
 
+
+
           <div class="card">
             <div class="higher-ups-note">
               <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from arbitrary alteration.
             </div>
+
+
 
 
             <div class="form-grid-two">
@@ -1165,6 +1373,8 @@
             </div>
 
 
+
+
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
               <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
@@ -1173,6 +1383,8 @@
           </div>
         </div>
       </section>
+
+
 
 
       <!-- VIEW 2: Planting Intent -->
@@ -1185,6 +1397,8 @@
             </div>
             <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
           </div>
+
+
 
 
           <div class="card">
@@ -1206,6 +1420,8 @@
         </div>
 
 
+
+
   <!-- SUBMIT PLANTING INTENT -->
 <div id="submitPlantIntentSubview" class="hidden-element">
   <div class="main-header">
@@ -1214,6 +1430,7 @@
       <p>Log a prospective crop production plan from a verified farmer.</p>
     </div>
   </div>
+
 
   <div class="card">
     <form id="submitPlantIntentForm">
@@ -1250,6 +1467,7 @@
         </div>
       </div>
 
+
       <div class="actions-right-row">
         <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
         <button class="btn-primary" type="submit">Submit Intent</button>
@@ -1265,6 +1483,8 @@
               <p>Review submitted harvest parameters.</p>
             </div>
           </div>
+
+
 
 
           <div class="card">
@@ -1308,6 +1528,8 @@
             </div>
 
 
+
+
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
               <button class="btn-primary" id="editPlantingIntentBtn" type="button" style="background: #D97706;">Edit Details</button>
@@ -1316,6 +1538,8 @@
           </div>
         </div>
       </section>
+
+
 
 
       <!-- VIEW 3: Offtake Request -->
@@ -1328,6 +1552,8 @@
             </div>
             <button class="btn-primary" id="createOfftakeBtn" type="button">+ Create Offtake Request</button>
           </div>
+
+
 
 
           <div class="card">
@@ -1348,6 +1574,8 @@
         </div>
 
 
+
+
         <div id="submitOfftakeSubview" class="hidden-element">
           <div class="main-header">
             <div class="header-left">
@@ -1355,6 +1583,8 @@
               <p>Formulate an official supply pairing for an institutional buyer.</p>
             </div>
           </div>
+
+
 
 
           <div class="card">
@@ -1386,14 +1616,9 @@
                   <label>Harvest Date <span class="req">*</span></label>
                   <input type="date" id="offtakeHarvestDate" required>
                 </div>
+           
                 <div class="form-field-item">
-                  <label>Buyer Name / Organization <span class="req">*</span></label>
-                  <select id="offtakeBuyerSelect" required>
-                    <option value="">Select Buyer</option>
-                  </select>
-                </div>
-                <div class="form-field-item">
-                  <label>Delivery Location <span class="req">*</span></label>
+                  <label>Prefer red Delivery Location <span class="req">*</span></label>
                   <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
                 </div>
               </div>
@@ -1406,6 +1631,8 @@
         </div>
 
 
+
+
         <!-- FORMAL OFFTAKE LETTER VIEW -->
         <div id="confirmOfftakeSubview" class="hidden-element">
           <div class="main-header">
@@ -1416,6 +1643,8 @@
           </div>
 
 
+
+
           <div class="card">
             <div class="confirm-offtake-box">
               <h3>Official Agricultural Offtake Memorandum</h3>
@@ -1423,6 +1652,8 @@
               <p><b>To:</b> <span id="confirmBuyerName">Buyer Organization</span></p>
               <p><b>From:</b> Office of the Agricultural Extension Worker (AEW)</p>
               <p><b>Subject:</b> Offtake Agreement & Purchase Commitment Confirmation</p>
+
+
 
 
               <table class="offtake-spec-table">
@@ -1457,10 +1688,14 @@
               </table>
 
 
+
+
               <p class="memo-disclaimer">
                 This document certifies that the produce listed above has undergone technical monitoring and meets municipal standards.
               </p>
             </div>
+
+
 
 
             <div class="actions-right-row">
@@ -1470,6 +1705,22 @@
           </div>
         </div>
       </section>
+            <!-- OFFTAKE SUBMITTED SUCCESS MODAL -->
+      <div class="modal-overlay" id="offtakeSubmittedModal">
+        <div class="modal-box">
+     
+          <h2>Offtake Submitted Successfully!</h2>
+          <p>The offtake memorandum has been dispatched to the recipient buyer. A confirmation email has been sent to all parties involved.</p>
+          <p style="font-size: 13px; color: var(--muted); margin-top: -10px; margin-bottom: 16px;"></p>
+          </p>
+          <div class="modal-actions">
+            <button class="modal-btn-confirm" id="closeOfftakeSubmittedBtn" type="button">OK</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
 
 
       <!-- VIEW 4: Fair Prices -->
@@ -1480,6 +1731,8 @@
             <p>Daily validated price ceilings and market averages.</p>
           </div>
         </div>
+
+
 
 
         <div class="fair-price-grid">
@@ -1506,6 +1759,8 @@
       </section>
 
 
+
+
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
         <div class="main-header">
@@ -1521,8 +1776,12 @@
       </section>
 
 
+
+
     </main>
   </div>
+
+
 
 
   <!-- MODALS -->
@@ -1538,6 +1797,8 @@
   </div>
 
 
+
+
   <div class="modal-overlay" id="farmerAddedModal">
     <div class="modal-box">
       <h2>Farmer Added!</h2>
@@ -1547,6 +1808,8 @@
       </div>
     </div>
   </div>
+
+
 
 
   <div class="modal-overlay" id="deleteFarmerModal">
@@ -1561,6 +1824,8 @@
   </div>
 
 
+
+
   <div class="modal-overlay" id="plantIntentSubmittedModal">
     <div class="modal-box">
       <h2>Planting Intent Submitted!</h2>
@@ -1570,6 +1835,8 @@
       </div>
     </div>
   </div>
+
+
 
 
   <div class="modal-overlay" id="confirmSendOfftakeModal">
@@ -1584,6 +1851,8 @@
   </div>
 
 
+
+
   <div class="modal-overlay" id="offtakeSubmittedModal">
     <div class="modal-box">
       <h2>Offtake Submitted!</h2>
@@ -1595,7 +1864,9 @@
   </div>
 
 
+  <script src="../assets/js/logout.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/aew.js"></script>
 </body>
 </html>
+
