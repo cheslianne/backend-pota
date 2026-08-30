@@ -139,6 +139,93 @@ async def send_offtake_request_email(
 
     return result.message_id
 
+# ============================================================
+# VERIFIED BUYER APPROVAL EMAIL
+# ============================================================
+
+async def send_verified_buyer_email(
+    buyer_email: str,
+    contact_person: str,
+    organization: str,
+):
+    client = AsyncBrevo(
+        api_key=settings.BREVO_API_KEY
+    )
+
+    html_content = f"""
+    <html>
+        <body>
+
+            <h2>eSaka - Verified Buyer Application Approved</h2>
+
+            <p>
+                Dear <strong>{contact_person}</strong>,
+            </p>
+
+            <p>
+                We are pleased to inform you that your buyer
+                registration for
+                <strong>{organization}</strong>
+                has been successfully reviewed and approved.
+            </p>
+
+            <p>
+                You are now officially recognized as a
+                <strong>Verified Buyer</strong>
+                in the eSaka platform.
+            </p>
+
+            <h3>Application Details</h3>
+
+            <p>
+                <strong>Organization:</strong> {organization}<br>
+                <strong>Contact Person:</strong> {contact_person}<br>
+                <strong>Email:</strong> {buyer_email}<br>
+                <strong>Status:</strong> Verified Buyer
+            </p>
+
+            <p>
+                You may now participate in the eSaka platform
+                and receive available agricultural supply and
+                offtake opportunities from registered farmers.
+            </p>
+
+            <p>
+                Thank you for registering with eSaka and
+                becoming part of the agricultural supply network.
+            </p>
+
+            <br>
+
+            <p>
+                Regards,<br>
+                <strong>eSaka Region 3</strong><br>
+                Department of Agriculture - Regional Field Office
+            </p>
+
+        </body>
+    </html>
+    """
+
+    result = await client.transactional_emails.send_transac_email(
+        subject="eSaka - Your Buyer Application Has Been Approved",
+
+        html_content=html_content,
+
+        sender=SendTransacEmailRequestSender(
+            name=settings.BREVO_SENDER_NAME,
+            email=settings.BREVO_SENDER_EMAIL,
+        ),
+
+        to=[
+            SendTransacEmailRequestToItem(
+                email=buyer_email,
+                name=contact_person,
+            )
+        ],
+    )
+
+    return result.message_id
 
 # ============================================================
 # PASSWORD RESET EMAIL
