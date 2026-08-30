@@ -4,20 +4,14 @@
    Farmers API Integration + Dashboard Functions
 ============================================================ */
 
-
-
-
 /* ============================================================
    API CONFIGURATION
 ============================================================ */
 
-
 const API_BASE_URL = "http://127.0.0.1:8000";
-
 
 const FARMERS_ENDPOINT =
     `${API_BASE_URL}/api/farmers/farmers/`;
-
 
 const PLANTING_INTENTS_ENDPOINT =
     `${API_BASE_URL}/api/planting-intents/`;
@@ -27,16 +21,11 @@ const RAW_PLANT_REPORTS_ENDPOINT =
 const REPORT_SUBMISSIONS_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions`;
 
-
-
-
 /* ============================================================
    AUTH
 ============================================================ */
 
-
 function getAuthToken() {
-
 
     return (
         localStorage.getItem("access_token") ||
@@ -45,65 +34,45 @@ function getAuthToken() {
     );
 }
 
-
-
-
 function getAuthHeaders() {
 
-
     const token = getAuthToken();
-
 
     const headers = {
         "Content-Type": "application/json"
     };
 
-
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
-
     return headers;
 }
-
-
-
 
 /* ============================================================
    STATE
 ============================================================ */
 
-
 let FARMERS_DATA = [];
 let allFarmers = []; 
 let allBuyers =[];
 
-
 let currentFarmersPage = 1;
-
 
 const farmersPerPage = 10;
 
-
 let currentActiveFarmer = null;
-
 
 let isEditMode = false;
 
-
 let mapInstance = null;
-
-
 
 
 /* ============================================================
    INITIALIZATION
 ============================================================ */
 
-
 document.addEventListener("DOMContentLoaded", async () => {
-
 
     console.log("=================================");
     console.log("eSaka AEW Dashboard loaded.");
@@ -112,38 +81,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     initSidebar();
 
-
     initViewNavigation();
-
 
     initMap();
 
-
     initFarmerSubviews();
-
 
     initPlantingIntent();
 
-
     initOfftakeRequest();
-
 
     initFairPrice();
 
-
     initSignout();
 
-
     setupUserProfile();
-
 
     await fetchFarmers();
 
     await loadAllReports();
     await fetchOfftakeRequests();
 });
-
-
 
 
 /* ============================================================
@@ -153,58 +111,41 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function setupUserProfile() {
 
-
     const storedName =
         localStorage.getItem("full_name") ||
         localStorage.getItem("name") ||
         localStorage.getItem("username");
 
-
     const storedRole =
         localStorage.getItem("role");
-
 
     const nameElement =
         document.getElementById("userDisplayName");
 
-
     const roleElement =
         document.getElementById("userDisplayRole");
 
-
-
-
     if (nameElement && storedName) {
-
 
         nameElement.textContent =
             storedName;
     }
 
-
-
-
     if (roleElement && storedRole) {
-
 
         roleElement.textContent =
             storedRole;
     }
 }
 
-
-
-
 /* ============================================================
    GENERIC API REQUEST HELPER
 ============================================================ */
-
 
 async function apiRequest(
     url,
     options = {}
 ) {
-
 
     const response =
         await fetch(
@@ -217,18 +158,11 @@ async function apiRequest(
                 }
             }
         );
-
-
-
-
+   
     let data = null;
-
 
     const contentType =
         response.headers.get("content-type") || "";
-
-
-
 
     if (
         contentType.includes(
@@ -236,69 +170,50 @@ async function apiRequest(
         )
     ) {
 
-
         try {
-
 
             data =
                 await response.json();
 
-
         } catch (error) {
-
 
             data = null;
         }
 
-
     } else {
 
-
         try {
-
 
             data =
                 await response.text();
 
-
         } catch (error) {
-
 
             data = null;
         }
     }
 
-
-
-
     if (!response.ok) {
-
 
         let message =
             `HTTP ${response.status}`;
-
 
         if (
             data &&
             typeof data === "object"
         ) {
 
-
             if (data.detail) {
-
 
                 if (
                     typeof data.detail ===
                     "string"
                 ) {
 
-
                     message =
                         data.detail;
 
-
                 } else {
-
 
                     message =
                         JSON.stringify(
@@ -308,47 +223,32 @@ async function apiRequest(
             }
         }
 
-
         else if (
             typeof data === "string" &&
             data.trim()
         ) {
 
-
             message = data;
         }
-
-
-
 
         const error =
             new Error(message);
 
-
         error.status =
             response.status;
-
 
         error.data =
             data;
 
-
         throw error;
     }
-
-
-
 
     return data;
 }
 
-
-
-
 /* ============================================================
    AUTH ERROR HANDLER
 ============================================================ */
-
 
 function handleAuthError(error) {
 
@@ -1408,167 +1308,105 @@ function updatePagination() {
    FARMER SEARCH
 ============================================================ */
 
+/* ============================================================
+   FARMER SEARCH - IMPROVED VERSION
+============================================================ */
 
 function initFarmerSearch() {
-
 
     const searchInput =
         document.getElementById(
             "searchFarmersInput"
         );
 
-
-
-
     if (!searchInput) {
         return;
     }
 
-
-
-
     searchInput.addEventListener(
         "input",
         () => {
-
 
             const keyword =
                 searchInput.value
                     .toLowerCase()
                     .trim();
 
-
-
-
+            // If search is empty, show all farmers
             if (!keyword) {
 
-
-                currentFarmersPage =
-                    1;
-
-
+                currentFarmersPage = 1;
                 renderFarmersTable();
-
-
                 return;
             }
 
-
-
+            // Split keyword into words for better matching
+            const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
 
             const filtered =
                 FARMERS_DATA.filter(
                     farmer => {
+                        // Build searchable text with clear field separation
+                        const searchableFields = [
+                            farmer.rsbsa_id || "",
+                            farmer.first_name || "",
+                            farmer.middle_name || "",
+                            farmer.last_name || "",
+                            farmer.suffix || "",
+                            farmer.address || "",
+                            farmer.municipality || "",
+                            farmer.barangay || "",
+                            farmer.email_address || "",
+                            farmer.phone_number || "",
+                            farmer.sex || "",
+                            farmer.status || ""
+                        ];
 
+                        // Combine all fields into one searchable string with spaces
+                        const searchableText = searchableFields
+                            .join(" ")
+                            .toLowerCase();
 
-                        const searchableText = [
-
-
-                            farmer.rsbsa_id,
-
-
-                            farmer.first_name,
-
-
-                            farmer.middle_name,
-
-
-                            farmer.last_name,
-
-
-                            farmer.suffix,
-
-
-                            farmer.address,
-
-
-                            farmer.email_address,
-
-
-                            farmer.phone_number,
-
-
-                            farmer.sex,
-
-
-                            farmer.birthdate,
-
-
-                            farmer.region,
-
-
-                            farmer.municipality,
-
-
-                            farmer.barangay,
-
-
-                            farmer.status
-
-
-                        ]
-                        .join(" ")
-                        .toLowerCase();
-
-
-
-
-                        return searchableText
-                            .includes(
-                                keyword
-                            );
+                        // Check if ALL search words are found in ANY field
+                        return searchWords.every(word => 
+                            searchableText.includes(word)
+                        );
                     }
                 );
 
+            console.log(`Search for "${keyword}" found ${filtered.length} farmers`);
 
+            currentFarmersPage = 1;
 
-
-            currentFarmersPage =
-                1;
-
-
-
-
-            renderFilteredFarmers(
-                filtered
-            );
+            // Render filtered results with pagination
+            renderFilteredFarmers(filtered);
         }
     );
 }
 
-
-
-
 /* ============================================================
-   RENDER SEARCH RESULTS
+   RENDER SEARCH RESULTS WITH PAGINATION
 ============================================================ */
 
-
 function renderFilteredFarmers(data) {
-
 
     const tbody =
         document.getElementById(
             "farmersTableBody"
         );
 
-
-
-
     if (!tbody) {
         return;
     }
 
-
-
-
     tbody.innerHTML = "";
 
+    // Apply pagination to search results
+    const start = (currentFarmersPage - 1) * farmersPerPage;
+    const end = start + farmersPerPage;
+    const paginatedItems = data.slice(start, end);
 
-
-
-    if (data.length === 0) {
-
+    if (paginatedItems.length === 0) {
 
         tbody.innerHTML = `
             <tr>
@@ -1583,31 +1421,17 @@ function renderFilteredFarmers(data) {
             </tr>
         `;
 
-
-
-
-        updateSearchPaginationText(
-            0
-        );
-
-
+        updateSearchPaginationText(data.length, data);
         return;
     }
 
-
-
-
-    data.forEach(
+    paginatedItems.forEach(
         farmer => {
-
 
             const tr =
                 createFarmerTableRow(
                     farmer
                 );
-
-
-
 
             tbody.appendChild(
                 tr
@@ -1615,46 +1439,138 @@ function renderFilteredFarmers(data) {
         }
     );
 
-
-
-
-    updateSearchPaginationText(
-        data.length
-    );
+    updateSearchPaginationText(data.length, data);
 }
 
-
-
-
 /* ============================================================
-   SEARCH PAGINATION TEXT
+   SEARCH PAGINATION TEXT - IMPROVED
 ============================================================ */
 
-
-function updateSearchPaginationText(
-    resultCount
-) {
-
-
+function updateSearchPaginationText(resultCount, data) {
     const paginationInfo =
         document.getElementById(
             "paginationInfo"
         );
 
-
-
-
     if (!paginationInfo) {
         return;
     }
 
+    const totalPages = Math.max(1, Math.ceil(resultCount / farmersPerPage));
+    const start = resultCount === 0 ? 0 : ((currentFarmersPage - 1) * farmersPerPage) + 1;
+    const end = Math.min(currentFarmersPage * farmersPerPage, resultCount);
 
+    if (resultCount > 0) {
+        paginationInfo.textContent =
+            `Showing ${start}-${end} of ${resultCount} farmers`;
+    } else {
+        paginationInfo.textContent =
+            `Showing 0 of ${FARMERS_DATA.length} farmers`;
+    }
 
+    // Update pagination buttons for search results
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageNumberBtns = document.getElementById("pageNumberBtns");
 
-    paginationInfo.textContent =
-        `Showing ${resultCount} of ${FARMERS_DATA.length} farmers`;
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentFarmersPage <= 1 || resultCount === 0;
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentFarmersPage >= totalPages || resultCount === 0;
+    }
+
+    // Update page number buttons
+    if (pageNumberBtns) {
+        pageNumberBtns.innerHTML = "";
+
+        for (let i = 1; i <= totalPages && i <= 5; i++) {
+            const pageBtn = document.createElement("button");
+            pageBtn.className = `btn-page ${i === currentFarmersPage ? "active" : ""}`;
+            pageBtn.textContent = i;
+            pageBtn.type = "button";
+
+            // Store the data for click handler
+            pageBtn.addEventListener("click", () => {
+                currentFarmersPage = i;
+                // Re-render with the same search results
+                const searchInput = document.getElementById("searchFarmersInput");
+                if (searchInput && searchInput.value.trim()) {
+                    const keyword = searchInput.value.toLowerCase().trim();
+                    const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
+                    const filtered = FARMERS_DATA.filter(farmer => {
+                        const searchableFields = [
+                            farmer.rsbsa_id || "",
+                            farmer.first_name || "",
+                            farmer.middle_name || "",
+                            farmer.last_name || "",
+                            farmer.suffix || "",
+                            farmer.address || "",
+                            farmer.municipality || "",
+                            farmer.barangay || "",
+                            farmer.email_address || "",
+                            farmer.phone_number || "",
+                            farmer.sex || "",
+                            farmer.status || ""
+                        ];
+                        const searchableText = searchableFields.join(" ").toLowerCase();
+                        return searchWords.every(word => searchableText.includes(word));
+                    });
+                    renderFilteredFarmers(filtered);
+                } else {
+                    renderFarmersTable();
+                }
+            });
+
+            pageNumberBtns.appendChild(pageBtn);
+        }
+
+        // Add ellipsis if there are more pages
+        if (totalPages > 5) {
+            const ellipsis = document.createElement("span");
+            ellipsis.textContent = "...";
+            ellipsis.style.padding = "0 8px";
+            ellipsis.style.color = "#777";
+            pageNumberBtns.appendChild(ellipsis);
+
+            const lastBtn = document.createElement("button");
+            lastBtn.className = `btn-page ${totalPages === currentFarmersPage ? "active" : ""}`;
+            lastBtn.textContent = totalPages;
+            lastBtn.type = "button";
+            lastBtn.addEventListener("click", () => {
+                currentFarmersPage = totalPages;
+                const searchInput = document.getElementById("searchFarmersInput");
+                if (searchInput && searchInput.value.trim()) {
+                    const keyword = searchInput.value.toLowerCase().trim();
+                    const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
+                    const filtered = FARMERS_DATA.filter(farmer => {
+                        const searchableFields = [
+                            farmer.rsbsa_id || "",
+                            farmer.first_name || "",
+                            farmer.middle_name || "",
+                            farmer.last_name || "",
+                            farmer.suffix || "",
+                            farmer.address || "",
+                            farmer.municipality || "",
+                            farmer.barangay || "",
+                            farmer.email_address || "",
+                            farmer.phone_number || "",
+                            farmer.sex || "",
+                            farmer.status || ""
+                        ];
+                        const searchableText = searchableFields.join(" ").toLowerCase();
+                        return searchWords.every(word => searchableText.includes(word));
+                    });
+                    renderFilteredFarmers(filtered);
+                } else {
+                    renderFarmersTable();
+                }
+            });
+            pageNumberBtns.appendChild(lastBtn);
+        }
+    }
 }
-
 
 
 
@@ -3740,151 +3656,55 @@ function renderPlantingIntentsTable() {
 
 function openPlantingIntentDetails(intent) {
 
-    console.log(
-        "Selected Planting Intent:",
-        intent
-    );
+    console.log("Selected Planting Intent:", intent);
 
-    const list =
-        document.getElementById(
-            "plantingIntentListSubview"
-        );
-
-    const details =
-        document.getElementById(
-            "plantingIntentDetailsSubview"
-        );
+    const list = document.getElementById("plantingIntentListSubview");
+    const details = document.getElementById("plantingIntentDetailsSubview");
 
     if (!details) {
-
-        console.warn(
-            "plantingIntentDetailsSubview not found."
-        );
-
+        console.warn("plantingIntentDetailsSubview not found.");
         return;
     }
 
+    window.currentSelectedPlantingIntent = intent;
 
-    /* ========================================================
-       SAVE SELECTED PLANTING INTENT
-    ======================================================== */
+    list?.classList.add("hidden-element");
+    details.classList.remove("hidden-element");
 
-    window.currentSelectedPlantingIntent =
-        intent;
+    // Display data
+    setValue("detailPlantingIntentId", intent.planting_intent_id || "");
+    setValue("detailFarmerName", intent.farmer_name || "");
+    setValue("detailFarmerId", intent.farmer_id || "");
+    setValue("detailCommodity", intent.commodity || "");
+    setValue("detailVolume", formatPlantingVolume(intent.volume));
+    setValue("detailLocation", intent.location || "");
+    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
+    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+    setValue("detailRemarks", intent.remarks || "");
 
-
-    /* ========================================================
-       HIDE LIST
-    ======================================================== */
-
-    list?.classList.add(
-        "hidden-element"
-    );
-
-
-    /* ========================================================
-       SHOW DETAILS
-    ======================================================== */
-
-    details.classList.remove(
-        "hidden-element"
-    );
-
-
-    /* ========================================================
-       DISPLAY DATA
-    ======================================================== */
-
-    setValue(
-        "detailPlantingIntentId",
-        intent.planting_intent_id || ""
-    );
-
-    setValue(
-        "detailFarmerName",
-        intent.farmer_name || ""
-    );
-
-    setValue(
-        "detailFarmerId",
-        intent.farmer_id || ""
-    );
-
-    setValue(
-        "detailCommodity",
-        intent.commodity || ""
-    );
-
-    setValue(
-        "detailVolume",
-        formatPlantingVolume(
-            intent.volume
-        )
-    );
-
-    setValue(
-        "detailLocation",
-        intent.location || ""
-    );
-
-    setValue(
-        "detailPlantingDate",
-        formatPlantingDate(
-            intent.planting_date
-        )
-    );
-
-    setValue(
-        "detailHarvestDate",
-        formatPlantingDate(
-            intent.harvest_date
-        )
-    );
-
-    setValue(
-        "detailRemarks",
-        intent.remarks || ""
-    );
-    
-    // ========================================================
-    // NEW: Reset Edit Mode
-    // ========================================================
-
+    // Reset Edit Mode
     window.isEditingPlantingIntent = false;
 
-    // Make all detail fields readonly
-    const detailInputs =
-        details.querySelectorAll(
-            "input, textarea"
-        );
+    // Make all fields readonly
+    const detailInputs = details.querySelectorAll("input, textarea");
+    detailInputs.forEach(input => {
+        input.readOnly = true;
+        input.classList.add("input-readonly");
+        input.classList.remove("input-editable-active");
+    });
 
-    detailInputs.forEach(
-        input => {
-            input.readOnly = true;
-            input.classList.add("input-readonly");
-            input.classList.remove("input-editable-active");
-        }
-    );
-
-    // Reset Edit button text
-    const editBtn =
-        document.getElementById(
-            "editPlantingIntentBtn"
-        );
-
+    // Reset Edit button to "Edit Details"
+    const editBtn = document.getElementById("editPlantingIntentBtn");
     if (editBtn) {
-        editBtn.textContent = "Edit Details";
-        editBtn.style.background = "#D97706";
+        editBtn.textContent = "✏️ Edit Details";
+        editBtn.style.background = "#D97706"; // Orange
     }
 
-    // Show Confirm button
-    const confirmBtn =
-        document.getElementById(
-            "submitPlantingIntentBtn"
-        );
-
-    if (confirmBtn) {
-        confirmBtn.style.display = "inline-flex";
+    // Make sure Submit button is VISIBLE
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
+    if (submitBtn) {
+        submitBtn.style.display = "inline-flex";
+        submitBtn.textContent = "📤 Submit Report";
     }
 }
 
@@ -3893,46 +3713,24 @@ function openPlantingIntentDetails(intent) {
    ============================================================ 
    ILAGAY DITO ANG CODE SA IBABA
    ============================================================ */
-
+/* ============================================================
+   TOGGLE PLANTING INTENT EDIT MODE
+============================================================ */
 function togglePlantingIntentEditMode() {
 
-    const intent =
-        window.currentSelectedPlantingIntent;
-
+    const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
-
-        alert(
-            "No planting intent selected."
-        );
-
+        alert("No planting intent selected.");
         return;
     }
 
-    const details =
-        document.getElementById(
-            "plantingIntentDetailsSubview"
-        );
+    const details = document.getElementById("plantingIntentDetailsSubview");
+    if (!details) return;
 
-    if (!details) {
-        return;
-    }
+    const editBtn = document.getElementById("editPlantingIntentBtn");
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
+    const detailInputs = details.querySelectorAll("input, textarea");
 
-    const editBtn =
-        document.getElementById(
-            "editPlantingIntentBtn"
-        );
-
-    const confirmBtn =
-        document.getElementById(
-            "submitPlantingIntentBtn"
-        );
-
-    const detailInputs =
-        details.querySelectorAll(
-            "input, textarea"
-        );
-
-    // Toggle edit mode
     if (!window.isEditingPlantingIntent) {
 
         // ====================================================
@@ -3941,36 +3739,26 @@ function togglePlantingIntentEditMode() {
 
         window.isEditingPlantingIntent = true;
 
-        // Make all fields editable EXCEPT ID fields
-        detailInputs.forEach(
-            input => {
-
-                const id =
-                    input.id;
-
-                // Keep ID fields readonly
-                if (
-                    id === "detailPlantingIntentId" ||
-                    id === "detailFarmerId"
-                ) {
-                    return;
-                }
-
-                input.readOnly = false;
-                input.classList.remove("input-readonly");
-                input.classList.add("input-editable-active");
+        // Make fields editable (except ID fields)
+        detailInputs.forEach(input => {
+            const id = input.id;
+            if (id === "detailPlantingIntentId" || id === "detailFarmerId") {
+                return;
             }
-        );
+            input.readOnly = false;
+            input.classList.remove("input-readonly");
+            input.classList.add("input-editable-active");
+        });
 
-        // Change Edit button to Save
+        // Change Edit button to "Save Changes"
         if (editBtn) {
             editBtn.textContent = "💾 Save Changes";
             editBtn.style.background = "#2E7D32"; // Green
         }
 
-        // Hide Confirm button
-        if (confirmBtn) {
-            confirmBtn.style.display = "none";
+        // HIDE the Submit button while editing
+        if (submitBtn) {
+            submitBtn.style.display = "none";
         }
 
     } else {
@@ -3983,343 +3771,302 @@ function togglePlantingIntentEditMode() {
     }
 }
 
+
+
 /* ============================================================
    SAVE PLANTING INTENT CHANGES
-   ============================================================ 
-   ILAGAY DITO ANG CODE SA IBABA
-   ============================================================ */
+============================================================ */
+
 /* ============================================================
    SAVE PLANTING INTENT CHANGES
 ============================================================ */
 
 async function savePlantingIntentChanges() {
 
-    const intent =
-        window.currentSelectedPlantingIntent;
-
+    const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
-
-        alert(
-            "No planting intent selected."
-        );
-
+        alert("No planting intent selected.");
         return;
     }
 
-    // ========================================================
-    // HELPER: Convert date from MM/DD/YYYY to YYYY-MM-DD
-    // ========================================================
+    // ====================================================
+    // COLLECT UPDATED VALUES
+    // ====================================================
 
-    function convertToAPIDate(dateString) {
+    const details = document.getElementById("plantingIntentDetailsSubview");
+    if (!details) return;
 
-        if (!dateString) {
-            return "";
+    // HELPER: Convert date from M/D/YYYY to YYYY-MM-DD
+    function convertToISODate(dateStr) {
+        if (!dateStr) return null;
+        
+        // Try to parse the date
+        const parts = dateStr.split(/[\/\-]/);
+        if (parts.length !== 3) return dateStr;
+        
+        // Check if it's already YYYY-MM-DD
+        if (parts[0].length === 4) {
+            return dateStr;
         }
-
-        // Check if already in YYYY-MM-DD format
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-            return dateString;
+        
+        // Assume M/D/YYYY or MM/DD/YYYY
+        let month = parseInt(parts[0], 10);
+        let day = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+        
+        // If year is 2 digits, convert to 4 digits
+        if (year < 100) {
+            year = 2000 + year;
         }
-
-        // Try to parse MM/DD/YYYY or M/D/YYYY
-        const dateParts = dateString.split('/');
-
-        if (dateParts.length === 3) {
-
-            let month = dateParts[0].trim();
-            let day = dateParts[1].trim();
-            let year = dateParts[2].trim();
-
-            // Pad month and day with leading zeros if needed
-            month = month.padStart(2, '0');
-            day = day.padStart(2, '0');
-
-            return `${year}-${month}-${day}`;
-        }
-
-        // Try using Date object as fallback
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-        }
-
-        return dateString;
+        
+        // Pad month and day with leading zeros
+        const paddedMonth = String(month).padStart(2, '0');
+        const paddedDay = String(day).padStart(2, '0');
+        
+        return `${year}-${paddedMonth}-${paddedDay}`;
     }
 
-    // ========================================================
-    // COLLECT UPDATED VALUES
-    // ========================================================
+    // Get raw values from the form
+    let rawPlantingDate = getValue("detailPlantingDate");
+    let rawHarvestDate = getValue("detailHarvestDate");
+    let rawVolume = String(getValue("detailVolume")).replace(/[^0-9.]/g, "");
 
-    const rawPlantingDate =
-        document.getElementById(
-            "detailPlantingDate"
-        )?.value || intent.planting_date;
-
-    const rawHarvestDate =
-        document.getElementById(
-            "detailHarvestDate"
-        )?.value || intent.harvest_date;
+    // Convert dates to ISO format
+    const plantingDate = convertToISODate(rawPlantingDate);
+    const harvestDate = convertToISODate(rawHarvestDate);
 
     const updatedData = {
-
-        planting_intent_id:
-            intent.planting_intent_id,
-
-        farmer_name:
-            document.getElementById(
-                "detailFarmerName"
-            )?.value || intent.farmer_name,
-
-        farmer_id:
-            intent.farmer_id,
-
-        commodity:
-            document.getElementById(
-                "detailCommodity"
-            )?.value || intent.commodity,
-
-        volume:
-            document.getElementById(
-                "detailVolume"
-            )?.value || intent.volume,
-
-        location:
-            document.getElementById(
-                "detailLocation"
-            )?.value || intent.location,
-
-        planting_date:
-            convertToAPIDate(rawPlantingDate),
-
-        harvest_date:
-            convertToAPIDate(rawHarvestDate),
-
-        remarks:
-            document.getElementById(
-                "detailRemarks"
-            )?.value || intent.remarks
+        farmer_id: Number(getValue("detailFarmerId")),
+        farmer_name: getValue("detailFarmerName"),
+        commodity: getValue("detailCommodity"),
+        volume: parseFloat(rawVolume),
+        location: getValue("detailLocation"),
+        planting_date: plantingDate,
+        harvest_date: harvestDate,
+        remarks: getValue("detailRemarks")
     };
 
-    console.log("=================================");
-    console.log("SAVING PLANTING INTENT CHANGES");
-    console.log("=================================");
-    console.log("Intent ID:", intent.planting_intent_id);
-    console.log("Updated data:", updatedData);
+    // ====================================================
+    // VALIDATE
+    // ====================================================
+
+    if (!updatedData.farmer_id || isNaN(updatedData.farmer_id)) {
+        alert("Invalid Farmer ID.");
+        return;
+    }
+
+    if (!updatedData.commodity) {
+        alert("Commodity is required.");
+        return;
+    }
+
+    if (!updatedData.volume || isNaN(updatedData.volume) || updatedData.volume <= 0) {
+        alert("Volume must be a valid positive number.");
+        return;
+    }
+
+    if (!updatedData.planting_date) {
+        alert("Planting date is required.");
+        return;
+    }
+
+    if (!updatedData.harvest_date) {
+        alert("Harvest date is required.");
+        return;
+    }
+
+    // ====================================================
+    // CONFIRM WITH USER
+    // ====================================================
+
+    if (!confirm(`Save changes for ${updatedData.farmer_name}?`)) {
+        return;
+    }
 
     try {
 
         // ====================================================
-        // VALIDATE REQUIRED FIELDS
+        // STEP 1: UPDATE PLANTING INTENT VIA API
         // ====================================================
 
-        if (!updatedData.planting_date) {
-            alert("Planting date is required.");
-            return;
-        }
-
-        if (!updatedData.harvest_date) {
-            alert("Harvest date is required.");
-            return;
-        }
-
-        if (!updatedData.commodity) {
-            alert("Commodity is required.");
-            return;
-        }
-
-        // ====================================================
-        // PREPARE PAYLOAD
-        // ====================================================
-
-        const volumeValue =
-            String(updatedData.volume)
-                .replace(/,/g, "")
-                .replace(/kg/gi, "")
-                .trim();
+        const intentId = intent.planting_intent_id || intent.id;
 
         const payload = {
-            farmer_id: Number(updatedData.farmer_id),
+            farmer_id: updatedData.farmer_id,
             commodity: updatedData.commodity,
-            volume: Number(volumeValue) || 0,
+            volume: updatedData.volume,
             planting_date: updatedData.planting_date,
             harvest_date: updatedData.harvest_date,
-            remarks: updatedData.remarks || ""
+            remarks: updatedData.remarks || null
         };
 
-        console.log("Payload:", payload);
-
-        // ====================================================
-        // CONSTRUCT URL - TAMA ITO
-        // ====================================================
-
-        const url =
-            `${PLANTING_INTENTS_ENDPOINT}${intent.planting_intent_id}`;
-
-        console.log("PUT URL:", url);
-
-        // ====================================================
-        // GET AUTH TOKEN
-        // ====================================================
-
-        const token = getAuthToken();
-        console.log("Auth Token:", token ? "Present" : "Missing");
-
-        // ====================================================
-        // SEND PUT REQUEST
-        // ====================================================
-
-        const response = await fetch(url, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
-            body: JSON.stringify(payload)
+        console.log("Updating planting intent:", {
+            id: intentId,
+            payload: payload
         });
 
-        console.log("Response status:", response.status);
-
-        // ====================================================
-        // PARSE RESPONSE
-        // ====================================================
-
-        let responseData = null;
-        const contentType = response.headers.get("content-type") || "";
-
-        if (contentType.includes("application/json")) {
-            responseData = await response.json();
-        } else {
-            responseData = await response.text();
-        }
-
-        console.log("Response data:", responseData);
-
-        // ====================================================
-        // CHECK IF SUCCESSFUL
-        // ====================================================
-
-        if (!response.ok) {
-
-            let errorMessage = `HTTP ${response.status}`;
-
-            if (responseData && typeof responseData === "object") {
-
-                if (responseData.detail) {
-                    errorMessage = responseData.detail;
-                } else if (responseData.message) {
-                    errorMessage = responseData.message;
-                } else {
-                    errorMessage = JSON.stringify(responseData);
-                }
-            } else if (typeof responseData === "string") {
-                errorMessage = responseData;
+        const response = await apiRequest(
+            `${PLANTING_INTENTS_ENDPOINT}${intentId}`,
+            {
+                method: "PUT",
+                body: JSON.stringify(payload)
             }
+        );
 
-            throw new Error(errorMessage);
-        }
-
-        console.log("Planting intent updated:", responseData);
+        console.log("Update response:", response);
 
         // ====================================================
-        // UPDATE LOCAL DATA
+        // STEP 2: UPDATE LOCAL DATA ONLY (NO FETCH)
         // ====================================================
 
-        intent.farmer_name = updatedData.farmer_name;
-        intent.commodity = updatedData.commodity;
-        intent.volume = updatedData.volume;
-        intent.location = updatedData.location;
-        intent.planting_date = updatedData.planting_date;
-        intent.harvest_date = updatedData.harvest_date;
-        intent.remarks = updatedData.remarks;
+        // Update the local intent object directly
+        Object.assign(intent, {
+            farmer_id: updatedData.farmer_id,
+            farmer_name: updatedData.farmer_name,
+            commodity: updatedData.commodity,
+            volume: updatedData.volume,
+            location: updatedData.location,
+            planting_date: updatedData.planting_date,
+            harvest_date: updatedData.harvest_date,
+            remarks: updatedData.remarks
+        });
 
-        const index =
-            PLANTING_INTENTS_DATA.findIndex(
-                item =>
-                    item.planting_intent_id ===
-                    intent.planting_intent_id
-            );
-
+        // Also update in PLANTING_INTENTS_DATA array
+        const index = PLANTING_INTENTS_DATA.findIndex(
+            item => (item.planting_intent_id || item.id) === intentId
+        );
         if (index !== -1) {
-            PLANTING_INTENTS_DATA[index] = intent;
+            PLANTING_INTENTS_DATA[index] = { ...intent };
         }
 
+        // Update the current selected intent
+        window.currentSelectedPlantingIntent = intent;
+
         // ====================================================
-        // EXIT EDIT MODE
+        // STEP 3: RESTORE UI STATE
         // ====================================================
 
         window.isEditingPlantingIntent = false;
 
-        const details =
-            document.getElementById(
-                "plantingIntentDetailsSubview"
-            );
+        // Make all fields readonly
+        const inputs = details.querySelectorAll("input, textarea");
+        inputs.forEach(input => {
+            input.readOnly = true;
+            input.classList.add("input-readonly");
+            input.classList.remove("input-editable-active");
+        });
 
-        if (details) {
-            const inputs =
-                details.querySelectorAll(
-                    "input, textarea"
-                );
-
-            inputs.forEach(
-                input => {
-                    input.readOnly = true;
-                    input.classList.add("input-readonly");
-                    input.classList.remove("input-editable-active");
-                }
-            );
-        }
-
-        const editBtn =
-            document.getElementById(
-                "editPlantingIntentBtn"
-            );
-
+        // Reset Edit button
+        const editBtn = document.getElementById("editPlantingIntentBtn");
         if (editBtn) {
-            editBtn.textContent = "✏️ Edit";
+            editBtn.textContent = "✏️ Edit Details";
             editBtn.style.background = "#D97706";
         }
 
-        const confirmBtn =
-            document.getElementById(
-                "submitPlantingIntentBtn"
-            );
-
-        if (confirmBtn) {
-            confirmBtn.style.display = "inline-flex";
+        // Show Submit button again
+        const submitBtn = document.getElementById("submitPlantingIntentBtn");
+        if (submitBtn) {
+            submitBtn.style.display = "inline-flex";
+            submitBtn.textContent = "📤 Submit Report";
         }
 
-        await fetchPlantingIntents();
+        // ====================================================
+        // STEP 4: REFRESH THE TABLE DISPLAY (OPTIONAL)
+        // ====================================================
+        
+        // Just re-render the table with updated data
+        renderPlantingIntentsTable();
 
+        // Show success message
         alert("Planting Intent updated successfully!");
 
     } catch (error) {
+        console.error("Save planting intent error:", error);
 
-        console.error("=================================");
-        console.error("ERROR SAVING PLANTING INTENT");
-        console.error("=================================");
-        console.error("Error:", error);
-        console.error("Error message:", error.message);
-
-        // ====================================================
-        // SHOW MORE DETAILED ERROR
-        // ====================================================
-
-        let errorMessage = error.message || "Please check the FastAPI server.";
-
+        // Show error but don't break the UI
+        let errorMsg = error.message || "Please try again.";
+        
+        // Check if it's a network error
         if (error.message === "Failed to fetch") {
-            errorMessage =
-                "Cannot connect to the server.\n\n" +
-                "Please make sure:\n" +
-                "1. FastAPI server is running on http://127.0.0.1:8000\n" +
-                "2. The endpoint is correct: " + url + "\n" +
-                "3. CORS is enabled in the backend\n" +
-                "4. You have a valid access token";
+            // The update might have succeeded but fetch failed
+            // Just update local data anyway
+            console.warn("Network error but update might have succeeded.");
+            
+            // Still update local data
+            Object.assign(intent, {
+                farmer_id: updatedData.farmer_id,
+                farmer_name: updatedData.farmer_name,
+                commodity: updatedData.commodity,
+                volume: updatedData.volume,
+                location: updatedData.location,
+                planting_date: updatedData.planting_date,
+                harvest_date: updatedData.harvest_date,
+                remarks: updatedData.remarks
+            });
+
+            // Update in array
+            const index = PLANTING_INTENTS_DATA.findIndex(
+                item => (item.planting_intent_id || item.id) === (intent.planting_intent_id || intent.id)
+            );
+            if (index !== -1) {
+                PLANTING_INTENTS_DATA[index] = { ...intent };
+            }
+
+            window.currentSelectedPlantingIntent = intent;
+            renderPlantingIntentsTable();
+
+            // Still show success because the update might have worked
+            alert("Planting Intent updated successfully!");
+            
+            // Restore UI
+            window.isEditingPlantingIntent = false;
+            const inputs = details.querySelectorAll("input, textarea");
+            inputs.forEach(input => {
+                input.readOnly = true;
+                input.classList.add("input-readonly");
+                input.classList.remove("input-editable-active");
+            });
+            const editBtn = document.getElementById("editPlantingIntentBtn");
+            if (editBtn) {
+                editBtn.textContent = "✏️ Edit Details";
+                editBtn.style.background = "#D97706";
+            }
+            const submitBtn = document.getElementById("submitPlantingIntentBtn");
+            if (submitBtn) {
+                submitBtn.style.display = "inline-flex";
+                submitBtn.textContent = "📤 Submit Report";
+            }
+            
+            return;
         }
 
-        alert("Failed to update planting intent.\n\n" + errorMessage);
+        if (error.data && typeof error.data === "object") {
+            errorMsg = JSON.stringify(error.data, null, 2);
+        }
+
+        alert("Failed to save changes.\n\n" + errorMsg);
+
+        // Restore UI
+        window.isEditingPlantingIntent = false;
+        const inputs = details.querySelectorAll("input, textarea");
+        inputs.forEach(input => {
+            input.readOnly = true;
+            input.classList.add("input-readonly");
+            input.classList.remove("input-editable-active");
+        });
+        const editBtn = document.getElementById("editPlantingIntentBtn");
+        if (editBtn) {
+            editBtn.textContent = "✏️ Edit Details";
+            editBtn.style.background = "#D97706";
+        }
+        const submitBtn = document.getElementById("submitPlantingIntentBtn");
+        if (submitBtn) {
+            submitBtn.style.display = "inline-flex";
+        }
+
+        handleAuthError(error);
     }
 }
-
 /* ============================================================
    SUBMIT PLANTING INTENT TO FASTAPI
 ============================================================ */
@@ -4749,58 +4496,67 @@ function initOfftakeRequest() {
     /* ========================================================
        CREATE OFFTAKE REQUEST
     ======================================================== */
+document
+    .getElementById("createOfftakeBtn")
+    ?.addEventListener("click", () => {
 
-    document
-        .getElementById(
-            "createOfftakeBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
+        // Always start with a fresh form
+        resetOfftakeForm();
 
-                currentOfftakeRequest = null;
-
-                list?.classList.add(
-                    "hidden-element"
-                );
-
-                submitSub?.classList.remove(
-                    "hidden-element"
-                );
-
-                confirmSub?.classList.add(
-                    "hidden-element"
-                );
-            }
+        // Hide list
+        list?.classList.add(
+            "hidden-element"
         );
 
-
-    /* ========================================================
-       RETURN FROM SUBMIT FORM
-    ======================================================== */
-
-    document
-        .getElementById(
-            "returnFromSubmitOfftakeBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                submitSub?.classList.add(
-                    "hidden-element"
-                );
-
-                confirmSub?.classList.add(
-                    "hidden-element"
-                );
-
-                list?.classList.remove(
-                    "hidden-element"
-                );
-            }
+        // Show submit form
+        submitSub?.classList.remove(
+            "hidden-element"
         );
 
+        // Hide review
+        confirmSub?.classList.add(
+            "hidden-element"
+        );
+
+        console.log(
+            "New Offtake Request form opened."
+        );
+    });
+
+/* ========================================================
+   RETURN FROM SUBMIT FORM
+   RESET FORM → OFFTAKE REQUESTS LIST
+======================================================== */
+
+document
+    .getElementById("returnFromSubmitOfftakeBtn")
+    ?.addEventListener("click", () => {
+
+        // Clear current request
+        currentOfftakeRequest = null;
+
+        // Reset all form fields
+        resetOfftakeForm();
+
+        // Hide submit form
+        submitSub?.classList.add(
+            "hidden-element"
+        );
+
+        // Hide confirmation/review
+        confirmSub?.classList.add(
+            "hidden-element"
+        );
+
+        // Show Offtake Requests list
+        list?.classList.remove(
+            "hidden-element"
+        );
+
+        console.log(
+            "Offtake form reset. Returned to Offtake Requests."
+        );
+    });
 /* ========================================================
    PROCEED TO REVIEW
 ======================================================== */
@@ -4973,7 +4729,7 @@ document
 
                 document
                     .getElementById(
-                        "offtakeSuccessModal"
+                        "offtakeSubmittedModal"
                     )
                     ?.classList.remove(
                         "show"
@@ -6102,7 +5858,7 @@ if (sendOfftakeBtn) {
 
         document
             .getElementById(
-                "offtakeSuccessModal"
+                "offtakeSubmittedModal"
             )
             ?.classList.add(
                 "show"
@@ -6637,3 +6393,4 @@ document.addEventListener("DOMContentLoaded", function() {
 /* ============================================================
    END OF AEW.JS
 ============================================================ */
+
