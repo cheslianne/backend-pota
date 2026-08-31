@@ -1098,7 +1098,7 @@
 
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
-                <button class="btn-primary" type="submit">Submit Record</button>
+                <button class="btn-primary" type="submit">Submit</button>
               </div>
             </form>
           </div>
@@ -1176,14 +1176,24 @@
 
 
       <!-- VIEW 2: Planting Intent -->
-      <section class="view" id="view-planting-intent">
-        <div id="plantingIntentListSubview">
+        <section class="view" id="view-planting-intent">
+      <div id="plantingIntentListSubview">
           <div class="main-header">
-            <div class="header-left">
-              <h1>Planting Intents Tracking</h1>
-              <p>Aggregated crop scheduling and yield forecasting.</p>
-            </div>
-            <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
+              <div class="header-left">
+                  <h1>Planting Intents Tracking</h1>
+                  <p>Aggregated crop scheduling and yield forecasting.</p>
+              </div>
+              <div class="header-actions">
+                  <!-- ✅ SEARCH BAR FOR PLANTING INTENTS -->
+                  <div class="search-box">
+                      <svg viewBox="0 0 24 24">
+                          <circle cx="11" cy="11" r="7"/>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input type="text" id="searchPlantingIntentsInput" placeholder="Search planting intents...">
+                  </div>
+                  <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
+              </div>
           </div>
 
 
@@ -1272,6 +1282,18 @@
               <div class="form-field-item">
                 <label>Planting Intent ID</label>
                 <input type="text" id="detailPlantingIntentId" readonly class="input-readonly">
+              </div>
+              <div id="detailRevisionInfo" style="
+                  margin: 12px 0 16px 0;
+                  padding: 10px 16px;
+                  background: #F7F5F0;
+                  border-radius: 8px;
+                  border-left: 4px solid #D97706;
+                  font-size: 13px;
+                  color: #555;
+                  display: none;
+              ">
+                  <!-- Populated by JavaScript -->
               </div>
               <div class="form-field-item">
                 <label>Farmer Name</label>
@@ -1599,3 +1621,37 @@
   <script src="../assets/js/aew.js"></script>
 </body>
 </html>
+
+<!-- ============================================================
+   DELETE ERROR MODAL
+============================================================ -->
+
+<div class="modal-overlay" id="deleteErrorModal">
+    <div class="modal-box" style="max-width: 500px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <h2 style="margin: 0; font-size: 20px; color: #C0392B;">Cannot Delete Farmer</h2>
+        </div>
+        
+        <p style="font-size: 14px; color: #2E2A22; margin-bottom: 16px; line-height: 1.6;">
+            This farmer has existing records in the system.
+        </p>
+        
+        <div style="background: #F8F6F2; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; border-left: 4px solid #C0392B;">
+            <p style="font-size: 13px; color: #555; margin: 0 0 8px 0; font-weight: 600;">To delete this farmer, you must first delete or reassign their:</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555;">
+                <li style="margin-bottom: 4px;">Planting Intents</li>
+                <li>Offtake Requests</li>
+            </ul>
+        </div>
+        
+        <p style="font-size: 13px; color: #777; margin-bottom: 20px;">
+            Please check the farmer's records and try again.
+        </p>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button class="btn-primary" id="closeDeleteErrorBtn" type="button" style="background: #5B6B4F;">
+                Got it
+            </button>
+        </div>
+    </div>
+</div>

@@ -10,9 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 
+
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
+
+
 
 
   <style>
@@ -36,6 +40,8 @@
     }
 
 
+
+
     *{ margin:0; padding:0; box-sizing:border-box; }
     html,body{
       width:100%;
@@ -46,6 +52,8 @@
     }
     a{ color:inherit; }
     button, input, select, textarea{ font-family:'Inter', sans-serif; }
+
+
 
 
     .topbar{
@@ -126,6 +134,8 @@
     .avatar svg{ width:20px; height:20px; fill:#fff; }
 
 
+
+
     .layout{ display:flex; min-height:calc(100vh - 73px); }
     .sidebar{
       width:230px;
@@ -181,6 +191,8 @@
     .signout:hover{ opacity:0.8; }
 
 
+
+
     .main{ flex:1; padding:36px 40px; min-width:0; }
     .view{ display:none; }
     .view.active-view{ display:block; }
@@ -208,6 +220,8 @@
     }
 
 
+
+
     .section-heading{
       font-family:'Oswald', sans-serif;
       font-size:32px;
@@ -216,6 +230,8 @@
       margin:28px 0 16px;
     }
     .section-heading.first{ margin-top:0; }
+
+
 
 
     .search-row{ display:flex; gap:10px; align-items:center; }
@@ -243,6 +259,8 @@
       cursor:pointer;
     }
     .filter-btn svg{ width:18px; height:18px; fill:var(--ink); }
+
+
 
 
     table{ width:100%; border-collapse:separate; border-spacing:0; margin-bottom:20px; }
@@ -278,6 +296,8 @@
     }
     .clickable-row{ cursor:pointer; }
     .clickable-row:hover td{ background:#F6F3EB; }
+
+
 
 
     .review-details-card{
@@ -338,7 +358,11 @@
     }
 
 
+
+
     #map{ width:100%; height:360px; border-radius:8px; border:1px solid var(--border); }
+
+
 
 
     .threshold-card{
@@ -391,6 +415,8 @@
     .btn-save-config:hover{ background:#43574A; }
 
 
+
+
     .crop-reports-banner{
       background:#C4986C;
       color:#fff;
@@ -424,6 +450,8 @@
     .report-item:hover{ background:#F6F3EB; }
 
 
+
+
     .status-pill.approved{ background:#118308; }
     .notes-row{
       display:flex;
@@ -448,6 +476,8 @@
       resize:vertical;
     }
     .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
+
+
 
 
     .modal-overlay{
@@ -492,9 +522,11 @@
     .spacing-top-sm{ margin-top:16px; }
     .hidden-element{ display:none; }
 
+
     /* =========================================
    REPORT DETAILS - NOTES / REMARKS
 ========================================= */
+
 
 .report-desc-subtitle {
   font-size: 14px;
@@ -503,11 +535,14 @@
 }
 
 
+
+
 /* NOTES + REMARKS CONTAINER */
 .report-field-group {
   margin-top: 28px;
   width: 100%;
 }
+
 
 .report-field-label {
   display: block;
@@ -518,6 +553,8 @@
 }
 
 
+
+
 /* NOTES */
 .notes-flex-container {
   display: flex;
@@ -525,6 +562,7 @@
   gap: 16px;
   width: 100%;
 }
+
 
 .textarea-notes-readonly {
   flex: 1;
@@ -539,6 +577,8 @@
   outline: none;
   resize: vertical;
 }
+
+
 
 
 /* VIEW ATTACHMENTS */
@@ -556,15 +596,19 @@
   white-space: nowrap;
 }
 
+
 .btn-view-attachments:hover {
   background: #DEDDDC;
 }
+
+
 
 
 /* REMARKS */
 .remarks-group {
   margin-top: 30px;
 }
+
 
 .textarea-remarks-input {
   display: block;
@@ -580,14 +624,18 @@
   resize: vertical;
 }
 
+
 .textarea-remarks-input:focus {
   border-color: var(--green);
 }
 
 
+
+
 /* =========================================
    REPORT ACTION BUTTONS
 ========================================= */
+
 
 .matched-actions-row {
   display: flex;
@@ -597,6 +645,7 @@
   margin-top: 24px;
   margin-bottom: 20px;
 }
+
 
 .matched-actions-row button {
   min-height: 42px;
@@ -609,6 +658,8 @@
 }
 
 
+
+
 /* RETURN */
 .btn-action-return {
   border: 1.5px solid #999;
@@ -616,9 +667,12 @@
   color: var(--ink);
 }
 
+
 .btn-action-return:hover {
   background: #F0F0F0;
 }
+
+
 
 
 /* FLAG FOR REVISION */
@@ -628,9 +682,12 @@
   color: #C83232;
 }
 
+
 .btn-action-flag:hover {
   background: #FCEAEA;
 }
+
+
 
 
 /* APPROVE & ESCALATE */
@@ -640,26 +697,33 @@
   color: #fff;
 }
 
+
 .btn-action-approve:hover {
   background: var(--green-dark);
 }
 
 
+
+
 /* MOBILE */
 @media (max-width: 768px) {
+
 
   .notes-flex-container {
     flex-direction: column;
   }
 
+
   .btn-view-attachments {
     width: 100%;
   }
+
 
   .matched-actions-row {
     flex-direction: column;
     align-items: stretch;
   }
+
 
   .matched-actions-row button {
     width: 100%;
@@ -670,12 +734,16 @@
 <body>
 
 
+
+
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
+
+
 
 
       <div class="logos">
@@ -700,11 +768,15 @@
     </div>
 
 
+
+
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
+
+
 
 
       <div class="user-info">
@@ -718,6 +790,8 @@
       </div>
     </div>
   </div>
+
+
 
 
   <div class="layout">
@@ -743,6 +817,8 @@
       </div>
 
 
+
+
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -750,8 +826,12 @@
     </nav>
 
 
+
+
     <!-- MAIN CONTENT -->
     <main class="main">
+
+
 
 
       <!-- VIEW 1: Buyer Registry -->
@@ -780,6 +860,8 @@
               </tr>
             </tbody>
           </table>
+
+
 
 
           <h2 class="section-heading">All Verified Buyers</h2>
@@ -813,6 +895,8 @@
         </div>
 
 
+
+
         <!-- Review Details Subview -->
         <div id="buyerReviewDetails" class="hidden-element">
           <div class="main-header"><h1>Review Details</h1></div>
@@ -838,10 +922,14 @@
             </div>
 
 
+
+
             <div class="message-field-wrap">
               <label>Message:</label>
               <textarea readonly placeholder="No message provided."></textarea>
             </div>
+
+
 
 
             <div class="spacing-top-sm">
@@ -855,6 +943,8 @@
 </div>
 
 
+
+
           <div class="actions-row">
             <button class="btn-outline-report" id="returnBuyerListBtn" type="button">Return</button>
             <button class="btn-outline-report" id="rejectBuyerBtn" type="button">Reject</button>
@@ -862,6 +952,8 @@
           </div>
         </div>
       </section>
+
+
 
 
       <!-- VIEW 2: View Map -->
@@ -873,11 +965,15 @@
       </section>
 
 
+
+
       <!-- VIEW 3: Alert Threshold -->
       <section class="view" id="view-threshold">
         <div class="main-header"><h1>Oversupply Threshold</h1></div>
         <div class="threshold-card">
           <div class="threshold-card-title">Alert Threshold</div>
+
+
 
 
           <div class="form-group">
@@ -890,10 +986,14 @@
           </div>
 
 
+
+
           <div class="form-group">
             <label for="baseDemandInput">Base Demand / Target Quantity</label>
             <input type="number" id="baseDemandInput" class="form-input" placeholder="e.g. 50000">
           </div>
+
+
 
 
           <div class="form-group">
@@ -912,6 +1012,8 @@
           </div>
 
 
+
+
           <div class="form-group">
             <label for="etlSelect">ETL Schedule</label>
             <select id="etlSelect" class="form-select">
@@ -922,18 +1024,24 @@
           </div>
 
 
+
+
           <button class="btn-save-config" id="saveConfigBtn" type="button">Save Configuration</button>
         </div>
       </section>
 
+
 <!-- VIEW 4: View Reports -->
 <section class="view" id="view-reports">
+
 
   <!-- REPORT LIST SUBVIEW -->
   <div id="reportListSubview">
 
+
     <div class="main-header">
       <h1>Reports</h1>
+
 
       <div class="search-row">
         <div class="search-box">
@@ -941,6 +1049,7 @@
             <circle cx="11" cy="11" r="7"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
+
 
           <input
             type="text"
@@ -951,7 +1060,9 @@
       </div>
     </div>
 
+
     <div class="card">
+
 
       <div
         style="
@@ -963,6 +1074,7 @@
       >
         Pending Reports
       </div>
+
 
       <table>
         <thead>
@@ -976,6 +1088,7 @@
           </tr>
         </thead>
 
+
         <tbody id="pendingReportsBody">
           <tr>
             <td colspan="6" style="text-align:center;">
@@ -985,26 +1098,35 @@
         </tbody>
       </table>
 
+
     </div>
   </div>
+
+
 
 
   <!-- REPORT DETAIL SUBVIEW -->
   <div id="reportDetailSubview" class="hidden-element">
 
+
     <div class="main-header">
       <h1>Report Details</h1>
     </div>
+
 
     <p class="report-desc-subtitle">
       Inspect production data and provide provincial feedback.
     </p>
 
 
+
+
     <!-- REPORT INFORMATION -->
     <div class="card">
 
+
       <table class="report-detail-table">
+
 
         <thead>
           <tr>
@@ -1018,15 +1140,20 @@
           </tr>
         </thead>
 
+
         <tbody id="reportDetailBody">
           <!-- JavaScript will insert the report details here -->
         </tbody>
 
+
       </table>
+
+
 
 
       <!-- NOTES -->
       <div class="report-field-group">
+
 
         <label
           for="reportNotesTextarea"
@@ -1035,7 +1162,9 @@
           NOTES
         </label>
 
+
         <div class="notes-flex-container">
+
 
           <textarea
             id="reportNotesTextarea"
@@ -1043,6 +1172,7 @@
             readonly
             placeholder="No notes provided."
           ></textarea>
+
 
           <button
             class="btn-view-attachments"
@@ -1052,13 +1182,18 @@
             View Attachments
           </button>
 
+
         </div>
+
 
       </div>
 
 
+
+
       <!-- REMARKS -->
       <div class="report-field-group remarks-group">
+
 
         <label
           for="remarksTextarea"
@@ -1067,19 +1202,25 @@
           REMARKS
         </label>
 
+
         <textarea
           id="remarksTextarea"
           class="textarea-remarks-input"
           placeholder="Enter provincial feedback or revision notes..."
         ></textarea>
 
+
       </div>
+
 
     </div>
 
 
+
+
     <!-- ACTION BUTTONS -->
     <div class="matched-actions-row">
+
 
       <button
         class="btn-action-return"
@@ -1089,6 +1230,7 @@
         Return
       </button>
 
+
       <button
         class="btn-action-flag"
         id="flagReportBtn"
@@ -1096,6 +1238,7 @@
       >
         Flag for Revision
       </button>
+
 
       <button
         class="btn-action-approve"
@@ -1105,15 +1248,21 @@
         Approve &amp; Escalate
       </button>
 
+
     </div>
 
+
   </div>
+
 
 </section>
 
 
+
+
     </main>
   </div>
+
 
   <!-- MODALS -->
   <div class="modal-overlay" id="confirmApproveModal">
@@ -1128,6 +1277,8 @@
   </div>
 
 
+
+
   <div class="modal-overlay" id="confirmRejectModal">
     <div class="modal-box">
       <h2>Confirmation</h2>
@@ -1140,6 +1291,8 @@
   </div>
 
 
+
+
   <div class="modal-overlay" id="reportApprovedModal">
     <div class="modal-box">
       <h2>Report Has Been Approved</h2>
@@ -1150,9 +1303,16 @@
   </div>
 
 
+
+
   <!-- Leaflet & App JS -->
+   <script src="../assets/js/logout.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/da.js"></script>
 </body>
 </html>
+
+
+
+
 
