@@ -443,16 +443,12 @@ async function loadUsers() {
                 <td>
 
                     <button
-                        class="action-btn"
+                        class="${isActive ? 'btn-deactivate' : 'btn-reactivate'}"
                         type="button"
                         data-user-id="${escapeHTML(userId)}"
                         data-active="${isActive}"
                     >
-                        ${
-                            isActive
-                                ? "Deactivate"
-                                : "Reactivate"
-                        }
+                        ${isActive ? 'Deactivate' : 'Reactivate'}
                     </button>
 
                 </td>
@@ -463,17 +459,15 @@ async function loadUsers() {
 
         document
             .querySelectorAll(
-                "#userRows .action-btn"
+                "#userRows .btn-deactivate, #userRows .btn-reactivate"
             )
             .forEach(button => {
-
                 button.addEventListener(
                     "click",
                     () => {
                         toggleUserStatus(button);
                     }
                 );
-
             });
 
     }
@@ -670,6 +664,11 @@ async function toggleUserStatus(button) {
    POST /api/users
 ============================================================ */
 
+/* ============================================================
+   CREATE ACCOUNT
+   POST /api/users/users
+============================================================ */
+
 async function createAccount(event) {
 
     event.preventDefault();
@@ -723,6 +722,7 @@ async function createAccount(event) {
             "roleSelect"
         )?.value;
 
+    // Validation
     if (
         !firstName ||
         !lastName ||
@@ -763,9 +763,10 @@ async function createAccount(event) {
 
     try {
 
+        // ✅ FIXED: Correct API endpoint
         const response =
             await fetch(
-                `${API_BASE_URL}/api/users`,
+                `${API_BASE_URL}/api/users/users`,
                 {
                     method: "POST",
 
@@ -810,7 +811,7 @@ async function createAccount(event) {
         }
 
         console.log(
-            "POST /api/users:",
+            "POST /api/users/users:",
             response.status,
             data
         );
@@ -840,6 +841,13 @@ async function createAccount(event) {
             );
         }
 
+        if (response.status === 405) {
+
+            throw new Error(
+                "Method not allowed. Please check the API endpoint."
+            );
+        }
+
         if (!response.ok) {
 
             throw new Error(
@@ -852,30 +860,32 @@ async function createAccount(event) {
 
         form.reset();
 
-        await loadUsers();
-
-        await loadAuditLogs();
-
-        if (
-            typeof openModal ===
-            "function"
-        ) {
-
-            openModal(
-                "successModal"
+        // Go back to users view
+        const addAccountView =
+            document.getElementById(
+                "view-add-account"
             );
 
-        }
-        else {
+        const usersView =
+            document.getElementById(
+                "view-users"
+            );
 
-            document
-                .getElementById(
-                    "successModal"
-                )
-                ?.classList.add(
-                    "show"
-                );
+        if (addAccountView && usersView) {
+
+            addAccountView.classList.remove(
+                "active-view"
+            );
+
+            usersView.classList.add(
+                "active-view"
+            );
         }
+
+        await loadUsers();
+        await loadAuditLogs();
+
+        alert("✅ Account created successfully!");
 
     }
     catch (error) {
@@ -1772,13 +1782,43 @@ document.addEventListener(
                 "click",
                 () => {
 
-                    if (
-                        typeof switchView ===
-                        "function"
-                    ) {
+                    // Show the Add Account form directly
+                    const addAccountView =
+                        document.getElementById(
+                            "view-add-account"
+                        );
 
-                        switchView(
-                            "add-account"
+                    const usersView =
+                        document.getElementById(
+                            "view-users"
+                        );
+
+                    if (addAccountView && usersView) {
+
+                        usersView.classList.remove(
+                            "active-view"
+                        );
+
+                        addAccountView.classList.add(
+                            "active-view"
+                        );
+
+                        // Update nav highlight
+                        document
+                            .querySelectorAll(
+                                ".nav-item"
+                            )
+                            .forEach(item => {
+                                item.classList.remove(
+                                    "active"
+                                );
+                            });
+
+                    } else {
+
+                        // Fallback: open modal or alert
+                        alert(
+                            "Add Account form is not available. Please check the page."
                         );
                     }
 
@@ -1809,14 +1849,70 @@ document.addEventListener(
                         form.reset();
                     }
 
-                    if (
-                        typeof switchView ===
-                        "function"
-                    ) {
-
-                        switchView(
-                            "users"
+                    // Go back to users view
+                    const addAccountView =
+                        document.getElementById(
+                            "view-add-account"
                         );
+
+                    const usersView =
+                        document.getElementById(
+                            "view-users"
+                        );
+
+                    if (addAccountView && usersView) {
+
+                        addAccountView.classList.remove(
+                            "active-view"
+                        );
+
+                        usersView.classList.add(
+                            "active-view"
+                        );
+
+                        // Update nav highlight
+                        document
+                            .querySelectorAll(
+                                ".nav-item"
+                            )
+                            .forEach(item => {
+                                item.classList.remove(
+                                    "active"
+                                );
+                            });
+
+                        // Highlight Manage Users nav item
+                        document
+                            .querySelector(
+                                '.nav-item[data-view="users"]'
+                            )
+                            ?.classList.add(
+                                "active"
+                            );
+
+                    } else {
+
+                        // Fallback: reload users view
+                        document
+                            .querySelectorAll(
+                                ".view"
+                            )
+                            .forEach(view => {
+                                view.classList.remove(
+                                    "active-view"
+                                );
+                            });
+
+                        const usersView2 =
+                            document.getElementById(
+                                "view-users"
+                            );
+
+                        if (usersView2) {
+                            usersView2.classList.add(
+                                "active-view"
+                            );
+                        }
                     }
 
                 }
