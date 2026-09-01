@@ -14,6 +14,7 @@ const PLANTING_INTENTS_ENDPOINT = `${API_BASE_URL}/api/planting-intents/`;
 const RAW_PLANT_REPORTS_ENDPOINT = `${API_BASE_URL}/api/raw-plant-reports/from-planting-intent`;
 const REPORT_SUBMISSIONS_ENDPOINT = `${API_BASE_URL}/api/report-submissions`;
 const OFFTAKE_REQUESTS_ENDPOINT = `${API_BASE_URL}/api/offtake-requests/`;
+const FORECASTS_ENDPOINT = `${API_BASE_URL}/api/forecasts/`;
 
 /* ============================================================
    AUTH
@@ -59,6 +60,9 @@ let mapInstance = null;
 let currentOfftakeRequest = null;
 let OFFTAKE_REQUESTS_DATA = [];
 
+// Add this near other state variables (around line 40)
+let FORECASTS_DATA = [];
+let priceChartInstance = null;
 
 
 /* ============================================================
@@ -75,8 +79,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     initPlantingIntent();
     initOfftakeRequest();
     initFairPrice();
+    initFairPriceMonthDropdown();
     initSignout();
     setupUserProfile();
+    initForecastResults();
 
     await fetchFarmers();
     await loadAllReports();
@@ -2496,6 +2502,929 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 1000);
 });
 
+
 /* ============================================================
-   END OF AEW.JS
+   FAIR PRICE MONTH DROPDOWN
 ============================================================ */
+
+function initFairPriceMonthDropdown() {
+    const monthButton = document.getElementById('fairPriceMonthButton');
+    const monthDropdown = document.getElementById('customMonthDropdown');
+    const monthMenu = document.getElementById('fairPriceMonthMenu');
+    const monthText = document.getElementById('fairPriceMonthText');
+    const monthSelect = document.getElementById('fairPriceMonthSelect');
+    const monthOptions = document.querySelectorAll('.month-option');
+
+    if (!monthButton || !monthDropdown || !monthMenu) {
+        console.warn('Month dropdown elements not found.');
+        return;
+    }
+
+    // Toggle dropdown on button click
+    monthButton.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isOpen = monthDropdown.classList.contains('open');
+        monthDropdown.classList.toggle('open');
+        this.setAttribute('aria-expanded', !isOpen);
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!monthDropdown.contains(e.target)) {
+            monthDropdown.classList.remove('open');
+            monthButton.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    // Handle month option selection
+    monthOptions.forEach(function(option) {
+        option.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Update active state
+            monthOptions.forEach(function(opt) {
+                opt.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Update button text
+            const value = this.getAttribute('data-value');
+            const text = this.textContent.trim();
+            monthText.textContent = text;
+            
+            // Update hidden select
+            monthSelect.value = value;
+            
+            // Trigger change event on hidden select for any listeners
+            const changeEvent = new Event('change', { bubbles: true });
+            monthSelect.dispatchEvent(changeEvent);
+            
+            // Close dropdown
+            monthDropdown.classList.remove('open');
+            monthButton.setAttribute('aria-expanded', 'false');
+            
+            // Optional: Call a function to update the price display based on month
+            if (typeof updateFairPriceDisplay === 'function') {
+                updateFairPriceDisplay(value);
+            }
+        });
+    });
+
+    // Sync hidden select with button text when changed elsewhere
+    monthSelect.addEventListener('change', function() {
+        const selectedOption = document.querySelector('.month-option[data-value="' + this.value + '"]');
+        if (selectedOption) {
+            monthOptions.forEach(function(opt) {
+                opt.classList.remove('active');
+            });
+            selectedOption.classList.add('active');
+            monthText.textContent = selectedOption.textContent.trim();
+        }
+    });
+}
+
+// Optional: Update price display based on selected month
+function updateFairPriceDisplay(month) {
+    console.log('Month selected:', month);
+    // You can add logic here to update the price metrics
+    // based on the selected month (e.g., fetch price data for that month)
+    // For example:
+    // const crop = document.getElementById('fairPriceCropSelect').value;
+    // updatePriceMetrics(crop, month);
+}
+
+/* ============================================================
+   FORECAST RESULTS
+============================================================ */
+
+/* ============================================================
+   FORECAST RESULTS - UPDATED
+============================================================ */
+
+/* ============================================================
+   FORECAST RESULTS - INIT
+============================================================ */
+
+/* ============================================================
+   FORECAST RESULTS - COMPLETE FIXED
+============================================================ */
+
+function initForecastResults() {
+    console.log("Initializing Forecast Results...");
+    
+    const forecastView = document.getElementById("view-fair-prices");
+    if (!forecastView) {
+        console.warn("view-fair-prices not found in DOM");
+        return;
+    }
+    
+    console.log("Forecast view found:", forecastView);
+    
+    // Check if already visible
+    if (forecastView.classList.contains("active-view")) {
+        console.log("Fair Prices view is currently active, loading forecasts...");
+        setTimeout(function() {
+            loadForecastResults();
+            setTimeout(initPriceChart, 500);
+        }, 300);
+    }
+    
+    // Listen for when the view becomes active
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (forecastView.classList.contains('active-view')) {
+                    console.log("Fair Prices view became active, loading forecasts...");
+                    loadForecastResults();
+                    setTimeout(initPriceChart, 500);
+                }
+            }
+        });
+    });
+    observer.observe(forecastView, { attributes: true });
+    
+    // Also listen for nav clicks
+    const forecastNav = document.querySelector('.nav-item[data-view="fair-prices"]');
+    if (forecastNav) {
+        forecastNav.addEventListener('click', function() {
+            console.log("Fair Prices nav clicked, loading forecasts...");
+            setTimeout(function() {
+                loadForecastResults();
+                setTimeout(initPriceChart, 500);
+            }, 200);
+        });
+    } else {
+        console.warn("Nav item with data-view='fair-prices' not found");
+    }
+    
+    // Safety check
+    setTimeout(function() {
+        if (forecastView.classList.contains('active-view')) {
+            console.log("Safety check: loading forecasts...");
+            loadForecastResults();
+            setTimeout(initPriceChart, 500);
+        }
+    }, 1000);
+}
+
+
+async function loadForecastResults() {
+    console.log("loadForecastResults() called...");
+    
+    const container = document.getElementById("forecastResultsContainer");
+    if (!container) {
+        console.warn("forecastResultsContainer not found.");
+        return;
+    }
+
+    console.log("Container found, loading forecasts...");
+
+    // Show loading state
+    container.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #E5E5E5; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
+            <br>Loading forecast results...
+        </div>
+    `;
+
+    try {
+        console.log("Fetching from:", FORECASTS_ENDPOINT);
+        const forecasts = await apiRequest(FORECASTS_ENDPOINT, { method: "GET" });
+        console.log("Forecast Results API response:", forecasts);
+
+        if (!Array.isArray(forecasts)) {
+            throw new Error("Invalid forecast response.");
+        }
+
+        FORECASTS_DATA = forecasts;
+        renderForecastResults(forecasts);
+        
+        // ✅ Initialize chart after rendering
+        setTimeout(function() {
+            initPriceChart();
+        }, 300);
+
+    } catch (error) {
+        console.error("Failed to load forecast results:", error);
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                <strong>Failed to load forecast results.</strong>
+                <br><small style="color: #999;">${escapeHtml(error.message || "Please check the FastAPI server.")}</small>
+                <br><br>
+                <button onclick="loadForecastResults()" style="padding: 8px 20px; background: #2E7D32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    🔄 Retry
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Update price metrics
+function updatePriceMetrics(forecasts) {
+    const lowestPriceEl = document.getElementById("lowestPriceDisplay");
+    const highestPriceEl = document.getElementById("highestPriceDisplay");
+    
+    if (!lowestPriceEl || !highestPriceEl) return;
+    
+    let allPrices = [];
+    forecasts.forEach(function(f) {
+        // ✅ Use forecast_price_low and forecast_price_high
+        if (f.forecast_price_low) allPrices.push(Number(f.forecast_price_low));
+        if (f.forecast_price_high) allPrices.push(Number(f.forecast_price_high));
+    });
+    
+    if (allPrices.length === 0) {
+        lowestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
+        highestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
+        return;
+    }
+    
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    
+    lowestPriceEl.innerHTML = `₱${minPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
+    highestPriceEl.innerHTML = `₱${maxPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
+}
+
+// Tawagin ito sa loob ng renderForecastResults() after mag-render ng container
+// Ilagay sa dulo ng renderForecastResults():
+updatePriceMetrics(forecasts);
+
+function groupForecastsByYear(forecasts) {
+    const grouped = {};
+
+    forecasts.forEach(function(forecast) {
+        // ✅ Use forecast_date from your API
+        let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
+        if (!dateString) return;
+
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return;
+
+        const year = date.getFullYear();
+        if (!grouped[year]) {
+            grouped[year] = [];
+        }
+        grouped[year].push(forecast);
+    });
+
+    return grouped;
+}
+
+function groupForecastsByMonth(forecasts) {
+    const grouped = {};
+
+    forecasts.forEach(function(forecast) {
+        // ✅ Use forecast_date from your API
+        let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
+        if (!dateString) return;
+
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return;
+
+        const month = date.toLocaleString('en-US', { month: 'long' });
+        if (!grouped[month]) {
+            grouped[month] = [];
+        }
+        grouped[month].push(forecast);
+    });
+
+    return grouped;
+}
+
+
+/* ============================================================
+   FORECAST TOGGLE FUNCTIONS
+============================================================ */
+
+function toggleForecastYear(headerElement) {
+    const content = headerElement.nextElementSibling;
+    const arrow = headerElement.querySelector('span:last-child');
+
+    if (!content) return;
+
+    if (content.style.maxHeight) {
+        content.style.maxHeight = null;
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+function toggleForecastMonth(headerElement) {
+    const content = headerElement.nextElementSibling;
+    const arrow = headerElement.querySelector('span:last-child');
+
+    if (!content) return;
+
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        if (arrow) arrow.style.transform = 'rotate(90deg)';
+    } else {
+        content.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Add CSS animation for loading spinner
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+
+/* ============================================================
+   RENDER FORECAST RESULTS - COMPLETE
+============================================================ */
+
+function renderForecastResults(forecasts) {
+    console.log("renderForecastResults called with", forecasts.length, "forecasts");
+    
+    const container = document.getElementById("forecastResultsContainer");
+    if (!container) {
+        console.warn("forecastResultsContainer not found.");
+        return;
+    }
+
+    if (!forecasts || forecasts.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                No forecast results available.
+                <br><small style="color: #999;">Please check back later.</small>
+            </div>
+        `;
+        return;
+    }
+
+    // Group forecasts by year
+    const groupedByYear = groupForecastsByYear(forecasts);
+
+    let html = '';
+
+    // Sort years descending (newest first)
+    const sortedYears = Object.keys(groupedByYear).sort().reverse();
+
+    sortedYears.forEach(function(year) {
+        const yearData = groupedByYear[year];
+        
+        // Group by month within the year
+        const groupedByMonth = groupForecastsByMonth(yearData);
+
+        html += `
+            <div class="forecast-year-group" style="margin-bottom: 16px;">
+                <div class="forecast-year-header" style="
+                    background: #2E7D32;
+                    color: #fff;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: background 0.2s;
+                " onclick="toggleForecastYear(this)">
+                    <span>📅 ${year} Projections</span>
+                    <span style="font-size: 20px; transition: transform 0.3s;">▼</span>
+                </div>
+                <div class="forecast-year-content" style="
+                    background: #fff;
+                    border: 1px solid #E5E5E5;
+                    border-top: none;
+                    border-radius: 0 0 8px 8px;
+                    padding: 8px 12px;
+                    margin-top: 0;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease;
+                ">
+        `;
+
+        // Sort months chronologically (January to December)
+        const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const sortedMonths = Object.keys(groupedByMonth).sort(function(a, b) {
+            return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+        });
+
+        sortedMonths.forEach(function(month, monthIndex) {
+            const monthData = groupedByMonth[month];
+            
+            // Sort commodities alphabetically
+            const sortedCommodities = monthData.sort(function(a, b) {
+                const commodityA = a.commodity || '';
+                const commodityB = b.commodity || '';
+                return commodityA.localeCompare(commodityB);
+            });
+
+            // ✅ Check if this is the first month
+            const isFirstMonth = monthIndex === 0;
+            const displayStyle = isFirstMonth ? 'block' : 'none';
+            const arrowRotation = isFirstMonth ? 'rotate(90deg)' : 'rotate(0deg)';
+
+            html += `
+                <div class="forecast-month-group" style="margin-bottom: 4px;">
+                    <div class="forecast-month-header" style="
+                        padding: 10px 12px;
+                        cursor: pointer;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background: #F6F3EB;
+                        border-radius: 6px;
+                        font-weight: 500;
+                        font-size: 14px;
+                        transition: background 0.2s;
+                    " onclick="toggleForecastMonth(this)">
+                        <span>📆 ${month} ${year}</span>
+                        <span style="font-size: 16px; transition: transform 0.3s; transform: ${arrowRotation};">▶</span>
+                    </div>
+                    <div class="forecast-month-content" style="
+                        padding: 8px 12px;
+                        background: #FAF8F5;
+                        border-radius: 0 0 6px 6px;
+                        display: ${displayStyle};
+                    ">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #DEDDDC;">
+                                    <th style="text-align: left; padding: 8px 6px; font-weight: 600; color: #333;">Commodity</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Lower Price (₱)</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Upper Price (₱)</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Range</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            sortedCommodities.forEach(function(forecast, index) {
+                const commodity = forecast.commodity || forecast.crop || '—';
+                const lowerPrice = Number(forecast.forecast_price_low || 0);
+                const upperPrice = Number(forecast.forecast_price_high || 0);
+                const lowerPriceStr = lowerPrice.toFixed(2);
+                const upperPriceStr = upperPrice.toFixed(2);
+                const bgColor = index % 2 === 0 ? 'transparent' : '#F6F3EB';
+                
+                html += `
+                    <tr style="background: ${bgColor}; border-bottom: 1px solid #F0EDE8;">
+                        <td style="padding: 8px 6px; font-weight: 500;">${escapeHtml(commodity)}</td>
+                        <td style="padding: 8px 6px; text-align: center;">₱${lowerPriceStr}</td>
+                        <td style="padding: 8px 6px; text-align: center;">₱${upperPriceStr}</td>
+                        <td style="padding: 8px 6px; text-align: center;">
+                            <span style="
+                                background: #2E7D32;
+                                color: #fff;
+                                padding: 2px 12px;
+                                border-radius: 12px;
+                                font-size: 12px;
+                                font-weight: 600;
+                            ">₱${lowerPriceStr} – ₱${upperPriceStr}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // ✅ Auto-expand the first year
+    const firstYearContent = container.querySelector('.forecast-year-content');
+    if (firstYearContent) {
+        firstYearContent.style.maxHeight = firstYearContent.scrollHeight + 'px';
+    }
+
+    // Update price metrics
+    updatePriceMetrics(forecasts);
+
+    // Add forecast count
+    const countDiv = document.createElement('div');
+    countDiv.style.cssText = 'margin-top: 12px; padding: 12px 0; font-size: 13px; color: #666; text-align: right; border-top: 1px solid #E5E5E5;';
+    countDiv.textContent = `Total: ${forecasts.length} forecast(s) found.`;
+    container.appendChild(countDiv);
+    
+    console.log("Forecast rendering complete!");
+}
+/* ============================================================
+   PRICE TREND CHART
+============================================================ */
+
+
+function initPriceChart() {
+    console.log("🔍 initPriceChart called...");
+    
+    const canvas = document.getElementById('priceTrendChart');
+    if (!canvas) {
+        console.warn('❌ Price trend chart canvas not found');
+        return;
+    }
+    console.log('✅ Canvas found');
+    
+    if (typeof Chart === 'undefined') {
+        console.warn('⚠️ Chart.js not loaded yet, waiting...');
+        setTimeout(initPriceChart, 500);
+        return;
+    }
+    console.log('✅ Chart.js loaded');
+    
+    const forecasts = FORECASTS_DATA || [];
+    console.log('📊 Forecasts data:', forecasts.length, 'records');
+    
+    if (forecasts.length === 0) {
+        console.warn('❌ No forecast data available for chart');
+        if (canvas.parentElement) {
+            canvas.parentElement.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                    No price data available for chart.
+                    <br><small style="color: #999;">Please load forecast data first.</small>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    renderChart(forecasts, 'all');
+}
+
+function renderChart(forecasts, commodityFilter) {
+    console.log("🔍 renderChart called with filter:", commodityFilter);
+    
+    const canvas = document.getElementById('priceTrendChart');
+    if (!canvas) {
+        console.warn('❌ Canvas not found');
+        return;
+    }
+    
+    // Destroy existing chart
+    if (priceChartInstance) {
+        console.log('🔄 Destroying existing chart...');
+        priceChartInstance.destroy();
+        priceChartInstance = null;
+    }
+    
+    let filteredData = forecasts;
+    if (commodityFilter !== 'all') {
+        filteredData = forecasts.filter(function(f) {
+            return f.commodity === commodityFilter;
+        });
+        console.log('📊 Filtered to', filteredData.length, 'records for', commodityFilter);
+    }
+    
+    if (filteredData.length === 0) {
+        console.warn('❌ No data for filter:', commodityFilter);
+        if (canvas.parentElement) {
+            canvas.parentElement.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                    No data available for ${commodityFilter}.
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    // Group by commodity
+    const commodities = {};
+    filteredData.forEach(function(f) {
+        const commodity = f.commodity || 'Unknown';
+        if (!commodities[commodity]) {
+            commodities[commodity] = [];
+        }
+        commodities[commodity].push(f);
+    });
+    console.log('📦 Commodities found:', Object.keys(commodities));
+    
+    // Sort by date
+    Object.keys(commodities).forEach(function(commodity) {
+        commodities[commodity].sort(function(a, b) {
+            return new Date(a.forecast_date) - new Date(b.forecast_date);
+        });
+    });
+    
+    // Prepare datasets with professional colors
+    const datasets = [];
+    const colorPalette = {
+        'Tomato': {
+            main: '#E74C3C',
+            light: 'rgba(231, 76, 60, 0.15)',
+            gradient: ['rgba(231, 76, 60, 0.3)', 'rgba(231, 76, 60, 0.05)']
+        },
+        'Squash fruit': {
+            main: '#F39C12',
+            light: 'rgba(243, 156, 18, 0.15)',
+            gradient: ['rgba(243, 156, 18, 0.3)', 'rgba(243, 156, 18, 0.05)']
+        },
+        'Red Onion': {
+            main: '#8E44AD',
+            light: 'rgba(142, 68, 173, 0.15)',
+            gradient: ['rgba(142, 68, 173, 0.3)', 'rgba(142, 68, 173, 0.05)']
+        },
+        'White Onion': {
+        main: '#1ABC9C',  // Teal/Cyan color
+        light: 'rgba(26, 188, 156, 0.15)',
+        gradient: ['rgba(26, 188, 156, 0.3)', 'rgba(26, 188, 156, 0.05)']
+    },
+    };
+    
+    const defaultColors = ['#E74C3C', '#F39C12', '#2ECC71', '#3498DB', '#9B59B6', '#1ABC9C', '#E67E22', '#2C3E50'];
+    let colorIndex = 0;
+    
+    // Get all unique dates
+    const allDates = [];
+    Object.keys(commodities).forEach(function(commodity) {
+        commodities[commodity].forEach(function(f) {
+            const date = new Date(f.forecast_date);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            if (!allDates.includes(dateStr)) {
+                allDates.push(dateStr);
+            }
+        });
+    });
+    allDates.sort(function(a, b) {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return dateA - dateB;
+    });
+    console.log('📅 Dates:', allDates);
+    
+    Object.keys(commodities).forEach(function(commodity, idx) {
+        const data = commodities[commodity];
+        
+        let colorObj = colorPalette[commodity];
+        if (!colorObj) {
+            const mainColor = defaultColors[colorIndex % defaultColors.length];
+            colorObj = {
+                main: mainColor,
+                light: mainColor + '33',
+                gradient: [mainColor + '44', mainColor + '11']
+            };
+            colorIndex++;
+        }
+        
+        const lowerPrices = [];
+        const upperPrices = [];
+        
+        allDates.forEach(function(dateStr) {
+            const found = data.find(function(f) {
+                const d = new Date(f.forecast_date);
+                return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === dateStr;
+            });
+            
+            if (found) {
+                lowerPrices.push(parseFloat(found.forecast_price_low || 0));
+                upperPrices.push(parseFloat(found.forecast_price_high || 0));
+            } else {
+                lowerPrices.push(null);
+                upperPrices.push(null);
+            }
+        });
+        
+        // Lower price - solid line with fill
+        datasets.push({
+            label: commodity + ' (Low)',
+            data: lowerPrices,
+            borderColor: colorObj.main,
+            backgroundColor: function(context) {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) {
+                    return colorObj.light;
+                }
+                const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, colorObj.gradient[0]);
+                gradient.addColorStop(1, colorObj.gradient[1]);
+                return gradient;
+            },
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: colorObj.main,
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointHoverRadius: 8,
+            tension: 0.4,
+            fill: true,
+            spanGaps: false
+        });
+        
+        // Upper price - dashed line
+        datasets.push({
+            label: commodity + ' (High)',
+            data: upperPrices,
+            borderColor: colorObj.main,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 4,
+            pointBackgroundColor: colorObj.main,
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7,
+            tension: 0.4,
+            fill: false,
+            spanGaps: false
+        });
+    });
+    
+    if (datasets.length === 0) {
+        console.warn('❌ No datasets created');
+        if (canvas.parentElement) {
+            canvas.parentElement.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                    No price data available for chart.
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    console.log('📊 Creating chart with', datasets.length, 'datasets');
+    
+    try {
+        const ctx = canvas.getContext('2d');
+        priceChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: allDates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12,
+                                weight: '600',
+                                family: 'Plus Jakarta Sans'
+                            },
+                            boxWidth: 20,
+                            boxHeight: 12,
+                            padding: 16,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            color: '#2E2A22'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(46, 42, 34, 0.92)',
+                        titleFont: {
+                            size: 13,
+                            weight: '700',
+                            family: 'Plus Jakarta Sans'
+                        },
+                        bodyFont: {
+                            size: 12,
+                            weight: '500',
+                            family: 'Plus Jakarta Sans'
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                let value = context.raw;
+                                if (value !== null && value !== undefined) {
+                                    const formatted = value.toFixed(2);
+                                    label += ': ₱' + formatted + '/kg';
+                                } else {
+                                    label += ': No data';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: true,
+                            borderColor: 'rgba(0,0,0,0.08)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                weight: '600',
+                                family: 'Plus Jakarta Sans'
+                            },
+                            color: '#625E52',
+                            maxRotation: 45,
+                            minRotation: 30
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.06)',
+                            drawBorder: true,
+                            borderColor: 'rgba(0,0,0,0.08)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '₱' + value.toFixed(0);
+                            },
+                            font: {
+                                size: 11,
+                                weight: '600',
+                                family: 'Plus Jakarta Sans'
+                            },
+                            color: '#625E52',
+                            stepSize: 10
+                        },
+                        title: {
+                            display: true,
+                            text: 'Price (₱/kg)',
+                            font: {
+                                size: 12,
+                                weight: '700',
+                                family: 'Plus Jakarta Sans'
+                            },
+                            color: '#625E52'
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.4
+                    },
+                    point: {
+                        hoverRadius: 8
+                    }
+                },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10,
+                        left: 10,
+                        right: 20
+                    }
+                }
+            }
+        });
+        console.log('✅ Chart rendered successfully!');
+    } catch (error) {
+        console.error('❌ Error creating chart:', error);
+        if (canvas.parentElement) {
+            canvas.parentElement.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    Error creating chart: ${error.message}
+                </div>
+            `;
+        }
+    }
+}
+
+function updateChart(commodity) {
+    console.log("🔍 updateChart called with:", commodity);
+    
+    const forecasts = FORECASTS_DATA || [];
+    if (forecasts.length === 0) {
+        console.warn('❌ No forecast data available for chart');
+        return;
+    }
+    
+    // Update button styles
+    document.querySelectorAll('.fair-price-dashboard-container .btn-outline-report').forEach(function(btn) {
+        const btnText = btn.textContent.trim();
+        if (btnText === commodity || (commodity === 'all' && btnText === 'All')) {
+            btn.style.background = '#2E7D32';
+            btn.style.color = '#fff';
+            btn.style.borderColor = '#2E7D32';
+        } else {
+            btn.style.background = '#FFFFFF';
+            btn.style.color = 'var(--ink)';
+            btn.style.borderColor = 'var(--border)';
+        }
+    });
+    
+    renderChart(forecasts, commodity);
+}
+
+console.log("✅ Price Trend Chart functions loaded!");

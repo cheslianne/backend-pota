@@ -16,6 +16,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
 
+  <!-- Chart.js for price trends visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 
   <style>
     :root {
@@ -673,66 +676,281 @@
       background: #F4EFE6;
     }
 
+ /* =========================================================
+       FAIR PRICE DASHBOARD
+       ========================================================= */
 
-    /* --- FAIR PRICE DASHBOARD --- */
-    .fair-price-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.5fr;
+    .fair-price-dashboard-container {
+      display: flex;
+      flex-direction: column;
       gap: 24px;
+    }
+
+    .fair-price-top-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .fair-price-left-pane h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--green-dark);
+      margin-bottom: 4px;
+    }
+
+    .fair-price-left-pane p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .crop-image-placeholder {
+      width: 100%;
+      height: 140px;
+      background: #ECE5D4;
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .fair-price-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      position: relative;
+      align-items: start;
+    }
+
+    .fair-price-filters > select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 600;
+      background: #FFFFFF;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .fair-price-filters > select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+    }
+
+    /* =========================================================
+       FIXED CUSTOM MONTH DROPDOWN
+       It will ALWAYS OPEN BELOW the Month button.
+       ========================================================= */
+
+    .custom-month-dropdown {
+      position: relative;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .custom-month-button {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #FFFFFF;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .custom-month-button:hover {
+      border-color: var(--green);
+    }
+
+    .custom-month-button:focus,
+    .custom-month-dropdown.open .custom-month-button {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+    }
+
+    .month-dropdown-arrow {
+      font-size: 10px;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+    }
+
+    .custom-month-dropdown.open .month-dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .custom-month-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+
+      box-shadow: 0 10px 24px rgba(46, 42, 34, 0.18);
+
+      max-height: 240px;
+      overflow-y: auto;
+
+      display: none;
+
+      z-index: 10000;
+    }
+
+    .custom-month-dropdown.open .custom-month-menu {
+      display: block;
+    }
+
+    .month-option {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+
+      border: none;
+      background: #FFFFFF;
+      color: var(--ink);
+
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+
+      text-align: left;
+      cursor: pointer;
+
+      transition: background 0.15s ease;
+    }
+
+    .month-option:hover {
+      background: var(--green-light);
+    }
+
+    .month-option.active {
+      background: #E7EDDF;
+      color: var(--green-dark);
+      font-weight: 700;
+    }
+
+    .hidden-month-select {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      overflow: hidden !important;
+    }
+
+    .fair-price-right-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .price-metric-bar {
+      background: #5D4037;
+      border-radius: var(--radius-sm);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(93, 64, 55, 0.15);
+    }
+
+    .price-metric-bar .metric-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      opacity: 0.9;
+    }
+
+    .price-metric-bar .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #FFDE9E;
+    }
+
+    .market-forecast-card {
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
       padding: 24px;
     }
 
-
-    .crop-photo-wrap img {
-      width: 100%;
-      height: 190px;
-      object-fit: cover;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+    .forecast-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--green-dark);
+      margin-bottom: 4px;
     }
 
+    .forecast-subtitle {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
 
-    .price-stats-boxes {
+    .forecast-accordion-item {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #FFFFFF;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .forecast-accordion-header {
+      padding: 14px 20px;
+      background: #F4EFE6;
       display: flex;
-      gap: 14px;
-      margin-top: 20px;
-    }
-
-
-    .price-stat-box {
-      flex: 1;
-      background: #5D4037;
-      color: #fff;
-      border-radius: var(--radius-sm);
-      padding: 14px 10px;
-      text-align: center;
-    }
-
-
-    .price-stat-box .label {
-      font-size: 11px;
-      text-transform: uppercase;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
       font-weight: 700;
-      opacity: 0.9;
+      color: var(--ink);
+      cursor: pointer;
     }
 
-
-    .price-stat-box .price {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 4px 0 2px;
-      color: #FFDE9E;
+    .forecast-accordion-body {
+      padding: 0 20px;
     }
 
-
-    .price-stat-box .unit {
-      font-size: 11px;
-      opacity: 0.85;
+    .forecast-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 13.5px;
     }
 
+    .forecast-row:last-child {
+      border-bottom: none;
+    }
 
     #map {
       width: 100%;
@@ -741,8 +959,7 @@
       border: 1.5px solid var(--border);
     }
 
-
-    /* --- DIALOG MODALS --- */
+    /* --- MODALS --- */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -753,9 +970,9 @@
       z-index: 3000;
     }
 
-
-    .modal-overlay.show { display: flex; }
-
+    .modal-overlay.show {
+      display: flex;
+    }
 
     .modal-box {
       background: var(--cream);
@@ -768,14 +985,12 @@
       width: 90%;
     }
 
-
     .modal-box h2 {
       font-size: 22px;
       font-weight: 800;
       color: var(--green);
       margin-bottom: 10px;
     }
-
 
     .modal-box p {
       font-size: 14px;
@@ -784,13 +999,11 @@
       line-height: 1.45;
     }
 
-
     .modal-actions {
       display: flex;
       justify-content: center;
       gap: 12px;
     }
-
 
     .modal-btn-confirm {
       border: none;
@@ -804,9 +1017,9 @@
       transition: background 0.2s ease;
     }
 
-
-    .modal-btn-confirm:hover { background: var(--green-dark); }
-
+    .modal-btn-confirm:hover {
+      background: var(--green-dark);
+    }
 
     .pagination-container {
       display: flex;
@@ -819,10 +1032,16 @@
       color: var(--muted);
     }
 
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    .pagination-controls { display: flex; align-items: center; gap: 6px; }
-    .page-numbers-wrap { display: flex; gap: 4px; }
-
+    .page-numbers-wrap {
+      display: flex;
+      gap: 4px;
+    }
 
     .btn-page {
       padding: 5px 11px;
@@ -836,12 +1055,10 @@
       transition: all 0.15s ease;
     }
 
-
     .btn-page:hover:not(:disabled) {
       background: #EDE7D8;
       border-color: var(--green);
     }
-
 
     .btn-page.active {
       background: var(--green);
@@ -849,9 +1066,10 @@
       border-color: var(--green);
     }
 
-
-    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
-
+    .btn-page:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
     .input-readonly {
       background: #ECE6D8 !important;
@@ -859,7 +1077,6 @@
       color: var(--muted) !important;
       cursor: default;
     }
-
 
     .higher-ups-note {
       background: #F7F5F0;
@@ -872,32 +1089,10 @@
       line-height: 1.45;
     }
 
-
-    .hidden-element { display: none; }
-
-
-    .select-crop-input {
-      padding: 8px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-weight: 700;
-      font-size: 13.5px;
-      outline: none;
-      background: #FFFFFF;
-      color: var(--ink);
+    .hidden-element {
+      display: none !important;
     }
 
-
-    .fair-price-desc {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-
-    .memo-disclaimer { font-size: 12.5px; color: var(--muted); }
-    .field-spacing { margin-bottom: 14px; }
     .map-title {
       font-size: 14.5px;
       font-weight: 700;
@@ -907,11 +1102,53 @@
       letter-spacing: 0.02em;
     }
 
+    .btn-danger {
+      background: #A1382B !important;
+    }
 
-    .btn-danger { background: #A1382B !important; }
-    .btn-danger:hover { background: #84281D !important; }
+    .btn-danger:hover {
+      background: #84281D !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .fair-price-top-card {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid-two {
+        grid-template-columns: 1fr;
+      }
+
+      .form-field-full {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .main {
+        padding: 24px 18px;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .user-text {
+        display: none;
+      }
+
+      .brand-name-img {
+        height: 36px;
+      }
+
+      .fair-price-filters {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
+
 <body>
 
 
@@ -1494,39 +1731,119 @@
       </section>
 
 
-      <!-- VIEW 4: Fair Prices -->
-      <section class="view" id="view-fair-prices">
-        <div class="main-header">
-          <div class="header-left">
-            <h1>Fair Price Intelligence</h1>
-            <p>Daily validated price ceilings and market averages.</p>
-          </div>
+    <!-- =====================================================
+     VIEW 4: FAIR PRICES
+     ===================================================== -->
+
+<section class="view" id="view-fair-prices">
+    <div class="main-header">
+        <div class="header-left">
+            <h1>Fair Price Dashboard</h1>
+            <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
+        </div>
+    </div>
+
+    <div class="fair-price-dashboard-container">
+        <!-- TOP CARD -->
+        <div class="fair-price-top-card">
+            <!-- LEFT -->
+            <div class="fair-price-left-pane">
+                <h2>Fair Price Intelligence</h2>
+                <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
+                
+                <div class="crop-image-placeholder">
+                    <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+                </div>
+
+                <div class="fair-price-filters">
+                    <select id="fairPriceCropSelect">
+                        <option value="red-onion">Red Onion</option>
+                        <option value="white-onion">White Onion</option>
+                        <option value="tomato" selected>Tomato</option>
+                        <option value="squash">Squash</option>
+                    </select>
+
+                    <!-- CUSTOM MONTH DROPDOWN -->
+                    <div class="custom-month-dropdown" id="customMonthDropdown">
+                        <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="fairPriceMonthText">Month (All)</span>
+                            <span class="month-dropdown-arrow">▼</span>
+                        </button>
+                        <div class="custom-month-menu" id="fairPriceMonthMenu" role="listbox">
+                            <button type="button" class="month-option active" data-value="all">Month (All)</button>
+                            <button type="button" class="month-option" data-value="jan">January</button>
+                            <button type="button" class="month-option" data-value="feb">February</button>
+                            <button type="button" class="month-option" data-value="mar">March</button>
+                            <button type="button" class="month-option" data-value="apr">April</button>
+                            <button type="button" class="month-option" data-value="may">May</button>
+                            <button type="button" class="month-option" data-value="jun">June</button>
+                            <button type="button" class="month-option" data-value="jul">July</button>
+                            <button type="button" class="month-option" data-value="aug">August</button>
+                            <button type="button" class="month-option" data-value="sep">September</button>
+                            <button type="button" class="month-option" data-value="oct">October</button>
+                            <button type="button" class="month-option" data-value="nov">November</button>
+                            <button type="button" class="month-option" data-value="dec">December</button>
+                        </div>
+                        <select id="fairPriceMonthSelect" class="hidden-month-select" aria-hidden="true" tabindex="-1">
+                            <option value="all">Month (All)</option>
+                            <option value="jan">January</option>
+                            <option value="feb">February</option>
+                            <option value="mar">March</option>
+                            <option value="apr">April</option>
+                            <option value="may">May</option>
+                            <option value="jun">June</option>
+                            <option value="jul">July</option>
+                            <option value="aug">August</option>
+                            <option value="sep">September</option>
+                            <option value="oct">October</option>
+                            <option value="nov">November</option>
+                            <option value="dec">December</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="fair-price-right-pane">
+                <div class="price-metric-bar">
+                    <span class="metric-label">Lowest Price</span>
+                    <span class="metric-value" id="lowestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
+                </div>
+                <div class="price-metric-bar">
+                    <span class="metric-label">Highest Price</span>
+                    <span class="metric-value" id="highestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
+                </div>
+            </div>
         </div>
 
-
-        <div class="fair-price-grid">
-          <div class="crop-photo-wrap">
-            <img src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop Image" id="cropImageDisplay">
-          </div>
-          <div>
-            <div class="field-spacing">
-              <select id="fairPriceCropSelect" class="select-crop-input">
-                <option value="onion">Red Onion</option>
-                <option value="tomato">Tomato</option>
-              </select>
+        <!-- FORECAST RESULTS - DYNAMIC CONTAINER -->
+        <div class="market-forecast-card">
+            <h3 class="forecast-title">📊 10-Year Market Price Forecast (2026 – 2035)</h3>
+            <p class="forecast-subtitle">Click a year to view monthly projections and trend breakdowns</p>
+            
+            <!-- DYNAMIC FORECAST RESULTS WILL BE RENDERED HERE -->
+            <div id="forecastResultsContainer">
+                <!-- Loading state will appear here -->
             </div>
-            <p class="fair-price-desc">
-              Daily monitored farmgate and market wholesale prices based on DA Agribusiness and Marketing Assistance Division (DA-AMAD).
-            </p>
-            <div class="price-stats-boxes">
-              <div class="price-stat-box"><div class="label">Minimum</div><div class="price">₱34</div><div class="unit">per kg</div></div>
-              <div class="price-stat-box"><div class="label">Average</div><div class="price">₱45</div><div class="unit">per kg</div></div>
-              <div class="price-stat-box"><div class="label">Maximum</div><div class="price">₱55</div><div class="unit">per kg</div></div>
-            </div>
-          </div>
         </div>
-      </section>
 
+        <!-- ✅ ADD THIS: PRICE TREND CHART -->
+        <div class="market-forecast-card" style="margin-top: 20px;">
+            <h3 class="forecast-title">📈 Price Trend Analysis</h3>
+            <p class="forecast-subtitle">Monthly price trends for selected commodities</p>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="priceTrendChart"></canvas>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <button class="btn-outline-report" onclick="updateChart('all')" style="font-size: 12px; padding: 6px 14px;">All</button>
+                <button class="btn-outline-report" onclick="updateChart('Tomato')" style="font-size: 12px; padding: 6px 14px;">Tomato</button>
+                <button class="btn-outline-report" onclick="updateChart('Squash fruit')" style="font-size: 12px; padding: 6px 14px;">Squash</button>
+                <button class="btn-outline-report" onclick="updateChart('Red Onion')" style="font-size: 12px; padding: 6px 14px;">Red Onion</button>
+                <button class="btn-outline-report" onclick="updateChart('White Onion')" style="font-size: 12px; padding: 6px 14px;">White Onion</button>
+            </div>
+        </div>
+    </div>
+</section>
 
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
@@ -1619,6 +1936,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/aew.js"></script>
+  <!-- Chart.js for price trends visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
 
