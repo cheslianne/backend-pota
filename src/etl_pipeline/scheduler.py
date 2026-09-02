@@ -110,6 +110,8 @@ def run_etl_step(data_source, etl_function):
                 f"Could not save ETL log: {log_error}"
             )
 
+        raise
+
     finally:
 
         db.close()
