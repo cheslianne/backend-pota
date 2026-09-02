@@ -33,7 +33,7 @@ python seed_buyers.py
 python seed_planting_intents.py
 
 if [ "${RUN_ETL_ON_STARTUP:-true}" = "true" ]; then
-    python -u src/etl_pipeline/scheduler.py --run-now &
+    python -u -m src.etl_pipeline.scheduler --run-now &
 fi
 
 exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}"
