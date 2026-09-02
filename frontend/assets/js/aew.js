@@ -63,6 +63,7 @@ let OFFTAKE_REQUESTS_DATA = [];
 // Add this near other state variables (around line 40)
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
+let forecastLoadStarted = false;
 
 
 /* ============================================================
@@ -2579,24 +2580,21 @@ function initForecastResults() {
     
     console.log("Forecast view found:", forecastView);
     
-    // Check if already visible
-    if (forecastView.classList.contains("active-view")) {
-        console.log("Fair Prices view is currently active, loading forecasts...");
-        setTimeout(function() {
+    function loadForecastsWhenActive() {
+        if (!forecastLoadStarted && forecastView.classList.contains('active-view')) {
+            forecastLoadStarted = true;
+            console.log("Loading forecasts for active Fair Prices view...");
             loadForecastResults();
-            setTimeout(initPriceChart, 500);
-        }, 300);
+        }
     }
+
+    loadForecastsWhenActive();
     
     // Listen for when the view becomes active
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                if (forecastView.classList.contains('active-view')) {
-                    console.log("Fair Prices view became active, loading forecasts...");
-                    loadForecastResults();
-                    setTimeout(initPriceChart, 500);
-                }
+                loadForecastsWhenActive();
             }
         });
     });
@@ -2606,11 +2604,7 @@ function initForecastResults() {
     const forecastNav = document.querySelector('.nav-item[data-view="fair-prices"]');
     if (forecastNav) {
         forecastNav.addEventListener('click', function() {
-            console.log("Fair Prices nav clicked, loading forecasts...");
-            setTimeout(function() {
-                loadForecastResults();
-                setTimeout(initPriceChart, 500);
-            }, 200);
+            setTimeout(loadForecastsWhenActive, 200);
         });
     } else {
         console.warn("Nav item with data-view='fair-prices' not found");
@@ -2618,11 +2612,7 @@ function initForecastResults() {
     
     // Safety check
     setTimeout(function() {
-        if (forecastView.classList.contains('active-view')) {
-            console.log("Safety check: loading forecasts...");
-            loadForecastResults();
-            setTimeout(initPriceChart, 500);
-        }
+        loadForecastsWhenActive();
     }, 1000);
 }
 
@@ -2658,10 +2648,7 @@ async function loadForecastResults() {
         FORECASTS_DATA = forecasts;
         renderForecastResults(forecasts);
         
-        // ✅ Initialize chart after rendering
-        setTimeout(function() {
-            initPriceChart();
-        }, 300);
+        initPriceChart();
 
     } catch (error) {
         console.error("Failed to load forecast results:", error);
@@ -2987,7 +2974,6 @@ function initPriceChart() {
     
     const canvas = document.getElementById('priceTrendChart');
     if (!canvas) {
-        console.warn('❌ Price trend chart canvas not found');
         return;
     }
     console.log('✅ Canvas found');
@@ -3004,16 +2990,26 @@ function initPriceChart() {
     
     if (forecasts.length === 0) {
         console.warn('❌ No forecast data available for chart');
-        if (canvas.parentElement) {
-            canvas.parentElement.innerHTML = `
+        canvas.style.display = 'none';
+        if (canvas.parentElement && !document.getElementById('priceChartEmptyState')) {
+            const emptyState = document.createElement('div');
+            emptyState.id = 'priceChartEmptyState';
+            emptyState.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
                     <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
                     No price data available for chart.
-                    <br><small style="color: #999;">Please load forecast data first.</small>
+                    <br><small style="color: #999;">Forecast data has not been generated yet.</small>
                 </div>
             `;
+            canvas.parentElement.appendChild(emptyState);
         }
         return;
+    }
+
+    canvas.style.display = '';
+    const emptyState = document.getElementById('priceChartEmptyState');
+    if (emptyState) {
+        emptyState.remove();
     }
     
     renderChart(forecasts, 'all');

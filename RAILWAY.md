@@ -22,12 +22,14 @@ PSA_API_URL=https://openstat.psa.gov.ph/PXWeb/api/v1
 BANTAY_PRESYO_URL=http://www.bantaypresyo.da.gov.ph
 ALLOWED_ORIGINS=https://<frontend-service-domain>
 FRONTEND_URL=https://<frontend-service-domain>
+RUN_ETL_ON_STARTUP=true
 BREVO_API_KEY=<Brevo API key>
 BREVO_SENDER_EMAIL=<verified sender email>
 BREVO_SENDER_NAME=esaka-region 3
 ```
 
 The backend startup script creates missing tables, runs `seed_admin.py`, and then starts Uvicorn on Railway's `PORT`.
+When `RUN_ETL_ON_STARTUP=true`, it also runs the existing PSA and forecast pipeline in the background so the forecasts endpoint is populated after deployment. Set it to `false` when running ETL as a separate service.
 
 ## Frontend service
 
