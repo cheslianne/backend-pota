@@ -27,15 +27,9 @@ BREVO_SENDER_EMAIL=<verified sender email>
 BREVO_SENDER_NAME=esaka-region 3
 ```
 
-The backend startup script creates missing tables, runs the seed scripts, and then starts Uvicorn on Railway's `PORT`.
+The backend startup script creates missing tables, starts the optional ETL in the background, and then starts Uvicorn on Railway's `PORT`.
 
-In the backend service's **Settings > Deploy > Custom Deploy**, set the **Pre-deploy Command** to:
-
-```text
-python -u -m src.etl_pipeline.scheduler --run-now
-```
-
-This runs the PSA extraction and forecast generation as a visible, blocking deployment step before the new web process starts. Leave the **Start Command** as the Dockerfile command (`./start.sh`) or use:
+Leave the backend service's **Pre-deploy Command** empty. Use the Dockerfile command (`./start.sh`) as the **Start Command**, or use:
 
 ```text
 ./start.sh
