@@ -88,7 +88,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadAllReports();
     await fetchOfftakeRequests();
 
-    initFarmerSearch();
     initializePlantingIntentSearch();
 });
 
@@ -1212,21 +1211,31 @@ function renderPlantingIntentsTable() {
 
     tbody.innerHTML = "";
 
-    let dataSource = PLANTING_INTENTS_DATA;
-    let totalCount = dataSource.length;
+    const searchInput = document.getElementById("searchPlantingIntentsInput");
+    const isSearching = Boolean(searchInput?.value.trim());
 
-    if (filteredPlantingIntents && filteredPlantingIntents.length > 0) {
-        dataSource = filteredPlantingIntents;
-        totalCount = filteredPlantingIntents.length;
-    }
+    const dataSource = isSearching
+        ? filteredPlantingIntents
+        : PLANTING_INTENTS_DATA;
 
-    if (dataSource.length === 0) {
-        const message = (filteredPlantingIntents && filteredPlantingIntents.length === 0)
-            ? "No planting intents match your search."
-            : "No planting intents found.";
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center; color:#777;">${message}</td></tr>`;
-        return;
-    }
+    const totalCount = dataSource.length;
+
+  if (dataSource.length === 0) {
+    const message = isSearching
+        ? "No planting intents match your search."
+        : "No planting intents found.";
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" style="padding:30px;text-align:center;color:#777;">
+                ${message}
+            </td>
+        </tr>
+    `;
+
+    updatePlantingIntentPagination(0);
+    return;
+}
 
     const start = (currentPlantingIntentsPage - 1) * plantingIntentsPerPage;
     const end = start + plantingIntentsPerPage;
@@ -1793,39 +1802,56 @@ function updatePlantingIntentPagination(totalCount) {
 function createPlantingIntentPagination() {
     const listSubview = document.getElementById("plantingIntentListSubview");
     const card = listSubview?.querySelector(".card");
-    if (!card) return;
-    if (card.querySelector(".pagination-container")) return;
+
+    if (!card || card.querySelector(".pagination-container")) return;
 
     const paginationDiv = document.createElement("div");
     paginationDiv.className = "pagination-container";
     paginationDiv.innerHTML = `
-        <span class="pagination-info" id="plantingIntentPaginationInfo">Showing 0 of 0</span>
+        <span class="pagination-info" id="plantingIntentPaginationInfo">
+            Showing 0 of 0
+        </span>
         <div class="pagination-controls">
-            <button class="btn-page" id="prevPlantingIntentPageBtn" type="button" disabled>&laquo; Prev</button>
+            <button class="btn-page" id="prevPlantingIntentPageBtn" type="button" disabled>
+                &laquo; Prev
+            </button>
             <div id="plantingIntentPageNumberBtns" class="page-numbers-wrap"></div>
-            <button class="btn-page" id="nextPlantingIntentPageBtn" type="button">Next &raquo;</button>
+            <button class="btn-page" id="nextPlantingIntentPageBtn" type="button" disabled>
+                Next &raquo;
+            </button>
         </div>
     `;
 
     card.appendChild(paginationDiv);
 
-    document.getElementById("prevPlantingIntentPageBtn")?.addEventListener("click", function() {
-        if (currentPlantingIntentsPage > 1) {
-            currentPlantingIntentsPage--;
-            renderPlantingIntentsTable();
-        }
-    });
+    document.getElementById("prevPlantingIntentPageBtn")
+        ?.addEventListener("click", function () {
+            if (currentPlantingIntentsPage > 1) {
+                currentPlantingIntentsPage--;
+                renderPlantingIntentsTable();
+            }
+        });
 
-    document.getElementById("nextPlantingIntentPageBtn")?.addEventListener("click", function() {
-        const dataSource = (filteredPlantingIntents && filteredPlantingIntents.length > 0)
-            ? filteredPlantingIntents
-            : PLANTING_INTENTS_DATA;
-        const totalPages = Math.max(1, Math.ceil(dataSource.length / plantingIntentsPerPage));
-        if (currentPlantingIntentsPage < totalPages) {
-            currentPlantingIntentsPage++;
-            renderPlantingIntentsTable();
-        }
-    });
+    document.getElementById("nextPlantingIntentPageBtn")
+        ?.addEventListener("click", function () {
+            const searchInput = document.getElementById(
+                "searchPlantingIntentsInput"
+            );
+
+            const dataSource = searchInput?.value.trim()
+                ? filteredPlantingIntents
+                : PLANTING_INTENTS_DATA;
+
+            const totalPages = Math.max(
+                1,
+                Math.ceil(dataSource.length / plantingIntentsPerPage)
+            );
+
+            if (currentPlantingIntentsPage < totalPages) {
+                currentPlantingIntentsPage++;
+                renderPlantingIntentsTable();
+            }
+        });
 }
 
 function updatePaginationUI(container, totalCount) {
@@ -2058,7 +2084,7 @@ function initOfftakeRequest() {
     });
 
     document.getElementById("closeOfftakeSubmittedBtn")?.addEventListener("click", function() {
-        const modal = document.getElementById("offtakeSuccessModal");
+        const modal = document.getElementById("offtakeSubmittedModal")
         if (modal) modal.classList.remove("show");
         if (submittedModal) submittedModal.classList.remove("show");
         if (confirmSub) confirmSub.classList.add("hidden-element");
@@ -2273,7 +2299,7 @@ async function submitOfftakeRequest() {
 
         await fetchOfftakeRequests();
 
-        var successModal = document.getElementById("offtakeSuccessModal");
+        var successModal = document.getElementById("offtakeSubmittedModal");
         if (successModal) successModal.classList.add("show");
 
     } catch (error) {
@@ -2425,91 +2451,6 @@ fetchFarmers = async function() {
         refreshFarmerDropdowns();
     }
     return result;
-};
-
-// Override submitPlantingIntent to use dropdown values
-var originalSubmitPlantingIntent = submitPlantingIntent;
-submitPlantingIntent = async function() {
-    var form = document.getElementById("submitPlantIntentForm");
-    if (!form) {
-        alert("Planting Intent form not found.");
-        return;
-    }
-
-    var farmerNameSelect = document.getElementById("piFarmerName");
-    var farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
-    var farmerId = document.getElementById("piFarmerId")?.value || "";
-    var plantingDate = document.getElementById("piPlantDate")?.value || "";
-    var harvestDate = document.getElementById("piHarvestDate")?.value || "";
-    var commodity = document.getElementById("piCommodity")?.value?.trim() || "";
-    var volume = document.getElementById("piVolume")?.value || "";
-    var remarks = document.getElementById("piRemarks")?.value || "";
-
-    if (!farmerName || farmerName === "Select Farmer") {
-        alert("Please select a Farmer.");
-        return;
-    }
-    if (!farmerId) {
-        alert("Farmer ID is required.");
-        return;
-    }
-    if (!plantingDate) {
-        alert("Please select Planting Date.");
-        return;
-    }
-    if (!harvestDate) {
-        alert("Please select Harvest Date.");
-        return;
-    }
-    if (!commodity) {
-        alert("Please enter Commodity.");
-        return;
-    }
-    if (!volume) {
-        alert("Please enter Volume.");
-        return;
-    }
-
-    var parsedFarmerId = Number(farmerId);
-    if (!Number.isInteger(parsedFarmerId)) {
-        alert("Farmer ID must be a valid number.");
-        return;
-    }
-
-    var parsedVolume = Number(volume);
-    if (isNaN(parsedVolume) || parsedVolume <= 0) {
-        alert("Volume must be a valid positive number.");
-        return;
-    }
-
-    var plantingIntentData = {
-        farmer_id: parsedFarmerId,
-        commodity: commodity,
-        volume: parsedVolume,
-        planting_date: plantingDate,
-        harvest_date: harvestDate,
-        remarks: remarks || undefined
-    };
-
-    console.log("Submitting planting intent:", plantingIntentData);
-
-    try {
-        var createdIntent = await apiRequest(PLANTING_INTENTS_ENDPOINT, {
-            method: "POST",
-            body: JSON.stringify(plantingIntentData)
-        });
-
-        console.log("Planting intent created:", createdIntent);
-        await fetchPlantingIntents();
-
-        var modal = document.getElementById("plantIntentSubmittedModal");
-        if (modal) modal.classList.add("show");
-
-    } catch (error) {
-        console.error("Create planting intent error:", error);
-        handleAuthError(error);
-        alert("Failed to submit planting intent.\n\n" + (error.message || "Please check the FastAPI server."));
-    }
 };
 
 // Initialize dropdowns on DOM load
@@ -2743,48 +2684,46 @@ async function loadForecastResults() {
 function updatePriceMetrics(forecasts) {
     const lowestPriceEl = document.getElementById("lowestPriceDisplay");
     const highestPriceEl = document.getElementById("highestPriceDisplay");
-    
+
     if (!lowestPriceEl || !highestPriceEl) return;
-    
-    let allPrices = [];
-    forecasts.forEach(function(f) {
-        // ✅ Use forecast_price_low and forecast_price_high
-        if (f.forecast_price_low) allPrices.push(Number(f.forecast_price_low));
-        if (f.forecast_price_high) allPrices.push(Number(f.forecast_price_high));
-    });
-    
-    if (allPrices.length === 0) {
-        lowestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
-        highestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
-        return;
-    }
-    
-    const minPrice = Math.min(...allPrices);
-    const maxPrice = Math.max(...allPrices);
-    
-    lowestPriceEl.innerHTML = `₱${minPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
-    highestPriceEl.innerHTML = `₱${maxPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
+
+    const prices = (Array.isArray(forecasts) ? forecasts : [])
+        .flatMap(function (forecast) {
+            return [
+                Number(forecast.forecast_price_low),
+                Number(forecast.forecast_price_high)
+            ];
+        })
+        .filter(Number.isFinite);
+
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+    lowestPriceEl.innerHTML =
+        `₱${minPrice.toFixed(2)} <span>/kg</span>`;
+
+    highestPriceEl.innerHTML =
+        `₱${maxPrice.toFixed(2)} <span>/kg</span>`;
 }
 
-// Tawagin ito sa loob ng renderForecastResults() after mag-render ng container
-// Ilagay sa dulo ng renderForecastResults():
-updatePriceMetrics(forecasts);
+function getForecastDate(forecast) {
+    return forecast?.forecast_date ||
+        forecast?.date ||
+        forecast?.created_at ||
+        null;
+}
 
 function groupForecastsByYear(forecasts) {
     const grouped = {};
 
+    if (!Array.isArray(forecasts)) return grouped;
+
     forecasts.forEach(function(forecast) {
-        // ✅ Use forecast_date from your API
-        let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
-        if (!dateString) return;
+        const date = new Date(getForecastDate(forecast));
+        if (Number.isNaN(date.getTime())) return;
 
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return;
-
-        const year = date.getFullYear();
-        if (!grouped[year]) {
-            grouped[year] = [];
-        }
+        const year = String(date.getFullYear());
+        if (!grouped[year]) grouped[year] = [];
         grouped[year].push(forecast);
     });
 
@@ -2794,18 +2733,14 @@ function groupForecastsByYear(forecasts) {
 function groupForecastsByMonth(forecasts) {
     const grouped = {};
 
+    if (!Array.isArray(forecasts)) return grouped;
+
     forecasts.forEach(function(forecast) {
-        // ✅ Use forecast_date from your API
-        let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
-        if (!dateString) return;
+        const date = new Date(getForecastDate(forecast));
+        if (Number.isNaN(date.getTime())) return;
 
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return;
-
-        const month = date.toLocaleString('en-US', { month: 'long' });
-        if (!grouped[month]) {
-            grouped[month] = [];
-        }
+        const month = date.toLocaleString("en-US", { month: "long" });
+        if (!grouped[month]) grouped[month] = [];
         grouped[month].push(forecast);
     });
 
@@ -2859,26 +2794,29 @@ document.head.appendChild(style);
 /* ============================================================
    RENDER FORECAST RESULTS - COMPLETE
 ============================================================ */
-
 function renderForecastResults(forecasts) {
-    console.log("renderForecastResults called with", forecasts.length, "forecasts");
-    
     const container = document.getElementById("forecastResultsContainer");
+
     if (!container) {
         console.warn("forecastResultsContainer not found.");
         return;
     }
 
-    if (!forecasts || forecasts.length === 0) {
+    if (!Array.isArray(forecasts) || forecasts.length === 0) {
         container.innerHTML = `
-            <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-                <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
-                No forecast results available.
-                <br><small style="color: #999;">Please check back later.</small>
+            <div style="padding:40px;text-align:center;color:#777;">
+                📊 No forecast results available.
             </div>
         `;
+        updatePriceMetrics([]);
         return;
     }
+
+    console.log(
+        "renderForecastResults called with",
+        forecasts.length,
+        "forecasts"
+    );
 
     // Group forecasts by year
     const groupedByYear = groupForecastsByYear(forecasts);
@@ -2910,7 +2848,7 @@ function renderForecastResults(forecasts) {
                     transition: background 0.2s;
                 " onclick="toggleForecastYear(this)">
                     <span>📅 ${year} Projections</span>
-                    <span style="font-size: 20px; transition: transform 0.3s;">▼</span>
+                    <span style="font-size: 20px; transition: transform 0.3s; transform: ▶</span>
                 </div>
                 <div class="forecast-year-content" style="
                     background: #fff;
@@ -3133,7 +3071,7 @@ function renderChart(forecasts, commodityFilter) {
     // Sort by date
     Object.keys(commodities).forEach(function(commodity) {
         commodities[commodity].sort(function(a, b) {
-            return new Date(a.forecast_date) - new Date(b.forecast_date);
+            return new Date(getForecastDate(a) || 0) - new Date(getForecastDate(b) || 0);
         });
     });
     
@@ -3169,7 +3107,7 @@ function renderChart(forecasts, commodityFilter) {
     const allDates = [];
     Object.keys(commodities).forEach(function(commodity) {
         commodities[commodity].forEach(function(f) {
-            const date = new Date(f.forecast_date);
+            const date = new Date(getForecastDate(f) || 0);
             const dateStr = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
             if (!allDates.includes(dateStr)) {
                 allDates.push(dateStr);
@@ -3202,7 +3140,7 @@ function renderChart(forecasts, commodityFilter) {
         
         allDates.forEach(function(dateStr) {
             const found = data.find(function(f) {
-                const d = new Date(f.forecast_date);
+                const d = new Date(getForecastDate(f) || 0);
                 return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === dateStr;
             });
             
