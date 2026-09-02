@@ -8,6 +8,7 @@ from sqlalchemy import select
 from src.core.database import SessionLocal
 from src.models.price_data import PriceData
 from src.models.forecasts import Forecast
+from src.etl_pipeline.forecast_fallback import generate_fallback_forecast
 
 
 # ============================================================
@@ -110,32 +111,34 @@ def generate_forecast(commodity):
     # CREATE PROPHET MODEL
     # ========================================================
 
-    model = Prophet(
-        yearly_seasonality=False,
-        weekly_seasonality=False,
-        daily_seasonality=False,
-        interval_width=0.80
-    )
+    try:
+        model = Prophet(
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            interval_width=0.80
+        )
 
-    model.fit(model_data)
+        model.fit(model_data)
 
-    # ========================================================
-    # CREATE FUTURE DATES
-    # ========================================================
+        future = model.make_future_dataframe(
+            periods=FORECAST_MONTHS,
+            freq="MS"
+        )
 
-    future = model.make_future_dataframe(
-        periods=FORECAST_MONTHS,
-        freq="MS"
-    )
+        forecast = model.predict(future)
 
-    forecast = model.predict(future)
-
-    # Only future dates
-    last_date = model_data["ds"].max()
-
-    future_forecast = forecast[
-        forecast["ds"] > last_date
-    ]
+        last_date = model_data["ds"].max()
+        future_forecast = forecast[forecast["ds"] > last_date]
+    except Exception as error:
+        print(f"Prophet unavailable; using fallback trend forecast: {error}")
+        return generate_fallback_forecast(
+            model_data,
+            commodity,
+            FORECAST_MONTHS,
+            DATA_SOURCE,
+            ETL_CADENCE,
+        )
 
     # ========================================================
     # PREPARE RESULTS
