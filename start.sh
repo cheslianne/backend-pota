@@ -32,8 +32,13 @@ python seed_farmers.py
 python seed_buyers.py
 python seed_planting_intents.py
 
+echo "RUN_ETL_ON_STARTUP=${RUN_ETL_ON_STARTUP:-true}"
+
 if [ "${RUN_ETL_ON_STARTUP:-true}" = "true" ]; then
+    echo "Starting initial PSA and forecast ETL in the background..."
     python -u -m src.etl_pipeline.scheduler --run-now &
+else
+    echo "Initial PSA and forecast ETL is disabled."
 fi
 
 exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}"

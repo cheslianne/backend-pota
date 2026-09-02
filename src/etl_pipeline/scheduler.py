@@ -26,8 +26,6 @@ from src.models.etl_run_log import ETLRunLog
 # ETL IMPORTS
 # ============================================================
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-
 from src.etl_pipeline.psa_testfile import main as run_psa
 from src.etl_pipeline.forecast import main as run_forecast
 from src.etl_pipeline.forecast_kalabasa import main as run_kalabasa_forecast
@@ -249,6 +247,8 @@ if "--run-now" in sys.argv:
 # ============================================================
 # QUARTERLY SCHEDULER
 # ============================================================
+
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 scheduler = BlockingScheduler(
     timezone="Asia/Manila"
