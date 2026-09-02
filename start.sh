@@ -34,15 +34,17 @@ python seed_planting_intents.py
 
 echo "RUN_ETL_ON_STARTUP=${RUN_ETL_ON_STARTUP:-true}"
 
+uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}" &
+server_pid=$!
+echo "Uvicorn started with PID ${server_pid}."
+
 if [ "${RUN_ETL_ON_STARTUP:-true}" = "true" ]; then
-    echo "Starting initial PSA and forecast ETL in the background..."
-    (
-        set +e
-        python -u -m src.etl_pipeline.scheduler --run-now
-        etl_status=$?
-        echo "Initial PSA and forecast ETL exited with status ${etl_status}."
-    ) &
-    echo "Initial ETL process started with PID $!."
+    echo "Starting initial PSA and forecast ETL while Uvicorn is running..."
+    set +e
+    python -u -m src.etl_pipeline.scheduler --run-now
+    etl_status=$?
+    set -e
+    echo "Initial PSA and forecast ETL exited with status ${etl_status}."
 fi
 
-exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}"
+wait "${server_pid}"
