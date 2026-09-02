@@ -1944,10 +1944,9 @@ async function loadAllReports() {
 
 function renderAllReports(reports) {
     const container = document.getElementById("allReportsContainer");
-    if (!container) {
-        console.error("allReportsContainer not found.");
-        return;
-    }
+    // The AEW dashboard uses the report-entry table instead of the optional
+    // allReportsContainer used by other dashboards.
+    if (!container) return;
 
     container.innerHTML = "";
 
