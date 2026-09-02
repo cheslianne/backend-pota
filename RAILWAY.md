@@ -22,14 +22,24 @@ PSA_API_URL=https://openstat.psa.gov.ph/PXWeb/api/v1
 BANTAY_PRESYO_URL=http://www.bantaypresyo.da.gov.ph
 ALLOWED_ORIGINS=https://<frontend-service-domain>
 FRONTEND_URL=https://<frontend-service-domain>
-RUN_ETL_ON_STARTUP=true
 BREVO_API_KEY=<Brevo API key>
 BREVO_SENDER_EMAIL=<verified sender email>
 BREVO_SENDER_NAME=esaka-region 3
 ```
 
-The backend startup script creates missing tables, runs `seed_admin.py`, and then starts Uvicorn on Railway's `PORT`.
-When `RUN_ETL_ON_STARTUP=true`, it also runs the existing PSA and forecast pipeline in the background so the forecasts endpoint is populated after deployment. Set it to `false` when running ETL as a separate service.
+The backend startup script creates missing tables, runs the seed scripts, and then starts Uvicorn on Railway's `PORT`.
+
+In the backend service's **Settings > Deploy > Custom Deploy**, set the **Pre-deploy Command** to:
+
+```text
+python -u -m src.etl_pipeline.scheduler --run-now
+```
+
+This runs the PSA extraction and forecast generation as a visible, blocking deployment step before the new web process starts. Leave the **Start Command** as the Dockerfile command (`./start.sh`) or use:
+
+```text
+./start.sh
+```
 
 ## Frontend service
 
