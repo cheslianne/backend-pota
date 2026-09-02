@@ -372,6 +372,7 @@ def get_all_submitted_reports(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
+            "planting_intent_id": planting_intent.planting_intent_id,
             "title": f"{report.commodity or 'Crop'} Harvest Report",
             "commodity": report.commodity,
             "planting_date": report.planting_date,
@@ -416,6 +417,7 @@ def get_reports_for_municipal_validation(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
+            "planting_intent_id": planting_intent.planting_intent_id,
             "title": f"{report.commodity or 'Crop'} Harvest Report",
             "commodity": report.commodity,
             "planting_date": report.planting_date,
@@ -460,6 +462,7 @@ def get_reports_for_provincial_validation(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
+            "planting_intent_id": planting_intent.planting_intent_id,
             "title": f"{report.commodity or 'Crop'} Harvest Report",
             "commodity": report.commodity,
             "planting_date": report.planting_date,
@@ -504,6 +507,7 @@ def get_reports_for_da_rfo_validation(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
+            "planting_intent_id": planting_intent.planting_intent_id,
             "title": f"{report.commodity or 'Crop'} Harvest Report",
             "commodity": report.commodity,
             "planting_date": report.planting_date,

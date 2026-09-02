@@ -934,7 +934,7 @@ function initPlantingIntent() {
             let reportId = intent.report_id || intent.planting_intent_id;
             const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
             const foundReport = allReports.find(function(r) {
-                return r.planting_intent_id === intent.planting_intent_id;
+                return String(r.planting_intent_id) === String(intent.planting_intent_id);
             });
             if (foundReport) {
                 reportId = foundReport.report_id || foundReport.id;
@@ -949,7 +949,7 @@ function initPlantingIntent() {
             window.currentSelectedPlantingIntent = intent;
 
             const pullIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
-                return item.planting_intent_id === intent.planting_intent_id;
+                return String(item.planting_intent_id) === String(intent.planting_intent_id);
             });
             if (pullIndex !== -1) {
                 PLANTING_INTENTS_DATA[pullIndex].status = "DRAFT";
@@ -1009,7 +1009,7 @@ function initPlantingIntent() {
         let reportId = null;
         const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
         const existingReport = allReports.find(function(r) {
-            return r.planting_intent_id === intent.planting_intent_id;
+            return String(r.planting_intent_id) === String(intent.planting_intent_id);
         });
 
         if (existingReport) {
@@ -1040,7 +1040,7 @@ function initPlantingIntent() {
         window.currentSelectedPlantingIntent = intent;
 
         const submitIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
-            return item.planting_intent_id === intent.planting_intent_id;
+            return String(item.planting_intent_id) === String(intent.planting_intent_id);
         });
         if (submitIndex !== -1) {
             PLANTING_INTENTS_DATA[submitIndex].status = "FOR_MUNICIPAL_VALIDATION";
@@ -1638,7 +1638,7 @@ async function savePlantingIntentChanges() {
         intent.remarks = updatedData.remarks;
 
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
-            return item.planting_intent_id === intent.planting_intent_id;
+            return String(item.planting_intent_id) === String(intent.planting_intent_id);
         });
         if (index !== -1) {
             PLANTING_INTENTS_DATA[index] = intent;
