@@ -19,6 +19,7 @@ from src.api.routes import (
     report_submission,
     audit_logs,
     email,
+    report_submission,
 )
 
 
@@ -145,6 +146,13 @@ app.include_router(
     prefix="/api/report-submissions",
     tags=["Report Submissions"]
 )
+
+app.include_router(
+    report_submission.router,
+    prefix="/api/report-submissions",
+    tags=["Report Submissions"]
+)
+
 
 # =========================================================
 # ROOT

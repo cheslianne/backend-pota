@@ -1,7 +1,6 @@
 /* ============================================================
    eSAKA — AEW DASHBOARD
    Complete Frontend JavaScript
-   Farmers API Integration + Dashboard Functions
 ============================================================ */
 
 /* ============================================================
@@ -10,42 +9,26 @@
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-const FARMERS_ENDPOINT =
-    `${API_BASE_URL}/api/farmers/farmers/`;
-
-const PLANTING_INTENTS_ENDPOINT =
-    `${API_BASE_URL}/api/planting-intents/`;
-
-const RAW_PLANT_REPORTS_ENDPOINT =
-    `${API_BASE_URL}/api/raw-plant-reports/from-planting-intent`;
-const REPORT_SUBMISSIONS_ENDPOINT =
-    `${API_BASE_URL}/api/report-submissions`;
+const FARMERS_ENDPOINT = `${API_BASE_URL}/api/farmers/farmers/`;
+const PLANTING_INTENTS_ENDPOINT = `${API_BASE_URL}/api/planting-intents/`;
+const RAW_PLANT_REPORTS_ENDPOINT = `${API_BASE_URL}/api/raw-plant-reports/from-planting-intent`;
+const REPORT_SUBMISSIONS_ENDPOINT = `${API_BASE_URL}/api/report-submissions`;
+const OFFTAKE_REQUESTS_ENDPOINT = `${API_BASE_URL}/api/offtake-requests/`;
 
 /* ============================================================
    AUTH
 ============================================================ */
 
 function getAuthToken() {
-
-    return (
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("token") ||
-        null
-    );
+    return localStorage.getItem("access_token") || localStorage.getItem("token") || null;
 }
 
 function getAuthHeaders() {
-
     const token = getAuthToken();
-
-    const headers = {
-        "Content-Type": "application/json"
-    };
-
+    const headers = { "Content-Type": "application/json" };
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
-
     return headers;
 }
 
@@ -54,18 +37,28 @@ function getAuthHeaders() {
 ============================================================ */
 
 let FARMERS_DATA = [];
-let allFarmers = []; 
-let allBuyers =[];
+let allFarmers = [];
+let allBuyers = [];
 
+// Planting Intent
+let PLANTING_INTENTS_DATA = [];
+let filteredPlantingIntents = [];
+
+// Pagination
 let currentFarmersPage = 1;
-
+let currentPlantingIntentsPage = 1;
 const farmersPerPage = 10;
+const plantingIntentsPerPage = 10;
 
+// Farmer state
 let currentActiveFarmer = null;
-
 let isEditMode = false;
-
 let mapInstance = null;
+
+// Offtake state
+let currentOfftakeRequest = null;
+let OFFTAKE_REQUESTS_DATA = [];
+
 
 
 /* ============================================================
@@ -73,1721 +66,485 @@ let mapInstance = null;
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", async () => {
-
-    console.log("=================================");
     console.log("eSaka AEW Dashboard loaded.");
-    console.log("=================================");
-
 
     initSidebar();
-
     initViewNavigation();
-
     initMap();
-
     initFarmerSubviews();
-
     initPlantingIntent();
-
     initOfftakeRequest();
-
     initFairPrice();
-
     initSignout();
-
     setupUserProfile();
 
     await fetchFarmers();
-
     await loadAllReports();
     await fetchOfftakeRequests();
-});
 
+    initFarmerSearch();
+    initializePlantingIntentSearch();
+});
 
 /* ============================================================
    USER PROFILE
 ============================================================ */
 
-
 function setupUserProfile() {
+    const storedName = localStorage.getItem("full_name") || localStorage.getItem("name") || localStorage.getItem("username");
+    const storedRole = localStorage.getItem("role");
 
-    const storedName =
-        localStorage.getItem("full_name") ||
-        localStorage.getItem("name") ||
-        localStorage.getItem("username");
+    const nameElement = document.getElementById("userDisplayName");
+    const roleElement = document.getElementById("userDisplayRole");
 
-    const storedRole =
-        localStorage.getItem("role");
-
-    const nameElement =
-        document.getElementById("userDisplayName");
-
-    const roleElement =
-        document.getElementById("userDisplayRole");
-
-    if (nameElement && storedName) {
-
-        nameElement.textContent =
-            storedName;
-    }
-
-    if (roleElement && storedRole) {
-
-        roleElement.textContent =
-            storedRole;
-    }
+    if (nameElement && storedName) nameElement.textContent = storedName;
+    if (roleElement && storedRole) roleElement.textContent = storedRole;
 }
 
 /* ============================================================
-   GENERIC API REQUEST HELPER
+   API REQUEST HELPER
 ============================================================ */
 
-async function apiRequest(
-    url,
-    options = {}
-) {
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...getAuthHeaders(),
+            ...(options.headers || {})
+        }
+    });
 
-    const response =
-        await fetch(
-            url,
-            {
-                ...options,
-                headers: {
-                    ...getAuthHeaders(),
-                    ...(options.headers || {})
-                }
-            }
-        );
-   
     let data = null;
+    const contentType = response.headers.get("content-type") || "";
 
-    const contentType =
-        response.headers.get("content-type") || "";
-
-    if (
-        contentType.includes(
-            "application/json"
-        )
-    ) {
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (error) {
-
-            data = null;
-        }
-
+    if (contentType.includes("application/json")) {
+        try { data = await response.json(); } catch { data = null; }
     } else {
-
-        try {
-
-            data =
-                await response.text();
-
-        } catch (error) {
-
-            data = null;
-        }
+        try { data = await response.text(); } catch { data = null; }
     }
 
     if (!response.ok) {
-
-        let message =
-            `HTTP ${response.status}`;
-
-        if (
-            data &&
-            typeof data === "object"
-        ) {
-
+        let message = `HTTP ${response.status}`;
+        if (data && typeof data === "object") {
             if (data.detail) {
-
-                if (
-                    typeof data.detail ===
-                    "string"
-                ) {
-
-                    message =
-                        data.detail;
-
-                } else {
-
-                    message =
-                        JSON.stringify(
-                            data.detail
-                        );
-                }
+                message = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
             }
-        }
-
-        else if (
-            typeof data === "string" &&
-            data.trim()
-        ) {
-
+        } else if (typeof data === "string" && data.trim()) {
             message = data;
         }
-
-        const error =
-            new Error(message);
-
-        error.status =
-            response.status;
-
-        error.data =
-            data;
-
+        const error = new Error(message);
+        error.status = response.status;
+        error.data = data;
         throw error;
     }
 
     return data;
 }
 
-/* ============================================================
-   AUTH ERROR HANDLER
-============================================================ */
-
 function handleAuthError(error) {
-
-
-    if (
-        error &&
-        (
-            error.status === 401 ||
-            error.status === 403
-        )
-    ) {
-
-
-        console.warn(
-            "Authentication/authorization error:",
-            error
-        );
-
-
-        /*
-         * Do not immediately redirect here.
-         * The backend may return 403 for role restrictions.
-         * We simply notify the user.
-         */
-
-
+    if (error && (error.status === 401 || error.status === 403)) {
+        console.warn("Authentication/authorization error:", error);
         return true;
     }
-
-
     return false;
 }
 
-
-
-
-/* ============================================================
-   FETCH FARMERS
-============================================================ */
-
-
-async function fetchFarmers() {
-
-
-    const tbody =
-        document.getElementById(
-            "farmersTableBody"
-        );
-
-
-
-
-    if (tbody) {
-
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="padding:30px; text-align:center;">
-                    Loading farmers...
-                </td>
-            </tr>
-        `;
-    }
-
-
-
-
-    try {
-
-
-        console.log(
-            "Fetching farmers:",
-            FARMERS_ENDPOINT
-        );
-
-
-
-
-        const data =
-            await apiRequest(
-                FARMERS_ENDPOINT,
-                {
-                    method: "GET"
-                }
-            );
-
-
-
-
-        console.log(
-            "Farmers API response:",
-            data
-        );
-
-        allFarmers = data;
-
-populateOfftakeFarmerSelect();
-setupOfftakeFarmerDropdown();
-
-
-
-
-        if (!Array.isArray(data)) {
-
-
-            throw new Error(
-                "Invalid farmers response. Expected an array."
-            );
-        }
-
-
-
-
-        FARMERS_DATA =
-            data.map(
-                farmer => normalizeFarmer(farmer)
-            );
-
-
-
-
-        currentFarmersPage = 1;
-
-
-
-
-        renderFarmersTable();
-
-
-
-
-        console.log(
-            `Successfully loaded ${FARMERS_DATA.length} farmer(s).`
-        );
-
-
-
-
-        return FARMERS_DATA;
-
-
-
-
-    } catch (error) {
-
-
-        console.error(
-            "Unable to load farmers:",
-            error
-        );
-
-
-
-
-        FARMERS_DATA = [];
-
-
-
-
-        if (tbody) {
-
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="
-                            padding:30px;
-                            text-align:center;
-                            color:#C0392B;
-                        ">
-                        Failed to load farmers.
-                        <br>
-                        <small>
-                            ${escapeHtml(
-                                error.message ||
-                                "Please check the FastAPI server."
-                            )}
-                        </small>
-                    </td>
-                </tr>
-            `;
-        }
-
-
-
-
-        updatePagination();
-
-
-
-
-        handleAuthError(error);
-
-
-
-
-        return [];
-    }
-}
-
-
-
-
-/* ============================================================
-   NORMALIZE FARMER DATA
-============================================================ */
-
-
-function normalizeFarmer(farmer) {
-
-
-    return {
-
-
-        farmer_id:
-            farmer.farmer_id ?? null,
-
-
-        rsbsa_id:
-            farmer.rsbsa_id ?? "",
-
-
-        first_name:
-            farmer.first_name ?? "",
-
-
-        middle_name:
-            farmer.middle_name ?? "",
-
-
-        last_name:
-            farmer.last_name ?? "",
-
-
-        suffix:
-            farmer.suffix ?? "",
-
-
-        address:
-            farmer.address ?? "",
-
-
-        sex:
-            farmer.sex ?? "",
-
-
-        birthdate:
-            farmer.birthdate ?? "",
-
-
-        email_address:
-            farmer.email_address ?? "",
-
-
-        phone_number:
-            farmer.phone_number ?? "",
-
-
-        region:
-            farmer.region ?? "",
-
-
-        municipality:
-            farmer.municipality ?? "",
-
-
-        barangay:
-            farmer.barangay ?? "",
-
-
-        status:
-            farmer.status ?? "Active"
-    };
-}
-
-function populateOfftakeFarmerSelect() {
-
-    const select = document.getElementById("offtakeFarmerSelect");
-
-    if (!select) {
-        console.error("offtakeFarmerSelect not found.");
-        return;
-    }
-
-    select.innerHTML = `
-        <option value="">Select Farmer</option>
-    `;
-
-    if (!Array.isArray(allFarmers) || allFarmers.length === 0) {
-        console.warn("No farmers available.");
-        return;
-    }
-
-    allFarmers.forEach(farmer => {
-
-        const fullName = [
-            farmer.first_name,
-            farmer.middle_name,
-            farmer.last_name,
-            farmer.suffix
-        ]
-        .filter(Boolean)
-        .join(" ");
-
-        const option = document.createElement("option");
-
-        option.value = farmer.farmer_id;
-        option.textContent = fullName;
-
-        select.appendChild(option);
-    });
-}
-
-function setupOfftakeFarmerDropdown() {
-
-    const select = document.getElementById("offtakeFarmerSelect");
-    const farmerIdInput = document.getElementById("offtakeFarmerId");
-
-    if (!select || !farmerIdInput) {
-        return;
-    }
-
-    select.addEventListener("change", function () {
-
-        farmerIdInput.value = this.value || "";
-
-    });
-}
 /* ============================================================
    SIDEBAR
 ============================================================ */
 
-
 function initSidebar() {
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
 
+    if (!hamburgerBtn || !sidebar) return;
 
-    const hamburgerBtn =
-        document.getElementById(
-            "hamburgerBtn"
-        );
+    let hoverTimer = null;
 
-
-    const sidebar =
-        document.getElementById(
-            "sidebar"
-        );
-
-
-
-
-    if (
-        !hamburgerBtn ||
-        !sidebar
-    ) {
-        return;
-    }
-
-
-
-
-    hamburgerBtn.addEventListener(
-        "click",
-        () => {
-
-
-            sidebar.classList.toggle(
-                "open"
-            );
-
-
-
-
-            setTimeout(
-                () => {
-
-
-                    if (mapInstance) {
-
-
-                        mapInstance.invalidateSize();
-                    }
-
-
-                },
-                300
-            );
+    hamburgerBtn.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
         }
-    );
+        setTimeout(function() {
+            sidebar.classList.add("open");
+            setTimeout(function() {
+                if (mapInstance) mapInstance.invalidateSize();
+            }, 300);
+        }, 100);
+    });
+
+    sidebar.addEventListener("mouseleave", function() {
+        hoverTimer = setTimeout(function() {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    sidebar.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    document.addEventListener("click", function(event) {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isClickOnHamburger = hamburgerBtn.contains(event.target);
+        if (!isClickInsideSidebar && !isClickOnHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    sidebar.querySelectorAll(".nav-item").forEach(function(item) {
+        item.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    const signoutBtn = sidebar.querySelector(".signout");
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    }
 }
-
-
-
 
 /* ============================================================
    VIEW NAVIGATION
 ============================================================ */
 
-
 function initViewNavigation() {
+    const navButtons = document.querySelectorAll(".nav-item[data-view]");
+    const views = document.querySelectorAll(".view");
 
+    navButtons.forEach(function(button) {
+        button.addEventListener("click", function() {
+            const targetViewKey = this.dataset.view;
 
-    const navButtons =
-        document.querySelectorAll(
-            ".nav-item[data-view]"
-        );
+            views.forEach(function(view) {
+                view.classList.remove("active-view");
+            });
 
+            const targetView = document.getElementById("view-" + targetViewKey);
+            if (targetView) {
+                targetView.classList.add("active-view");
+            }
 
-    const views =
-        document.querySelectorAll(
-            ".view"
-        );
+            navButtons.forEach(function(navButton) {
+                navButton.classList.toggle("active", navButton === button);
+            });
 
-
-
-
-    navButtons.forEach(
-        button => {
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-
-                    const targetViewKey =
-                        button.dataset.view;
-
-
-
-
-                    views.forEach(
-                        view => {
-
-
-                            view.classList.remove(
-                                "active-view"
-                            );
-                        }
-                    );
-
-
-
-
-                    const targetView =
-                        document.getElementById(
-                            "view-" +
-                            targetViewKey
-                        );
-
-
-
-
-                    if (targetView) {
-
-
-                        targetView.classList.add(
-                            "active-view"
-                        );
-                    }
-
-
-
-
-                    navButtons.forEach(
-                        navButton => {
-
-
-                            navButton.classList.toggle(
-                                "active",
-                                navButton === button
-                            );
-                        }
-                    );
-
-
-
-
-                    if (
-                        targetViewKey === "map" &&
-                        mapInstance
-                    ) {
-
-
-                        setTimeout(
-                            () => {
-
-
-                                mapInstance.invalidateSize();
-
-
-                            },
-                            100
-                        );
-                    }
-                }
-            );
-        }
-    );
+            if (targetViewKey === "map" && mapInstance) {
+                setTimeout(function() {
+                    mapInstance.invalidateSize();
+                }, 100);
+            }
+        });
+    });
 }
-
-
-
 
 /* ============================================================
    SIGN OUT
 ============================================================ */
 
-
 function initSignout() {
+    const signoutBtn = document.getElementById("signoutBtn");
+    if (!signoutBtn) return;
 
-
-    const signoutBtn =
-        document.getElementById(
-            "signoutBtn"
-        );
-
-
-
-
-    if (!signoutBtn) {
-        return;
-    }
-
-
-
-
-    signoutBtn.addEventListener(
-        "click",
-        () => {
-
-
-            localStorage.removeItem(
-                "access_token"
-            );
-
-
-            localStorage.removeItem(
-                "token"
-            );
-
-
-            localStorage.removeItem(
-                "full_name"
-            );
-
-
-            localStorage.removeItem(
-                "name"
-            );
-
-
-            localStorage.removeItem(
-                "username"
-            );
-
-
-            localStorage.removeItem(
-                "role"
-            );
-
-
-
-
-            window.location.href =
-                "../index.html";
-        }
-    );
+    signoutBtn.addEventListener("click", function() {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("token");
+        localStorage.removeItem("full_name");
+        localStorage.removeItem("name");
+        localStorage.removeItem("username");
+        localStorage.removeItem("role");
+        window.location.href = "../index.html";
+    });
 }
 
-
-
-
 /* ============================================================
-   LEAFLET MAP
+   MAP
 ============================================================ */
-
 
 function initMap() {
+    const mapEl = document.getElementById("map");
+    if (!mapEl || typeof L === "undefined") return;
 
+    const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
 
-    const mapEl =
-        document.getElementById(
-            "map"
-        );
+    mapInstance = L.map("map", {
+        maxBounds: pampangaBounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 10
+    }).setView([15.0794, 120.6200], 10);
 
-
-
-
-    if (!mapEl) {
-        return;
-    }
-
-
-
-
-    if (
-        typeof L === "undefined"
-    ) {
-
-
-        console.warn(
-            "Leaflet is not loaded."
-        );
-
-
-        return;
-    }
-
-
-
-
-    const pampangaBounds =
-        L.latLngBounds(
-            [14.85, 120.35],
-            [15.35, 120.95]
-        );
-
-
-
-
-    mapInstance =
-        L.map(
-            "map",
-            {
-                maxBounds:
-                    pampangaBounds,
-
-
-                maxBoundsViscosity:
-                    1.0,
-
-
-                minZoom:
-                    10
-            }
-        )
-        .setView(
-            [15.0794, 120.6200],
-            10
-        );
-
-
-
-
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution:
-                "&copy; OpenStreetMap contributors",
-
-
-            maxZoom:
-                18
-        }
-    ).addTo(
-        mapInstance
-    );
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 18
+    }).addTo(mapInstance);
 }
 
-
-
-
 /* ============================================================
-   FARMERS TABLE
+   FARMERS
 ============================================================ */
 
+function normalizeFarmer(farmer) {
+    return {
+        farmer_id: farmer.farmer_id ?? null,
+        rsbsa_id: farmer.rsbsa_id ?? "",
+        first_name: farmer.first_name ?? "",
+        middle_name: farmer.middle_name ?? "",
+        last_name: farmer.last_name ?? "",
+        suffix: farmer.suffix ?? "",
+        address: farmer.address ?? "",
+        sex: farmer.sex ?? "",
+        birthdate: farmer.birthdate ?? "",
+        email_address: farmer.email_address ?? "",
+        phone_number: farmer.phone_number ?? "",
+        region: farmer.region ?? "",
+        municipality: farmer.municipality ?? "",
+        barangay: farmer.barangay ?? "",
+        status: farmer.status ?? "Active"
+    };
+}
+
+function getFarmerFullName(farmer) {
+    return [
+        farmer.first_name,
+        farmer.middle_name ? farmer.middle_name.charAt(0) + "." : "",
+        farmer.last_name,
+        farmer.suffix
+    ].filter(Boolean).join(" ");
+}
+
+async function fetchFarmers() {
+    const tbody = document.getElementById("farmersTableBody");
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center;">Loading farmers...</td></tr>`;
+    }
+
+    try {
+        const data = await apiRequest(FARMERS_ENDPOINT, { method: "GET" });
+        allFarmers = data;
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid farmers response.");
+        }
+
+        FARMERS_DATA = data.map(normalizeFarmer);
+        currentFarmersPage = 1;
+        renderFarmersTable();
+        return FARMERS_DATA;
+    } catch (error) {
+        console.error("Unable to load farmers:", error);
+        FARMERS_DATA = [];
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load farmers.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
+        }
+        updatePagination();
+        return [];
+    }
+}
 
 function renderFarmersTable() {
-
-
-    const tbody =
-        document.getElementById(
-            "farmersTableBody"
-        );
-
-
-
-
-    if (!tbody) {
-        return;
-    }
-
-
-
+    const tbody = document.getElementById("farmersTableBody");
+    if (!tbody) return;
 
     tbody.innerHTML = "";
+    const start = (currentFarmersPage - 1) * farmersPerPage;
+    const end = start + farmersPerPage;
+    const paginatedItems = FARMERS_DATA.slice(start, end);
 
-
-
-
-    const start =
-        (
-            currentFarmersPage - 1
-        ) *
-        farmersPerPage;
-
-
-
-
-    const end =
-        start +
-        farmersPerPage;
-
-
-
-
-    const paginatedItems =
-        FARMERS_DATA.slice(
-            start,
-            end
-        );
-
-
-
-
-    if (
-        paginatedItems.length === 0
-    ) {
-
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#777;
-                    ">
-                    No farmers found.
-                </td>
-            </tr>
-        `;
-
-
-
-
+    if (paginatedItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#777;">No farmers found.</td></tr>`;
         updatePagination();
-
-
         return;
     }
 
-
-
-
-    paginatedItems.forEach(
-        farmer => {
-
-
-            const tr =
-                createFarmerTableRow(
-                    farmer
-                );
-
-
-
-
-            tbody.appendChild(
-                tr
-            );
-        }
-    );
-
-
-
+    paginatedItems.forEach(function(farmer) {
+        const tr = createFarmerTableRow(farmer);
+        tbody.appendChild(tr);
+    });
 
     updatePagination();
 }
 
-
-
-
-/* ============================================================
-   CREATE FARMER TABLE ROW
-============================================================ */
 function createFarmerTableRow(farmer) {
-
-
     const tr = document.createElement("tr");
-
-
     tr.className = "clickable-row";
-
 
     const fullName = getFarmerFullName(farmer);
 
-
     tr.innerHTML = `
-        <td>
-            <span class="pill">
-                ${escapeHtml(fullName)}
-            </span>
-        </td>
-
-
-        <td>
-            <span class="pill">
-                ${escapeHtml(farmer.rsbsa_id || "-")}
-            </span>
-        </td>
-
-
-        <td>
-            <span class="pill">
-                ${escapeHtml(farmer.municipality || "-")}
-            </span>
-        </td>
-
-
-        <td>
-            <span class="pill">
-                ${escapeHtml(farmer.barangay || "-")}
-            </span>
-        </td>
-
-
-        <td>
-            <span class="status-pill active">
-                ${escapeHtml(farmer.status || "Active")}
-            </span>
-        </td>
+        <td><span class="pill">${escapeHtml(fullName)}</span></td>
+        <td><span class="pill">${escapeHtml(farmer.rsbsa_id || "-")}</span></td>
+        <td><span class="pill">${escapeHtml(farmer.municipality || "-")}</span></td>
+        <td><span class="pill">${escapeHtml(farmer.barangay || "-")}</span></td>
+        <td><span class="status-pill active">${escapeHtml(farmer.status || "Active")}</span></td>
     `;
 
-
-    tr.addEventListener("click", () => {
+    tr.addEventListener("click", function() {
         openManageFarmer(farmer);
     });
-
 
     return tr;
 }
 
-
-
-
-/* ============================================================
-   FARMER FULL NAME
-============================================================ */
-
-
-function getFarmerFullName(farmer) {
-
-
-    return [
-        farmer.first_name,
-
-
-        farmer.middle_name
-            ? farmer.middle_name.charAt(0) + "."
-            : "",
-
-
-        farmer.last_name,
-
-
-        farmer.suffix
-    ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-
-
-
-/* ============================================================
-   PAGINATION
-============================================================ */
-
-
 function updatePagination() {
-
-
-    const paginationInfo =
-        document.getElementById(
-            "paginationInfo"
-        );
-
-
-    const pageNumberBtns =
-        document.getElementById(
-            "pageNumberBtns"
-        );
-
-
-    const prevPageBtn =
-        document.getElementById(
-            "prevPageBtn"
-        );
-
-
-    const nextPageBtn =
-        document.getElementById(
-            "nextPageBtn"
-        );
-
-
-
-
-    const total =
-        FARMERS_DATA.length;
-
-
-
-
-    const totalPages =
-        Math.max(
-            1,
-            Math.ceil(
-                total /
-                farmersPerPage
-            )
-        );
-
-
-
-
-    if (
-        currentFarmersPage >
-        totalPages
-    ) {
-
-
-        currentFarmersPage =
-            totalPages;
-    }
-
-
-
-
-    const start =
-        total === 0
-            ? 0
-            : (
-                (
-                    currentFarmersPage - 1
-                ) *
-                farmersPerPage
-            ) + 1;
-
-
-
-
-    const end =
-        Math.min(
-            currentFarmersPage *
-            farmersPerPage,
-            total
-        );
-
-
-
-
-    if (paginationInfo) {
-
-
-        paginationInfo.textContent =
-            `Showing ${start}-${end} of ${total} farmers`;
-    }
-
-
-
-
-    if (prevPageBtn) {
-
-
-        prevPageBtn.disabled =
-            currentFarmersPage <= 1;
-    }
-
-
-
-
-    if (nextPageBtn) {
-
-
-        nextPageBtn.disabled =
-            currentFarmersPage >=
-            totalPages;
-    }
-
-
-
-
-    if (pageNumberBtns) {
-
-
-        pageNumberBtns.innerHTML = "";
-
-
-
-
-        for (
-            let i = 1;
-            i <= totalPages;
-            i++
-        ) {
-
-
-            const pageBtn =
-                document.createElement(
-                    "button"
-                );
-
-
-
-
-            pageBtn.className =
-                `btn-page ${
-                    i === currentFarmersPage
-                        ? "active"
-                        : ""
-                }`;
-
-
-
-
-            pageBtn.textContent =
-                i;
-
-
-
-
-            pageBtn.type =
-                "button";
-
-
-
-
-            pageBtn.addEventListener(
-                "click",
-                () => {
-
-
-                    currentFarmersPage =
-                        i;
-
-
-                    renderFarmersTable();
-                }
-            );
-
-
-
-
-            pageNumberBtns.appendChild(
-                pageBtn
-            );
+    const total = FARMERS_DATA.length;
+    const totalPages = Math.max(1, Math.ceil(total / farmersPerPage));
+
+    if (currentFarmersPage > totalPages) currentFarmersPage = totalPages;
+
+    const start = total === 0 ? 0 : (currentFarmersPage - 1) * farmersPerPage + 1;
+    const end = Math.min(currentFarmersPage * farmersPerPage, total);
+
+    const info = document.getElementById("paginationInfo");
+    if (info) info.textContent = `Showing ${start}-${end} of ${total} farmers`;
+
+    const prev = document.getElementById("prevPageBtn");
+    if (prev) prev.disabled = currentFarmersPage <= 1;
+
+    const next = document.getElementById("nextPageBtn");
+    if (next) next.disabled = currentFarmersPage >= totalPages;
+
+    const btns = document.getElementById("pageNumberBtns");
+    if (btns) {
+        btns.innerHTML = "";
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.className = `btn-page ${i === currentFarmersPage ? "active" : ""}`;
+            btn.textContent = i;
+            btn.type = "button";
+            btn.addEventListener("click", function() {
+                currentFarmersPage = i;
+                renderFarmersTable();
+            });
+            btns.appendChild(btn);
         }
     }
 }
-
-
-
-
-/* ============================================================
-   FARMER SEARCH
-============================================================ */
-
-/* ============================================================
-   FARMER SEARCH - IMPROVED VERSION
-============================================================ */
 
 function initFarmerSearch() {
+    const searchInput = document.getElementById("searchFarmersInput");
+    if (!searchInput) return;
 
-    const searchInput =
-        document.getElementById(
-            "searchFarmersInput"
-        );
+    searchInput.addEventListener("input", function() {
+        const keyword = this.value.toLowerCase().trim();
 
-    if (!searchInput) {
-        return;
-    }
-
-    searchInput.addEventListener(
-        "input",
-        () => {
-
-            const keyword =
-                searchInput.value
-                    .toLowerCase()
-                    .trim();
-
-            // If search is empty, show all farmers
-            if (!keyword) {
-
-                currentFarmersPage = 1;
-                renderFarmersTable();
-                return;
-            }
-
-            // Split keyword into words for better matching
-            const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
-
-            const filtered =
-                FARMERS_DATA.filter(
-                    farmer => {
-                        // Build searchable text with clear field separation
-                        const searchableFields = [
-                            farmer.rsbsa_id || "",
-                            farmer.first_name || "",
-                            farmer.middle_name || "",
-                            farmer.last_name || "",
-                            farmer.suffix || "",
-                            farmer.address || "",
-                            farmer.municipality || "",
-                            farmer.barangay || "",
-                            farmer.email_address || "",
-                            farmer.phone_number || "",
-                            farmer.sex || "",
-                            farmer.status || ""
-                        ];
-
-                        // Combine all fields into one searchable string with spaces
-                        const searchableText = searchableFields
-                            .join(" ")
-                            .toLowerCase();
-
-                        // Check if ALL search words are found in ANY field
-                        return searchWords.every(word => 
-                            searchableText.includes(word)
-                        );
-                    }
-                );
-
-            console.log(`Search for "${keyword}" found ${filtered.length} farmers`);
-
+        if (!keyword) {
             currentFarmersPage = 1;
-
-            // Render filtered results with pagination
-            renderFilteredFarmers(filtered);
+            renderFarmersTable();
+            return;
         }
-    );
+
+        const filtered = FARMERS_DATA.filter(function(farmer) {
+            const searchableText = [
+                farmer.rsbsa_id,
+                farmer.first_name,
+                farmer.middle_name,
+                farmer.last_name,
+                farmer.suffix,
+                farmer.address,
+                farmer.email_address,
+                farmer.phone_number,
+                farmer.sex,
+                farmer.birthdate,
+                farmer.region,
+                farmer.municipality,
+                farmer.barangay,
+                farmer.status
+            ].join(" ").toLowerCase();
+
+            return searchableText.includes(keyword);
+        });
+
+        currentFarmersPage = 1;
+        renderFilteredFarmers(filtered);
+    });
 }
 
-/* ============================================================
-   RENDER SEARCH RESULTS WITH PAGINATION
-============================================================ */
-
 function renderFilteredFarmers(data) {
-
-    const tbody =
-        document.getElementById(
-            "farmersTableBody"
-        );
-
-    if (!tbody) {
-        return;
-    }
+    const tbody = document.getElementById("farmersTableBody");
+    if (!tbody) return;
 
     tbody.innerHTML = "";
 
-    // Apply pagination to search results
-    const start = (currentFarmersPage - 1) * farmersPerPage;
-    const end = start + farmersPerPage;
-    const paginatedItems = data.slice(start, end);
-
-    if (paginatedItems.length === 0) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#777;
-                    ">
-                    No farmers found.
-                </td>
-            </tr>
-        `;
-
-        updateSearchPaginationText(data.length, data);
+    if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#777;">No farmers found.</td></tr>`;
+        updateSearchPaginationText(0);
         return;
     }
 
-    paginatedItems.forEach(
-        farmer => {
+    data.forEach(function(farmer) {
+        const tr = createFarmerTableRow(farmer);
+        tbody.appendChild(tr);
+    });
 
-            const tr =
-                createFarmerTableRow(
-                    farmer
-                );
-
-            tbody.appendChild(
-                tr
-            );
-        }
-    );
-
-    updateSearchPaginationText(data.length, data);
+    updateSearchPaginationText(data.length);
 }
 
-/* ============================================================
-   SEARCH PAGINATION TEXT - IMPROVED
-============================================================ */
+function updateSearchPaginationText(resultCount) {
+    const paginationInfo = document.getElementById("paginationInfo");
+    if (!paginationInfo) return;
 
-function updateSearchPaginationText(resultCount, data) {
-    const paginationInfo =
-        document.getElementById(
-            "paginationInfo"
-        );
-
-    if (!paginationInfo) {
-        return;
-    }
-
-    const totalPages = Math.max(1, Math.ceil(resultCount / farmersPerPage));
-    const start = resultCount === 0 ? 0 : ((currentFarmersPage - 1) * farmersPerPage) + 1;
-    const end = Math.min(currentFarmersPage * farmersPerPage, resultCount);
-
-    if (resultCount > 0) {
-        paginationInfo.textContent =
-            `Showing ${start}-${end} of ${resultCount} farmers`;
-    } else {
-        paginationInfo.textContent =
-            `Showing 0 of ${FARMERS_DATA.length} farmers`;
-    }
-
-    // Update pagination buttons for search results
-    const prevPageBtn = document.getElementById("prevPageBtn");
-    const nextPageBtn = document.getElementById("nextPageBtn");
-    const pageNumberBtns = document.getElementById("pageNumberBtns");
-
-    if (prevPageBtn) {
-        prevPageBtn.disabled = currentFarmersPage <= 1 || resultCount === 0;
-    }
-
-    if (nextPageBtn) {
-        nextPageBtn.disabled = currentFarmersPage >= totalPages || resultCount === 0;
-    }
-
-    // Update page number buttons
-    if (pageNumberBtns) {
-        pageNumberBtns.innerHTML = "";
-
-        for (let i = 1; i <= totalPages && i <= 5; i++) {
-            const pageBtn = document.createElement("button");
-            pageBtn.className = `btn-page ${i === currentFarmersPage ? "active" : ""}`;
-            pageBtn.textContent = i;
-            pageBtn.type = "button";
-
-            // Store the data for click handler
-            pageBtn.addEventListener("click", () => {
-                currentFarmersPage = i;
-                // Re-render with the same search results
-                const searchInput = document.getElementById("searchFarmersInput");
-                if (searchInput && searchInput.value.trim()) {
-                    const keyword = searchInput.value.toLowerCase().trim();
-                    const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
-                    const filtered = FARMERS_DATA.filter(farmer => {
-                        const searchableFields = [
-                            farmer.rsbsa_id || "",
-                            farmer.first_name || "",
-                            farmer.middle_name || "",
-                            farmer.last_name || "",
-                            farmer.suffix || "",
-                            farmer.address || "",
-                            farmer.municipality || "",
-                            farmer.barangay || "",
-                            farmer.email_address || "",
-                            farmer.phone_number || "",
-                            farmer.sex || "",
-                            farmer.status || ""
-                        ];
-                        const searchableText = searchableFields.join(" ").toLowerCase();
-                        return searchWords.every(word => searchableText.includes(word));
-                    });
-                    renderFilteredFarmers(filtered);
-                } else {
-                    renderFarmersTable();
-                }
-            });
-
-            pageNumberBtns.appendChild(pageBtn);
-        }
-
-        // Add ellipsis if there are more pages
-        if (totalPages > 5) {
-            const ellipsis = document.createElement("span");
-            ellipsis.textContent = "...";
-            ellipsis.style.padding = "0 8px";
-            ellipsis.style.color = "#777";
-            pageNumberBtns.appendChild(ellipsis);
-
-            const lastBtn = document.createElement("button");
-            lastBtn.className = `btn-page ${totalPages === currentFarmersPage ? "active" : ""}`;
-            lastBtn.textContent = totalPages;
-            lastBtn.type = "button";
-            lastBtn.addEventListener("click", () => {
-                currentFarmersPage = totalPages;
-                const searchInput = document.getElementById("searchFarmersInput");
-                if (searchInput && searchInput.value.trim()) {
-                    const keyword = searchInput.value.toLowerCase().trim();
-                    const searchWords = keyword.split(/\s+/).filter(w => w.length > 0);
-                    const filtered = FARMERS_DATA.filter(farmer => {
-                        const searchableFields = [
-                            farmer.rsbsa_id || "",
-                            farmer.first_name || "",
-                            farmer.middle_name || "",
-                            farmer.last_name || "",
-                            farmer.suffix || "",
-                            farmer.address || "",
-                            farmer.municipality || "",
-                            farmer.barangay || "",
-                            farmer.email_address || "",
-                            farmer.phone_number || "",
-                            farmer.sex || "",
-                            farmer.status || ""
-                        ];
-                        const searchableText = searchableFields.join(" ").toLowerCase();
-                        return searchWords.every(word => searchableText.includes(word));
-                    });
-                    renderFilteredFarmers(filtered);
-                } else {
-                    renderFarmersTable();
-                }
-            });
-            pageNumberBtns.appendChild(lastBtn);
-        }
-    }
+    paginationInfo.textContent = `Showing ${resultCount} of ${FARMERS_DATA.length} farmers`;
 }
-
-
 
 /* ============================================================
    FARMER SUBVIEWS
 ============================================================ */
 
-
 function initFarmerSubviews() {
+    const listSubview = document.getElementById("farmersListSubview");
+    const regSubview = document.getElementById("registerFarmerSubview");
+    const manSubview = document.getElementById("manageFarmerSubview");
 
-
-    const listSubview =
-        document.getElementById(
-            "farmersListSubview"
-        );
-
-
-    const regSubview =
-        document.getElementById(
-            "registerFarmerSubview"
-        );
-
-
-    const manSubview =
-        document.getElementById(
-            "manageFarmerSubview"
-        );
-
-
-    const addBtn =
-        document.getElementById(
-            "addFarmerBtn"
-        );
-
-
-    const cancelRegBtn =
-        document.getElementById(
-            "cancelRegisterFarmerBtn"
-        );
-
-
-    const backManBtn =
-        document.getElementById(
-            "backFromManageFarmerBtn"
-        );
-
-
-    const regForm =
-        document.getElementById(
-            "registerFarmerForm"
-        );
-
-
-    const toggleEditBtn =
-        document.getElementById(
-            "toggleEditFarmerBtn"
-        );
-
-
-    const deleteBtn =
-        document.getElementById(
-            "deleteFarmerBtn"
-        );
-
-
-    const confirmDeleteBtn =
-        document.getElementById(
-            "confirmDeleteFarmerBtn"
-        );
-
-
-
-
-    /* --------------------------------------------------------
-       SEARCH
-    -------------------------------------------------------- */
-
+    const addBtn = document.getElementById("addFarmerBtn");
+    const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
+    const backManBtn = document.getElementById("backFromManageFarmerBtn");
+    const regForm = document.getElementById("registerFarmerForm");
+    const toggleEditBtn = document.getElementById("toggleEditFarmerBtn");
+    const deleteBtn = document.getElementById("deleteFarmerBtn");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteFarmerBtn");
 
     initFarmerSearch();
 
+    // ADD FARMER
+    addBtn?.addEventListener("click", function() {
+        if (regForm) regForm.reset();
+        setValue("regFarmerId", "");
+        listSubview?.classList.add("hidden-element");
+        regSubview?.classList.remove("hidden-element");
+    });
 
+    // CANCEL REGISTER
+    cancelRegBtn?.addEventListener("click", function() {
+        if (regForm) regForm.reset();
+        listSubview?.classList.remove("hidden-element");
+        regSubview?.classList.add("hidden-element");
+    });
 
+    // BACK FROM MANAGE
+    backManBtn?.addEventListener("click", function() {
+        manSubview?.classList.add("hidden-element");
+        listSubview?.classList.remove("hidden-element");
+        currentActiveFarmer = null;
+        isEditMode = false;
+    });
 
-    /* --------------------------------------------------------
-       ADD FARMER
-    -------------------------------------------------------- */
-
-
-    addBtn?.addEventListener(
-        "click",
-        () => {
-
-
-            if (regForm) {
-
-
-                regForm.reset();
-            }
-
-
-
-
-            setValue(
-                "regFarmerId",
-                ""
-            );
-
-
-
-
-            listSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-
-
-            regSubview?.classList.remove(
-                "hidden-element"
-            );
-        }
-    );
-
-
-
-
-    /* --------------------------------------------------------
-       CANCEL REGISTER
-    -------------------------------------------------------- */
-
-
-    cancelRegBtn?.addEventListener(
-        "click",
-        () => {
-
-
-            regSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-
-
-            listSubview?.classList.remove(
-                "hidden-element"
-            );
-        }
-    );
-
-
-
-
-    /* --------------------------------------------------------
-       BACK FROM MANAGE
-    -------------------------------------------------------- */
-
-
-    backManBtn?.addEventListener(
-        "click",
-        () => {
-
-
-            manSubview?.classList.add(
-                "hidden-element"
-            );
-
-
-
-
-            listSubview?.classList.remove(
-                "hidden-element"
-            );
-
-
-
-
-            currentActiveFarmer =
-                null;
-
-
-
-
-            isEditMode =
-                false;
-        }
-    );
-
-
-
-
-    /* --------------------------------------------------------
-       REGISTER FARMER
-    -------------------------------------------------------- */
-
-/* --------------------------------------------------------
-   REGISTER FARMER
--------------------------------------------------------- */
-/* --------------------------------------------------------
-   REGISTER FARMER
--------------------------------------------------------- */
-
-regForm?.addEventListener(
-    "submit",
-    async event => {
-
+    // REGISTER FARMER
+    regForm?.addEventListener("submit", async function(event) {
         event.preventDefault();
-
-        // ====================================================
-        // GET VALUES
-        // ====================================================
 
         const barangay = getValue("regBarangay");
         const municipality = getValue("regMunicipality");
-
-        // ====================================================
-        // BUILD PAYLOAD - WITH address FIELD
-        // ====================================================
 
         const farmerData = {
             rsbsa_id: getValue("regFarmerId"),
@@ -1795,1867 +552,731 @@ regForm?.addEventListener(
             middle_name: getValue("regMiddleName"),
             last_name: getValue("regLastName"),
             suffix: getValue("regSuffix"),
-            address: `${barangay}, ${municipality}`,  // ← COMBINED ADDRESS
-            barangay: barangay,                        // ← Keep separate
-            municipality: municipality,                // ← Keep separate
+            address: barangay + ", " + municipality,
+            barangay: barangay,
+            municipality: municipality,
             sex: getValue("regSex"),
             birthdate: getValue("regBirthdate"),
             phone_number: getValue("regPhone"),
             email_address: getValue("regEmail")
         };
 
-        console.log("Submitting farmer:", farmerData);
-
-        // ====================================================
-        // VALIDATE REQUIRED FIELDS
-        // ====================================================
-
-        if (!farmerData.rsbsa_id) {
-            alert("Please enter RSBSA ID.");
+        if (!farmerData.rsbsa_id || !farmerData.first_name || !farmerData.last_name || !farmerData.address) {
+            alert("Please fill in all required fields.");
             return;
         }
-
-        if (!farmerData.first_name) {
-            alert("Please enter First Name.");
-            return;
-        }
-
-        if (!farmerData.last_name) {
-            alert("Please enter Last Name.");
-            return;
-        }
-
-        if (!farmerData.address) {
-            alert("Please enter Address (Barangay and Municipality).");
-            return;
-        }
-
-        if (!farmerData.sex) {
-            alert("Please select Sex.");
-            return;
-        }
-
-        if (!farmerData.birthdate) {
-            alert("Please select Birthdate.");
-            return;
-        }
-
-        if (!farmerData.phone_number) {
-            alert("Please enter Phone Number.");
-            return;
-        }
-
-        if (!farmerData.email_address) {
-            alert("Please enter Email Address.");
-            return;
-        }
-
-        // ====================================================
-        // SHOW CONFIRMATION MODAL
-        // ====================================================
 
         const confirmText = document.getElementById("confirmFarmerText");
         if (confirmText) {
-            confirmText.textContent = 
-                `Register ${farmerData.first_name} ${farmerData.last_name} from ${farmerData.address}?`;
+            confirmText.textContent = "Register " + farmerData.first_name + " " + farmerData.last_name + " from " + farmerData.address + "?";
         }
 
-        // Store for confirmation
         window._pendingFarmer = farmerData;
-
         document.getElementById("confirmFarmerModal")?.classList.add("show");
-    }
-);
+    });
 
-/* --------------------------------------------------------
-   CONFIRM SAVE FARMER
--------------------------------------------------------- */
-/* --------------------------------------------------------
-   CONFIRM SAVE FARMER
--------------------------------------------------------- */
-
-document.getElementById("confirmSaveFarmerBtn")?.addEventListener(
-    "click",
-    async () => {
-
+    // CONFIRM SAVE FARMER
+    document.getElementById("confirmSaveFarmerBtn")?.addEventListener("click", async function() {
         const farmerData = window._pendingFarmer;
-
         if (!farmerData) {
             alert("No farmer data to save.");
             return;
         }
 
         try {
+            await apiRequest(FARMERS_ENDPOINT, {
+                method: "POST",
+                body: JSON.stringify(farmerData)
+            });
 
-            console.log("Saving farmer:", farmerData);
-
-            const createdFarmer = await apiRequest(
-                FARMERS_ENDPOINT,
-                {
-                    method: "POST",
-                    body: JSON.stringify(farmerData)
-                }
-            );
-
-            console.log("Created farmer:", createdFarmer);
-
-            // Close confirmation modal
             document.getElementById("confirmFarmerModal")?.classList.remove("show");
+            await fetchFarmers();
+            document.getElementById("farmerAddedModal")?.classList.add("show");
+            regForm?.reset();
+            window._pendingFarmer = null;
+        } catch (error) {
+            console.error("Create farmer error:", error);
+            document.getElementById("confirmFarmerModal")?.classList.remove("show");
+            alert("Failed to add farmer.\n\n" + (error.message || "Please check the FastAPI server."));
+        }
+    });
 
-            // Refresh farmers list
+    // CLOSE FARMER ADDED MODAL
+    document.getElementById("closeFarmerAddedBtn")?.addEventListener("click", function() {
+        document.getElementById("farmerAddedModal")?.classList.remove("show");
+        regSubview?.classList.add("hidden-element");
+        listSubview?.classList.remove("hidden-element");
+    });
+
+    // EDIT / SAVE FARMER
+    toggleEditBtn?.addEventListener("click", async function() {
+        const editableInputs = document.querySelectorAll(".man-editable");
+
+        if (!isEditMode) {
+            isEditMode = true;
+            editableInputs.forEach(function(input) {
+                input.readOnly = false;
+                input.classList.add("input-editable-active");
+                input.classList.remove("input-readonly");
+            });
+            this.textContent = "Save Changes";
+
+            // Create Cancel button
+            let cancelBtn = document.getElementById("cancelEditFarmerBtn");
+            if (!cancelBtn) {
+                cancelBtn = document.createElement("button");
+                cancelBtn.id = "cancelEditFarmerBtn";
+                cancelBtn.className = "btn-outline-report";
+                cancelBtn.textContent = "Cancel";
+                cancelBtn.style.marginRight = "8px";
+                this.parentNode.insertBefore(cancelBtn, this);
+                cancelBtn.addEventListener("click", cancelFarmerEdit);
+            }
+            cancelBtn.style.display = "inline-flex";
+            return;
+        }
+
+        if (!currentActiveFarmer) {
+            alert("No farmer selected.");
+            return;
+        }
+
+        const confirmSave = confirm("Are you sure you want to save these changes?\n\nFarmer: " + getFarmerFullName(currentActiveFarmer));
+        if (!confirmSave) return;
+
+        const updateData = {
+            address: getValue("manAddress"),
+            phone_number: getValue("manPhone"),
+            email_address: getValue("manEmail")
+        };
+
+        try {
+            const farmerId = currentActiveFarmer.farmer_id;
+
+            await apiRequest(FARMERS_ENDPOINT + farmerId, {
+                method: "PUT",
+                body: JSON.stringify(updateData)
+            });
+
+            isEditMode = false;
+            editableInputs.forEach(function(input) {
+                input.readOnly = true;
+                input.classList.remove("input-editable-active");
+                input.classList.add("input-readonly");
+            });
+
+            this.textContent = "Edit Contact Info";
+
+            const cancelBtn = document.getElementById("cancelEditFarmerBtn");
+            if (cancelBtn) cancelBtn.style.display = "none";
+
+            await fetchFarmers();
+            alert("Farmer updated successfully.");
+        } catch (error) {
+            console.error("Update farmer error:", error);
+            alert("Failed to update farmer.\n\n" + (error.message || "Check FastAPI server."));
+        }
+    });
+
+    // DELETE FARMER
+    deleteBtn?.addEventListener("click", function() {
+        if (!currentActiveFarmer) {
+            alert("No farmer selected.");
+            return;
+        }
+        document.getElementById("deleteFarmerModal")?.classList.add("show");
+    });
+
+    // CONFIRM DELETE
+    confirmDeleteBtn?.addEventListener("click", async function() {
+        if (!currentActiveFarmer) return;
+
+        try {
+            const farmerId = currentActiveFarmer.farmer_id;
+
+            await apiRequest(FARMERS_ENDPOINT + farmerId, {
+                method: "DELETE"
+            });
+
+            document.getElementById("deleteFarmerModal")?.classList.remove("show");
+            currentActiveFarmer = null;
             await fetchFarmers();
 
-            // Show success modal
-            document.getElementById("farmerAddedModal")?.classList.add("show");
+            manSubview?.classList.add("hidden-element");
+            listSubview?.classList.remove("hidden-element");
 
-            // Reset form
-            regForm?.reset();
-
-            // Clear pending
-            window._pendingFarmer = null;
-
+            alert("Farmer deleted successfully.");
         } catch (error) {
-
-            console.error("Create farmer error:", error);
-
-            handleAuthError(error);
-
-            document.getElementById("confirmFarmerModal")?.classList.remove("show");
-
-            // Show detailed error
-            let errorMsg = error.message || "Please check the FastAPI server.";
-            
-            // If error has data, show it
-            if (error.data) {
-                errorMsg = JSON.stringify(error.data, null, 2);
-            }
-
-            alert("Failed to add farmer.\n\n" + errorMsg);
+            console.error("Delete farmer error:", error);
+            document.getElementById("deleteFarmerModal")?.classList.remove("show");
+            document.getElementById("deleteErrorModal")?.classList.add("show");
         }
-    }
-);
-
-
-    /* --------------------------------------------------------
-       CLOSE FARMER ADDED MODAL
-    -------------------------------------------------------- */
-
-
-    document
-        .getElementById(
-            "closeFarmerAddedBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-
-                document
-                    .getElementById(
-                        "farmerAddedModal"
-                    )
-                    ?.classList.remove(
-                        "show"
-                    );
-
-
-
-
-                regSubview?.classList.add(
-                    "hidden-element"
-                );
-
-
-
-
-                listSubview?.classList.remove(
-                    "hidden-element"
-                );
-            }
-        );
-
-
-
-
-    /* --------------------------------------------------------
-       EDIT / SAVE FARMER
-    -------------------------------------------------------- */
-
-
-    toggleEditBtn?.addEventListener(
-        "click",
-        async () => {
-
-
-            const editableInputs =
-                document.querySelectorAll(
-                    ".man-editable"
-                );
-
-
-
-
-            if (!isEditMode) {
-
-
-                isEditMode =
-                    true;
-
-
-
-
-                editableInputs.forEach(
-                    input => {
-
-
-                        input.readOnly =
-                            false;
-
-
-
-
-                        input.classList.add(
-                            "input-editable-active"
-                        );
-
-
-
-
-                        input.classList.remove(
-                            "input-readonly"
-                        );
-                    }
-                );
-
-
-
-
-                toggleEditBtn.textContent =
-                    "Save Changes";
-
-
-
-
-                return;
-            }
-
-
-
-
-            if (!currentActiveFarmer) {
-
-
-                alert(
-                    "No farmer selected."
-                );
-
-
-                return;
-            }
-
-
-
-
-            const updateData = {
-
-
-                address:
-                    getValue(
-                        "manAddress"
-                    ),
-
-
-                phone_number:
-                    getValue(
-                        "manPhone"
-                    ),
-
-
-                email_address:
-                    getValue(
-                        "manEmail"
-                    )
-            };
-
-
-
-
-            try {
-
-
-                const farmerId =
-                    currentActiveFarmer.farmer_id;
-
-
-
-
-                const response =
-                    await apiRequest(
-                        `${FARMERS_ENDPOINT}${farmerId}`,
-                        {
-                            method: "PUT",
-
-
-                            body:
-                                JSON.stringify(
-                                    updateData
-                                )
-                        }
-                    );
-
-
-
-
-                console.log(
-                    "Updated farmer:",
-                    response
-                );
-
-
-
-
-                isEditMode =
-                    false;
-
-
-
-
-                editableInputs.forEach(
-                    input => {
-
-
-                        input.readOnly =
-                            true;
-
-
-
-
-                        input.classList.remove(
-                            "input-editable-active"
-                        );
-
-
-
-
-                        input.classList.add(
-                            "input-readonly"
-                        );
-                    }
-                );
-
-
-
-
-                toggleEditBtn.textContent =
-                    "Edit Contact Info";
-
-
-
-
-                await fetchFarmers();
-
-
-
-
-                const updatedFarmer =
-                    FARMERS_DATA.find(
-                        farmer =>
-                            farmer.farmer_id ===
-                            farmerId
-                    );
-
-
-
-
-                if (updatedFarmer) {
-
-
-                    openManageFarmer(
-                        updatedFarmer
-                    );
-                }
-
-
-
-
-                alert(
-                    "Farmer updated successfully."
-                );
-
-
-
-
-            } catch (error) {
-
-
-                console.error(
-                    "Update farmer error:",
-                    error
-                );
-
-
-
-
-                handleAuthError(
-                    error
-                );
-
-
-
-
-                alert(
-                    "Failed to update farmer.\n\n" +
-                    (
-                        error.message ||
-                        "Please check the FastAPI server."
-                    )
-                );
-            }
+    });
+
+    // CLOSE DELETE ERROR MODAL
+    document.getElementById("closeDeleteErrorBtn")?.addEventListener("click", function() {
+        document.getElementById("deleteErrorModal")?.classList.remove("show");
+    });
+
+    document.getElementById("deleteErrorModal")?.addEventListener("click", function(event) {
+        if (event.target === this) {
+            this.classList.remove("show");
         }
-    );
+    });
 
+    // CANCEL DELETE
+    document.getElementById("cancelDeleteFarmerBtn")?.addEventListener("click", function() {
+        document.getElementById("deleteFarmerModal")?.classList.remove("show");
+    });
 
-
-
-    /* --------------------------------------------------------
-       DELETE BUTTON
-    -------------------------------------------------------- */
-
-
-    deleteBtn?.addEventListener(
-        "click",
-        () => {
-
-
-            if (!currentActiveFarmer) {
-
-
-                alert(
-                    "No farmer selected."
-                );
-
-
-                return;
-            }
-
-
-
-
-            document
-                .getElementById(
-                    "deleteFarmerModal"
-                )
-                ?.classList.add(
-                    "show"
-                );
+    document.getElementById("deleteFarmerModal")?.addEventListener("click", function(event) {
+        if (event.target === this) {
+            this.classList.remove("show");
         }
-    );
+    });
 
-
-
-
-    /* --------------------------------------------------------
-       CONFIRM DELETE
-    -------------------------------------------------------- */
-
-
-    confirmDeleteBtn?.addEventListener(
-        "click",
-        async () => {
-
-
-            if (!currentActiveFarmer) {
-                return;
-            }
-
-
-
-
-            try {
-
-
-                const farmerId =
-                    currentActiveFarmer.farmer_id;
-
-
-
-
-                await apiRequest(
-                    `${FARMERS_ENDPOINT}${farmerId}`,
-                    {
-                        method: "DELETE"
-                    }
-                );
-
-
-
-
-                document
-                    .getElementById(
-                        "deleteFarmerModal"
-                    )
-                    ?.classList.remove(
-                        "show"
-                    );
-
-
-
-
-                currentActiveFarmer =
-                    null;
-
-
-
-
-                await fetchFarmers();
-
-
-
-
-                manSubview?.classList.add(
-                    "hidden-element"
-                );
-
-
-
-
-                listSubview?.classList.remove(
-                    "hidden-element"
-                );
-
-
-
-
-                alert(
-                    "Farmer deleted successfully."
-                );
-
-
-
-
-            } catch (error) {
-
-
-                console.error(
-                    "Delete farmer error:",
-                    error
-                );
-
-
-
-
-                handleAuthError(
-                    error
-                );
-
-
-
-
-                alert(
-                    "Failed to delete farmer.\n\n" +
-                    (
-                        error.message ||
-                        "Please check the FastAPI server."
-                    )
-                );
-            }
+    // PAGINATION
+    document.getElementById("prevPageBtn")?.addEventListener("click", function() {
+        if (currentFarmersPage > 1) {
+            currentFarmersPage--;
+            renderFarmersTable();
         }
-    );
+    });
 
-
-
-
-    /* --------------------------------------------------------
-       PAGINATION PREVIOUS
-    -------------------------------------------------------- */
-
-
-    document
-        .getElementById(
-            "prevPageBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-
-                if (
-                    currentFarmersPage > 1
-                ) {
-
-
-                    currentFarmersPage--;
-
-
-                    renderFarmersTable();
-                }
-            }
-        );
-
-
-
-
-    /* --------------------------------------------------------
-       PAGINATION NEXT
-    -------------------------------------------------------- */
-
-
-    document
-        .getElementById(
-            "nextPageBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-
-                const totalPages =
-                    Math.max(
-                        1,
-                        Math.ceil(
-                            FARMERS_DATA.length /
-                            farmersPerPage
-                        )
-                    );
-
-
-
-
-                if (
-                    currentFarmersPage <
-                    totalPages
-                ) {
-
-
-                    currentFarmersPage++;
-
-
-                    renderFarmersTable();
-                }
-            }
-        );
-
-
-
-
-    /* --------------------------------------------------------
-       CLOSE DELETE MODAL
-       Supports common close button IDs if present.
-    -------------------------------------------------------- */
-
-
-    const closeDeleteModalIds = [
-        "closeDeleteFarmerBtn",
-        "cancelDeleteFarmerBtn"
-    ];
-
-
-
-
-    closeDeleteModalIds.forEach(
-        id => {
-
-
-            document
-                .getElementById(id)
-                ?.addEventListener(
-                    "click",
-                    () => {
-
-
-                        document
-                            .getElementById(
-                                "deleteFarmerModal"
-                            )
-                            ?.classList.remove(
-                                "show"
-                            );
-                    }
-                );
+    document.getElementById("nextPageBtn")?.addEventListener("click", function() {
+        const totalPages = Math.max(1, Math.ceil(FARMERS_DATA.length / farmersPerPage));
+        if (currentFarmersPage < totalPages) {
+            currentFarmersPage++;
+            renderFarmersTable();
         }
-    );
+    });
 }
 
+/* ============================================================
+   CANCEL FARMER EDIT
+============================================================ */
 
+function cancelFarmerEdit() {
+    const farmer = currentActiveFarmer;
+    if (!farmer) return;
 
+    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) return;
+
+    setValue("manAddress", farmer.address || "");
+    setValue("manPhone", farmer.phone_number || "");
+    setValue("manEmail", farmer.email_address || "");
+
+    const editableInputs = document.querySelectorAll(".man-editable");
+    editableInputs.forEach(function(input) {
+        input.readOnly = true;
+        input.classList.remove("input-editable-active");
+        input.classList.add("input-readonly");
+    });
+
+    isEditMode = false;
+
+    const toggleBtn = document.getElementById("toggleEditFarmerBtn");
+    if (toggleBtn) toggleBtn.textContent = "Edit Contact Info";
+
+    const backBtn = document.getElementById("backFromManageFarmerBtn");
+    if (backBtn) backBtn.style.display = "inline-flex";
+
+    const deleteBtn = document.getElementById("deleteFarmerBtn");
+    if (deleteBtn) deleteBtn.style.display = "inline-flex";
+
+    const cancelBtn = document.getElementById("cancelEditFarmerBtn");
+    if (cancelBtn) cancelBtn.style.display = "none";
+
+    console.log("Farmer edit cancelled.");
+}
 
 /* ============================================================
    OPEN MANAGE FARMER
 ============================================================ */
 
-
-function openManageFarmer(
-    farmer
-) {
-
-
-    if (!farmer) {
-        return;
-    }
-
-
-
-
-    currentActiveFarmer =
-        farmer;
-
-
-
-
-    isEditMode =
-        false;
-
-
-
-
-    setValue(
-        "manFarmerId",
-        farmer.rsbsa_id || ""
-    );
-
-
-
-
-    setValue(
-        "manAddress",
-        farmer.address || ""
-    );
-
-
-
-
-    setValue(
-        "manFirstName",
-        farmer.first_name || ""
-    );
-
-
-
-
-    setValue(
-        "manMiddleName",
-        farmer.middle_name || ""
-    );
-
-
-
-
-    setValue(
-        "manLastName",
-        farmer.last_name || ""
-    );
-
-
-
-
-    setValue(
-        "manSuffix",
-        farmer.suffix || ""
-    );
-
-
-
-
-    setValue(
-        "manSex",
-        farmer.sex || ""
-    );
-
-
-
-
-    setValue(
-        "manBirthdate",
-        farmer.birthdate || ""
-    );
-
-
-
-
-    setValue(
-        "manPhone",
-        farmer.phone_number || ""
-    );
-
-
-
-
-    setValue(
-        "manEmail",
-        farmer.email_address || ""
-    );
-
-
-
-
-    document
-        .querySelectorAll(
-            ".man-editable"
-        )
-        .forEach(
-            input => {
-
-
-                input.readOnly =
-                    true;
-
-
-
-
-                input.classList.remove(
-                    "input-editable-active"
-                );
-
-
-
-
-                input.classList.add(
-                    "input-readonly"
-                );
-            }
-        );
-
-
-
-
-    const editBtn =
-        document.getElementById(
-            "toggleEditFarmerBtn"
-        );
-
-
-
-
-    if (editBtn) {
-
-
-        editBtn.textContent =
-            "Edit Contact Info";
-    }
-
-
-
-
-    document
-        .getElementById(
-            "farmersListSubview"
-        )
-        ?.classList.add(
-            "hidden-element"
-        );
-
-
-
-
-    document
-        .getElementById(
-            "manageFarmerSubview"
-        )
-        ?.classList.remove(
-            "hidden-element"
-        );
+function openManageFarmer(farmer) {
+    if (!farmer) return;
+
+    currentActiveFarmer = farmer;
+    isEditMode = false;
+
+    setValue("manFarmerId", farmer.rsbsa_id || "");
+    setValue("manAddress", farmer.address || "");
+    setValue("manFirstName", farmer.first_name || "");
+    setValue("manMiddleName", farmer.middle_name || "");
+    setValue("manLastName", farmer.last_name || "");
+    setValue("manSuffix", farmer.suffix || "");
+    setValue("manSex", farmer.sex || "");
+    setValue("manBirthdate", farmer.birthdate || "");
+    setValue("manPhone", farmer.phone_number || "");
+    setValue("manEmail", farmer.email_address || "");
+
+    document.querySelectorAll(".man-editable").forEach(function(input) {
+        input.readOnly = true;
+        input.classList.remove("input-editable-active");
+        input.classList.add("input-readonly");
+    });
+
+    const editBtn = document.getElementById("toggleEditFarmerBtn");
+    if (editBtn) editBtn.textContent = "Edit Contact Info";
+
+    const backBtn = document.getElementById("backFromManageFarmerBtn");
+    if (backBtn) backBtn.style.display = "inline-flex";
+
+    const deleteBtn = document.getElementById("deleteFarmerBtn");
+    if (deleteBtn) deleteBtn.style.display = "inline-flex";
+
+    const cancelBtn = document.getElementById("cancelEditFarmerBtn");
+    if (cancelBtn) cancelBtn.style.display = "none";
+
+    document.getElementById("farmersListSubview")?.classList.add("hidden-element");
+    document.getElementById("manageFarmerSubview")?.classList.remove("hidden-element");
 }
+
 /* ============================================================
    PLANTING INTENT
 ============================================================ */
-
-let PLANTING_INTENTS_DATA = [];
-
 
 /* ============================================================
    INITIALIZE PLANTING INTENT
 ============================================================ */
 
 function initPlantingIntent() {
-
-    const list =
-        document.getElementById(
-            "plantingIntentListSubview"
-        );
-
-    const formSubview =
-        document.getElementById(
-            "submitPlantIntentSubview"
-        );
-
-    const modal =
-        document.getElementById(
-            "plantIntentSubmittedModal"
-        );
-
-
-    /* --------------------------------------------------------
-       LOAD PLANTING INTENTS
-    -------------------------------------------------------- */
+    const list = document.getElementById("plantingIntentListSubview");
+    const formSubview = document.getElementById("submitPlantIntentSubview");
+    const modal = document.getElementById("plantIntentSubmittedModal");
 
     fetchPlantingIntents();
 
-
-    /* --------------------------------------------------------
-       ADD
-    -------------------------------------------------------- */
-
-    document
-        .getElementById(
-            "addPlantIntentBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                list?.classList.add(
-                    "hidden-element"
-                );
-
-                formSubview?.classList.remove(
-                    "hidden-element"
-                );
-            }
-        );
-
-
-    /* --------------------------------------------------------
-       CANCEL
-    -------------------------------------------------------- */
-
-    document
-        .getElementById(
-            "cancelPlantIntentBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                formSubview?.classList.add(
-                    "hidden-element"
-                );
-
-                list?.classList.remove(
-                    "hidden-element"
-                );
-            }
-        );
-
-        /* --------------------------------------------------------
-   BACK FROM DETAILS
--------------------------------------------------------- */
-
-document
-    .getElementById(
-        "backFromPlantingIntentDetailsBtn"
-    )
-    ?.addEventListener(
-        "click",
-        () => {
-
-            document
-                .getElementById(
-                    "plantingIntentDetailsSubview"
-                )
-                ?.classList.add(
-                    "hidden-element"
-                );
-
-            list?.classList.remove(
-                "hidden-element"
-            );
-
-            window.currentSelectedPlantingIntent =
-                null;
-        }
-    );
-
-    /* ============================================================
-   EDIT PLANTING INTENT BUTTON
-============================================================ */
-
-document
-    .getElementById(
-        "editPlantingIntentBtn"
-    )
-    ?.addEventListener(
-        "click",
-        () => {
-
-            togglePlantingIntentEditMode();
-        }
-    );
-
-    /* ============================================================
-   SUBMIT PLANTING INTENT → RAW PLANT REPORT
-   FLOW:
-   Planting Intent
-        ↓
-   Create RawPlantReport
-        ↓
-   Get report_id
-        ↓
-   Submit Report
-        ↓
-   FOR_MUNICIPAL_VALIDATION
-============================================================ */
-
-document
-    .getElementById(
-        "submitPlantingIntentBtn"
-    )
-    ?.addEventListener(
-        "click",
-        async () => {
-
-            const intent =
-                window.currentSelectedPlantingIntent;
-
-
-            if (!intent) {
-
-                alert(
-                    "No planting intent selected."
-                );
-
-                return;
-            }
-
-
-            console.log(
-                "Submitting Planting Intent:",
-                intent
-            );
-
-
-            /* ====================================================
-               VALIDATE PLANTING DATE
-            ==================================================== */
-
-            if (!intent.planting_date) {
-
-                alert(
-                    "Planting date is required."
-                );
-
-                return;
-            }
-
-
-            /* ====================================================
-               ESTIMATED YIELD
-               
-               For now:
-               Planting Intent volume = Estimated Yield
-            ==================================================== */
-
-            const estimatedYield =
-                String(
-                    intent.volume ?? ""
-                )
-                .replace(/,/g, "")
-                .replace(/kg/gi, "")
-                .trim();
-
-
-            if (
-                !estimatedYield ||
-                !/^\d+(\.\d+)?$/.test(
-                    estimatedYield
-                )
-            ) {
-
-                alert(
-                    "Estimated yield must be a valid number."
-                );
-
-                return;
-            }
-
-
-            /* ====================================================
-               RAW PLANT REPORT PAYLOAD
-               
-               municipal_coordinator_id = NULL
-               encoded_by = handled by backend
-            ==================================================== */
-
-           const encodedBy =
-    localStorage.getItem("user_id");
-
-if (!encodedBy) {
-
-    alert(
-        "Logged-in user ID was not found."
-    );
-
-    return;
-}
-
-
-const rawPlantReportData = {
-
-    planting_date:
-        intent.planting_date,
-
-    estimated_yield:
-        estimatedYield,
-
-    municipal_coordinator_id:
-        null,
-
-    encoded_by:
-        Number(encodedBy)
-};
-
-
-            console.log(
-                "Raw Plant Report payload:",
-                rawPlantReportData
-            );
-
-
-            try {
-
-                /* =================================================
-                   STEP 1 — CREATE RAW PLANT REPORT
-                ================================================= */
-
-                const createdReport =
-    await apiRequest(
-        `${RAW_PLANT_REPORTS_ENDPOINT}/${intent.planting_intent_id}`,
-        {
-            method: "POST"
-        }
-    );
-
-
-                console.log(
-                    "Raw Plant Report created:",
-                    createdReport
-                );
-
-
-                /* =================================================
-                   STEP 2 — GET REPORT ID
-                ================================================= */
-
-                const reportId =
-                    createdReport?.report_id ??
-                    createdReport?.id;
-
-
-                if (!reportId) {
-
-                    throw new Error(
-                        "Raw Plant Report was created, but no report ID was returned by the API."
-                    );
-                }
-
-
-                console.log(
-                    "Created Raw Plant Report ID:",
-                    reportId
-                );
-
-
-                /* =================================================
-                   STEP 3 — SUBMIT REPORT
-                   
-                   POST:
-                   /api/report-submissions/{report_id}/submit
-                ================================================= */
-
-                const submissionResponse =
-                    await apiRequest(
-                        `${REPORT_SUBMISSIONS_ENDPOINT}/${reportId}/submit`,
-                        {
-                            method: "POST"
-                        }
-                    );
-
-
-                console.log(
-                    "Report Submission response:",
-                    submissionResponse
-                );
-
-
-                /* =================================================
-                   SUCCESS
-                ================================================= */
-
-                alert(
-                    "Planting Report submitted successfully.\n\n" +
-                    "Status: FOR_MUNICIPAL_VALIDATION"
-                );
-
-
-                /* =================================================
-                   RETURN TO PLANTING INTENT LIST
-                ================================================= */
-
-                document
-                    .getElementById(
-                        "plantingIntentDetailsSubview"
-                    )
-                    ?.classList.add(
-                        "hidden-element"
-                    );
-
-
-                document
-                    .getElementById(
-                        "plantingIntentListSubview"
-                    )
-                    ?.classList.remove(
-                        "hidden-element"
-                    );
-
-
-                /* =================================================
-                   CLEAR SELECTED INTENT
-                ================================================= */
-
-                window.currentSelectedPlantingIntent =
-                    null;
-
-
-                /* =================================================
-                   RELOAD PLANTING INTENTS
-                ================================================= */
-
-                await fetchPlantingIntents();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Submit Planting Report error:",
-                    error
-                );
-
-
-                handleAuthError(
-                    error
-                );
-
-
-                alert(
-                    "Failed to submit planting report.\n\n" +
-                    (
-                        error.message ||
-                        "Please check the FastAPI server."
-                    )
-                );
-            }
-        }
-    );
-    ;
-
-    /* --------------------------------------------------------
-       SUBMIT
-    -------------------------------------------------------- */
-
-    document
-        .getElementById(
-            "submitPlantIntentForm"
-        )
-        ?.addEventListener(
-            "submit",
-            async event => {
-
-                event.preventDefault();
-
-                await submitPlantingIntent();
-            }
-        );
-
-
-    /* --------------------------------------------------------
-       CLOSE SUCCESS MODAL
-    -------------------------------------------------------- */
-
-    document
-        .getElementById(
-            "closePlantIntentSubmittedBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                modal?.classList.remove(
-                    "show"
-                );
-
-                formSubview?.classList.add(
-                    "hidden-element"
-                );
-
-                list?.classList.remove(
-                    "hidden-element"
-                );
-
-                fetchPlantingIntents();
-            }
-        );
-}
-/* ============================================================
-   FETCH PLANTING INTENTS FROM FASTAPI
-============================================================ */
-
-async function fetchPlantingIntents() {
-
-    const tbody =
-        document.getElementById(
-            "plantingIntentsTableBody"
-        );
-
-    if (tbody) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                    "
-                >
-                    Loading planting intents...
-                </td>
-            </tr>
-        `;
-    }
-
-    try {
-
-        console.log(
-            "Fetching planting intents:",
-            PLANTING_INTENTS_ENDPOINT
-        );
-
-        const data =
-            await apiRequest(
-                PLANTING_INTENTS_ENDPOINT,
-                {
-                    method: "GET"
-                }
-            );
-
-        console.log(
-            "Planting Intents API response:",
-            data
-        );
-
-        if (!Array.isArray(data)) {
-
-            throw new Error(
-                "Invalid planting intents response. Expected an array."
-            );
-        }
-
-        PLANTING_INTENTS_DATA =
-            data.map(
-                intent =>
-                    normalizePlantingIntent(
-                        intent
-                    )
-            );
-
-        renderPlantingIntentsTable();
-
-        console.log(
-            `Successfully loaded ${PLANTING_INTENTS_DATA.length} planting intent(s).`
-        );
-
-        return PLANTING_INTENTS_DATA;
-
-    } catch (error) {
-
-        console.error(
-            "Unable to load planting intents:",
-            error
-        );
-
-        PLANTING_INTENTS_DATA = [];
-
-        if (tbody) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="
-                            padding:30px;
-                            text-align:center;
-                            color:#C0392B;
-                        "
-                    >
-                        Failed to load planting intents.
-                        <br>
-                        <small>
-                            ${escapeHtml(
-                                error.message ||
-                                "Please check the FastAPI server."
-                            )}
-                        </small>
-                    </td>
-                </tr>
-            `;
-        }
-
-        handleAuthError(error);
-
-        return [];
-    }
-}
-
-// ============================================================
-// FETCH ALL SUBMITTED REPORTS
-// ============================================================
-
-async function loadAllReports() {
-    try {
-        const endpoint =
-            `${API_BASE_URL}/api/report-submissions/all-reports`;
-
-        console.log("Fetching all submitted reports:", endpoint);
-
-        const reports = await apiRequest(endpoint);
-
-        console.log("All Reports API response:", reports);
-
-        renderAllReports(reports);
-
-    } catch (error) {
-        console.error(
-            "Failed to load all submitted reports:",
-            error
-        );
-    }
-}
-// ============================================================
-// RENDER ALL REPORTS - TABLE FORMAT
-// ============================================================
-
-function renderAllReports(reports) {
-
-    const container =
-        document.getElementById("allReportsContainer");
-
-    if (!container) {
-        console.error(
-            "allReportsContainer not found."
-        );
-        return;
-    }
-
-    // Clear container
-    container.innerHTML = "";
-
-    if (!reports || reports.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="
-                padding: 40px;
-                text-align: center;
-                color: #777;
-                font-size: 15px;
-            ">
-                No submitted reports found.
-            </div>
-        `;
-        return;
-    }
-
-    // Create table
-    const table = document.createElement("table");
-    table.style.width = "100%";
-    table.style.borderCollapse = "separate";
-    table.style.borderSpacing = "0";
-    table.style.marginTop = "8px";
-
-    // Table Header
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-        <tr style="background: #DEDDDC;">
-            <th style="
-                text-align: center;
-                font-size: 13px;
-                font-weight: 700;
-                color: #222;
-                padding: 14px 10px;
-                border-top-left-radius: 8px;
-                border-bottom-left-radius: 8px;
-            ">#</th>
-            <th style="
-                text-align: center;
-                font-size: 13px;
-                font-weight: 700;
-                color: #222;
-                padding: 14px 10px;
-            ">Title</th>
-            <th style="
-                text-align: center;
-                font-size: 13px;
-                font-weight: 700;
-                color: #222;
-                padding: 14px 10px;
-            ">Planting Date</th>
-            <th style="
-                text-align: center;
-                font-size: 13px;
-                font-weight: 700;
-                color: #222;
-                padding: 14px 10px;
-            ">Estimated Yield</th>
-            <th style="
-                text-align: center;
-                font-size: 13px;
-                font-weight: 700;
-                color: #222;
-                padding: 14px 10px;
-                border-top-right-radius: 8px;
-                border-bottom-right-radius: 8px;
-            ">Status</th>
-        </tr>
-    `;
-    table.appendChild(thead);
-
-    // Table Body
-    const tbody = document.createElement("tbody");
-    
-    reports.forEach((report, index) => {
-        
-        const title =
-            report.title ||
-            `${report.commodity || "Crop"} Harvest Report`;
-
-        const plantingDate =
-            report.planting_date
-                ? new Date(report.planting_date)
-                    .toLocaleDateString("en-US", {
-                        month: "numeric",
-                        day: "numeric",
-                        year: "numeric"
-                    })
-                : "N/A";
-
-        const estimatedYield =
-            report.estimated_yield ?? "N/A";
-
-        // Get status with proper color styling
-        const status = report.status || "UNKNOWN";
-        let statusColor = "#8a8a8a"; // default gray
-        let statusBg = "#f0f0f0";
-        
-        if (status === "FINAL_APPROVED") {
-            statusColor = "#118308";
-            statusBg = "#e8f5e9";
-        } else if (status === "FOR_MUNICIPAL_VALIDATION") {
-            statusColor = "#E5A510";
-            statusBg = "#fff8e1";
-        } else if (status === "REJECTED") {
-            statusColor = "#C0392B";
-            statusBg = "#fde8e5";
-        }
-
-        const tr = document.createElement("tr");
-        tr.style.cursor = "default";
-        
-        // Add hover effect
-        tr.addEventListener("mouseenter", () => {
-            tr.style.backgroundColor = "#F6F3EB";
-        });
-        tr.addEventListener("mouseleave", () => {
-            tr.style.backgroundColor = "transparent";
-        });
-
-        tr.innerHTML = `
-            <td style="
-                padding: 14px 8px;
-                font-size: 13.5px;
-                text-align: center;
-                vertical-align: middle;
-            ">${index + 1}</td>
-            <td style="
-                padding: 14px 8px;
-                font-size: 13.5px;
-                text-align: center;
-                vertical-align: middle;
-                font-weight: 500;
-            ">${title}</td>
-            <td style="
-                padding: 14px 8px;
-                font-size: 13.5px;
-                text-align: center;
-                vertical-align: middle;
-            ">${plantingDate}</td>
-            <td style="
-                padding: 14px 8px;
-                font-size: 13.5px;
-                text-align: center;
-                vertical-align: middle;
-            ">${estimatedYield} kg</td>
-            <td style="
-                padding: 14px 8px;
-                text-align: center;
-                vertical-align: middle;
-            ">
-                <span style="
-                    display: inline-block;
-                    padding: 6px 20px;
-                    border-radius: 999px;
-                    font-size: 12.5px;
-                    font-weight: 700;
-                    color: ${statusColor};
-                    background: ${statusBg};
-                    border: 1px solid ${statusColor}33;
-                ">
-                    ${status}
-                </span>
-            </td>
-        `;
-
-        tbody.appendChild(tr);
+    // ADD BUTTON
+    document.getElementById("addPlantIntentBtn")?.addEventListener("click", function() {
+        const form = document.getElementById("submitPlantIntentForm");
+        if (form) form.reset();
+        if (list) list.classList.add("hidden-element");
+        if (formSubview) formSubview.classList.remove("hidden-element");
     });
 
-    table.appendChild(tbody);
-    container.appendChild(table);
+    // CANCEL BUTTON
+    document.getElementById("cancelPlantIntentBtn")?.addEventListener("click", function() {
+        const form = document.getElementById("submitPlantIntentForm");
+        if (form) form.reset();
+        if (formSubview) formSubview.classList.add("hidden-element");
+        if (list) list.classList.remove("hidden-element");
+    });
 
-    // Add summary
-    const summary = document.createElement("div");
-    summary.style.cssText = `
-        margin-top: 16px;
-        padding-top: 14px;
-        border-top: 1px solid #E5E5E5;
-        font-size: 13px;
-        color: #666;
-        text-align: right;
-    `;
-    summary.textContent = `Total: ${reports.length} report(s) found.`;
-    container.appendChild(summary);
+    // BACK FROM DETAILS
+    document.getElementById("backFromPlantingIntentDetailsBtn")?.addEventListener("click", function() {
+        window.isEditingPlantingIntent = false;
+
+        const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+        if (cancelBtn) cancelBtn.remove();
+
+        const editBtn = document.getElementById("editPlantingIntentBtn");
+        if (editBtn) {
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#D97706";
+            editBtn.disabled = false;
+        }
+
+        const submitBtn = document.getElementById("submitPlantingIntentBtn");
+        if (submitBtn) {
+            submitBtn.textContent = "Submit Report";
+            submitBtn.style.display = "inline-flex";
+            submitBtn.style.background = "#2E7D32";
+            submitBtn.disabled = false;
+        }
+
+        const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const details = document.getElementById("plantingIntentDetailsSubview");
+        if (details) details.classList.add("hidden-element");
+        if (list) list.classList.remove("hidden-element");
+
+        window.currentSelectedPlantingIntent = null;
+        fetchPlantingIntents();
+    });
+
+    // EDIT BUTTON
+    document.getElementById("editPlantingIntentBtn")?.addEventListener("click", function() {
+        togglePlantingIntentEditMode();
+    });
+
+    // SUBMIT / PULL BUTTON
+    document.getElementById("submitPlantingIntentBtn")?.addEventListener("click", async function() {
+    const intent = window.currentSelectedPlantingIntent;
+    if (!intent) {
+        alert("No planting intent selected.");
+        return;
+    }
+
+    const currentText = this.textContent.trim();
+
+    // ====================================================
+    // PULL SUBMISSION
+    // ====================================================
+
+    if (currentText.includes("Pull")) {
+        if (!confirm("Are you sure you want to PULL this submission back for revisions?")) {
+            return;
+        }
+
+        this.disabled = true;
+        this.textContent = "Pulling...";
+
+        try {
+            let reportId = intent.report_id || intent.planting_intent_id;
+            const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
+            const foundReport = allReports.find(function(r) {
+                return r.planting_intent_id === intent.planting_intent_id;
+            });
+            if (foundReport) {
+                reportId = foundReport.report_id || foundReport.id;
+            }
+
+            await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/" + reportId + "/pull", { method: "POST" });
+
+            intent.status = "DRAFT";
+            intent.revision_count = (intent.revision_count || 0) + 1;
+            intent.updated_at = new Date().toISOString();
+            intent.report_id = reportId;
+            window.currentSelectedPlantingIntent = intent;
+
+            const pullIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
+                return item.planting_intent_id === intent.planting_intent_id;
+            });
+            if (pullIndex !== -1) {
+                PLANTING_INTENTS_DATA[pullIndex].status = "DRAFT";
+                PLANTING_INTENTS_DATA[pullIndex].revision_count = intent.revision_count;
+                PLANTING_INTENTS_DATA[pullIndex].updated_at = intent.updated_at;
+            }
+
+            filteredPlantingIntents = [];
+            currentPlantingIntentsPage = 1;
+            renderPlantingIntentsTable();
+            openPlantingIntentDetails(intent);
+
+            alert("✅ Submission pulled back successfully. You can now edit the report.");
+
+        } catch (error) {
+            console.error("Pull error:", error);
+            alert("Failed to pull submission.\n\n" + (error.message || "Please try again."));
+        } finally {
+            this.disabled = false;
+            this.textContent = "Pull Submission";
+        }
+
+        // ✅ IMPORTANT: Stop here, don't run the submit code
+        return;
+    }
+
+    // ====================================================
+    // SUBMIT REPORT (Only runs if button text is NOT "Pull")
+    // ====================================================
+
+    if (!intent.planting_date) {
+        alert("Planting date is required.");
+        return;
+    }
+
+    const estimatedYield = String(intent.volume || "").replace(/,/g, "").replace(/kg/gi, "").trim();
+    if (!estimatedYield || !/^\d+(\.\d+)?$/.test(estimatedYield)) {
+        alert("Estimated yield must be a valid number.");
+        return;
+    }
+
+    const encodedBy = localStorage.getItem("user_id");
+    if (!encodedBy) {
+        alert("Logged-in user ID was not found.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to SUBMIT this planting report?")) {
+        return;
+    }
+
+    this.disabled = true;
+    this.textContent = "Submitting...";
+
+    try {
+        let reportId = null;
+        const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
+        const existingReport = allReports.find(function(r) {
+            return r.planting_intent_id === intent.planting_intent_id;
+        });
+
+        if (existingReport) {
+            reportId = existingReport.report_id;
+            await apiRequest(API_BASE_URL + "/api/raw-plant-reports/" + reportId, {
+                method: "PUT",
+                body: JSON.stringify({
+                    planting_date: intent.planting_date,
+                    estimated_yield: estimatedYield
+                })
+            });
+        } else {
+            const createdReport = await apiRequest(RAW_PLANT_REPORTS_ENDPOINT + "/" + intent.planting_intent_id, {
+                method: "POST"
+            });
+            reportId = createdReport?.report_id || createdReport?.id;
+        }
+
+        if (!reportId) throw new Error("No report ID found.");
+
+        await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/" + reportId + "/submit", {
+            method: "POST"
+        });
+
+        intent.status = "FOR_MUNICIPAL_VALIDATION";
+        intent.updated_at = new Date().toISOString();
+        intent.report_id = reportId;
+        window.currentSelectedPlantingIntent = intent;
+
+        const submitIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
+            return item.planting_intent_id === intent.planting_intent_id;
+        });
+        if (submitIndex !== -1) {
+            PLANTING_INTENTS_DATA[submitIndex].status = "FOR_MUNICIPAL_VALIDATION";
+            PLANTING_INTENTS_DATA[submitIndex].updated_at = intent.updated_at;
+            PLANTING_INTENTS_DATA[submitIndex].report_id = reportId;
+        }
+
+        filteredPlantingIntents = [];
+        currentPlantingIntentsPage = 1;
+        renderPlantingIntentsTable();
+        openPlantingIntentDetails(intent);
+
+        alert("✅ Planting Report submitted successfully!\n\nStatus: FOR_MUNICIPAL_VALIDATION");
+
+    } catch (error) {
+        console.error("Submit error:", error);
+        alert("Failed to submit planting report.\n\n" + (error.message || "Please try again."));
+    } finally {
+        this.disabled = false;
+        this.textContent = "Submit Report";
+    }
+});
+
+
+    // SUBMIT PLANTING INTENT FORM
+    document.getElementById("submitPlantIntentForm")?.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        await submitPlantingIntent();
+    });
+
+    // CLOSE SUCCESS MODAL
+    document.getElementById("closePlantIntentSubmittedBtn")?.addEventListener("click", function() {
+        if (modal) modal.classList.remove("show");
+        if (formSubview) formSubview.classList.add("hidden-element");
+        if (list) list.classList.remove("hidden-element");
+        fetchPlantingIntents();
+    });
 }
 
 /* ============================================================
    NORMALIZE PLANTING INTENT
 ============================================================ */
 
+/* ============================================================
+   NORMALIZE PLANTING INTENT (Continued)
+============================================================ */
+
 function normalizePlantingIntent(intent) {
-
     return {
-
-        // ID
-        planting_intent_id:
-            intent.planting_intent_id ??
-            intent.id ??
-            null,
-
-
-        // FARMER
-        farmer_id:
-            intent.farmer_id ??
-            null,
-
-
-        farmer_name:
-            intent.farmer_name ??
-            intent.name ??
-            "-",
-
-
-        // COMMODITY
-        commodity:
-            intent.commodity ??
-            intent.crop ??
-            "-",
-
-
-        // VOLUME
-        volume:
-            intent.volume ??
-            intent.planned_volume ??
-            intent.quantity ??
-            "",
-
-
-        // LOCATION
-        location:
-            intent.location ??
-            intent.municipality ??
-            intent.barangay ??
-            "-",
-
-
-        // DATES
-        planting_date:
-            intent.planting_date ??
-            "",
-
-
-        harvest_date:
-            intent.harvest_date ??
-            intent.expected_harvest_date ??
-            "",
-
-
-        // REMARKS
-        remarks:
-            intent.remarks ??
-            "",
-       
-            status:
-            intent.status ??
-             "Pending",
-
-
-        // CREATED AT
-        created_at:
-            intent.created_at ??
-            null
+        planting_intent_id: intent.planting_intent_id || intent.id || null,
+        farmer_id: intent.farmer_id || null,
+        farmer_name: intent.farmer_name || intent.name || "-",
+        commodity: intent.commodity || intent.crop || "-",
+        volume: intent.volume || intent.planned_volume || intent.quantity || "",
+        location: intent.location || intent.municipality || intent.barangay || "-",
+        planting_date: intent.planting_date || "",
+        harvest_date: intent.harvest_date || intent.expected_harvest_date || "",
+        remarks: intent.remarks || "",
+        status: intent.status || intent.report_status || "Pending",
+        created_at: intent.created_at || null,
+        updated_at: intent.updated_at || null,
+        revision_count: intent.revision_count || 0,
+        report_id: intent.report_id || null
     };
 }
+
+/* ============================================================
+   SEARCH PLANTING INTENTS
+============================================================ */
+
+function initializePlantingIntentSearch() {
+    const searchInput = document.getElementById("searchPlantingIntentsInput");
+    if (!searchInput) {
+        console.warn("Search input #searchPlantingIntentsInput not found");
+        return;
+    }
+
+    searchInput.addEventListener("input", function() {
+        const keyword = this.value.toLowerCase().trim();
+
+        if (!keyword) {
+            filteredPlantingIntents = [];
+            currentPlantingIntentsPage = 1;
+            renderPlantingIntentsTable();
+            return;
+        }
+
+        const searchWords = keyword.split(/\s+/).filter(function(w) { return w.length > 0; });
+
+        const filtered = PLANTING_INTENTS_DATA.filter(function(intent) {
+            const searchableFields = [
+                intent.farmer_name || "",
+                intent.commodity || "",
+                intent.location || "",
+                intent.remarks || "",
+                intent.status || "",
+                String(intent.volume || "")
+            ];
+            const searchableText = searchableFields.join(" ").toLowerCase();
+            return searchWords.every(function(word) {
+                return searchableText.includes(word);
+            });
+        });
+
+        console.log("Search for '" + keyword + "' found " + filtered.length + " planting intents");
+
+        filteredPlantingIntents = filtered;
+        currentPlantingIntentsPage = 1;
+        renderPlantingIntentsTable();
+    });
+}
+
+/* ============================================================
+   FETCH PLANTING INTENTS
+============================================================ */
+
+async function fetchPlantingIntents() {
+    const tbody = document.getElementById("plantingIntentsTableBody");
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center;">Loading planting intents...</td></tr>`;
+    }
+
+    try {
+        console.log("Fetching planting intents:", PLANTING_INTENTS_ENDPOINT);
+        const data = await apiRequest(PLANTING_INTENTS_ENDPOINT, { method: "GET" });
+        console.log("Planting Intents API response:", data);
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid planting intents response. Expected an array.");
+        }
+
+        PLANTING_INTENTS_DATA = data.map(normalizePlantingIntent);
+        filteredPlantingIntents = [];
+        currentPlantingIntentsPage = 1;
+        renderPlantingIntentsTable();
+
+        console.log("Successfully loaded " + PLANTING_INTENTS_DATA.length + " planting intent(s).");
+
+        setTimeout(function() {
+            const paginationContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
+            if (!paginationContainer) {
+                createPlantingIntentPagination();
+            }
+        }, 100);
+
+        return PLANTING_INTENTS_DATA;
+    } catch (error) {
+        console.error("Unable to load planting intents:", error);
+        PLANTING_INTENTS_DATA = [];
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load planting intents.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
+        }
+        handleAuthError(error);
+        return [];
+    }
+}
+
 /* ============================================================
    RENDER PLANTING INTENTS TABLE
 ============================================================ */
 
 function renderPlantingIntentsTable() {
-
-    const tbody =
-        document.getElementById(
-            "plantingIntentsTableBody"
-        );
-
-
+    const tbody = document.getElementById("plantingIntentsTableBody");
     if (!tbody) {
-        console.warn(
-            "plantingIntentsTableBody not found."
-        );
-
+        console.warn("plantingIntentsTableBody not found.");
         return;
     }
-
 
     tbody.innerHTML = "";
 
+    let dataSource = PLANTING_INTENTS_DATA;
+    let totalCount = dataSource.length;
 
-    if (
-        PLANTING_INTENTS_DATA.length === 0
-    ) {
+    if (filteredPlantingIntents && filteredPlantingIntents.length > 0) {
+        dataSource = filteredPlantingIntents;
+        totalCount = filteredPlantingIntents.length;
+    }
 
-        tbody.innerHTML = `
-            <tr>
-                <td
-                    colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#777;
-                    "
-                >
-                    No planting intents found.
-                </td>
-            </tr>
-        `;
-
+    if (dataSource.length === 0) {
+        const message = (filteredPlantingIntents && filteredPlantingIntents.length === 0)
+            ? "No planting intents match your search."
+            : "No planting intents found.";
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center; color:#777;">${message}</td></tr>`;
         return;
     }
 
+    const start = (currentPlantingIntentsPage - 1) * plantingIntentsPerPage;
+    const end = start + plantingIntentsPerPage;
+    const paginatedItems = dataSource.slice(start, end);
 
-    PLANTING_INTENTS_DATA.forEach(
-        intent => {
+    if (paginatedItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center; color:#777;">No planting intents found on this page.</td></tr>`;
+        return;
+    }
 
-            const tr =
-                document.createElement(
-                    "tr"
-                );
+    paginatedItems.forEach(function(intent) {
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
 
+        const farmerName = intent.farmer_name || "-";
+        const commodity = intent.commodity || "-";
+        const volume = formatPlantingVolume(intent.volume);
+        const location = intent.location || "-";
+        const plantingDate = formatPlantingDate(intent.planting_date);
+        const harvestDate = formatPlantingDate(intent.harvest_date);
+        const status = intent.status || "Pending";
 
-            tr.className =
-                "clickable-row";
-
-
-            tr.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            intent.farmer_name || "-"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            intent.commodity || "-"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            formatPlantingVolume(
-                                intent.volume
-                            )
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            intent.location || "-"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            formatPlantingDate(
-                                intent.planting_date
-                            )
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            formatPlantingDate(
-                                intent.harvest_date
-                            )
-                        )}
-                    </span>
-                </td>
-
-                <td>
-    <span class="status-pill pending">
-        ${escapeHtml(
-            intent.status || "Pending"
-        )}
-    </span>
-</td>
-            `;
-
-
-            tr.addEventListener(
-                "click",
-                () => {
-
-                    openPlantingIntentDetails(
-                        intent
-                    );
-                }
-            );
-
-
-            tbody.appendChild(
-                tr
-            );
+        let statusClass = "pending";
+        if (status === "FOR_MUNICIPAL_VALIDATION" || status === "FOR_PROVINCIAL_VALIDATION" || status === "FOR_DA_RFO_VALIDATION") {
+            statusClass = "submitted";
+        } else if (status === "FINAL_APPROVED") {
+            statusClass = "approved";
         }
-    );
+
+        tr.innerHTML = `
+            <td><span class="pill">${escapeHtml(farmerName)}</span></td>
+            <td><span class="pill">${escapeHtml(commodity)}</span></td>
+            <td><span class="pill">${escapeHtml(volume)}</span></td>
+            <td><span class="pill">${escapeHtml(location)}</span></td>
+            <td><span class="pill">${escapeHtml(plantingDate)}</span></td>
+            <td><span class="pill">${escapeHtml(harvestDate)}</span></td>
+            <td><span class="status-pill ${statusClass}">${escapeHtml(status)}</span></td>
+        `;
+
+        tr.addEventListener("click", function() {
+            openPlantingIntentDetails(intent);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    updatePlantingIntentPagination(totalCount);
 }
+
 /* ============================================================
    OPEN PLANTING INTENT DETAILS
 ============================================================ */
 
-function openPlantingIntentDetails(intent) {
+/* ============================================================
+   OPEN PLANTING INTENT DETAILS - FIXED
+============================================================ */
 
+function openPlantingIntentDetails(intent) {
     console.log("Selected Planting Intent:", intent);
 
     const list = document.getElementById("plantingIntentListSubview");
@@ -3668,7 +1289,7 @@ function openPlantingIntentDetails(intent) {
 
     window.currentSelectedPlantingIntent = intent;
 
-    list?.classList.add("hidden-element");
+    if (list) list.classList.add("hidden-element");
     details.classList.remove("hidden-element");
 
     // Display data
@@ -3682,42 +1303,111 @@ function openPlantingIntentDetails(intent) {
     setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
     setValue("detailRemarks", intent.remarks || "");
 
+    // Display revision info
+    const revisionInfo = document.getElementById("detailRevisionInfo");
+    if (revisionInfo) {
+        if (intent.revision_count !== undefined && intent.revision_count > 0) {
+            revisionInfo.textContent = "Revision #" + intent.revision_count + " | Last updated: " + formatPlantingDate(intent.updated_at || intent.created_at);
+            revisionInfo.style.display = "block";
+        } else {
+            revisionInfo.textContent = "Original submission";
+            revisionInfo.style.display = "block";
+        }
+    }
+
     // Reset Edit Mode
     window.isEditingPlantingIntent = false;
 
     // Make all fields readonly
     const detailInputs = details.querySelectorAll("input, textarea");
-    detailInputs.forEach(input => {
+    detailInputs.forEach(function(input) {
         input.readOnly = true;
         input.classList.add("input-readonly");
         input.classList.remove("input-editable-active");
     });
 
-    // Reset Edit button to "Edit Details"
+    // Get button references
     const editBtn = document.getElementById("editPlantingIntentBtn");
-    if (editBtn) {
-        editBtn.textContent = "✏️ Edit Details";
-        editBtn.style.background = "#D97706"; // Orange
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
+    const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+
+    if (backBtn) backBtn.style.display = "inline-flex";
+
+    // ✅ CHECK STATUS - Use the actual status from the intent object
+    const status = intent.status || "PENDING";
+    console.log("Current status:", status);
+    
+    // ✅ Check if status is DRAFT or PENDING (editable states)
+    const isEditable = status === "DRAFT" || status === "PENDING" || status === "Pending";
+    const isSubmitted = status === "FOR_MUNICIPAL_VALIDATION" || 
+                        status === "FOR_PROVINCIAL_VALIDATION" || 
+                        status === "FOR_DA_RFO_VALIDATION" ||
+                        status === "SUBMITTED";
+
+    console.log("isEditable:", isEditable);
+    console.log("isSubmitted:", isSubmitted);
+
+    if (isSubmitted) {
+        // Already submitted - Show "Pull Submission" button
+        if (submitBtn) {
+            submitBtn.textContent = "Pull Submission";
+            submitBtn.style.display = "inline-flex";
+            submitBtn.style.background = "#D97706";
+            submitBtn.style.color = "#fff";
+            submitBtn.disabled = false;
+            submitBtn.title = "Pull back this submission for revisions";
+        }
+        // Disable Edit button
+        if (editBtn) {
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#999";
+            editBtn.style.cursor = "not-allowed";
+            editBtn.disabled = true;
+        }
+    } else if (isEditable) {
+        // ✅ DRAFT/PENDING - Show "Submit Report" button
+        if (submitBtn) {
+            submitBtn.textContent = "Submit Report";
+            submitBtn.style.display = "inline-flex";
+            submitBtn.style.background = "#2E7D32";
+            submitBtn.style.color = "#fff";
+            submitBtn.disabled = false;
+            submitBtn.title = "Submit this report for validation";
+        }
+        // ✅ ENABLE Edit button
+        if (editBtn) {
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#D97706";
+            editBtn.style.cursor = "pointer";
+            editBtn.disabled = false;
+        }
+    } else {
+        // Fallback - unknown status
+        if (submitBtn) {
+            submitBtn.textContent = "Submit Report";
+            submitBtn.style.display = "inline-flex";
+            submitBtn.style.background = "#2E7D32";
+            submitBtn.style.color = "#fff";
+            submitBtn.disabled = false;
+        }
+        if (editBtn) {
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#D97706";
+            editBtn.style.cursor = "pointer";
+            editBtn.disabled = false;
+        }
     }
 
-    // Make sure Submit button is VISIBLE
-    const submitBtn = document.getElementById("submitPlantingIntentBtn");
-    if (submitBtn) {
-        submitBtn.style.display = "inline-flex";
-        submitBtn.textContent = "📤 Submit Report";
-    }
+    // Remove Cancel button if exists
+    var cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+    if (cancelBtn) cancelBtn.remove();
 }
 
 /* ============================================================
    TOGGLE PLANTING INTENT EDIT MODE
-   ============================================================ 
-   ILAGAY DITO ANG CODE SA IBABA
-   ============================================================ */
-/* ============================================================
-   TOGGLE PLANTING INTENT EDIT MODE
 ============================================================ */
-function togglePlantingIntentEditMode() {
 
+function togglePlantingIntentEditMode() {
     const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
         alert("No planting intent selected.");
@@ -3729,44 +1419,51 @@ function togglePlantingIntentEditMode() {
 
     const editBtn = document.getElementById("editPlantingIntentBtn");
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
+    const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
     const detailInputs = details.querySelectorAll("input, textarea");
 
+    const existingCancel = document.getElementById("cancelEditPlantingIntentBtn");
+    if (existingCancel) existingCancel.remove();
+
     if (!window.isEditingPlantingIntent) {
-
-        // ====================================================
-        // ENTER EDIT MODE
-        // ====================================================
-
         window.isEditingPlantingIntent = true;
 
-        // Make fields editable (except ID fields)
-        detailInputs.forEach(input => {
+        detailInputs.forEach(function(input) {
             const id = input.id;
-            if (id === "detailPlantingIntentId" || id === "detailFarmerId") {
-                return;
-            }
+            if (id === "detailPlantingIntentId" || id === "detailFarmerId") return;
             input.readOnly = false;
             input.classList.remove("input-readonly");
             input.classList.add("input-editable-active");
         });
 
-        // Change Edit button to "Save Changes"
         if (editBtn) {
-            editBtn.textContent = "💾 Save Changes";
-            editBtn.style.background = "#2E7D32"; // Green
+            editBtn.textContent = "Save Changes";
+            editBtn.style.background = "#2E7D32";
         }
 
-        // HIDE the Submit button while editing
         if (submitBtn) {
             submitBtn.style.display = "none";
         }
 
+        if (backBtn) {
+            backBtn.style.display = "none";
+        }
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.id = "cancelEditPlantingIntentBtn";
+        cancelBtn.className = "btn-outline-report";
+        cancelBtn.textContent = "Cancel";
+        cancelBtn.style.marginRight = "8px";
+        editBtn.parentNode.insertBefore(cancelBtn, editBtn);
+
+        cancelBtn.addEventListener("click", function() {
+            cancelPlantingIntentEdit();
+        });
+
+        console.log("Entered edit mode. Back button hidden, Cancel button shown.");
     } else {
-
-        // ====================================================
-        // SAVE CHANGES
-        // ====================================================
-
+        const confirmSave = confirm("Are you sure you want to save these changes?");
+        if (!confirmSave) return;
         savePlantingIntentChanges();
     }
 }
@@ -3774,2434 +1471,901 @@ function togglePlantingIntentEditMode() {
 
 
 /* ============================================================
-   SAVE PLANTING INTENT CHANGES
+   CANCEL PLANTING INTENT EDIT
 ============================================================ */
+
+function cancelPlantingIntentEdit() {
+    const intent = window.currentSelectedPlantingIntent;
+    if (!intent) {
+        console.warn("No planting intent to cancel edit.");
+        return;
+    }
+
+    const details = document.getElementById("plantingIntentDetailsSubview");
+    if (!details) return;
+
+    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) return;
+
+    setValue("detailPlantingIntentId", intent.planting_intent_id || "");
+    setValue("detailFarmerName", intent.farmer_name || "");
+    setValue("detailFarmerId", intent.farmer_id || "");
+    setValue("detailCommodity", intent.commodity || "");
+    setValue("detailVolume", formatPlantingVolume(intent.volume));
+    setValue("detailLocation", intent.location || "");
+    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
+    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+    setValue("detailRemarks", intent.remarks || "");
+
+    const detailInputs = details.querySelectorAll("input, textarea");
+    detailInputs.forEach(function(input) {
+        input.readOnly = true;
+        input.classList.add("input-readonly");
+        input.classList.remove("input-editable-active");
+    });
+
+    window.isEditingPlantingIntent = false;
+
+    const editBtn = document.getElementById("editPlantingIntentBtn");
+    if (editBtn) {
+        editBtn.textContent = "Edit Details";
+        editBtn.style.background = "#D97706";
+    }
+
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
+    if (submitBtn) {
+        submitBtn.style.display = "inline-flex";
+        submitBtn.textContent = "Submit Report";
+        submitBtn.disabled = false;
+        submitBtn.style.background = "#2E7D32";
+    }
+
+    const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+    if (backBtn) backBtn.style.display = "inline-flex";
+
+    const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+    if (cancelBtn) cancelBtn.remove();
+
+    console.log("Planting intent edit cancelled. Back button restored.");
+}
 
 /* ============================================================
    SAVE PLANTING INTENT CHANGES
 ============================================================ */
 
 async function savePlantingIntentChanges() {
-
     const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
         alert("No planting intent selected.");
         return;
     }
 
-    // ====================================================
-    // COLLECT UPDATED VALUES
-    // ====================================================
-
-    const details = document.getElementById("plantingIntentDetailsSubview");
-    if (!details) return;
-
-    // HELPER: Convert date from M/D/YYYY to YYYY-MM-DD
-    function convertToISODate(dateStr) {
-        if (!dateStr) return null;
-        
-        // Try to parse the date
-        const parts = dateStr.split(/[\/\-]/);
-        if (parts.length !== 3) return dateStr;
-        
-        // Check if it's already YYYY-MM-DD
-        if (parts[0].length === 4) {
-            return dateStr;
+    function convertToAPIDate(dateString) {
+        if (!dateString) return "";
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+        const dateParts = dateString.split('/');
+        if (dateParts.length === 3) {
+            let month = dateParts[0].trim().padStart(2, '0');
+            let day = dateParts[1].trim().padStart(2, '0');
+            let year = dateParts[2].trim();
+            return year + "-" + month + "-" + day;
         }
-        
-        // Assume M/D/YYYY or MM/DD/YYYY
-        let month = parseInt(parts[0], 10);
-        let day = parseInt(parts[1], 10);
-        let year = parseInt(parts[2], 10);
-        
-        // If year is 2 digits, convert to 4 digits
-        if (year < 100) {
-            year = 2000 + year;
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
         }
-        
-        // Pad month and day with leading zeros
-        const paddedMonth = String(month).padStart(2, '0');
-        const paddedDay = String(day).padStart(2, '0');
-        
-        return `${year}-${paddedMonth}-${paddedDay}`;
+        return dateString;
     }
 
-    // Get raw values from the form
-    let rawPlantingDate = getValue("detailPlantingDate");
-    let rawHarvestDate = getValue("detailHarvestDate");
-    let rawVolume = String(getValue("detailVolume")).replace(/[^0-9.]/g, "");
-
-    // Convert dates to ISO format
-    const plantingDate = convertToISODate(rawPlantingDate);
-    const harvestDate = convertToISODate(rawHarvestDate);
+    const rawPlantingDate = document.getElementById("detailPlantingDate")?.value || intent.planting_date;
+    const rawHarvestDate = document.getElementById("detailHarvestDate")?.value || intent.harvest_date;
 
     const updatedData = {
-        farmer_id: Number(getValue("detailFarmerId")),
-        farmer_name: getValue("detailFarmerName"),
-        commodity: getValue("detailCommodity"),
-        volume: parseFloat(rawVolume),
-        location: getValue("detailLocation"),
-        planting_date: plantingDate,
-        harvest_date: harvestDate,
-        remarks: getValue("detailRemarks")
+        planting_intent_id: intent.planting_intent_id,
+        farmer_name: document.getElementById("detailFarmerName")?.value || intent.farmer_name,
+        farmer_id: intent.farmer_id,
+        commodity: document.getElementById("detailCommodity")?.value || intent.commodity,
+        volume: document.getElementById("detailVolume")?.value || intent.volume,
+        location: document.getElementById("detailLocation")?.value || intent.location,
+        planting_date: convertToAPIDate(rawPlantingDate),
+        harvest_date: convertToAPIDate(rawHarvestDate),
+        remarks: document.getElementById("detailRemarks")?.value || intent.remarks
     };
 
-    // ====================================================
-    // VALIDATE
-    // ====================================================
-
-    if (!updatedData.farmer_id || isNaN(updatedData.farmer_id)) {
-        alert("Invalid Farmer ID.");
-        return;
-    }
-
-    if (!updatedData.commodity) {
-        alert("Commodity is required.");
-        return;
-    }
-
-    if (!updatedData.volume || isNaN(updatedData.volume) || updatedData.volume <= 0) {
-        alert("Volume must be a valid positive number.");
-        return;
-    }
-
-    if (!updatedData.planting_date) {
-        alert("Planting date is required.");
-        return;
-    }
-
-    if (!updatedData.harvest_date) {
-        alert("Harvest date is required.");
-        return;
-    }
-
-    // ====================================================
-    // CONFIRM WITH USER
-    // ====================================================
-
-    if (!confirm(`Save changes for ${updatedData.farmer_name}?`)) {
-        return;
-    }
-
     try {
+        if (!updatedData.planting_date || !updatedData.harvest_date || !updatedData.commodity) {
+            alert("Please fill in all required fields.");
+            return;
+        }
 
-        // ====================================================
-        // STEP 1: UPDATE PLANTING INTENT VIA API
-        // ====================================================
-
-        const intentId = intent.planting_intent_id || intent.id;
-
+        const volumeValue = String(updatedData.volume).replace(/,/g, "").replace(/kg/gi, "").trim();
         const payload = {
             farmer_id: updatedData.farmer_id,
             commodity: updatedData.commodity,
             volume: updatedData.volume,
             planting_date: updatedData.planting_date,
             harvest_date: updatedData.harvest_date,
-            remarks: updatedData.remarks || null
+            remarks: updatedData.remarks || ""
         };
 
-        console.log("Updating planting intent:", {
-            id: intentId,
-            payload: payload
+        const url = PLANTING_INTENTS_ENDPOINT + intent.planting_intent_id;
+        const token = getAuthToken();
+
+        const response = await fetch(url, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token ? "Bearer " + token : ""
+            },
+            body: JSON.stringify(payload)
         });
 
-        const response = await apiRequest(
-            `${PLANTING_INTENTS_ENDPOINT}${intentId}`,
-            {
-                method: "PUT",
-                body: JSON.stringify(payload)
-            }
-        );
-
-        console.log("Update response:", response);
-
-        // ====================================================
-        // STEP 2: UPDATE LOCAL DATA ONLY (NO FETCH)
-        // ====================================================
-
-        // Update the local intent object directly
-        Object.assign(intent, {
-            farmer_id: updatedData.farmer_id,
-            farmer_name: updatedData.farmer_name,
-            commodity: updatedData.commodity,
-            volume: updatedData.volume,
-            location: updatedData.location,
-            planting_date: updatedData.planting_date,
-            harvest_date: updatedData.harvest_date,
-            remarks: updatedData.remarks
-        });
-
-        // Also update in PLANTING_INTENTS_DATA array
-        const index = PLANTING_INTENTS_DATA.findIndex(
-            item => (item.planting_intent_id || item.id) === intentId
-        );
-        if (index !== -1) {
-            PLANTING_INTENTS_DATA[index] = { ...intent };
+        if (!response.ok) {
+            let errorData = null;
+            try { errorData = await response.json(); } catch(e) {}
+            let errorMessage = "Failed to update planting intent.";
+            if (errorData && errorData.detail) errorMessage = errorData.detail;
+            throw new Error(errorMessage);
         }
 
-        // Update the current selected intent
-        window.currentSelectedPlantingIntent = intent;
+        await response.json();
 
-        // ====================================================
-        // STEP 3: RESTORE UI STATE
-        // ====================================================
+        intent.farmer_name = updatedData.farmer_name;
+        intent.commodity = updatedData.commodity;
+        intent.volume = updatedData.volume;
+        intent.location = updatedData.location;
+        intent.planting_date = updatedData.planting_date;
+        intent.harvest_date = updatedData.harvest_date;
+        intent.remarks = updatedData.remarks;
+
+        const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
+            return item.planting_intent_id === intent.planting_intent_id;
+        });
+        if (index !== -1) {
+            PLANTING_INTENTS_DATA[index] = intent;
+        }
 
         window.isEditingPlantingIntent = false;
 
-        // Make all fields readonly
-        const inputs = details.querySelectorAll("input, textarea");
-        inputs.forEach(input => {
-            input.readOnly = true;
-            input.classList.add("input-readonly");
-            input.classList.remove("input-editable-active");
-        });
-
-        // Reset Edit button
-        const editBtn = document.getElementById("editPlantingIntentBtn");
-        if (editBtn) {
-            editBtn.textContent = "✏️ Edit Details";
-            editBtn.style.background = "#D97706";
-        }
-
-        // Show Submit button again
-        const submitBtn = document.getElementById("submitPlantingIntentBtn");
-        if (submitBtn) {
-            submitBtn.style.display = "inline-flex";
-            submitBtn.textContent = "📤 Submit Report";
-        }
-
-        // ====================================================
-        // STEP 4: REFRESH THE TABLE DISPLAY (OPTIONAL)
-        // ====================================================
-        
-        // Just re-render the table with updated data
-        renderPlantingIntentsTable();
-
-        // Show success message
-        alert("Planting Intent updated successfully!");
-
-    } catch (error) {
-        console.error("Save planting intent error:", error);
-
-        // Show error but don't break the UI
-        let errorMsg = error.message || "Please try again.";
-        
-        // Check if it's a network error
-        if (error.message === "Failed to fetch") {
-            // The update might have succeeded but fetch failed
-            // Just update local data anyway
-            console.warn("Network error but update might have succeeded.");
-            
-            // Still update local data
-            Object.assign(intent, {
-                farmer_id: updatedData.farmer_id,
-                farmer_name: updatedData.farmer_name,
-                commodity: updatedData.commodity,
-                volume: updatedData.volume,
-                location: updatedData.location,
-                planting_date: updatedData.planting_date,
-                harvest_date: updatedData.harvest_date,
-                remarks: updatedData.remarks
-            });
-
-            // Update in array
-            const index = PLANTING_INTENTS_DATA.findIndex(
-                item => (item.planting_intent_id || item.id) === (intent.planting_intent_id || intent.id)
-            );
-            if (index !== -1) {
-                PLANTING_INTENTS_DATA[index] = { ...intent };
-            }
-
-            window.currentSelectedPlantingIntent = intent;
-            renderPlantingIntentsTable();
-
-            // Still show success because the update might have worked
-            alert("Planting Intent updated successfully!");
-            
-            // Restore UI
-            window.isEditingPlantingIntent = false;
+        const details = document.getElementById("plantingIntentDetailsSubview");
+        if (details) {
             const inputs = details.querySelectorAll("input, textarea");
-            inputs.forEach(input => {
+            inputs.forEach(function(input) {
                 input.readOnly = true;
                 input.classList.add("input-readonly");
                 input.classList.remove("input-editable-active");
             });
-            const editBtn = document.getElementById("editPlantingIntentBtn");
-            if (editBtn) {
-                editBtn.textContent = "✏️ Edit Details";
-                editBtn.style.background = "#D97706";
-            }
-            const submitBtn = document.getElementById("submitPlantingIntentBtn");
-            if (submitBtn) {
-                submitBtn.style.display = "inline-flex";
-                submitBtn.textContent = "📤 Submit Report";
-            }
-            
-            return;
         }
 
-        if (error.data && typeof error.data === "object") {
-            errorMsg = JSON.stringify(error.data, null, 2);
-        }
-
-        alert("Failed to save changes.\n\n" + errorMsg);
-
-        // Restore UI
-        window.isEditingPlantingIntent = false;
-        const inputs = details.querySelectorAll("input, textarea");
-        inputs.forEach(input => {
-            input.readOnly = true;
-            input.classList.add("input-readonly");
-            input.classList.remove("input-editable-active");
-        });
         const editBtn = document.getElementById("editPlantingIntentBtn");
         if (editBtn) {
-            editBtn.textContent = "✏️ Edit Details";
+            editBtn.textContent = "Edit Details";
             editBtn.style.background = "#D97706";
         }
+
         const submitBtn = document.getElementById("submitPlantingIntentBtn");
         if (submitBtn) {
             submitBtn.style.display = "inline-flex";
+            submitBtn.textContent = "Submit Report";
+            submitBtn.disabled = false;
         }
 
-        handleAuthError(error);
+        const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+        if (cancelBtn) cancelBtn.remove();
+
+        renderPlantingIntentsTable();
+        alert("Planting Intent updated successfully!");
+    } catch (error) {
+        console.error("Save planting intent error:", error);
+        alert("Failed to update planting intent.\n\n" + error.message);
     }
 }
 /* ============================================================
-   SUBMIT PLANTING INTENT TO FASTAPI
+   SUBMIT PLANTING INTENT (NEW INTENT)
 ============================================================ */
 
 async function submitPlantingIntent() {
-
-    const form =
-        document.getElementById(
-            "submitPlantIntentForm"
-        );
-
-
+    const form = document.getElementById("submitPlantIntentForm");
     if (!form) {
-
-        alert(
-            "Planting Intent form not found."
-        );
-
+        alert("Planting Intent form not found.");
         return;
     }
 
+    const farmerNameSelect = document.getElementById("piFarmerName");
+    const farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
+    const farmerId = document.getElementById("piFarmerId")?.value || "";
+    const plantingDate = document.getElementById("piPlantDate")?.value || "";
+    const harvestDate = document.getElementById("piHarvestDate")?.value || "";
+    const commodity = document.getElementById("piCommodity")?.value?.trim() || "";
+    const volume = document.getElementById("piVolume")?.value || "";
+    const remarks = document.getElementById("piRemarks")?.value || "";
 
-    /*
-     * Actual HTML order:
-     *
-     * 0 = Farmer Name
-     * 1 = Planting Date
-     * 2 = Farmer ID
-     * 3 = Harvest Date
-     * 4 = Commodity
-     * 5 = Volume
-     */
-
-    const inputs =
-        form.querySelectorAll(
-            "input"
-        );
-
-
-    const farmerName =
-        inputs[0]?.value.trim() || "";
-
-
-    const plantingDate =
-        inputs[1]?.value || "";
-
-
-    const farmerId =
-        inputs[2]?.value.trim() || "";
-
-
-    const harvestDate =
-        inputs[3]?.value || "";
-
-
-    const commodity =
-        inputs[4]?.value.trim() || "";
-
-
-    const volume =
-        inputs[5]?.value || "";
-
-
-    /*
-     * Validate required fields
-     */
-
-    if (!farmerName) {
-
-        alert(
-            "Please enter Farmer Name."
-        );
-
+    if (!farmerName || farmerName === "Select Farmer") {
+        alert("Please select a Farmer.");
         return;
     }
-
-
     if (!farmerId) {
-
-        alert(
-            "Please enter Farmer ID."
-        );
-
+        alert("Farmer ID is required.");
         return;
     }
-
-
     if (!plantingDate) {
-
-        alert(
-            "Please select Planting Date."
-        );
-
+        alert("Please select Planting Date.");
         return;
     }
-
-
     if (!harvestDate) {
-
-        alert(
-            "Please select Harvest Date."
-        );
-
+        alert("Please select Harvest Date.");
         return;
     }
-
-
     if (!commodity) {
-
-        alert(
-            "Please enter Commodity."
-        );
-
+        alert("Please enter Commodity.");
         return;
     }
-
-
     if (!volume) {
-
-        alert(
-            "Please enter Volume."
-        );
-
+        alert("Please enter Volume.");
         return;
     }
 
-
-    /*
-     * Farmer ID MUST be an integer
-     */
-
-    const parsedFarmerId =
-        Number(farmerId);
-
-
-    if (
-        !Number.isInteger(
-            parsedFarmerId
-        )
-    ) {
-
-        alert(
-            "Farmer ID must be a valid number."
-        );
-
+    const parsedFarmerId = Number(farmerId);
+    if (!Number.isInteger(parsedFarmerId)) {
+        alert("Farmer ID must be a valid number.");
         return;
     }
 
-
-    /*
-     * Volume MUST be numeric
-     */
-
-    const parsedVolume =
-        Number(volume);
-
-
-    if (
-        Number.isNaN(
-            parsedVolume
-        )
-    ) {
-
-        alert(
-            "Volume must be a valid number."
-        );
-
+    const parsedVolume = Number(volume);
+    if (isNaN(parsedVolume) || parsedVolume <= 0) {
+        alert("Volume must be a valid positive number.");
         return;
     }
-
-
-    /*
-     * Payload sent to FastAPI
-     */
 
     const plantingIntentData = {
-
-        farmer_id:
-            parsedFarmerId,
-
-        commodity:
-            commodity,
-
-        volume:
-            parsedVolume,
-
-        planting_date:
-            plantingDate,
-
-        harvest_date:
-            harvestDate
+        farmer_id: parsedFarmerId,
+        commodity: commodity,
+        volume: parsedVolume,
+        planting_date: plantingDate,
+        harvest_date: harvestDate,
+        remarks: remarks || undefined
     };
 
-
-    console.log(
-        "Submitting planting intent:",
-        plantingIntentData
-    );
-
+    console.log("Submitting planting intent:", plantingIntentData);
 
     try {
+        const createdIntent = await apiRequest(PLANTING_INTENTS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(plantingIntentData)
+        });
 
-        const createdIntent =
-            await apiRequest(
-                PLANTING_INTENTS_ENDPOINT,
-                {
-                    method: "POST",
-
-                    body:
-                        JSON.stringify(
-                            plantingIntentData
-                        )
-                }
-            );
-
-
-        console.log(
-            "Planting intent created:",
-            createdIntent
-        );
-
-
-        /*
-         * Reload table
-         */
+        console.log("Planting intent created:", createdIntent);
 
         await fetchPlantingIntents();
 
-
-        /*
-         * Show success modal
-         */
-
-        document
-            .getElementById(
-                "plantIntentSubmittedModal"
-            )
-            ?.classList.add(
-                "show"
-            );
-
+        const modal = document.getElementById("plantIntentSubmittedModal");
+        if (modal) modal.classList.add("show");
 
     } catch (error) {
-
-        console.error(
-            "Create planting intent error:",
-            error
-        );
-
-
-        handleAuthError(
-            error
-        );
-
-
-        alert(
-            "Failed to submit planting intent.\n\n" +
-            (
-                error.message ||
-                "Please check the FastAPI server."
-            )
-        );
+        console.error("Create planting intent error:", error);
+        handleAuthError(error);
+        alert("Failed to submit planting intent.\n\n" + (error.message || "Please check the FastAPI server."));
     }
 }
 
-
 /* ============================================================
-   FORMAT PLANTING DATE
+   PLANTING INTENT PAGINATION
 ============================================================ */
 
-function formatPlantingDate(
-    dateString
-) {
-
-    if (!dateString) {
-
-        return "-";
+function updatePlantingIntentPagination(totalCount) {
+    const paginationContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
+    if (!paginationContainer) {
+        createPlantingIntentPagination();
+        const newContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
+        if (!newContainer) return;
+        updatePaginationUI(newContainer, totalCount);
+        return;
     }
+    updatePaginationUI(paginationContainer, totalCount);
+}
 
+function createPlantingIntentPagination() {
+    const listSubview = document.getElementById("plantingIntentListSubview");
+    const card = listSubview?.querySelector(".card");
+    if (!card) return;
+    if (card.querySelector(".pagination-container")) return;
 
-    const date =
-        new Date(
-            dateString
-        );
+    const paginationDiv = document.createElement("div");
+    paginationDiv.className = "pagination-container";
+    paginationDiv.innerHTML = `
+        <span class="pagination-info" id="plantingIntentPaginationInfo">Showing 0 of 0</span>
+        <div class="pagination-controls">
+            <button class="btn-page" id="prevPlantingIntentPageBtn" type="button" disabled>&laquo; Prev</button>
+            <div id="plantingIntentPageNumberBtns" class="page-numbers-wrap"></div>
+            <button class="btn-page" id="nextPlantingIntentPageBtn" type="button">Next &raquo;</button>
+        </div>
+    `;
 
+    card.appendChild(paginationDiv);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return dateString;
-    }
-
-
-    return date.toLocaleDateString(
-        "en-US",
-        {
-            month: "numeric",
-            day: "numeric",
-            year: "numeric"
+    document.getElementById("prevPlantingIntentPageBtn")?.addEventListener("click", function() {
+        if (currentPlantingIntentsPage > 1) {
+            currentPlantingIntentsPage--;
+            renderPlantingIntentsTable();
         }
-    );
+    });
+
+    document.getElementById("nextPlantingIntentPageBtn")?.addEventListener("click", function() {
+        const dataSource = (filteredPlantingIntents && filteredPlantingIntents.length > 0)
+            ? filteredPlantingIntents
+            : PLANTING_INTENTS_DATA;
+        const totalPages = Math.max(1, Math.ceil(dataSource.length / plantingIntentsPerPage));
+        if (currentPlantingIntentsPage < totalPages) {
+            currentPlantingIntentsPage++;
+            renderPlantingIntentsTable();
+        }
+    });
 }
 
+function updatePaginationUI(container, totalCount) {
+    const totalPages = Math.max(1, Math.ceil(totalCount / plantingIntentsPerPage));
+    if (currentPlantingIntentsPage > totalPages) currentPlantingIntentsPage = totalPages;
 
-/* ============================================================
-   FORMAT VOLUME
-============================================================ */
+    const start = totalCount === 0 ? 0 : ((currentPlantingIntentsPage - 1) * plantingIntentsPerPage) + 1;
+    const end = Math.min(currentPlantingIntentsPage * plantingIntentsPerPage, totalCount);
 
-function formatPlantingVolume(
-    volume
-) {
+    const info = container.querySelector(".pagination-info");
+    if (info) info.textContent = "Showing " + start + "-" + end + " of " + totalCount + " planting intents";
 
-    if (
-        volume === null ||
-        volume === undefined ||
-        volume === ""
-    ) {
+    const prevBtn = container.querySelector("#prevPlantingIntentPageBtn");
+    if (prevBtn) prevBtn.disabled = currentPlantingIntentsPage <= 1;
 
-        return "-";
+    const nextBtn = container.querySelector("#nextPlantingIntentPageBtn");
+    if (nextBtn) nextBtn.disabled = currentPlantingIntentsPage >= totalPages;
+
+    const pageBtns = container.querySelector("#plantingIntentPageNumberBtns");
+    if (pageBtns) {
+        pageBtns.innerHTML = "";
+        const totalPagesToShow = Math.min(totalPages, 5);
+
+        for (let i = 1; i <= totalPagesToShow; i++) {
+            const pageBtn = document.createElement("button");
+            pageBtn.className = "btn-page" + (i === currentPlantingIntentsPage ? " active" : "");
+            pageBtn.textContent = i;
+            pageBtn.type = "button";
+            pageBtn.addEventListener("click", function() {
+                currentPlantingIntentsPage = i;
+                renderPlantingIntentsTable();
+            });
+            pageBtns.appendChild(pageBtn);
+        }
+
+        if (totalPages > 5) {
+            const ellipsis = document.createElement("span");
+            ellipsis.textContent = "...";
+            ellipsis.style.padding = "0 8px";
+            ellipsis.style.color = "#777";
+            pageBtns.appendChild(ellipsis);
+
+            const lastBtn = document.createElement("button");
+            lastBtn.className = "btn-page" + (totalPages === currentPlantingIntentsPage ? " active" : "");
+            lastBtn.textContent = totalPages;
+            lastBtn.type = "button";
+            lastBtn.addEventListener("click", function() {
+                currentPlantingIntentsPage = totalPages;
+                renderPlantingIntentsTable();
+            });
+            pageBtns.appendChild(lastBtn);
+        }
     }
-
-
-    /*
-     * Keep existing formatted values
-     * such as "15,000kg".
-     */
-
-    if (
-        typeof volume === "string" &&
-        volume.toLowerCase().includes("kg")
-    ) {
-
-        return volume;
-    }
-
-
-    const numericVolume =
-        Number(
-            String(volume)
-                .replace(/,/g, "")
-        );
-
-
-    if (
-        !Number.isNaN(
-            numericVolume
-        )
-    ) {
-
-        return (
-            numericVolume.toLocaleString() +
-            "kg"
-        );
-    }
-
-
-    return String(
-        volume
-    );
 }
+
 /* ============================================================
-   OFFTAKE REQUEST
-   FLOW:
-   Create Request
-        ↓
-   Fill-up Details
-        ↓
-   Proceed
-        ↓
-   Review & Confirm Offtake Letter
-        ↓
-   Edit Details OR Submit Request
-        ↓
-   Confirm Offtake Submission Modal
-        ↓
-   Confirm Dispatch
-        ↓
-   API POST
-        ↓
-   Offtake Submitted
+   FORMAT HELPERS
 ============================================================ */
 
-const OFFTAKE_REQUESTS_ENDPOINT =
-    `${API_BASE_URL}/api/offtake-requests/`;
+function formatPlantingDate(dateString) {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+}
 
+function formatPlantingVolume(volume) {
+    if (volume === null || volume === undefined || volume === "") return "-";
+    if (typeof volume === "string" && volume.toLowerCase().includes("kg")) return volume;
+    const numericVolume = Number(String(volume).replace(/,/g, ""));
+    if (!isNaN(numericVolume)) return numericVolume.toLocaleString() + "kg";
+    return String(volume);
+}
 
 /* ============================================================
-   OFFTAKE STATE
+   LOAD ALL REPORTS
 ============================================================ */
 
-let currentOfftakeRequest = null;
-let OFFTAKE_REQUESTS_DATA = [];
+async function loadAllReports() {
+    try {
+        const endpoint = API_BASE_URL + "/api/report-submissions/all-reports";
+        console.log("Fetching all submitted reports:", endpoint);
+        const reports = await apiRequest(endpoint);
+        console.log("All Reports API response:", reports);
+        renderAllReports(reports);
+    } catch (error) {
+        console.error("Failed to load all submitted reports:", error);
+    }
+}
 
+function renderAllReports(reports) {
+    const container = document.getElementById("allReportsContainer");
+    if (!container) {
+        console.error("allReportsContainer not found.");
+        return;
+    }
+
+    container.innerHTML = "";
+
+    if (!reports || reports.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding: 40px; text-align: center; color: #777; font-size: 15px;">No submitted reports found.</div>`;
+        return;
+    }
+
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "separate";
+    table.style.borderSpacing = "0";
+    table.style.marginTop = "8px";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr style="background: #DEDDDC;">
+            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">#</th>
+            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Title</th>
+            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Planting Date</th>
+            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Estimated Yield</th>
+            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Status</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    reports.forEach(function(report, index) {
+        const title = report.title || (report.commodity || "Crop") + " Harvest Report";
+        const plantingDate = report.planting_date ? new Date(report.planting_date).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) : "N/A";
+        const estimatedYield = report.estimated_yield ?? "N/A";
+        const status = report.status || "UNKNOWN";
+
+        let statusColor = "#8a8a8a";
+        let statusBg = "#f0f0f0";
+        if (status === "FINAL_APPROVED") {
+            statusColor = "#118308";
+            statusBg = "#e8f5e9";
+        } else if (status === "FOR_MUNICIPAL_VALIDATION") {
+            statusColor = "#E5A510";
+            statusBg = "#fff8e1";
+        } else if (status === "REJECTED") {
+            statusColor = "#C0392B";
+            statusBg = "#fde8e5";
+        }
+
+        const tr = document.createElement("tr");
+        tr.style.cursor = "default";
+        tr.addEventListener("mouseenter", function() { tr.style.backgroundColor = "#F6F3EB"; });
+        tr.addEventListener("mouseleave", function() { tr.style.backgroundColor = "transparent"; });
+
+        tr.innerHTML = `
+            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${index + 1}</td>
+            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle; font-weight: 500;">${escapeHtml(title)}</td>
+            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${plantingDate}</td>
+            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${estimatedYield} kg</td>
+            <td style="padding: 14px 8px; text-align: center; vertical-align: middle;">
+                <span style="display: inline-block; padding: 6px 20px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: ${statusColor}; background: ${statusBg}; border: 1px solid ${statusColor}33;">${status}</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    const summary = document.createElement("div");
+    summary.style.cssText = "margin-top: 16px; padding-top: 14px; border-top: 1px solid #E5E5E5; font-size: 13px; color: #666; text-align: right;";
+    summary.textContent = "Total: " + reports.length + " report(s) found.";
+    container.appendChild(summary);
+}
 
 /* ============================================================
-   INITIALIZE OFFTAKE REQUEST
+   OFFTAKE REQUESTS
 ============================================================ */
 
 function initOfftakeRequest() {
+    const list = document.getElementById("offtakeListSubview");
+    const submitSub = document.getElementById("submitOfftakeSubview");
+    const confirmSub = document.getElementById("confirmOfftakeSubview");
+    const submittedModal = document.getElementById("offtakeSubmittedModal");
 
-    const list =
-        document.getElementById(
-            "offtakeListSubview"
-        );
+    fetchOfftakeRequests();
 
-    const submitSub =
-        document.getElementById(
-            "submitOfftakeSubview"
-        );
-
-    const confirmSub =
-        document.getElementById(
-            "confirmOfftakeSubview"
-        );
-
-    const submittedModal =
-        document.getElementById(
-            "offtakeSubmittedModal"
-        );
-    
-        fetchOfftakeRequests();
-
-
-    /* ========================================================
-       CREATE OFFTAKE REQUEST
-    ======================================================== */
-document
-    .getElementById("createOfftakeBtn")
-    ?.addEventListener("click", () => {
-
-        // Always start with a fresh form
-        resetOfftakeForm();
-
-        // Hide list
-        list?.classList.add(
-            "hidden-element"
-        );
-
-        // Show submit form
-        submitSub?.classList.remove(
-            "hidden-element"
-        );
-
-        // Hide review
-        confirmSub?.classList.add(
-            "hidden-element"
-        );
-
-        console.log(
-            "New Offtake Request form opened."
-        );
-    });
-
-/* ========================================================
-   RETURN FROM SUBMIT FORM
-   RESET FORM → OFFTAKE REQUESTS LIST
-======================================================== */
-
-document
-    .getElementById("returnFromSubmitOfftakeBtn")
-    ?.addEventListener("click", () => {
-
-        // Clear current request
+    document.getElementById("createOfftakeBtn")?.addEventListener("click", function() {
         currentOfftakeRequest = null;
-
-        // Reset all form fields
-        resetOfftakeForm();
-
-        // Hide submit form
-        submitSub?.classList.add(
-            "hidden-element"
-        );
-
-        // Hide confirmation/review
-        confirmSub?.classList.add(
-            "hidden-element"
-        );
-
-        // Show Offtake Requests list
-        list?.classList.remove(
-            "hidden-element"
-        );
-
-        console.log(
-            "Offtake form reset. Returned to Offtake Requests."
-        );
+        if (list) list.classList.add("hidden-element");
+        if (submitSub) submitSub.classList.remove("hidden-element");
+        if (confirmSub) confirmSub.classList.add("hidden-element");
     });
-/* ========================================================
-   PROCEED TO REVIEW
-======================================================== */
 
-document
-    .getElementById("proceedOfftakeBtn")
-    ?.addEventListener("click", () => {
+    document.getElementById("returnFromSubmitOfftakeBtn")?.addEventListener("click", function() {
+        if (submitSub) submitSub.classList.add("hidden-element");
+        if (confirmSub) confirmSub.classList.add("hidden-element");
+        if (list) list.classList.remove("hidden-element");
+    });
 
-        const farmerSelect =
-            document.getElementById("offtakeFarmerSelect");
+    document.getElementById("proceedOfftakeBtn")?.addEventListener("click", function() {
+        const farmerSelect = document.getElementById("offtakeFarmerSelect");
+        const farmerId = document.getElementById("offtakeFarmerId");
 
-        const farmerId =
-            document.getElementById("offtakeFarmerId");
-
-        /* CHECK FARMER */
         if (!farmerSelect || !farmerSelect.value) {
-
             alert("Please select a farmer.");
-
             return;
         }
+        if (farmerId) farmerId.value = farmerSelect.value;
 
-        /* MAKE SURE FARMER ID IS SET */
-        if (farmerId) {
-            farmerId.value = farmerSelect.value;
-        }
+        const data = collectOfftakeFormData();
+        data.farmer_id = Number(farmerSelect.value);
+        data.farmer_name = farmerSelect.options[farmerSelect.selectedIndex].text;
 
-        /* COLLECT OTHER FORM DATA */
-        const data =
-            collectOfftakeFormData();
+        if (!validateOfftakeForm(data)) return;
 
-        /* OVERRIDE FARMER DATA */
-        data.farmer_id =
-            Number(farmerSelect.value);
-
-        data.farmer_name =
-            farmerSelect.options[
-                farmerSelect.selectedIndex
-            ].text;
-
-        /* VALIDATE */
-        if (!validateOfftakeForm(data)) {
-            return;
-        }
-
-        /* SAVE CURRENT REQUEST */
         currentOfftakeRequest = data;
-
-        /* POPULATE REVIEW */
         populateOfftakeReview(data);
 
-        /* SHOW REVIEW */
-        submitSub?.classList.add(
-            "hidden-element"
-        );
-
-        confirmSub?.classList.remove(
-            "hidden-element"
-        );
+        if (submitSub) submitSub.classList.add("hidden-element");
+        if (confirmSub) confirmSub.classList.remove("hidden-element");
     });
-    /* ========================================================
-       EDIT DETAILS
-       REVIEW → FORM
-    ======================================================== */
-document
-    .getElementById(
-        "backToSubmitOfftakeBtn"
-    )
-    ?.addEventListener(
-        "click",
-        () => {
 
-            if (
-                currentOfftakeRequest
-            ) {
+    document.getElementById("backToSubmitOfftakeBtn")?.addEventListener("click", function() {
+        if (currentOfftakeRequest) populateOfftakeForm(currentOfftakeRequest);
+        if (confirmSub) confirmSub.classList.add("hidden-element");
+        if (submitSub) submitSub.classList.remove("hidden-element");
+    });
 
-                populateOfftakeForm(
-                    currentOfftakeRequest
-                );
-            }
-
-            confirmSub?.classList.add(
-                "hidden-element"
-            );
-
-            submitSub?.classList.remove(
-                "hidden-element"
-            );
+    document.getElementById("sendOfftakeBtn")?.addEventListener("click", async function() {
+        if (!currentOfftakeRequest) {
+            const data = collectOfftakeFormData();
+            if (!validateOfftakeForm(data)) return;
+            currentOfftakeRequest = data;
         }
-    );
-    
-    /* ========================================================
-       SUBMIT REQUEST
-       REVIEW → CONFIRM MODAL
-    ======================================================== */
-document
-    .getElementById("sendOfftakeBtn")
-    ?.addEventListener(
-        "click",
-        async () => {
+        await submitOfftakeRequest();
+    });
 
-            if (!currentOfftakeRequest) {
-
-                const data =
-                    collectOfftakeFormData();
-
-                if (!validateOfftakeForm(data)) {
-                    return;
-                }
-
-                currentOfftakeRequest = data;
-            }
-
-            await submitOfftakeRequest();
-        }
-    );
-    /* ========================================================
-       CONFIRM DISPATCH
-       FINAL API SUBMISSION
-    ======================================================== */
-
-    document
-        .getElementById(
-            "confirmDispatchBtn"
-        )
-        ?.addEventListener(
-            "click",
-            async () => {
-
-                await submitOfftakeRequest();
-            }
-        );
-
-
-    /*
-     * Alternative confirmation button.
-     */
-
-    if (
-        !document.getElementById(
-            "confirmDispatchBtn"
-        )
-    ) {
-
-        document
-            .getElementById(
-                "confirmOfftakeDispatchBtn"
-            )
-            ?.addEventListener(
-                "click",
-                async () => {
-
-                    await submitOfftakeRequest();
-                }
-            );
-    }
-
-
-    /* ========================================================
-       CLOSE SUCCESS MODAL
-    ======================================================== */
-
-    document
-        .getElementById(
-            "closeOfftakeSubmittedBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                document
-                    .getElementById(
-                        "offtakeSubmittedModal"
-                    )
-                    ?.classList.remove(
-                        "show"
-                    );
-
-
-                submittedModal?.classList.remove(
-                    "show"
-                );
-
-
-                confirmSub?.classList.add(
-                    "hidden-element"
-                );
-
-
-                submitSub?.classList.add(
-                    "hidden-element"
-                );
-
-
-                list?.classList.remove(
-                    "hidden-element"
-                );
-
-
-                currentOfftakeRequest =
-                    null;
-
-
-                resetOfftakeForm();
-            }
-        );
+    document.getElementById("closeOfftakeSubmittedBtn")?.addEventListener("click", function() {
+        const modal = document.getElementById("offtakeSuccessModal");
+        if (modal) modal.classList.remove("show");
+        if (submittedModal) submittedModal.classList.remove("show");
+        if (confirmSub) confirmSub.classList.add("hidden-element");
+        if (submitSub) submitSub.classList.add("hidden-element");
+        if (list) list.classList.remove("hidden-element");
+        currentOfftakeRequest = null;
+        resetOfftakeForm();
+    });
 }
 
-/* ============================================================
-   FETCH ALL OFFTAKE REQUESTS
-============================================================ */
-/* ============================================================
-   FETCH ALL OFFTAKE REQUESTS
-============================================================ */
 async function fetchOfftakeRequests() {
-
     const tbody = document.getElementById("offtakeTableBody");
-
     if (!tbody) {
         console.error("offtakeTableBody not found.");
         return;
     }
 
-    // Show loading state
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6" style="padding:30px; text-align:center;">
-                Loading offtake requests...
-            </td>
-        </tr>
-    `;
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center;">Loading offtake requests...</td></tr>`;
 
     try {
-
-        const url = `${API_BASE_URL}/api/offtake-requests/`;
-
-        console.log("Fetching offtake requests:", url);
-
-        const requests = await apiRequest(url, { method: "GET" });
-
+        const requests = await apiRequest(OFFTAKE_REQUESTS_ENDPOINT, { method: "GET" });
         console.log("Offtake Requests API response:", requests);
 
-        // ========================================================
-        // IMPORTANT: Ensure farmers are loaded first
-        // ========================================================
-        
-        // If allFarmers is empty, try to fetch farmers first
         if (!Array.isArray(allFarmers) || allFarmers.length === 0) {
-            console.warn("allFarmers is empty. Fetching farmers first...");
             await fetchFarmers();
         }
 
-        // Normalize farmers for lookup
-        const farmersMap = new Map();
-        
-        if (Array.isArray(allFarmers)) {
-            allFarmers.forEach(farmer => {
-                // Store both string and number versions for lookup
-                const farmerId = farmer.farmer_id;
-                farmersMap.set(String(farmerId), farmer);
-                farmersMap.set(Number(farmerId), farmer);
-            });
-        }
-
-        console.log("Farmers Map:", farmersMap);
-
         tbody.innerHTML = "";
 
-        if (!Array.isArray(requests) || requests.length === 0) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" style="padding:30px; text-align:center; color:#777;">
-                        No offtake requests found.
-                    </td>
-                </tr>
-            `;
-
+        if (!requests || requests.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#777;">No offtake requests found.</td></tr>`;
             return;
         }
 
-        // ========================================================
-        // RENDER OFFTAKE REQUESTS
-        // ========================================================
-
-        requests.forEach(request => {
-
-            // Find farmer using both string and number comparison
+        requests.forEach(function(request) {
             let farmer = null;
             const requestFarmerId = request.farmer_id;
-            
             if (requestFarmerId) {
-                // Try both string and number versions
-                farmer = farmersMap.get(String(requestFarmerId)) || 
-                        farmersMap.get(Number(requestFarmerId));
+                farmer = allFarmers.find(function(f) { return f.farmer_id == requestFarmerId; });
             }
-
-            // ====================================================
-            // FARMER NAME
-            // ====================================================
 
             let farmerName = "Unknown Farmer";
             let farmerLocation = "—";
-
             if (farmer) {
-
-                farmerName = [
-                    farmer.first_name,
-                    farmer.middle_name,
-                    farmer.last_name,
-                    farmer.suffix
-                ]
-                .filter(Boolean)
-                .join(" ");
-
-                // Build location
-                farmerLocation = 
-                    farmer.address ||
-                    [farmer.barangay, farmer.municipality]
-                        .filter(Boolean)
-                        .join(", ") ||
-                    "—";
-
-                console.log(`Found farmer: ${farmerName} (ID: ${farmer.farmer_id}) for request ID: ${requestFarmerId}`);
-            } else {
-                console.warn(`No farmer found for ID: ${requestFarmerId}`);
+                farmerName = [farmer.first_name, farmer.middle_name, farmer.last_name, farmer.suffix].filter(Boolean).join(" ");
+                farmerLocation = farmer.address || [farmer.barangay, farmer.municipality].filter(Boolean).join(", ") || "—";
             }
-
-            // ====================================================
-            // CREATE TABLE ROW
-            // ====================================================
 
             const row = document.createElement("tr");
             row.className = "clickable-row";
-
             row.innerHTML = `
-                <td>
-                    <span class="pill">${escapeHtml(farmerName)}</span>
-                </td>
-
-                <td>
-                    <span class="pill">${escapeHtml(request.commodity || "—")}</span>
-                </td>
-
-                <td>
-                    <span class="pill">${escapeHtml(request.quantity || "—")} kg</span>
-                </td>
-
-                <td>
-                    <span class="pill">${escapeHtml(farmerLocation)}</span>
-                </td>
-
-                <td>
-                    <span class="pill">${escapeHtml(request.harvest_date || "—")}</span>
-                </td>
-
-                <td>
-                    <span class="status-pill submitted">Submitted</span>
-                </td>
+                <td><span class="pill">${escapeHtml(farmerName)}</span></td>
+                <td><span class="pill">${escapeHtml(request.commodity || "—")}</span></td>
+                <td><span class="pill">${escapeHtml(request.quantity || "—")} kg</span></td>
+                <td><span class="pill">${escapeHtml(farmerLocation)}</span></td>
+                <td><span class="pill">${escapeHtml(request.harvest_date || "—")}</span></td>
+                <td><span class="status-pill submitted">Submitted</span></td>
             `;
-
             tbody.appendChild(row);
         });
-
-        console.log(`Successfully rendered ${requests.length} offtake request(s).`);
-
     } catch (error) {
-
         console.error("Unable to load offtake requests:", error);
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">
-                    Failed to load offtake requests.
-                    <br>
-                    <small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small>
-                </td>
-            </tr>
-        `;
-
-        handleAuthError(error);
-
-        return [];
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load offtake requests.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
     }
 }
-/* ============================================================
-   RENDER OFFTAKE REQUESTS TABLE
-============================================================ */
-
-function renderOfftakeRequestsTable() {
-
-    const tbody =
-        document.getElementById(
-            "offtakeRequestsTableBody"
-        );
-
-    if (!tbody) {
-
-        console.warn(
-            "offtakeRequestsTableBody not found."
-        );
-
-        return;
-    }
-
-    tbody.innerHTML = "";
-
-    if (
-        OFFTAKE_REQUESTS_DATA.length === 0
-    ) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#777;
-                    ">
-                    No offtake requests found.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-    OFFTAKE_REQUESTS_DATA.forEach(
-        request => {
-
-            const tr =
-                document.createElement("tr");
-
-            const farmerName =
-                request.farmer_name ||
-                request.name ||
-                "-";
-
-            const commodity =
-                request.commodity ||
-                "-";
-
-            const quantity =
-                request.quantity ??
-                request.volume ??
-                "-";
-
-            const location =
-                request.location ||
-                request.delivery_location ||
-                request.municipality ||
-                "-";
-
-            const harvestDate =
-                request.harvest_date
-                    ? formatPlantingDate(
-                        request.harvest_date
-                    )
-                    : "-";
-
-            const status =
-                request.status ||
-                "PENDING";
-
-            tr.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            farmerName
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            commodity
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            quantity
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            location
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            harvestDate
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="status-pill pending">
-                        ${escapeHtml(
-                            status
-                        )}
-                    </span>
-                </td>
-            `;
-
-            tbody.appendChild(tr);
-        }
-    );
-}
-
-/* ============================================================
-   COLLECT OFFTAKE FORM DATA
-============================================================ */
 
 function collectOfftakeFormData() {
-
     return {
-
-        farmer_name:
-            getOfftakeValue(
-                [
-                    "offtakeFarmerName",
-                    "farmerName",
-                    "offtakeFarmer"
-                ]
-            ),
-
-        farmer_id:
-            getOfftakeValue(
-                [
-                    "offtakeFarmerId",
-                    "farmerId",
-                    "offtakeFarmerID"
-                ]
-            ),
-
-        commodity:
-            getOfftakeValue(
-                [
-                    "offtakeCommodity",
-                    "commodity"
-                ]
-            ),
-quantity:
-    getOfftakeValue(
-        [
-            "offtakeQty",
-            "offtakeQuantity",
-            "quantity"
-        ]
-    ),
-selling_price:
-    getOfftakeValue(
-        [
-            "offtakePrice",
-            "offtakeSellingPrice",
-            "sellingPrice"
-        ]
-    ),
-
-        harvest_date:
-            getOfftakeValue(
-                [
-                    "offtakeHarvestDate",
-                    "harvestDate"
-                ]
-            ),
-
-        commodity_photo:
-            getOfftakeValue(
-                [
-                    "offtakeCommodityPhoto",
-                    "commodityPhoto"
-                ]
-            ),
-
-        /*
-         * These can still be collected for display
-         * if your HTML has them.
-         *
-         * They will NOT be sent to the API because
-         * they are not included in the API schema
-         * shown in your JSON response.
-         */
-
-        buyer:
-            getOfftakeValue(
-                [
-                    "offtakeBuyer",
-                    "buyer"
-                ]
-            ),
-delivery_location:
-    getOfftakeValue(
-        [
-            "offtakeLocation",
-            "offtakeDeliveryLocation",
-            "deliveryLocation"
-        ]
-    )
+        farmer_name: getOfftakeValue(["offtakeFarmerName", "farmerName", "offtakeFarmer"]),
+        farmer_id: getOfftakeValue(["offtakeFarmerId", "farmerId", "offtakeFarmerID"]),
+        commodity: getOfftakeValue(["offtakeCommodity", "commodity"]),
+        quantity: getOfftakeValue(["offtakeQty", "offtakeQuantity", "quantity"]),
+        selling_price: getOfftakeValue(["offtakePrice", "offtakeSellingPrice", "sellingPrice"]),
+        harvest_date: getOfftakeValue(["offtakeHarvestDate", "harvestDate"]),
+        commodity_photo: getOfftakeValue(["offtakeCommodityPhoto", "commodityPhoto"]),
+        buyer: getOfftakeValue(["offtakeBuyer", "buyer"]),
+        delivery_location: getOfftakeValue(["offtakeLocation", "offtakeDeliveryLocation", "deliveryLocation"])
     };
 }
 
-
-/* ============================================================
-   GET OFFTAKE VALUE
-============================================================ */
-
 function getOfftakeValue(ids) {
-
-    for (
-        const id of ids
-    ) {
-
-        const element =
-            document.getElementById(
-                id
-            );
-
-
+    for (var i = 0; i < ids.length; i++) {
+        var element = document.getElementById(ids[i]);
         if (element) {
-
-            return (
-                element.value ??
-                ""
-            )
-            .toString()
-            .trim();
+            return (element.value || "").toString().trim();
         }
     }
-
-
     return "";
 }
 
-
-/* ============================================================
-   SET OFFTAKE VALUE
-============================================================ */
-
-function setOfftakeValue(
-    ids,
-    value
-) {
-
-    for (
-        const id of ids
-    ) {
-
-        const element =
-            document.getElementById(
-                id
-            );
-
-
-        if (element) {
-
-            element.value =
-                value ?? "";
-
-            return;
-        }
-    }
-}
-
-
-/* ============================================================
-   VALIDATE OFFTAKE FORM
-============================================================ */
-
-function validateOfftakeForm(
-    data
-) {
-
-    if (!data.farmer_name) {
-
-        alert(
-            "Please enter Farmer Name."
-        );
-
-        return false;
-    }
-
-
-    if (!data.farmer_id) {
-
-        alert(
-            "Please enter Farmer ID."
-        );
-
-        return false;
-    }
-
-
-    if (!/^\d+$/.test(
-        data.farmer_id
-    )) {
-
-        alert(
-            "Farmer ID must be a valid whole number."
-        );
-
-        return false;
-    }
-
-
-    if (!data.commodity) {
-
-        alert(
-            "Please enter Commodity."
-        );
-
-        return false;
-    }
-
-
-    if (!data.quantity) {
-
-        alert(
-            "Please enter Quantity."
-        );
-
-        return false;
-    }
-
-
-    /*
-     * Decimal validation.
-     *
-     * Allows:
-     * 100
-     * 100.50
-     * 1,000
-     * 1,000.50
-     */
-
-    const quantityValue =
-        data.quantity
-            .replace(/,/g, "")
-            .trim();
-
-
-    if (
-        !/^\d+(\.\d+)?$/.test(
-            quantityValue
-        )
-    ) {
-
-        alert(
-            "Quantity must be a valid number."
-        );
-
-        return false;
-    }
-
-
-    if (!data.selling_price) {
-
-        alert(
-            "Please enter Selling Price."
-        );
-
-        return false;
-    }
-
-
-    const sellingPriceValue =
-        data.selling_price
-            .replace(/,/g, "")
-            .replace(/₱/g, "")
-            .trim();
-
-
-    if (
-        !/^\d+(\.\d+)?$/.test(
-            sellingPriceValue
-        )
-    ) {
-
-        alert(
-            "Selling Price must be a valid number."
-        );
-
-        return false;
-    }
-
-
-    if (!data.harvest_date) {
-
-        alert(
-            "Please select Harvest Date."
-        );
-
-        return false;
-    }
-
-
+function validateOfftakeForm(data) {
+    if (!data.farmer_name) { alert("Please enter Farmer Name."); return false; }
+    if (!data.farmer_id) { alert("Please enter Farmer ID."); return false; }
+    if (!/^\d+$/.test(data.farmer_id)) { alert("Farmer ID must be a valid whole number."); return false; }
+    if (!data.commodity) { alert("Please enter Commodity."); return false; }
+    if (!data.quantity) { alert("Please enter Quantity."); return false; }
+    var quantityValue = data.quantity.replace(/,/g, "").trim();
+    if (!/^\d+(\.\d+)?$/.test(quantityValue)) { alert("Quantity must be a valid number."); return false; }
+    if (!data.selling_price) { alert("Please enter Selling Price."); return false; }
+    var sellingPriceValue = data.selling_price.replace(/,/g, "").replace(/₱/g, "").trim();
+    if (!/^\d+(\.\d+)?$/.test(sellingPriceValue)) { alert("Selling Price must be a valid number."); return false; }
+    if (!data.harvest_date) { alert("Please select Harvest Date."); return false; }
     return true;
 }
 
-
-/* ============================================================
-   POPULATE REVIEW
-============================================================ */
-
-function populateOfftakeReview(
-    data
-) {
-
-    const values = {
-
-        farmer_name:
-            data.farmer_name,
-
-        farmer_id:
-            data.farmer_id,
-
-        commodity:
-            data.commodity,
-
-        quantity:
-            data.quantity,
-
-        selling_price:
-            data.selling_price,
-
-        harvest_date:
-            formatPlantingDate(
-                data.harvest_date
-            ),
-
-        commodity_photo:
-            data.commodity_photo || "",
-
-        buyer:
-            data.buyer || "",
-
-        delivery_location:
-            data.delivery_location || ""
+function populateOfftakeReview(data) {
+    var values = {
+        farmer_name: data.farmer_name,
+        farmer_id: data.farmer_id,
+        commodity: data.commodity,
+        quantity: data.quantity,
+        selling_price: data.selling_price,
+        harvest_date: formatPlantingDate(data.harvest_date),
+        commodity_photo: data.commodity_photo || "",
+        buyer: data.buyer || "",
+        delivery_location: data.delivery_location || ""
     };
 
-
-    setReviewValue(
-        [
-            "reviewFarmerName",
-            "confirmFarmerName",
-            "reviewOfftakeFarmerName"
-        ],
-        values.farmer_name
-    );
-
-
-
-    setReviewValue(
-        [
-            "reviewFarmerId",
-            "confirmFarmerId",
-            "reviewOfftakeFarmerId"
-        ],
-        values.farmer_id
-    );
-
-
-    setReviewValue(
-        [
-            "reviewCommodity",
-            "confirmCommodity",
-            "reviewOfftakeCommodity"
-        ],
-        values.commodity
-    );
-
-
-    setReviewValue(
-        [
-            "reviewQuantity",
-            "confirmQuantity",
-            "reviewOfftakeQuantity"
-        ],
-        values.quantity
-    );
-
-
-    setReviewValue(
-        [
-            "reviewSellingPrice",
-            "confirmSellingPrice",
-            "reviewOfftakeSellingPrice"
-        ],
-        values.selling_price
-    );
-
-
-    setReviewValue(
-        [
-            "reviewHarvestDate",
-            "confirmHarvestDate",
-            "reviewOfftakeHarvestDate"
-        ],
-        values.harvest_date
-    );
-
-
-    setReviewValue(
-        [
-            "reviewCommodityPhoto",
-            "confirmCommodityPhoto",
-            "reviewOfftakeCommodityPhoto"
-        ],
-        values.commodity_photo
-    );
-
-
-    /*
-     * Optional UI fields.
-     * These are only displayed if they exist.
-     */
-
-    setReviewValue(
-        [
-            "reviewBuyer",
-            "confirmBuyer",
-            "reviewOfftakeBuyer"
-        ],
-        values.buyer
-    );
-
-setReviewValue(
-    [
-        "reviewDeliveryLocation",
-        "confirmLocation",
-        "confirmDeliveryLocation",
-        "reviewOfftakeDeliveryLocation"
-    ],
-    values.delivery_location
-);
+    setReviewValue(["reviewFarmerName", "confirmFarmerName", "reviewOfftakeFarmerName"], values.farmer_name);
+    setReviewValue(["reviewFarmerId", "confirmFarmerId", "reviewOfftakeFarmerId"], values.farmer_id);
+    setReviewValue(["reviewCommodity", "confirmCommodity", "reviewOfftakeCommodity"], values.commodity);
+    setReviewValue(["reviewQuantity", "confirmQuantity", "reviewOfftakeQuantity"], values.quantity);
+    setReviewValue(["reviewSellingPrice", "confirmSellingPrice", "reviewOfftakeSellingPrice"], values.selling_price);
+    setReviewValue(["reviewHarvestDate", "confirmHarvestDate", "reviewOfftakeHarvestDate"], values.harvest_date);
+    setReviewValue(["reviewCommodityPhoto", "confirmCommodityPhoto", "reviewOfftakeCommodityPhoto"], values.commodity_photo);
+    setReviewValue(["reviewBuyer", "confirmBuyer", "reviewOfftakeBuyer"], values.buyer);
+    setReviewValue(["reviewDeliveryLocation", "confirmLocation", "confirmDeliveryLocation", "reviewOfftakeDeliveryLocation"], values.delivery_location);
 }
 
-
-/* ============================================================
-   SET REVIEW VALUE
-============================================================ */
-
-function setReviewValue(
-    ids,
-    value
-) {
-
-    for (
-        const id of ids
-    ) {
-
-        const element =
-            document.getElementById(
-                id
-            );
-
-
+function setReviewValue(ids, value) {
+    for (var i = 0; i < ids.length; i++) {
+        var element = document.getElementById(ids[i]);
         if (element) {
-
-            const safeValue =
-                value || "-";
-
-
-            /*
-             * Works for normal text elements.
-             */
-
-            element.textContent =
-                safeValue;
-
-
-            /*
-             * Also works for input elements.
-             */
-
-            if (
-                "value" in element
-            ) {
-
-                element.value =
-                    value || "";
+            var safeValue = value || "-";
+            element.textContent = safeValue;
+            if ("value" in element) {
+                element.value = value || "";
             }
-
-
             return;
         }
     }
 }
 
-
-/* ============================================================
-   POPULATE FORM AFTER EDIT
-============================================================ */
-
-function populateOfftakeForm(
-    data
-) {
-
-    setOfftakeValue(
-        [
-            "offtakeFarmerName",
-            "farmerName",
-            "offtakeFarmer"
-        ],
-        data.farmer_name
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeFarmerId",
-            "farmerId",
-            "offtakeFarmerID"
-        ],
-        data.farmer_id
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeCommodity",
-            "commodity"
-        ],
-        data.commodity
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeQuantity",
-            "quantity"
-        ],
-        data.quantity
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeSellingPrice",
-            "sellingPrice"
-        ],
-        data.selling_price
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeHarvestDate",
-            "harvestDate"
-        ],
-        data.harvest_date
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeCommodityPhoto",
-            "commodityPhoto"
-        ],
-        data.commodity_photo
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeBuyer",
-            "buyer"
-        ],
-        data.buyer
-    );
-
-
-    setOfftakeValue(
-        [
-            "offtakeDeliveryLocation",
-            "deliveryLocation"
-        ],
-        data.delivery_location
-    );
+function populateOfftakeForm(data) {
+    setOfftakeValue(["offtakeFarmerName", "farmerName", "offtakeFarmer"], data.farmer_name);
+    setOfftakeValue(["offtakeFarmerId", "farmerId", "offtakeFarmerID"], data.farmer_id);
+    setOfftakeValue(["offtakeCommodity", "commodity"], data.commodity);
+    setOfftakeValue(["offtakeQuantity", "quantity"], data.quantity);
+    setOfftakeValue(["offtakeSellingPrice", "sellingPrice"], data.selling_price);
+    setOfftakeValue(["offtakeHarvestDate", "harvestDate"], data.harvest_date);
+    setOfftakeValue(["offtakeCommodityPhoto", "commodityPhoto"], data.commodity_photo);
+    setOfftakeValue(["offtakeBuyer", "buyer"], data.buyer);
+    setOfftakeValue(["offtakeDeliveryLocation", "deliveryLocation"], data.delivery_location);
 }
 
-
-/* ============================================================
-   FINAL API SUBMISSION
-============================================================ */
+function setOfftakeValue(ids, value) {
+    for (var i = 0; i < ids.length; i++) {
+        var element = document.getElementById(ids[i]);
+        if (element) {
+            element.value = value || "";
+            return;
+        }
+    }
+}
 
 async function submitOfftakeRequest() {
-
-    if (
-        !currentOfftakeRequest
-    ) {
-
-        alert(
-            "No Offtake Request data found."
-        );
-
+    if (!currentOfftakeRequest) {
+        alert("No Offtake Request data found.");
         return;
     }
 
-
-    const sendOfftakeBtn =
-    document.getElementById("sendOfftakeBtn");
-
-if (sendOfftakeBtn) {
-    sendOfftakeBtn.disabled = true;
-    sendOfftakeBtn.textContent = "Submitting...";
-}
-
+    var sendOfftakeBtn = document.getElementById("sendOfftakeBtn");
+    if (sendOfftakeBtn) {
+        sendOfftakeBtn.disabled = true;
+        sendOfftakeBtn.textContent = "Submitting...";
+    }
 
     try {
-
-        const data =
-            currentOfftakeRequest;
-
-
-        /* ====================================================
-           FARMER ID
-        ==================================================== */
-
-        const farmerId =
-            parseInt(
-                data.farmer_id,
-                10
-            );
-
-
-        if (
-            !Number.isInteger(
-                farmerId
-            )
-        ) {
-
-            throw new Error(
-                "Farmer ID must be a valid whole number."
-            );
+        var data = currentOfftakeRequest;
+        var farmerId = parseInt(data.farmer_id, 10);
+        if (!Number.isInteger(farmerId)) {
+            throw new Error("Farmer ID must be a valid whole number.");
         }
 
+        var quantity = String(data.quantity).replace(/,/g, "").trim();
+        var sellingPrice = String(data.selling_price).replace(/,/g, "").replace(/₱/g, "").trim();
 
-        /* ====================================================
-           DECIMAL VALUES
-           
-           IMPORTANT:
-           DO NOT use Number() here.
-           
-           FastAPI/Pydantic Decimal can safely receive
-           decimal values as strings.
-           ==================================================== */
-
-        const quantity =
-            String(
-                data.quantity
-            )
-            .replace(/,/g, "")
-            .trim();
-
-
-        const sellingPrice =
-            String(
-                data.selling_price
-            )
-            .replace(/,/g, "")
-            .replace(/₱/g, "")
-            .trim();
-
-
-        /* ====================================================
-           VALIDATE DECIMAL VALUES
-        ==================================================== */
-
-        if (
-            !/^\d+(\.\d+)?$/.test(
-                quantity
-            )
-        ) {
-
-            throw new Error(
-                "Quantity must be a valid decimal number."
-            );
+        if (!/^\d+(\.\d+)?$/.test(quantity)) {
+            throw new Error("Quantity must be a valid decimal number.");
+        }
+        if (!/^\d+(\.\d+)?$/.test(sellingPrice)) {
+            throw new Error("Selling Price must be a valid decimal number.");
         }
 
-
-        if (
-            !/^\d+(\.\d+)?$/.test(
-                sellingPrice
-            )
-        ) {
-
-            throw new Error(
-                "Selling Price must be a valid decimal number."
-            );
-        }
-
-
-        /* ====================================================
-           API PAYLOAD
-           
-           MATCHES THE OFFTAKE API RESPONSE/SCHEMA:
-           
-           farmer_id
-           commodity
-           quantity
-           selling_price
-           harvest_date
-           commodity_photo
-           ==================================================== */
-
-        const payload = {
-
-            farmer_id:
-                farmerId,
-
-            commodity:
-                data.commodity,
-
-            quantity:
-                quantity,
-
-            selling_price:
-                sellingPrice,
-
-            harvest_date:
-                data.harvest_date,
-
-            commodity_photo:
-                data.commodity_photo || null
-                
+        var payload = {
+            farmer_id: farmerId,
+            commodity: data.commodity,
+            quantity: quantity,
+            selling_price: sellingPrice,
+            harvest_date: data.harvest_date,
+            commodity_photo: data.commodity_photo || null
         };
 
+        console.log("Submitting Offtake Request:", payload);
 
-        console.log(
-            "================================="
-        );
+        var response = await apiRequest(OFFTAKE_REQUESTS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
 
-        console.log(
-            "Submitting Offtake Request:"
-        );
-
-        console.log(
-            payload
-        );
-
-        console.log(
-            "================================="
-        );
-
-
-        /* ====================================================
-           FINAL API CALL
-        ==================================================== */
-
-        const response =
-            await apiRequest(
-                OFFTAKE_REQUESTS_ENDPOINT,
-                {
-                    method: "POST",
-
-                    body:
-                        JSON.stringify(
-                            payload
-                        )
-                }
-            );
-
-
-        console.log(
-            "Offtake Request API response:",
-            response
-        );
+        console.log("Offtake Request API response:", response);
 
         await fetchOfftakeRequests();
 
-
-        /* ====================================================
-           CLOSE CONFIRMATION MODAL
-        ==================================================== */
-
-        document
-            .getElementById(
-                "offtakeSubmittedModal"
-            )
-            ?.classList.remove(
-                "show"
-            );
-
-
-        /* ====================================================
-           SHOW SUCCESS MODAL
-        ==================================================== */
-
-        document
-            .getElementById(
-                "offtakeSubmittedModal"
-            )
-            ?.classList.add(
-                "show"
-            );
-
+        var successModal = document.getElementById("offtakeSuccessModal");
+        if (successModal) successModal.classList.add("show");
 
     } catch (error) {
-
-        console.error(
-            "Create Offtake Request error:",
-            error
-        );
-
-
-        handleAuthError(
-            error
-        );
-
-
-        alert(
-            "Failed to submit Offtake Request.\n\n" +
-            (
-                error.message ||
-                "Please check the FastAPI server."
-            )
-        );
-
-
+        console.error("Create Offtake Request error:", error);
+        handleAuthError(error);
+        alert("Failed to submit Offtake Request.\n\n" + (error.message || "Please check the FastAPI server."));
     } finally {
-
-       if (sendOfftakeBtn) {
-    sendOfftakeBtn.disabled = false;
-    sendOfftakeBtn.textContent = "Submit Request";
-}
+        if (sendOfftakeBtn) {
+            sendOfftakeBtn.disabled = false;
+            sendOfftakeBtn.textContent = "Submit Request";
+        }
     }
 }
 
-
-/* ============================================================
-   RESET OFFTAKE FORM
-============================================================ */
-
 function resetOfftakeForm() {
-
-    const possibleFormIds = [
-
-        "offtakeRequestForm",
-
-        "submitOfftakeForm",
-
-        "createOfftakeForm"
-
-    ];
-
-
-    for (
-        const id of possibleFormIds
-    ) {
-
-        const form =
-            document.getElementById(
-                id
-            );
-
-
+    var possibleFormIds = ["offtakeRequestForm", "submitOfftakeForm", "createOfftakeForm"];
+    for (var i = 0; i < possibleFormIds.length; i++) {
+        var form = document.getElementById(possibleFormIds[i]);
         if (form) {
-
             form.reset();
-
             break;
         }
     }
-
-
-    currentOfftakeRequest =
-        null;
+    currentOfftakeRequest = null;
 }
 
 /* ============================================================
    FAIR PRICE
 ============================================================ */
 
-
 function initFairPrice() {
+    var select = document.getElementById("fairPriceCropSelect");
+    var img = document.getElementById("cropImageDisplay");
 
+    if (!select || !img) return;
 
-    const select =
-        document.getElementById(
-            "fairPriceCropSelect"
-        );
-
-
-    const img =
-        document.getElementById(
-            "cropImageDisplay"
-        );
-
-
-
-
-    if (
-        !select ||
-        !img
-    ) {
-        return;
-    }
-
-
-
-
-    select.addEventListener(
-        "change",
-        event => {
-
-
-            const crop =
-                event.target.value;
-
-
-
-
-            if (
-                crop === "tomato"
-            ) {
-
-
-                img.src =
-                    "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80";
-
-
-            } else {
-
-
-                img.src =
-                    "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80";
-            }
+    select.addEventListener("change", function(event) {
+        var crop = event.target.value;
+        if (crop === "tomato") {
+            img.src = "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80";
+        } else {
+            img.src = "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80";
         }
-    );
+    });
 }
 
-
-
-
 /* ============================================================
-   HELPER — GET INPUT VALUE
+   HELPER FUNCTIONS
 ============================================================ */
-
 
 function getValue(id) {
-
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-
-
-    if (!element) {
-        return "";
-    }
-
-
-
-
-    return (
-        element.value ??
-        ""
-    ).trim();
+    var element = document.getElementById(id);
+    if (!element) return "";
+    return (element.value || "").trim();
 }
 
-
-
-/* ============================================================
-   HELPER — SET INPUT / TEXT VALUE
-============================================================ */
-
-function setValue(
-    id,
-    value
-) {
-
-    const element =
-        document.getElementById(
-            id
-        );
-
+function setValue(id, value) {
+    var element = document.getElementById(id);
     if (!element) {
-        console.warn(
-            `Element with id "${id}" not found.`
-        );
+        console.warn("Element with id \"" + id + "\" not found.");
         return;
     }
-
-    const safeValue =
-        value ?? "";
-
-    /*
-     * INPUT / SELECT / TEXTAREA
-     */
-    if (
-        "value" in element
-    ) {
-
-        element.value =
-            safeValue;
-
+    var safeValue = value || "";
+    if ("value" in element) {
+        element.value = safeValue;
         return;
     }
-
-    /*
-     * DIV / SPAN / P / TD / LABEL / etc.
-     */
-    element.textContent =
-        safeValue;
+    element.textContent = safeValue;
 }
 
-/* ============================================================
-   HELPER — ESCAPE HTML
-============================================================ */
-
-
-function escapeHtml(
-    value
-) {
-
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll(
-        "&",
-        "&amp;"
-    )
-    .replaceAll(
-        "<",
-        "&lt;"
-    )
-    .replaceAll(
-        ">",
-        "&gt;"
-    )
-    .replaceAll(
-        '"',
-        "&quot;"
-    )
-    .replaceAll(
-        "'",
-        "&#039;"
-    );
-}
-
-
-
-
-/* ============================================================
-   OPTIONAL DEBUG HELPERS
-============================================================ */
-
-
-function getCurrentFarmer() {
-
-
-    return currentActiveFarmer;
-}
-
-
-
-
-function getAllFarmers() {
-
-
-    return FARMERS_DATA;
+function escapeHtml(value) {
+    return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 /* ============================================================
    FARMER DROPDOWN POPULATION
-   Auto-fill Farmer ID when farmer is selected
 ============================================================ */
 
-// Function to populate farmer dropdowns
 function populateFarmerDropdowns() {
-    // Use allFarmers which is already loaded from fetchFarmers()
-    const farmers = allFarmers || [];
-    const dropdowns = ['piFarmerName', 'offtakeFarmerSelect'];
-    
-    dropdowns.forEach(dropdownId => {
-        const dropdown = document.getElementById(dropdownId);
+    var farmers = allFarmers || [];
+    var dropdowns = ['piFarmerName', 'offtakeFarmerSelect'];
+
+    dropdowns.forEach(function(dropdownId) {
+        var dropdown = document.getElementById(dropdownId);
         if (dropdown) {
-            // Keep the default "Select Farmer" option
-            const defaultOption = dropdown.querySelector('option[value=""]');
             dropdown.innerHTML = '';
-            
-            // Create default option
-            const defaultOpt = document.createElement('option');
+            var defaultOpt = document.createElement('option');
             defaultOpt.value = '';
             defaultOpt.textContent = 'Select Farmer';
             dropdown.appendChild(defaultOpt);
-            
-            // Add farmer options
+
             if (Array.isArray(farmers) && farmers.length > 0) {
-                farmers.forEach(farmer => {
-                    const option = document.createElement('option');
+                farmers.forEach(function(farmer) {
+                    var option = document.createElement('option');
                     option.value = farmer.farmer_id;
-                    
-                    // Build full name
-                    const fullName = [
-                        farmer.first_name,
-                        farmer.middle_name,
-                        farmer.last_name,
-                        farmer.suffix
-                    ]
-                    .filter(Boolean)
-                    .join(" ");
-                    
-                    option.textContent = fullName || farmer.rsbsa_id || `Farmer ${farmer.farmer_id}`;
+                    var fullName = [farmer.first_name, farmer.middle_name, farmer.last_name, farmer.suffix].filter(Boolean).join(" ");
+                    option.textContent = fullName || farmer.rsbsa_id || "Farmer " + farmer.farmer_id;
                     option.dataset.farmerId = farmer.farmer_id;
                     dropdown.appendChild(option);
                 });
-            } else {
-                console.warn(`No farmers available to populate ${dropdownId}`);
             }
         }
     });
 }
 
-function createDefaultOption() {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'Select Farmer';
-    return option;
-}
-
-// Setup auto-fill for farmer ID when farmer is selected
 function setupFarmerDropdownAutoFill() {
-    // For Planting Intent
-    const piFarmerName = document.getElementById('piFarmerName');
-    const piFarmerId = document.getElementById('piFarmerId');
-    
+    var piFarmerName = document.getElementById('piFarmerName');
+    var piFarmerId = document.getElementById('piFarmerId');
     if (piFarmerName && piFarmerId) {
         piFarmerName.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+            var selectedOption = this.options[this.selectedIndex];
             if (selectedOption && selectedOption.value) {
                 piFarmerId.value = selectedOption.value;
             } else {
@@ -6209,14 +2373,12 @@ function setupFarmerDropdownAutoFill() {
             }
         });
     }
-    
-    // For Offtake Request
-    const offtakeFarmerSelect = document.getElementById('offtakeFarmerSelect');
-    const offtakeFarmerId = document.getElementById('offtakeFarmerId');
-    
+
+    var offtakeFarmerSelect = document.getElementById('offtakeFarmerSelect');
+    var offtakeFarmerId = document.getElementById('offtakeFarmerId');
     if (offtakeFarmerSelect && offtakeFarmerId) {
         offtakeFarmerSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+            var selectedOption = this.options[this.selectedIndex];
             if (selectedOption && selectedOption.value) {
                 offtakeFarmerId.value = selectedOption.value;
             } else {
@@ -6226,117 +2388,77 @@ function setupFarmerDropdownAutoFill() {
     }
 }
 
-// Call this function after farmers are loaded
 function refreshFarmerDropdowns() {
     populateFarmerDropdowns();
     setupFarmerDropdownAutoFill();
 }
 
-// Override the existing populateOfftakeFarmerSelect function
-// to use the new dropdown system
-const originalPopulateOfftakeFarmerSelect = populateOfftakeFarmerSelect;
-populateOfftakeFarmerSelect = function() {
-    populateFarmerDropdowns();
-    setupFarmerDropdownAutoFill();
-};
-
-// Override the existing setupOfftakeFarmerDropdown function
-const originalSetupOfftakeFarmerDropdown = setupOfftakeFarmerDropdown;
-setupOfftakeFarmerDropdown = function() {
-    setupFarmerDropdownAutoFill();
-};
-
-/* ============================================================
-   UPDATE: Modify fetchFarmers to call refreshFarmerDropdowns
-============================================================ */
-
-// Store the original fetchFarmers function
-const originalFetchFarmers = fetchFarmers;
-
 // Override fetchFarmers to include dropdown refresh
+var originalFetchFarmers = fetchFarmers;
 fetchFarmers = async function() {
-    const result = await originalFetchFarmers.call(this);
-    
-    // After farmers are loaded, refresh dropdowns
+    var result = await originalFetchFarmers.call(this);
     if (allFarmers && allFarmers.length > 0) {
         refreshFarmerDropdowns();
     }
-    
     return result;
 };
 
-/* ============================================================
-   FIX: Override submitPlantingIntent to use dropdown values
-============================================================ */
-
-// Store original submitPlantingIntent
-const originalSubmitPlantingIntent = submitPlantingIntent;
-
-// Override to use dropdown for farmer name
+// Override submitPlantingIntent to use dropdown values
+var originalSubmitPlantingIntent = submitPlantingIntent;
 submitPlantingIntent = async function() {
-    const form = document.getElementById("submitPlantIntentForm");
-    
+    var form = document.getElementById("submitPlantIntentForm");
     if (!form) {
         alert("Planting Intent form not found.");
         return;
     }
-    
-    // Get values from form - using the dropdown for farmer name
-    const farmerNameSelect = document.getElementById("piFarmerName");
-    const farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
-    const farmerId = document.getElementById("piFarmerId")?.value || "";
-    const plantingDate = document.getElementById("piPlantDate")?.value || "";
-    const harvestDate = document.getElementById("piHarvestDate")?.value || "";
-    const commodity = document.getElementById("piCommodity")?.value?.trim() || "";
-    const volume = document.getElementById("piVolume")?.value || "";
-    const remarks = document.getElementById("piRemarks")?.value || "";
-    
-    // Validate required fields
+
+    var farmerNameSelect = document.getElementById("piFarmerName");
+    var farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
+    var farmerId = document.getElementById("piFarmerId")?.value || "";
+    var plantingDate = document.getElementById("piPlantDate")?.value || "";
+    var harvestDate = document.getElementById("piHarvestDate")?.value || "";
+    var commodity = document.getElementById("piCommodity")?.value?.trim() || "";
+    var volume = document.getElementById("piVolume")?.value || "";
+    var remarks = document.getElementById("piRemarks")?.value || "";
+
     if (!farmerName || farmerName === "Select Farmer") {
         alert("Please select a Farmer.");
         return;
     }
-    
     if (!farmerId) {
         alert("Farmer ID is required.");
         return;
     }
-    
     if (!plantingDate) {
         alert("Please select Planting Date.");
         return;
     }
-    
     if (!harvestDate) {
         alert("Please select Harvest Date.");
         return;
     }
-    
     if (!commodity) {
         alert("Please enter Commodity.");
         return;
     }
-    
     if (!volume) {
         alert("Please enter Volume.");
         return;
     }
-    
-    // Parse farmer ID and volume
-    const parsedFarmerId = Number(farmerId);
+
+    var parsedFarmerId = Number(farmerId);
     if (!Number.isInteger(parsedFarmerId)) {
         alert("Farmer ID must be a valid number.");
         return;
     }
-    
-    const parsedVolume = Number(volume);
-    if (Number.isNaN(parsedVolume) || parsedVolume <= 0) {
+
+    var parsedVolume = Number(volume);
+    if (isNaN(parsedVolume) || parsedVolume <= 0) {
         alert("Volume must be a valid positive number.");
         return;
     }
-    
-    // Prepare payload
-    const plantingIntentData = {
+
+    var plantingIntentData = {
         farmer_id: parsedFarmerId,
         commodity: commodity,
         volume: parsedVolume,
@@ -6344,26 +2466,21 @@ submitPlantingIntent = async function() {
         harvest_date: harvestDate,
         remarks: remarks || undefined
     };
-    
+
     console.log("Submitting planting intent:", plantingIntentData);
-    
+
     try {
-        const createdIntent = await apiRequest(
-            PLANTING_INTENTS_ENDPOINT,
-            {
-                method: "POST",
-                body: JSON.stringify(plantingIntentData)
-            }
-        );
-        
+        var createdIntent = await apiRequest(PLANTING_INTENTS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(plantingIntentData)
+        });
+
         console.log("Planting intent created:", createdIntent);
-        
-        // Reload table
         await fetchPlantingIntents();
-        
-        // Show success modal
-        document.getElementById("plantIntentSubmittedModal")?.classList.add("show");
-        
+
+        var modal = document.getElementById("plantIntentSubmittedModal");
+        if (modal) modal.classList.add("show");
+
     } catch (error) {
         console.error("Create planting intent error:", error);
         handleAuthError(error);
@@ -6371,13 +2488,8 @@ submitPlantingIntent = async function() {
     }
 };
 
-/* ============================================================
-   INIT: Call refreshFarmerDropdowns on DOM load
-============================================================ */
-
-// Add to DOMContentLoaded
+// Initialize dropdowns on DOM load
 document.addEventListener("DOMContentLoaded", function() {
-    // Wait a bit for farmers to load, then refresh dropdowns
     setTimeout(function() {
         if (allFarmers && allFarmers.length > 0) {
             refreshFarmerDropdowns();
@@ -6386,11 +2498,5 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 /* ============================================================
-   END OF FARMER DROPDOWN FUNCTIONS
-============================================================ */
-
-
-/* ============================================================
    END OF AEW.JS
 ============================================================ */
-
