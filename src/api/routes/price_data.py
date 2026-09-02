@@ -26,6 +26,19 @@ def create_price_data(
     return db_price
 
 
+# GET ALL PRICE DATA
+@router.get("/", response_model=list[PriceDataResponse])
+def read_price_data(
+    db: Session = Depends(get_db)
+):
+    prices = (
+        db.query(PriceData)
+        .order_by(PriceData.price_data_id.asc())
+        .all()
+    )
+
+    return prices
+
 @router.get("/{price_data_id}", response_model=PriceDataResponse)
 def read_price_data(
     price_data_id: int,

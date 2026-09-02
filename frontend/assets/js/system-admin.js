@@ -1171,6 +1171,237 @@ async function loadAuditLogs() {
 
 
 /* ============================================================
+   ETL RUN LOGS
+   GET /api/etl-run-log/
+============================================================ */
+
+async function loadETLRunLogs() {
+
+    const etlRows =
+        document.getElementById("etlRows");
+
+    if (!etlRows) {
+        console.warn(
+            "ETL run log table body #etlRows not found."
+        );
+        return;
+    }
+
+    etlRows.innerHTML = `
+        <tr>
+            <td
+                colspan="3"
+                style="text-align:center;"
+            >
+                Loading ETL logs...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/etl-run-log/`,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                }
+            );
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        }
+        catch {
+            data = {};
+        }
+
+        console.log(
+            "GET /api/etl-run-log/:",
+            response.status,
+            data
+        );
+
+        /* AUTH FAILURE */
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+
+        /* FORBIDDEN */
+
+        if (response.status === 403) {
+
+            etlRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="3"
+                        class="api-error"
+                    >
+                        ${escapeHTML(
+                            getErrorMessage(
+                                data,
+                                "You do not have permission to view ETL logs."
+                            )
+                        )}
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        /* OTHER API ERRORS */
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Failed to load ETL run logs."
+                )
+            );
+        }
+
+
+        /* RESPONSE FORMAT */
+
+        let logs = [];
+
+        if (Array.isArray(data)) {
+
+            logs = data;
+
+        }
+        else if (Array.isArray(data.logs)) {
+
+            logs = data.logs;
+
+        }
+        else if (Array.isArray(data.data)) {
+
+            logs = data.data;
+
+        }
+        else {
+
+            throw new Error(
+                "Unexpected ETL log response format."
+            );
+        }
+
+
+        /* NO LOGS */
+
+        if (logs.length === 0) {
+
+            etlRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="3"
+                        style="text-align:center;"
+                    >
+                        No ETL logs available.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        /* RENDER LOGS */
+
+        etlRows.innerHTML = "";
+
+        logs.forEach(log => {
+
+            const row =
+                document.createElement("tr");
+
+
+            const runDateTime =
+                formatAuditDate(
+                    log.run_date_time
+                );
+
+
+            const dataSource =
+                log.data_source || "—";
+
+
+            const status =
+                log.status || "—";
+
+
+            const statusClass =
+                status.toLowerCase() === "success"
+                    ? "active"
+                    : status.toLowerCase() === "failed"
+                        ? "inactive"
+                        : "";
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${escapeHTML(runDateTime)}
+                </td>
+
+                <td>
+                    ${escapeHTML(dataSource)}
+                </td>
+
+                <td>
+                    <span
+                        class="status-pill ${statusClass}"
+                    >
+                        ${escapeHTML(status)}
+                    </span>
+                </td>
+
+            `;
+
+
+            etlRows.appendChild(row);
+
+        });
+
+    }
+    catch (error) {
+
+        console.error(
+            "Load ETL run logs error:",
+            error
+        );
+
+        etlRows.innerHTML = `
+            <tr>
+                <td
+                    colspan="3"
+                    class="api-error"
+                >
+
+                    Failed to load ETL logs.
+
+                    <br><br>
+
+                    ${escapeHTML(error.message)}
+
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+
+/* ============================================================
    FORMAT AUDIT DATE
 ============================================================ */
 
@@ -1760,6 +1991,10 @@ document.addEventListener(
         /* AUDIT LOGS */
 
         loadAuditLogs();
+
+        /* ETL RUN LOGS */
+
+        loadETLRunLogs();
 
 
         /* SEARCH */

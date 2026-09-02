@@ -15,6 +15,14 @@ for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
 
 
 # ============================================================
+# DATABASE
+# ============================================================
+
+from src.core.database import SessionLocal
+from src.models.etl_run_log import ETLRunLog
+
+
+# ============================================================
 # ETL IMPORTS
 # ============================================================
 
@@ -28,6 +36,88 @@ from src.etl_pipeline.white_onion import main as run_white_onion
 
 
 # ============================================================
+# ETL RUN LOGGING
+# ============================================================
+
+def run_etl_step(data_source, etl_function):
+
+    print()
+    print("=" * 60)
+    print(f"RUNNING: {data_source}")
+    print("=" * 60)
+
+    db = SessionLocal()
+
+    try:
+
+        # ----------------------------------------------------
+        # RUN ETL
+        # ----------------------------------------------------
+
+        etl_function()
+
+        # ----------------------------------------------------
+        # SAVE SUCCESS LOG
+        # ----------------------------------------------------
+
+        log = ETLRunLog(
+            data_source=data_source,
+            status="SUCCESS"
+        )
+
+        db.add(log)
+        db.commit()
+
+        print()
+        print(f"{data_source} → SUCCESS")
+
+    except Exception as error:
+
+        # ----------------------------------------------------
+        # PRINT ACTUAL ERROR TO TERMINAL
+        # ----------------------------------------------------
+
+        print()
+        print("=" * 60)
+        print(f"{data_source} → FAILED")
+        print("=" * 60)
+
+        print(f"ERROR: {error}")
+
+        # ----------------------------------------------------
+        # ROLLBACK ANY DATABASE TRANSACTION
+        # ----------------------------------------------------
+
+        db.rollback()
+
+        # ----------------------------------------------------
+        # SAVE FAILED LOG
+        # ----------------------------------------------------
+
+        try:
+
+            log = ETLRunLog(
+                data_source=data_source,
+                status="FAILED"
+            )
+
+            db.add(log)
+            db.commit()
+
+        except Exception as log_error:
+
+            db.rollback()
+
+            print(
+                f"Could not save ETL log: {log_error}"
+            )
+
+    finally:
+
+        db.close()
+
+
+# ============================================================
 # RUN ETL PIPELINE
 # ============================================================
 
@@ -38,91 +128,106 @@ def run_pipeline():
     print("STARTING QUARTERLY PSA ETL PIPELINE")
     print("=" * 60)
 
-    try:
 
-        # ----------------------------------------------------
-        # STEP 1: PSA OPENSTAT
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # STEP 1: PSA OPENSTAT
+    # --------------------------------------------------------
 
-        print()
-        print("STEP 1: FETCHING PSA OPENSTAT DATA")
+    print()
+    print("STEP 1: FETCHING PSA OPENSTAT DATA")
 
-        run_psa()
-
-
-        # ----------------------------------------------------
-        # STEP 2: RED ONION ETL
-        # ----------------------------------------------------
-
-        print()
-        print("STEP 2: FETCHING RED ONION PSA DATA")
-
-        run_red_onion()
+    run_etl_step(
+        "PSA OpenSTAT",
+        run_psa
+    )
 
 
-        # ----------------------------------------------------
-        # STEP 3: WHITE ONION ETL
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # STEP 2: RED ONION ETL
+    # --------------------------------------------------------
 
-        print()
-        print("STEP 3: FETCHING WHITE ONION PSA DATA")
+    print()
+    print("STEP 2: FETCHING RED ONION PSA DATA")
 
-        run_white_onion()
-
-
-        # ----------------------------------------------------
-        # STEP 4: TOMATO FORECAST
-        # ----------------------------------------------------
-
-        print()
-        print("STEP 4: GENERATING TOMATO FORECAST")
-
-        run_forecast("Tomato")
+    run_etl_step(
+        "Red Onion",
+        run_red_onion
+    )
 
 
-        # ----------------------------------------------------
-        # STEP 5: KALABASA FORECAST
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # STEP 3: WHITE ONION ETL
+    # --------------------------------------------------------
 
-        print()
-        print("STEP 5: GENERATING KALABASA FORECAST")
+    print()
+    print("STEP 3: FETCHING WHITE ONION PSA DATA")
 
-        run_kalabasa_forecast()
-
-
-        # ----------------------------------------------------
-        # STEP 6: RED ONION FORECAST
-        # ----------------------------------------------------
-
-        print()
-        print("STEP 6: GENERATING RED ONION FORECAST")
-
-        run_forecast("Red Onion")
+    run_etl_step(
+        "White Onion",
+        run_white_onion
+    )
 
 
-        # ----------------------------------------------------
-        # STEP 7: WHITE ONION FORECAST
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # STEP 4: TOMATO FORECAST
+    # --------------------------------------------------------
 
-        print()
-        print("STEP 7: GENERATING WHITE ONION FORECAST")
+    print()
+    print("STEP 4: GENERATING TOMATO FORECAST")
 
-        run_forecast("White Onion")
+    run_etl_step(
+        "Tomato Forecast",
+        lambda: run_forecast("Tomato")
+    )
 
 
-        print()
-        print("=" * 60)
-        print("QUARTERLY ETL PIPELINE COMPLETED")
-        print("=" * 60)
+    # --------------------------------------------------------
+    # STEP 5: KALABASA FORECAST
+    # --------------------------------------------------------
 
-    except Exception as error:
+    print()
+    print("STEP 5: GENERATING KALABASA FORECAST")
 
-        print()
-        print("=" * 60)
-        print("QUARTERLY ETL PIPELINE FAILED")
-        print("=" * 60)
+    run_etl_step(
+        "Kalabasa Forecast",
+        run_kalabasa_forecast
+    )
 
-        print(error)
+
+    # --------------------------------------------------------
+    # STEP 6: RED ONION FORECAST
+    # --------------------------------------------------------
+
+    print()
+    print("STEP 6: GENERATING RED ONION FORECAST")
+
+    run_etl_step(
+        "Red Onion Forecast",
+        lambda: run_forecast("Red Onion")
+    )
+
+
+    # --------------------------------------------------------
+    # STEP 7: WHITE ONION FORECAST
+    # --------------------------------------------------------
+
+    print()
+    print("STEP 7: GENERATING WHITE ONION FORECAST")
+
+    run_etl_step(
+        "White Onion Forecast",
+        lambda: run_forecast("White Onion")
+    )
+
+
+    # --------------------------------------------------------
+    # PIPELINE COMPLETE
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("QUARTERLY ETL PIPELINE COMPLETED")
+    print("=" * 60)
 
 
 # ============================================================

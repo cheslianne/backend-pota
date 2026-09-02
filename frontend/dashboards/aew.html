@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEW — eSaka</title>
 
-
   <!-- Clean, Modern Google Fonts for High Readability -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
@@ -18,7 +16,6 @@
 
   <!-- Chart.js for price trends visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 
   <style>
     :root {
@@ -41,13 +38,11 @@
       --radius-md: 12px;
     }
 
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
 
     html, body {
       width: 100%;
@@ -58,10 +53,8 @@
       -webkit-font-smoothing: antialiased;
     }
 
-
     a { color: inherit; }
     button, input, select, textarea { font-family: inherit; }
-
 
     /* --- TOPBAR --- */
     .topbar {
@@ -77,13 +70,11 @@
       height: var(--topbar-height);
     }
 
-
     .topbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
     }
-
 
     .hamburger {
       background: #FFF;
@@ -97,12 +88,10 @@
       transition: all 0.2s ease;
     }
 
-
     .hamburger:hover {
       background: var(--green-light);
       border-color: var(--green);
     }
-
 
     .hamburger span {
       display: block;
@@ -112,13 +101,11 @@
       border-radius: 2px;
     }
 
-
     .logos {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
 
     .brand-logo-img {
       height: 42px;
@@ -127,7 +114,6 @@
       display: block;
     }
 
-
     .brand-name-img {
       height: 44px;
       width: auto;
@@ -135,13 +121,11 @@
       display: block;
     }
 
-
     .topbar-right {
       display: flex;
       align-items: center;
       gap: 18px;
     }
-
 
     .bell-wrap {
       position: relative;
@@ -157,19 +141,16 @@
       transition: transform 0.15s ease, background 0.2s ease;
     }
 
-
     .bell-wrap:hover {
       background: var(--green-dark);
       transform: scale(1.04);
     }
-
 
     .bell-wrap svg {
       width: 18px;
       height: 18px;
       fill: #fff;
     }
-
 
     .bell-dot {
       position: absolute;
@@ -182,7 +163,6 @@
       border: 2px solid var(--cream);
     }
 
-
     .user-info {
       display: flex;
       align-items: center;
@@ -192,7 +172,6 @@
       border-radius: 999px;
       border: 1px solid var(--border);
     }
-
 
     .avatar {
       width: 32px;
@@ -207,19 +186,16 @@
       font-size: 13px;
     }
 
-
     .user-text {
       text-align: left;
       line-height: 1.2;
     }
-
 
     .user-name {
       font-size: 13.5px;
       font-weight: 700;
       color: var(--ink);
     }
-
 
     .user-role {
       font-size: 11px;
@@ -229,13 +205,11 @@
       letter-spacing: 0.04em;
     }
 
-
     /* --- SIDEBAR --- */
     .layout {
       display: flex;
       min-height: calc(100vh - var(--topbar-height));
     }
-
 
     .sidebar {
       width: 230px;
@@ -254,18 +228,15 @@
       transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-
     .sidebar.open {
       left: 0;
     }
-
 
     .nav-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
-
 
     .nav-item {
       display: flex;
@@ -285,7 +256,6 @@
       transition: all 0.2s ease;
     }
 
-
     .nav-item svg {
       width: 19px;
       height: 19px;
@@ -293,19 +263,16 @@
       flex-shrink: 0;
     }
 
-
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
     }
-
 
     .nav-item.active {
       background: var(--green-dark);
       color: #FFFFFF;
       font-weight: 700;
     }
-
 
     .signout {
       display: flex;
@@ -324,19 +291,16 @@
       transition: all 0.2s ease;
     }
 
-
     .signout svg {
       width: 18px;
       height: 18px;
       fill: currentColor;
     }
 
-
     .signout:hover {
       background: rgba(192, 57, 43, 0.25);
       color: #FFF;
     }
-
 
     /* --- MAIN CONTENT & ACTION PANELS --- */
     .main {
@@ -345,10 +309,8 @@
       min-width: 0;
     }
 
-
     .view { display: none; }
     .view.active-view { display: block; }
-
 
     .main-header {
       display: flex;
@@ -359,7 +321,6 @@
       margin-bottom: 20px;
     }
 
-
     .header-left h1 {
       font-size: 26px;
       font-weight: 800;
@@ -368,13 +329,11 @@
       margin: 0;
     }
 
-
     .header-left p {
       font-size: 13px;
       color: var(--muted);
       margin-top: 4px;
     }
-
 
     .header-actions {
       display: flex;
@@ -382,14 +341,12 @@
       gap: 12px;
     }
 
-
     .card {
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
       padding: 22px 24px;
     }
-
 
     /* --- HCI SEARCH BOX AFFORDANCE --- */
     .search-box {
@@ -404,12 +361,10 @@
       transition: all 0.2s ease;
     }
 
-
     .search-box:focus-within {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
-
 
     .search-box svg {
       width: 15px;
@@ -418,7 +373,6 @@
       stroke: var(--muted);
       stroke-width: 2.4;
     }
-
 
     .search-box input {
       border: none;
@@ -429,14 +383,12 @@
       color: var(--ink);
     }
 
-
     /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
     }
-
 
     thead th {
       text-align: left;
@@ -449,11 +401,9 @@
       border-bottom: 1.5px solid var(--border);
     }
 
-
     thead th.center-col, tbody td.center-col {
       text-align: center;
     }
-
 
     tbody td {
       padding: 13px 14px;
@@ -463,19 +413,15 @@
       color: var(--ink);
     }
 
-
     tbody tr {
       transition: background 0.15s ease;
     }
-
 
     tbody tr:hover td {
       background: #F3EEE4;
     }
 
-
     .clickable-row { cursor: pointer; }
-
 
     /* --- VISIBLE HIGH-CONTRAST STATUS BADGES --- */
     .status-pill {
@@ -491,7 +437,6 @@
       letter-spacing: 0.02em;
     }
 
-
     .status-pill.active,
     .status-pill.confirmed,
     .status-pill.harvested,
@@ -499,26 +444,22 @@
       background-color: var(--status-confirmed) !important;
     }
 
-
     .status-pill.submitted,
     .status-pill.mediating,
     .status-pill.pending {
       background-color: var(--status-submitted) !important;
     }
 
-
     .status-pill.planted {
       background-color: #D9531E !important;
     }
-
 
     .status-pill.rejected,
     .status-pill.cancelled {
       background-color: var(--status-rejected) !important;
     }
 
-
-    /* --- SOLID PRIMARY & OUTLINE BUTTONS (FITTS'S LAW) --- */
+    /* --- SOLID PRIMARY & OUTLINE BUTTONS --- */
     .btn-primary {
       appearance: none;
       background: var(--green);
@@ -535,17 +476,10 @@
       transition: all 0.2s ease;
     }
 
-
     .btn-primary:hover:not(:disabled) {
       background: var(--green-dark);
       transform: translateY(-1px);
     }
-
-
-    .btn-primary:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
 
     .btn-outline-report {
       appearance: none;
@@ -560,12 +494,10 @@
       transition: all 0.2s ease;
     }
 
-
     .btn-outline-report:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
     }
-
 
     .actions-right-row {
       display: flex;
@@ -574,14 +506,12 @@
       margin-top: 22px;
     }
 
-
     /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px 30px;
     }
-
 
     .form-field-item label {
       display: block;
@@ -593,9 +523,7 @@
       letter-spacing: 0.02em;
     }
 
-
     .form-field-item label .req { color: #C0392B; }
-
 
     .form-field-item input,
     .form-field-item select,
@@ -611,7 +539,6 @@
       transition: all 0.2s ease;
     }
 
-
     .form-field-item input:focus,
     .form-field-item select:focus,
     .form-field-item textarea:focus {
@@ -619,15 +546,12 @@
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
-
     .form-field-item textarea {
       resize: vertical;
       height: 90px;
     }
 
-
     .form-field-full { grid-column: 1 / -1; }
-
 
     /* --- OFFTAKE MEMORANDUM --- */
     .confirm-offtake-box {
@@ -638,7 +562,6 @@
       font-size: 14px;
       line-height: 1.6;
     }
-
 
     .confirm-offtake-box h3 {
       font-size: 15px;
@@ -651,7 +574,6 @@
       letter-spacing: 0.03em;
     }
 
-
     .offtake-spec-table {
       width: 100%;
       margin: 16px 0;
@@ -660,15 +582,12 @@
       overflow: hidden;
     }
 
-
     .offtake-spec-table td {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border-light);
     }
 
-
     .offtake-spec-table tr:last-child td { border-bottom: none; }
-
 
     .offtake-spec-table td.label-col {
       font-weight: 700;
@@ -676,10 +595,7 @@
       background: #F4EFE6;
     }
 
- /* =========================================================
-       FAIR PRICE DASHBOARD
-       ========================================================= */
-
+    /* --- FAIR PRICE DASHBOARD --- */
     .fair-price-dashboard-container {
       display: flex;
       flex-direction: column;
@@ -752,11 +668,7 @@
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
-    /* =========================================================
-       FIXED CUSTOM MONTH DROPDOWN
-       It will ALWAYS OPEN BELOW the Month button.
-       ========================================================= */
-
+    /* CUSTOM MONTH DROPDOWN FIX */
     .custom-month-dropdown {
       position: relative;
       width: 100%;
@@ -807,18 +719,13 @@
       top: calc(100% + 6px);
       left: 0;
       right: 0;
-
       background: #FFFFFF;
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
-
       box-shadow: 0 10px 24px rgba(46, 42, 34, 0.18);
-
       max-height: 240px;
       overflow-y: auto;
-
       display: none;
-
       z-index: 10000;
     }
 
@@ -830,18 +737,14 @@
       display: block;
       width: 100%;
       padding: 10px 14px;
-
       border: none;
       background: #FFFFFF;
       color: var(--ink);
-
       font-family: inherit;
       font-size: 13.5px;
       font-weight: 500;
-
       text-align: left;
       cursor: pointer;
-
       transition: background 0.15s ease;
     }
 
@@ -970,9 +873,7 @@
       z-index: 3000;
     }
 
-    .modal-overlay.show {
-      display: flex;
-    }
+    .modal-overlay.show { display: flex; }
 
     .modal-box {
       background: var(--cream);
@@ -1017,9 +918,7 @@
       transition: background 0.2s ease;
     }
 
-    .modal-btn-confirm:hover {
-      background: var(--green-dark);
-    }
+    .modal-btn-confirm:hover { background: var(--green-dark); }
 
     .pagination-container {
       display: flex;
@@ -1032,16 +931,8 @@
       color: var(--muted);
     }
 
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .page-numbers-wrap {
-      display: flex;
-      gap: 4px;
-    }
+    .pagination-controls { display: flex; align-items: center; gap: 6px; }
+    .page-numbers-wrap { display: flex; gap: 4px; }
 
     .btn-page {
       padding: 5px 11px;
@@ -1066,10 +957,7 @@
       border-color: var(--green);
     }
 
-    .btn-page:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .input-readonly {
       background: #ECE6D8 !important;
@@ -1089,9 +977,7 @@
       line-height: 1.45;
     }
 
-    .hidden-element {
-      display: none !important;
-    }
+    .hidden-element { display: none !important; }
 
     .map-title {
       font-size: 14.5px;
@@ -1102,55 +988,11 @@
       letter-spacing: 0.02em;
     }
 
-    .btn-danger {
-      background: #A1382B !important;
-    }
-
-    .btn-danger:hover {
-      background: #84281D !important;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .fair-price-top-card {
-        grid-template-columns: 1fr;
-      }
-
-      .form-grid-two {
-        grid-template-columns: 1fr;
-      }
-
-      .form-field-full {
-        grid-column: auto;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .main {
-        padding: 24px 18px;
-      }
-
-      .topbar {
-        padding: 0 16px;
-      }
-
-      .user-text {
-        display: none;
-      }
-
-      .brand-name-img {
-        height: 36px;
-      }
-
-      .fair-price-filters {
-        grid-template-columns: 1fr;
-      }
-    }
+    .btn-danger { background: #A1382B !important; }
+    .btn-danger:hover { background: #84281D !important; }
   </style>
 </head>
-
 <body>
-
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -1159,7 +1001,6 @@
         <span></span><span></span><span></span>
       </button>
 
-
       <!-- PNG Logos -->
       <div class="logos">
         <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
@@ -1167,13 +1008,11 @@
       </div>
     </div>
 
-
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
-
 
       <div class="user-info">
         <div class="avatar">JD</div>
@@ -1184,7 +1023,6 @@
       </div>
     </div>
   </div>
-
 
   <div class="layout">
     <!-- SIDEBAR -->
@@ -1210,8 +1048,11 @@
           <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
           View Map
         </button>
+        <button class="nav-item" type="button" data-view="reports">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          Reports
+        </button>
       </div>
-
 
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
@@ -1219,10 +1060,8 @@
       </button>
     </nav>
 
-
     <!-- MAIN CONTENT -->
     <main class="main">
-
 
       <!-- VIEW 1: Farmers -->
       <section class="view active-view" id="view-farmers">
@@ -1241,7 +1080,6 @@
             </div>
           </div>
 
-
           <div class="card">
             <table>
               <thead>
@@ -1256,7 +1094,6 @@
               <tbody id="farmersTableBody"></tbody>
             </table>
 
-
             <div class="pagination-container">
               <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
               <div class="pagination-controls" id="paginationControls">
@@ -1268,7 +1105,6 @@
           </div>
         </div>
 
-
         <!-- Register Farmer Subview -->
         <div id="registerFarmerSubview" class="hidden-element">
           <div class="main-header">
@@ -1278,7 +1114,6 @@
             </div>
           </div>
 
-
           <div class="card">
             <form id="registerFarmerForm">
               <div class="form-grid-two">
@@ -1287,18 +1122,17 @@
                   <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
                 </div>
                 <div class="form-field-item">
-          <label>Municipality <span class="req">*</span></label>
-          <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
-        </div>
-            
+                  <label>Municipality <span class="req">*</span></label>
+                  <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
+                </div>
                 <div class="form-field-item">
                   <label>First Name <span class="req">*</span></label>
                   <input type="text" id="regFirstName" placeholder="Pancho" required>
                 </div>
                 <div class="form-field-item">
-          <label>Barangay <span class="req">*</span></label>
-          <input type="text" id="regBarangay" placeholder="e.g. San Agustin" required>
-        </div>
+                  <label>Barangay <span class="req">*</span></label>
+                  <input type="text" id="regBarangay" placeholder="e.g. San Agustin" required>
+                </div>
                 <div class="form-field-item">
                   <label>Middle Name</label>
                   <input type="text" id="regMiddleName" placeholder="Reyes">
@@ -1332,7 +1166,6 @@
                 </div>
               </div>
 
-
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
                 <button class="btn-primary" type="submit">Submit</button>
@@ -1340,7 +1173,6 @@
             </form>
           </div>
         </div>
-
 
         <!-- Manage Farmer Subview -->
         <div id="manageFarmerSubview" class="hidden-element">
@@ -1351,12 +1183,10 @@
             </div>
           </div>
 
-
           <div class="card">
             <div class="higher-ups-note">
               <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from arbitrary alteration.
             </div>
-
 
             <div class="form-grid-two">
               <div class="form-field-item">
@@ -1401,7 +1231,6 @@
               </div>
             </div>
 
-
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
               <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
@@ -1411,28 +1240,25 @@
         </div>
       </section>
 
-
       <!-- VIEW 2: Planting Intent -->
-        <section class="view" id="view-planting-intent">
-      <div id="plantingIntentListSubview">
+      <section class="view" id="view-planting-intent">
+        <div id="plantingIntentListSubview">
           <div class="main-header">
-              <div class="header-left">
-                  <h1>Planting Intents Tracking</h1>
-                  <p>Aggregated crop scheduling and yield forecasting.</p>
+            <div class="header-left">
+              <h1>Planting Intents Tracking</h1>
+              <p>Aggregated crop scheduling and yield forecasting.</p>
+            </div>
+            <div class="header-actions">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchPlantingIntentsInput" placeholder="Search planting intents...">
               </div>
-              <div class="header-actions">
-                  <!-- ✅ SEARCH BAR FOR PLANTING INTENTS -->
-                  <div class="search-box">
-                      <svg viewBox="0 0 24 24">
-                          <circle cx="11" cy="11" r="7"/>
-                          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                      </svg>
-                      <input type="text" id="searchPlantingIntentsInput" placeholder="Search planting intents...">
-                  </div>
-                  <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
-              </div>
+              <button class="btn-primary" id="addPlantIntentBtn" type="button">+ Add Plant Intent</button>
+            </div>
           </div>
-
 
           <div class="card">
             <table>
@@ -1452,58 +1278,58 @@
           </div>
         </div>
 
+        <!-- SUBMIT PLANTING INTENT -->
+        <div id="submitPlantIntentSubview" class="hidden-element">
+          <div class="main-header">
+            <div class="header-left">
+              <h1>Submit Planting Intent</h1>
+              <p>Log a prospective crop production plan from a verified farmer.</p>
+            </div>
+          </div>
 
-  <!-- SUBMIT PLANTING INTENT -->
-<div id="submitPlantIntentSubview" class="hidden-element">
-  <div class="main-header">
-    <div class="header-left">
-      <h1>Submit Planting Intent</h1>
-      <p>Log a prospective crop production plan from a verified farmer.</p>
-    </div>
-  </div>
+          <div class="card">
+            <form id="submitPlantIntentForm">
+              <div class="form-grid-two">
+                <div class="form-field-item">
+                  <label>Farmer Name <span class="req">*</span></label>
+                  <select id="piFarmerName" required>
+                    <option value="">Select Farmer</option>
+                  </select>
+                </div>
+                <div class="form-field-item">
+                  <label>Planting Date <span class="req">*</span></label>
+                  <input type="date" id="piPlantDate" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Farmer ID <span class="req">*</span></label>
+                  <input type="text" id="piFarmerId" class="input-readonly" readonly required>
+                </div>
+                <div class="form-field-item">
+                  <label>Harvest Date <span class="req">*</span></label>
+                  <input type="date" id="piHarvestDate" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Commodity <span class="req">*</span></label>
+                  <input type="text" id="piCommodity" required>
+                </div>
+                <div class="form-field-item">
+                  <label>Estimated Volume (kg) <span class="req">*</span></label>
+                  <input type="number" id="piVolume" placeholder="e.g. 15000" required>
+                </div>
+                <div class="form-field-item form-field-full">
+                  <label>Remarks</label>
+                  <textarea id="piRemarks"></textarea>
+                </div>
+              </div>
 
-  <div class="card">
-    <form id="submitPlantIntentForm">
-      <div class="form-grid-two">
-        <div class="form-field-item">
-          <label>Farmer Name <span class="req">*</span></label>
-          <select id="piFarmerName" required>
-            <option value="">Select Farmer</option>
-          </select>
+              <div class="actions-right-row">
+                <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
+                <button class="btn-primary" type="submit">Submit Intent</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="form-field-item">
-          <label>Planting Date <span class="req">*</span></label>
-          <input type="date" id="piPlantDate" required>
-        </div>
-        <div class="form-field-item">
-          <label>Farmer ID <span class="req">*</span></label>
-          <input type="text" id="piFarmerId" class="input-readonly" readonly required>
-        </div>
-        <div class="form-field-item">
-          <label>Harvest Date <span class="req">*</span></label>
-          <input type="date" id="piHarvestDate" required>
-        </div>
-        <div class="form-field-item">
-          <label>Commodity <span class="req">*</span></label>
-          <input type="text" id="piCommodity" required>
-        </div>
-        <div class="form-field-item">
-          <label>Estimated Volume (kg) <span class="req">*</span></label>
-          <input type="number" id="piVolume" placeholder="e.g. 15000" required>
-        </div>
-        <div class="form-field-item form-field-full">
-          <label>Remarks</label>
-          <textarea id="piRemarks"></textarea>
-        </div>
-      </div>
 
-      <div class="actions-right-row">
-        <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
-        <button class="btn-primary" type="submit">Submit Intent</button>
-      </div>
-    </form>
-  </div>
-</div>
         <!-- PLANTING INTENT DETAILS -->
         <div id="plantingIntentDetailsSubview" class="hidden-element">
           <div class="main-header">
@@ -1512,7 +1338,6 @@
               <p>Review submitted harvest parameters.</p>
             </div>
           </div>
-
 
           <div class="card">
             <div class="form-grid-two">
@@ -1529,9 +1354,7 @@
                   font-size: 13px;
                   color: #555;
                   display: none;
-              ">
-                  <!-- Populated by JavaScript -->
-              </div>
+              "></div>
               <div class="form-field-item">
                 <label>Farmer Name</label>
                 <input type="text" id="detailFarmerName" readonly class="input-readonly">
@@ -1566,7 +1389,6 @@
               </div>
             </div>
 
-
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
               <button class="btn-primary" id="editPlantingIntentBtn" type="button" style="background: #D97706;">Edit Details</button>
@@ -1575,7 +1397,6 @@
           </div>
         </div>
       </section>
-
 
       <!-- VIEW 3: Offtake Request -->
       <section class="view" id="view-offtake-request">
@@ -1587,7 +1408,6 @@
             </div>
             <button class="btn-primary" id="createOfftakeBtn" type="button">+ Create Offtake Request</button>
           </div>
-
 
           <div class="card">
             <table>
@@ -1606,7 +1426,6 @@
           </div>
         </div>
 
-
         <div id="submitOfftakeSubview" class="hidden-element">
           <div class="main-header">
             <div class="header-left">
@@ -1614,7 +1433,6 @@
               <p>Formulate an official supply pairing for an institutional buyer.</p>
             </div>
           </div>
-
 
           <div class="card">
             <form id="submitOfftakeForm">
@@ -1664,7 +1482,6 @@
           </div>
         </div>
 
-
         <!-- FORMAL OFFTAKE LETTER VIEW -->
         <div id="confirmOfftakeSubview" class="hidden-element">
           <div class="main-header">
@@ -1674,7 +1491,6 @@
             </div>
           </div>
 
-
           <div class="card">
             <div class="confirm-offtake-box">
               <h3>Official Agricultural Offtake Memorandum</h3>
@@ -1682,7 +1498,6 @@
               <p><b>To:</b> <span id="confirmBuyerName">Buyer Organization</span></p>
               <p><b>From:</b> Office of the Agricultural Extension Worker (AEW)</p>
               <p><b>Subject:</b> Offtake Agreement & Purchase Commitment Confirmation</p>
-
 
               <table class="offtake-spec-table">
                 <tr>
@@ -1715,12 +1530,10 @@
                 </tr>
               </table>
 
-
               <p class="memo-disclaimer">
                 This document certifies that the produce listed above has undergone technical monitoring and meets municipal standards.
               </p>
             </div>
-
 
             <div class="actions-right-row">
               <button class="btn-outline-report" id="backToSubmitOfftakeBtn" type="button">Edit Details</button>
@@ -1730,120 +1543,112 @@
         </div>
       </section>
 
-
-    <!-- =====================================================
-     VIEW 4: FAIR PRICES
-     ===================================================== -->
-
-<section class="view" id="view-fair-prices">
-    <div class="main-header">
-        <div class="header-left">
+      <!-- VIEW 4: Fair Prices -->
+      <section class="view" id="view-fair-prices">
+        <div class="main-header">
+          <div class="header-left">
             <h1>Fair Price Dashboard</h1>
             <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
+          </div>
         </div>
-    </div>
 
-    <div class="fair-price-dashboard-container">
-        <!-- TOP CARD -->
-        <div class="fair-price-top-card">
+        <div class="fair-price-dashboard-container">
+          <!-- TOP CARD -->
+          <div class="fair-price-top-card">
             <!-- LEFT -->
             <div class="fair-price-left-pane">
-                <h2>Fair Price Intelligence</h2>
-                <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
-                
-                <div class="crop-image-placeholder">
-                    <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-                </div>
+              <h2>Fair Price Intelligence</h2>
+              <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
+              
+              <div class="crop-image-placeholder">
+                <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
+              </div>
 
-                <div class="fair-price-filters">
-                    <select id="fairPriceCropSelect">
-                        <option value="red-onion">Red Onion</option>
-                        <option value="white-onion">White Onion</option>
-                        <option value="tomato" selected>Tomato</option>
-                        <option value="squash">Squash</option>
-                    </select>
+              <div class="fair-price-filters">
+                <select id="fairPriceCropSelect">
+                  <option value="red-onion">Red Onion</option>
+                  <option value="white-onion">White Onion</option>
+                  <option value="tomato" selected>Tomato</option>
+                  <option value="squash">Squash</option>
+                </select>
 
-                    <!-- CUSTOM MONTH DROPDOWN -->
-                    <div class="custom-month-dropdown" id="customMonthDropdown">
-                        <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
-                            <span id="fairPriceMonthText">Month (All)</span>
-                            <span class="month-dropdown-arrow">▼</span>
-                        </button>
-                        <div class="custom-month-menu" id="fairPriceMonthMenu" role="listbox">
-                            <button type="button" class="month-option active" data-value="all">Month (All)</button>
-                            <button type="button" class="month-option" data-value="jan">January</button>
-                            <button type="button" class="month-option" data-value="feb">February</button>
-                            <button type="button" class="month-option" data-value="mar">March</button>
-                            <button type="button" class="month-option" data-value="apr">April</button>
-                            <button type="button" class="month-option" data-value="may">May</button>
-                            <button type="button" class="month-option" data-value="jun">June</button>
-                            <button type="button" class="month-option" data-value="jul">July</button>
-                            <button type="button" class="month-option" data-value="aug">August</button>
-                            <button type="button" class="month-option" data-value="sep">September</button>
-                            <button type="button" class="month-option" data-value="oct">October</button>
-                            <button type="button" class="month-option" data-value="nov">November</button>
-                            <button type="button" class="month-option" data-value="dec">December</button>
-                        </div>
-                        <select id="fairPriceMonthSelect" class="hidden-month-select" aria-hidden="true" tabindex="-1">
-                            <option value="all">Month (All)</option>
-                            <option value="jan">January</option>
-                            <option value="feb">February</option>
-                            <option value="mar">March</option>
-                            <option value="apr">April</option>
-                            <option value="may">May</option>
-                            <option value="jun">June</option>
-                            <option value="jul">July</option>
-                            <option value="aug">August</option>
-                            <option value="sep">September</option>
-                            <option value="oct">October</option>
-                            <option value="nov">November</option>
-                            <option value="dec">December</option>
-                        </select>
-                    </div>
+                <!-- CUSTOM MONTH DROPDOWN -->
+                <div class="custom-month-dropdown" id="customMonthDropdown">
+                  <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
+                    <span id="fairPriceMonthText">Month (All)</span>
+                    <span class="month-dropdown-arrow">▼</span>
+                  </button>
+                  <div class="custom-month-menu" id="fairPriceMonthMenu" role="listbox">
+                    <button type="button" class="month-option active" data-value="all">Month (All)</button>
+                    <button type="button" class="month-option" data-value="jan">January</button>
+                    <button type="button" class="month-option" data-value="feb">February</button>
+                    <button type="button" class="month-option" data-value="mar">March</button>
+                    <button type="button" class="month-option" data-value="apr">April</button>
+                    <button type="button" class="month-option" data-value="may">May</button>
+                    <button type="button" class="month-option" data-value="jun">June</button>
+                    <button type="button" class="month-option" data-value="jul">July</button>
+                    <button type="button" class="month-option" data-value="aug">August</button>
+                    <button type="button" class="month-option" data-value="sep">September</button>
+                    <button type="button" class="month-option" data-value="oct">October</button>
+                    <button type="button" class="month-option" data-value="nov">November</button>
+                    <button type="button" class="month-option" data-value="dec">December</button>
+                  </div>
+                  <select id="fairPriceMonthSelect" class="hidden-month-select" aria-hidden="true" tabindex="-1">
+                    <option value="all">Month (All)</option>
+                    <option value="jan">January</option>
+                    <option value="feb">February</option>
+                    <option value="mar">March</option>
+                    <option value="apr">April</option>
+                    <option value="may">May</option>
+                    <option value="jun">June</option>
+                    <option value="jul">July</option>
+                    <option value="aug">August</option>
+                    <option value="sep">September</option>
+                    <option value="oct">October</option>
+                    <option value="nov">November</option>
+                    <option value="dec">December</option>
+                  </select>
                 </div>
+              </div>
             </div>
 
             <!-- RIGHT -->
             <div class="fair-price-right-pane">
-                <div class="price-metric-bar">
-                    <span class="metric-label">Lowest Price</span>
-                    <span class="metric-value" id="lowestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
-                </div>
-                <div class="price-metric-bar">
-                    <span class="metric-label">Highest Price</span>
-                    <span class="metric-value" id="highestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
-                </div>
+              <div class="price-metric-bar">
+                <span class="metric-label">Lowest Price</span>
+                <span class="metric-value" id="lowestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
+              </div>
+              <div class="price-metric-bar">
+                <span class="metric-label">Highest Price</span>
+                <span class="metric-value" id="highestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- FORECAST RESULTS - DYNAMIC CONTAINER -->
-        <div class="market-forecast-card">
+          <!-- FORECAST RESULTS -->
+          <div class="market-forecast-card">
             <h3 class="forecast-title">📊 10-Year Market Price Forecast (2026 – 2035)</h3>
             <p class="forecast-subtitle">Click a year to view monthly projections and trend breakdowns</p>
-            
-            <!-- DYNAMIC FORECAST RESULTS WILL BE RENDERED HERE -->
-            <div id="forecastResultsContainer">
-                <!-- Loading state will appear here -->
-            </div>
-        </div>
+            <div id="forecastResultsContainer"></div>
+          </div>
 
-        <!-- ✅ ADD THIS: PRICE TREND CHART -->
-        <div class="market-forecast-card" style="margin-top: 20px;">
+          <!-- PRICE TREND CHART -->
+          <div class="market-forecast-card" style="margin-top: 20px;">
             <h3 class="forecast-title">📈 Price Trend Analysis</h3>
             <p class="forecast-subtitle">Monthly price trends for selected commodities</p>
             <div style="position: relative; height: 300px; width: 100%;">
-                <canvas id="priceTrendChart"></canvas>
+              <canvas id="priceTrendChart"></canvas>
             </div>
             <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                <button class="btn-outline-report" onclick="updateChart('all')" style="font-size: 12px; padding: 6px 14px;">All</button>
-                <button class="btn-outline-report" onclick="updateChart('Tomato')" style="font-size: 12px; padding: 6px 14px;">Tomato</button>
-                <button class="btn-outline-report" onclick="updateChart('Squash fruit')" style="font-size: 12px; padding: 6px 14px;">Squash</button>
-                <button class="btn-outline-report" onclick="updateChart('Red Onion')" style="font-size: 12px; padding: 6px 14px;">Red Onion</button>
-                <button class="btn-outline-report" onclick="updateChart('White Onion')" style="font-size: 12px; padding: 6px 14px;">White Onion</button>
+              <button class="btn-outline-report" onclick="updateChart('all')" style="font-size: 12px; padding: 6px 14px;">All</button>
+              <button class="btn-outline-report" onclick="updateChart('Tomato')" style="font-size: 12px; padding: 6px 14px;">Tomato</button>
+              <button class="btn-outline-report" onclick="updateChart('Squash fruit')" style="font-size: 12px; padding: 6px 14px;">Squash</button>
+              <button class="btn-outline-report" onclick="updateChart('Red Onion')" style="font-size: 12px; padding: 6px 14px;">Red Onion</button>
+              <button class="btn-outline-report" onclick="updateChart('White Onion')" style="font-size: 12px; padding: 6px 14px;">White Onion</button>
             </div>
+          </div>
         </div>
-    </div>
-</section>
+      </section>
 
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
@@ -1859,10 +1664,101 @@
         </div>
       </section>
 
+      <!-- VIEW 6: REPORTS -->
+      <section class="view" id="view-reports">
+        <div id="reportsMainSubview">
+          <div class="main-header">
+            <div class="header-left">
+              <h1>Submit Report</h1>
+            </div>
+          </div>
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Commodity</th>
+                  <th>Planting Date</th>
+                  <th>Harvest Date</th>
+                  <th>Estimated Yield (kg)</th>
+                  <th>Location</th>
+                  <th class="center-col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody">
+                <tr>
+                  <td>Onion</td>
+                  <td><input type="date" value="2026-02-01" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+                  <td><input type="date" value="2026-06-15" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+                  <td>67</td>
+                  <td>San Juan</td>
+                  <td class="center-col"><span class="status-pill harvested">Harvested</span></td>
+                </tr>
+                <tr>
+                  <td>Tomato</td>
+                  <td><input type="date" value="2026-03-01" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+                  <td><input type="date" value="2026-05-20" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+                  <td>67</td>
+                  <td>San Pablo</td>
+                  <td class="center-col"><span class="status-pill planted">Planted</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="margin-top: 16px;">
+              <button class="btn-outline-report" id="addReportRowBtn" type="button" style="font-size: 12px; padding: 6px 14px;">Add New Row +</button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+            <div>
+              <span class="status-pill" style="background-color: var(--status-rejected) !important; padding: 8px 16px; font-size: 13px;">FLAGGED FOR REVISION</span>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn-outline-report" id="reportsReturnBtn" type="button">Return</button>
+              <button class="btn-outline-report" id="reportsEditBtn" type="button">Edit</button>
+              <button class="btn-primary" id="reportsNextBtn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORT DETAILS -->
+        <div id="reportsDetailsSubview" class="hidden-element">
+          <div class="main-header">
+            <div class="header-left">
+              <h1>Submit Report</h1>
+            </div>
+          </div>
+          <div class="card">
+            <form id="reportNotesForm">
+              <div class="form-grid-two">
+                <div class="form-field-item form-field-full">
+                  <label>Notes <span class="req">*</span></label>
+                  <textarea id="reportNotesInput" style="height: 140px;" placeholder="Add details or remarks regarding this report submission..." required></textarea>
+                </div>
+                <div class="form-field-item form-field-full">
+                  <label>Upload Documents <span class="req">*</span></label>
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <input type="file" id="reportFileInput" style="display: none;" required>
+                    <input type="text" id="reportDocFilename" placeholder="No file chosen" readonly style="flex: 1; cursor: pointer;">
+                    <button class="btn-outline-report" type="button" id="selectReportFileBtn">Select File</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+            <div>
+              <span class="status-pill" style="background-color: var(--status-rejected) !important; padding: 8px 16px; font-size: 13px;">FLAGGED FOR REVISION</span>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn-outline-report" id="reportsNotesBackBtn" type="button">Return</button>
+              <button class="btn-outline-report" id="reportsNotesEditBtn" type="button">Edit</button>
+              <button class="btn-primary" id="reportsNotesSubmitBtn" type="button">Submit Report</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
     </main>
   </div>
-
 
   <!-- MODALS -->
   <div class="modal-overlay" id="confirmFarmerModal">
@@ -1876,7 +1772,6 @@
     </div>
   </div>
 
-
   <div class="modal-overlay" id="farmerAddedModal">
     <div class="modal-box">
       <h2>Farmer Added!</h2>
@@ -1886,7 +1781,6 @@
       </div>
     </div>
   </div>
-
 
   <div class="modal-overlay" id="deleteFarmerModal">
     <div class="modal-box">
@@ -1899,7 +1793,6 @@
     </div>
   </div>
 
-
   <div class="modal-overlay" id="plantIntentSubmittedModal">
     <div class="modal-box">
       <h2>Planting Intent Submitted!</h2>
@@ -1909,7 +1802,6 @@
       </div>
     </div>
   </div>
-
 
   <div class="modal-overlay" id="confirmSendOfftakeModal">
     <div class="modal-box">
@@ -1922,7 +1814,6 @@
     </div>
   </div>
 
-
   <div class="modal-overlay" id="offtakeSubmittedModal">
     <div class="modal-box">
       <h2>Offtake Submitted!</h2>
@@ -1933,44 +1824,176 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="reportSuccessModal">
+    <div class="modal-box">
+      <h2>Report Submitted Successfully!</h2>
+      <p>Your monitoring report has been verified and dispatched successfully.</p>
+      <div class="modal-actions">
+        <button class="modal-btn-confirm" id="closeReportSuccessBtn" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE ERROR MODAL -->
+  <div class="modal-overlay" id="deleteErrorModal">
+    <div class="modal-box" style="max-width: 500px; text-align: left;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 20px; color: #C0392B;">Cannot Delete Farmer</h2>
+      </div>
+      <p style="font-size: 14px; color: #2E2A22; margin-bottom: 16px; line-height: 1.6;">
+        This farmer has existing records in the system.
+      </p>
+      <div style="background: #F8F6F2; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; border-left: 4px solid #C0392B;">
+        <p style="font-size: 13px; color: #555; margin: 0 0 8px 0; font-weight: 600;">To delete this farmer, you must first delete or reassign their:</p>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555;">
+          <li style="margin-bottom: 4px;">Planting Intents</li>
+          <li>Offtake Requests</li>
+        </ul>
+      </div>
+      <p style="font-size: 13px; color: #777; margin-bottom: 20px;">
+        Please check the farmer's records and try again.
+      </p>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn-primary" id="closeDeleteErrorBtn" type="button" style="background: #5B6B4F;">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script>
+    function toggleForecast(year) {
+      const body = document.getElementById("accordionBody" + year);
+      const arrow = document.getElementById("arrow" + year);
+      if (!body || !arrow) return;
+      if (body.classList.contains("hidden-element")) {
+        body.classList.remove("hidden-element");
+        arrow.textContent = "▼ Expanded";
+      } else {
+        body.classList.add("hidden-element");
+        arrow.textContent = "▶ Click to expand";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Month Dropdown Logic
+      const monthDropdown = document.getElementById("customMonthDropdown");
+      const monthButton = document.getElementById("fairPriceMonthButton");
+      const monthMenu = document.getElementById("fairPriceMonthMenu");
+      const monthText = document.getElementById("fairPriceMonthText");
+      const monthSelect = document.getElementById("fairPriceMonthSelect");
+      const monthOptions = document.querySelectorAll(".month-option");
+
+      if (monthButton) {
+        monthButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          monthDropdown.classList.toggle("open");
+        });
+        monthOptions.forEach(opt => {
+          opt.addEventListener("click", (e) => {
+            e.stopPropagation();
+            monthText.textContent = opt.textContent.trim();
+            monthSelect.value = opt.dataset.value;
+            monthOptions.forEach(o => o.classList.remove("active"));
+            opt.classList.add("active");
+            monthDropdown.classList.remove("open");
+            monthSelect.dispatchEvent(new Event("change", { bubbles: true }));
+          });
+        });
+        document.addEventListener("click", () => monthDropdown.classList.remove("open"));
+      }
+
+      // Reports Navigation & Logic
+      const reportsMain = document.getElementById("reportsMainSubview");
+      const reportsDetails = document.getElementById("reportsDetailsSubview");
+      const nextBtn = document.getElementById("reportsNextBtn");
+      const notesBackBtn = document.getElementById("reportsNotesBackBtn");
+      const addRowBtn = document.getElementById("addReportRowBtn");
+      const tableBody = document.getElementById("reportsTableBody");
+      const selectFileBtn = document.getElementById("selectReportFileBtn");
+      const fileInput = document.getElementById("reportFileInput");
+      const docFilename = document.getElementById("reportDocFilename");
+      const notesSubmitBtn = document.getElementById("reportsNotesSubmitBtn");
+      const successModal = document.getElementById("reportSuccessModal");
+      const closeSuccessBtn = document.getElementById("closeReportSuccessBtn");
+
+      if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+          if (!tableBody || tableBody.rows.length === 0) {
+            alert("Please ensure there is at least one report entry before proceeding.");
+            return;
+          }
+          reportsMain.classList.add("hidden-element");
+          reportsDetails.classList.remove("hidden-element");
+        });
+      }
+
+      if (notesBackBtn) {
+        notesBackBtn.addEventListener("click", () => {
+          reportsDetails.classList.add("hidden-element");
+          reportsMain.classList.remove("hidden-element");
+        });
+      }
+
+      if (selectFileBtn && fileInput) {
+        selectFileBtn.addEventListener("click", () => fileInput.click());
+        if (docFilename) docFilename.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => {
+          if (fileInput.files.length > 0) docFilename.value = fileInput.files[0].name;
+        });
+      }
+
+      if (addRowBtn && tableBody) {
+        addRowBtn.addEventListener("click", () => {
+          const newRow = document.createElement("tr");
+          newRow.innerHTML = `
+            <td><input type="text" placeholder="Commodity" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:100%;"></td>
+            <td><input type="date" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+            <td><input type="date" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
+            <td><input type="number" placeholder="0" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:80px;"></td>
+            <td><input type="text" placeholder="Location" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:100%;"></td>
+            <td class="center-col"><span class="status-pill mediating">Mediating</span></td>
+          `;
+          tableBody.appendChild(newRow);
+        });
+      }
+
+      if (notesSubmitBtn) {
+        notesSubmitBtn.addEventListener("click", () => {
+          const notesInput = document.getElementById("reportNotesInput");
+          const notesVal = notesInput ? notesInput.value.trim() : "";
+          const fileVal = fileInput && fileInput.files ? fileInput.files.length : 0;
+
+          if (!notesVal) {
+            alert("Validation Error: Please provide remarks or notes before submitting.");
+            if (notesInput) notesInput.focus();
+            return;
+          }
+
+          if (fileVal === 0) {
+            alert("Validation Error: Please select/upload a required supporting document.");
+            return;
+          }
+
+          if (successModal) successModal.classList.add("show");
+        });
+      }
+
+      if (closeSuccessBtn) {
+        closeSuccessBtn.addEventListener("click", () => {
+          if (successModal) successModal.classList.remove("show");
+          const reportForm = document.getElementById("reportNotesForm");
+          if (reportForm) reportForm.reset();
+          if (docFilename) docFilename.value = "";
+          if (reportsDetails) reportsDetails.classList.add("hidden-element");
+          if (reportsMain) reportsMain.classList.remove("hidden-element");
+        });
+      }
+    });
+  </script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/aew.js"></script>
-  <!-- Chart.js for price trends visualization -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
-
-<!-- ============================================================
-   DELETE ERROR MODAL
-============================================================ -->
-
-<div class="modal-overlay" id="deleteErrorModal">
-    <div class="modal-box" style="max-width: 500px; text-align: left;">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-            <h2 style="margin: 0; font-size: 20px; color: #C0392B;">Cannot Delete Farmer</h2>
-        </div>
-        
-        <p style="font-size: 14px; color: #2E2A22; margin-bottom: 16px; line-height: 1.6;">
-            This farmer has existing records in the system.
-        </p>
-        
-        <div style="background: #F8F6F2; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; border-left: 4px solid #C0392B;">
-            <p style="font-size: 13px; color: #555; margin: 0 0 8px 0; font-weight: 600;">To delete this farmer, you must first delete or reassign their:</p>
-            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555;">
-                <li style="margin-bottom: 4px;">Planting Intents</li>
-                <li>Offtake Requests</li>
-            </ul>
-        </div>
-        
-        <p style="font-size: 13px; color: #777; margin-bottom: 20px;">
-            Please check the farmer's records and try again.
-        </p>
-        
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-            <button class="btn-primary" id="closeDeleteErrorBtn" type="button" style="background: #5B6B4F;">
-                Got it
-            </button>
-        </div>
-    </div>
-</div>
