@@ -964,12 +964,13 @@ function initPlantingIntent() {
 
             alert("✅ Submission pulled back successfully. You can now edit the report.");
 
-        } catch (error) {
+         } catch (error) {
             console.error("Pull error:", error);
             alert("Failed to pull submission.\n\n" + (error.message || "Please try again."));
+            // Only reset label on failure — success path already set it via openPlantingIntentDetails()
+            this.textContent = "Pull Submission";
         } finally {
             this.disabled = false;
-            this.textContent = "Pull Submission";
         }
 
         // ✅ IMPORTANT: Stop here, don't run the submit code
@@ -1057,9 +1058,10 @@ function initPlantingIntent() {
     } catch (error) {
         console.error("Submit error:", error);
         alert("Failed to submit planting report.\n\n" + (error.message || "Please try again."));
+        // Only reset label on failure — success path already set it via openPlantingIntentDetails()
+        this.textContent = "Submit Report";
     } finally {
         this.disabled = false;
-        this.textContent = "Submit Report";
     }
 });
 
