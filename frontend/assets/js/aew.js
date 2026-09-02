@@ -964,12 +964,13 @@ function initPlantingIntent() {
 
             alert("✅ Submission pulled back successfully. You can now edit the report.");
 
-        } catch (error) {
+         } catch (error) {
             console.error("Pull error:", error);
             alert("Failed to pull submission.\n\n" + (error.message || "Please try again."));
+            // Only reset label on failure — success path already set it via openPlantingIntentDetails()
+            this.textContent = "Pull Submission";
         } finally {
             this.disabled = false;
-            this.textContent = "Pull Submission";
         }
 
         // ✅ IMPORTANT: Stop here, don't run the submit code
@@ -1057,9 +1058,10 @@ function initPlantingIntent() {
     } catch (error) {
         console.error("Submit error:", error);
         alert("Failed to submit planting report.\n\n" + (error.message || "Please try again."));
+        // Only reset label on failure — success path already set it via openPlantingIntentDetails()
+        this.textContent = "Submit Report";
     } finally {
         this.disabled = false;
-        this.textContent = "Submit Report";
     }
 });
 
@@ -1305,8 +1307,8 @@ function openPlantingIntentDetails(intent) {
     setValue("detailCommodity", intent.commodity || "");
     setValue("detailVolume", formatPlantingVolume(intent.volume));
     setValue("detailLocation", intent.location || "");
-    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
-    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+    setValue("detailPlantingDate", intent.planting_date || "");
+    setValue("detailHarvestDate", intent.harvest_date || "");
     setValue("detailRemarks", intent.remarks || "");
 
     // Display revision info
@@ -1325,9 +1327,13 @@ function openPlantingIntentDetails(intent) {
     window.isEditingPlantingIntent = false;
 
     // Make all fields readonly
-    const detailInputs = details.querySelectorAll("input, textarea");
+    const detailInputs = details.querySelectorAll("input, textarea, select");
     detailInputs.forEach(function(input) {
-        input.readOnly = true;
+        if (input.tagName === "SELECT") {
+            input.disabled = true;
+        } else {
+            input.readOnly = true;
+        }
         input.classList.add("input-readonly");
         input.classList.remove("input-editable-active");
     });
@@ -1426,7 +1432,7 @@ function togglePlantingIntentEditMode() {
     const editBtn = document.getElementById("editPlantingIntentBtn");
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
     const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
-    const detailInputs = details.querySelectorAll("input, textarea");
+    const detailInputs = details.querySelectorAll("input, textarea, select");
 
     const existingCancel = document.getElementById("cancelEditPlantingIntentBtn");
     if (existingCancel) existingCancel.remove();
@@ -1434,10 +1440,14 @@ function togglePlantingIntentEditMode() {
     if (!window.isEditingPlantingIntent) {
         window.isEditingPlantingIntent = true;
 
-        detailInputs.forEach(function(input) {
+         detailInputs.forEach(function(input) {
             const id = input.id;
             if (id === "detailPlantingIntentId" || id === "detailFarmerId") return;
-            input.readOnly = false;
+            if (input.tagName === "SELECT") {
+                input.disabled = false;
+            } else {
+                input.readOnly = false;
+            }
             input.classList.remove("input-readonly");
             input.classList.add("input-editable-active");
         });
@@ -1498,13 +1508,17 @@ function cancelPlantingIntentEdit() {
     setValue("detailCommodity", intent.commodity || "");
     setValue("detailVolume", formatPlantingVolume(intent.volume));
     setValue("detailLocation", intent.location || "");
-    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
-    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+    setValue("detailPlantingDate", intent.planting_date || "");
+    setValue("detailHarvestDate", intent.harvest_date || "");
     setValue("detailRemarks", intent.remarks || "");
 
-    const detailInputs = details.querySelectorAll("input, textarea");
+   const detailInputs = details.querySelectorAll("input, textarea, select");
     detailInputs.forEach(function(input) {
-        input.readOnly = true;
+        if (input.tagName === "SELECT") {
+            input.disabled = true;
+        } else {
+            input.readOnly = true;
+        }
         input.classList.add("input-readonly");
         input.classList.remove("input-editable-active");
     });
@@ -1632,11 +1646,15 @@ async function savePlantingIntentChanges() {
 
         window.isEditingPlantingIntent = false;
 
-        const details = document.getElementById("plantingIntentDetailsSubview");
+         const details = document.getElementById("plantingIntentDetailsSubview");
         if (details) {
-            const inputs = details.querySelectorAll("input, textarea");
+            const inputs = details.querySelectorAll("input, textarea, select");
             inputs.forEach(function(input) {
-                input.readOnly = true;
+                if (input.tagName === "SELECT") {
+                    input.disabled = true;
+                } else {
+                    input.readOnly = true;
+                }
                 input.classList.add("input-readonly");
                 input.classList.remove("input-editable-active");
             });
