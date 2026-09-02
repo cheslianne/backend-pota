@@ -26,6 +26,19 @@ def create_forecast(
     return db_forecast
 
 
+@router.get("/", response_model=list[ForecastResponse])
+def read_forecasts(
+    db: Session = Depends(get_db)
+):
+    forecasts = (
+        db.query(Forecast)
+        .order_by(Forecast.forecast_id.asc())
+        .all()
+    )
+
+    return forecasts
+
+
 @router.get("/{forecast_id}", response_model=ForecastResponse)
 def read_forecast(
     forecast_id: int,
