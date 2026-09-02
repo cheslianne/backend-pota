@@ -460,7 +460,6 @@
     }
 
     /* --- SOLID PRIMARY & OUTLINE BUTTONS --- */
-    /* --- SOLID PRIMARY & OUTLINE BUTTONS --- */
     .btn-primary {
       appearance: none;
       background: var(--green);
@@ -596,7 +595,6 @@
       background: #F4EFE6;
     }
 
-    /* --- FAIR PRICE DASHBOARD --- */
     /* --- FAIR PRICE DASHBOARD --- */
     .fair-price-dashboard-container {
       display: flex;
@@ -877,7 +875,6 @@
     }
 
     .modal-overlay.show { display: flex; }
-    .modal-overlay.show { display: flex; }
 
     .modal-box {
       background: var(--cream);
@@ -923,7 +920,6 @@
     }
 
     .modal-btn-confirm:hover { background: var(--green-dark); }
-    .modal-btn-confirm:hover { background: var(--green-dark); }
 
     .pagination-container {
       display: flex;
@@ -936,8 +932,6 @@
       color: var(--muted);
     }
 
-    .pagination-controls { display: flex; align-items: center; gap: 6px; }
-    .page-numbers-wrap { display: flex; gap: 4px; }
     .pagination-controls { display: flex; align-items: center; gap: 6px; }
     .page-numbers-wrap { display: flex; gap: 4px; }
 
@@ -964,7 +958,6 @@
       border-color: var(--green);
     }
 
-    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .input-readonly {
@@ -997,8 +990,6 @@
       letter-spacing: 0.02em;
     }
 
-    .btn-danger { background: #A1382B !important; }
-    .btn-danger:hover { background: #84281D !important; }
     .btn-danger { background: #A1382B !important; }
     .btn-danger:hover { background: #84281D !important; }
   </style>
@@ -1137,9 +1128,6 @@
                   <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
                 </div>
                 <div class="form-field-item">
-                  <label>Municipality <span class="req">*</span></label>
-                  <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
-                </div>
                   <label>Municipality <span class="req">*</span></label>
                   <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
                 </div>
@@ -1323,14 +1311,6 @@
               <p>Log a prospective crop production plan from a verified farmer.</p>
             </div>
           </div>
-        <!-- SUBMIT PLANTING INTENT -->
-        <div id="submitPlantIntentSubview" class="hidden-element">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>Submit Planting Intent</h1>
-              <p>Log a prospective crop production plan from a verified farmer.</p>
-            </div>
-          </div>
 
           <div class="card">
             <form id="submitPlantIntentForm">
@@ -1355,43 +1335,14 @@
                 </div>
                 <div class="form-field-item">
                   <label>Commodity <span class="req">*</span></label>
-                  <input type="text" id="piCommodity" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Estimated Volume (kg) <span class="req">*</span></label>
-                  <input type="number" id="piVolume" placeholder="e.g. 15000" required>
-                </div>
-                <div class="form-field-item form-field-full">
-                  <label>Remarks</label>
-                  <textarea id="piRemarks"></textarea>
-                </div>
-              </div>
-          <div class="card">
-            <form id="submitPlantIntentForm">
-              <div class="form-grid-two">
-                <div class="form-field-item">
-                  <label>Farmer Name <span class="req">*</span></label>
-                  <select id="piFarmerName" required>
-                    <option value="">Select Farmer</option>
+                  <select id="piCommodity" required>
+                    <option value="">Select Commodity</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Red Onion">Red Onion</option>
+                    <option value="White Onion">White Onion</option>
                   </select>
                 </div>
                 <div class="form-field-item">
-                  <label>Planting Date <span class="req">*</span></label>
-                  <input type="date" id="piPlantDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Farmer ID <span class="req">*</span></label>
-                  <input type="text" id="piFarmerId" class="input-readonly" readonly required>
-                </div>
-                <div class="form-field-item">
-                  <label>Harvest Date <span class="req">*</span></label>
-                  <input type="date" id="piHarvestDate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Commodity <span class="req">*</span></label>
-                  <input type="text" id="piCommodity" required>
-                </div>
-                <div class="form-field-item">
                   <label>Estimated Volume (kg) <span class="req">*</span></label>
                   <input type="number" id="piVolume" placeholder="e.g. 15000" required>
                 </div>
@@ -1400,14 +1351,6 @@
                   <textarea id="piRemarks"></textarea>
                 </div>
               </div>
-
-              <div class="actions-right-row">
-                <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
-                <button class="btn-primary" type="submit">Submit Intent</button>
-              </div>
-            </form>
-          </div>
-        </div>
 
               <div class="actions-right-row">
                 <button class="btn-outline-report" id="cancelPlantIntentBtn" type="button">Cancel</button>
@@ -1451,10 +1394,15 @@
                 <label>Farmer ID</label>
                 <input type="text" id="detailFarmerId" readonly class="input-readonly">
               </div>
-              <div class="form-field-item">
-                <label>Commodity</label>
-                <input type="text" id="detailCommodity" readonly class="input-readonly">
-              </div>
+             <div class="form-field-item">
+              <label>Commodity</label>
+              <select id="detailCommodity" disabled class="input-readonly">
+                <option value="">Select Commodity</option>
+                <option value="Tomato">Tomato</option>
+                <option value="Red Onion">Red Onion</option>
+                <option value="White Onion">White Onion</option>
+              </select>
+            </div>
               <div class="form-field-item">
                 <label>Estimated Volume</label>
                 <input type="text" id="detailVolume" readonly class="input-readonly">
@@ -1465,11 +1413,11 @@
               </div>
               <div class="form-field-item">
                 <label>Planting Date</label>
-                <input type="text" id="detailPlantingDate" readonly class="input-readonly">
+                <input type="text" id="type="date"" readonly class="input-readonly">
               </div>
               <div class="form-field-item">
                 <label>Harvest Date</label>
-                <input type="text" id="detailHarvestDate" readonly class="input-readonly">
+                <input type="text" id="type="date"" readonly class="input-readonly">
               </div>
               <div class="form-field-item form-field-full">
                 <label>Remarks</label>
@@ -1630,10 +1578,6 @@
       <section class="view" id="view-fair-prices">
         <div class="main-header">
           <div class="header-left">
-      <!-- VIEW 4: Fair Prices -->
-      <section class="view" id="view-fair-prices">
-        <div class="main-header">
-          <div class="header-left">
             <h1>Fair Price Dashboard</h1>
             <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
           </div>
@@ -1655,12 +1599,6 @@
               <div class="crop-image-placeholder">
                 <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
               </div>
-              <h2>Fair Price Intelligence</h2>
-              <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
-              
-              <div class="crop-image-placeholder">
-                <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-              </div>
 
               <div class="fair-price-filters">
                 <select id="fairPriceCropSelect">
@@ -1669,52 +1607,7 @@
                   <option value="tomato" selected>Tomato</option>
                   <option value="squash">Squash</option>
                 </select>
-              <div class="fair-price-filters">
-                <select id="fairPriceCropSelect">
-                  <option value="red-onion">Red Onion</option>
-                  <option value="white-onion">White Onion</option>
-                  <option value="tomato" selected>Tomato</option>
-                  <option value="squash">Squash</option>
-                </select>
 
-                <!-- CUSTOM MONTH DROPDOWN -->
-                <div class="custom-month-dropdown" id="customMonthDropdown">
-                  <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
-                    <span id="fairPriceMonthText">Month (All)</span>
-                    <span class="month-dropdown-arrow">▼</span>
-                  </button>
-                  <div class="custom-month-menu" id="fairPriceMonthMenu" role="listbox">
-                    <button type="button" class="month-option active" data-value="all">Month (All)</button>
-                    <button type="button" class="month-option" data-value="jan">January</button>
-                    <button type="button" class="month-option" data-value="feb">February</button>
-                    <button type="button" class="month-option" data-value="mar">March</button>
-                    <button type="button" class="month-option" data-value="apr">April</button>
-                    <button type="button" class="month-option" data-value="may">May</button>
-                    <button type="button" class="month-option" data-value="jun">June</button>
-                    <button type="button" class="month-option" data-value="jul">July</button>
-                    <button type="button" class="month-option" data-value="aug">August</button>
-                    <button type="button" class="month-option" data-value="sep">September</button>
-                    <button type="button" class="month-option" data-value="oct">October</button>
-                    <button type="button" class="month-option" data-value="nov">November</button>
-                    <button type="button" class="month-option" data-value="dec">December</button>
-                  </div>
-                  <select id="fairPriceMonthSelect" class="hidden-month-select" aria-hidden="true" tabindex="-1">
-                    <option value="all">Month (All)</option>
-                    <option value="jan">January</option>
-                    <option value="feb">February</option>
-                    <option value="mar">March</option>
-                    <option value="apr">April</option>
-                    <option value="may">May</option>
-                    <option value="jun">June</option>
-                    <option value="jul">July</option>
-                    <option value="aug">August</option>
-                    <option value="sep">September</option>
-                    <option value="oct">October</option>
-                    <option value="nov">November</option>
-                    <option value="dec">December</option>
-                  </select>
-                </div>
-              </div>
                 <!-- CUSTOM MONTH DROPDOWN -->
                 <div class="custom-month-dropdown" id="customMonthDropdown">
                   <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
@@ -1813,9 +1706,6 @@
           </div>
         </div>
       </section>
-          </div>
-        </div>
-      </section>
 
       <!-- VIEW 5: Map -->
       <section class="view" id="view-map">
@@ -1831,98 +1721,6 @@
         </div>
       </section>
 
-      <!-- VIEW 6: REPORTS -->
-      <section class="view" id="view-reports">
-        <div id="reportsMainSubview">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>Submit Report</h1>
-            </div>
-          </div>
-          <div class="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Commodity</th>
-                  <th>Planting Date</th>
-                  <th>Harvest Date</th>
-                  <th>Estimated Yield (kg)</th>
-                  <th>Location</th>
-                  <th class="center-col">Status</th>
-                </tr>
-              </thead>
-              <tbody id="reportsTableBody">
-                <tr>
-                  <td>Onion</td>
-                  <td><input type="date" value="2026-02-01" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-                  <td><input type="date" value="2026-06-15" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-                  <td>67</td>
-                  <td>San Juan</td>
-                  <td class="center-col"><span class="status-pill harvested">Harvested</span></td>
-                </tr>
-                <tr>
-                  <td>Tomato</td>
-                  <td><input type="date" value="2026-03-01" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-                  <td><input type="date" value="2026-05-20" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-                  <td>67</td>
-                  <td>San Pablo</td>
-                  <td class="center-col"><span class="status-pill planted">Planted</span></td>
-                </tr>
-              </tbody>
-            </table>
-            <div style="margin-top: 16px;">
-              <button class="btn-outline-report" id="addReportRowBtn" type="button" style="font-size: 12px; padding: 6px 14px;">Add New Row +</button>
-            </div>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
-            <div>
-              <span class="status-pill" style="background-color: var(--status-rejected) !important; padding: 8px 16px; font-size: 13px;">FLAGGED FOR REVISION</span>
-            </div>
-            <div style="display: flex; gap: 12px;">
-              <button class="btn-outline-report" id="reportsReturnBtn" type="button">Return</button>
-              <button class="btn-outline-report" id="reportsEditBtn" type="button">Edit</button>
-              <button class="btn-primary" id="reportsNextBtn" type="button">Next</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- REPORT DETAILS -->
-        <div id="reportsDetailsSubview" class="hidden-element">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>Submit Report</h1>
-            </div>
-          </div>
-          <div class="card">
-            <form id="reportNotesForm">
-              <div class="form-grid-two">
-                <div class="form-field-item form-field-full">
-                  <label>Notes <span class="req">*</span></label>
-                  <textarea id="reportNotesInput" style="height: 140px;" placeholder="Add details or remarks regarding this report submission..." required></textarea>
-                </div>
-                <div class="form-field-item form-field-full">
-                  <label>Upload Documents <span class="req">*</span></label>
-                  <div style="display: flex; gap: 12px; align-items: center;">
-                    <input type="file" id="reportFileInput" style="display: none;" required>
-                    <input type="text" id="reportDocFilename" placeholder="No file chosen" readonly style="flex: 1; cursor: pointer;">
-                    <button class="btn-outline-report" type="button" id="selectReportFileBtn">Select File</button>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
-            <div>
-              <span class="status-pill" style="background-color: var(--status-rejected) !important; padding: 8px 16px; font-size: 13px;">FLAGGED FOR REVISION</span>
-            </div>
-            <div style="display: flex; gap: 12px;">
-              <button class="btn-outline-report" id="reportsNotesBackBtn" type="button">Return</button>
-              <button class="btn-outline-report" id="reportsNotesEditBtn" type="button">Edit</button>
-              <button class="btn-primary" id="reportsNotesSubmitBtn" type="button">Submit Report</button>
-            </div>
-          </div>
-        </div>
-      </section>
       <!-- VIEW 6: REPORTS -->
       <section class="view" id="view-reports">
         <div id="reportsMainSubview">
