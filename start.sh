@@ -37,6 +37,7 @@ echo "RUN_ETL_ON_STARTUP=${RUN_ETL_ON_STARTUP:-true}"
 if [ "${RUN_ETL_ON_STARTUP:-true}" = "true" ]; then
     echo "Starting initial PSA and forecast ETL in the background..."
     (
+        set +e
         python -u -m src.etl_pipeline.scheduler --run-now
         etl_status=$?
         echo "Initial PSA and forecast ETL exited with status ${etl_status}."
