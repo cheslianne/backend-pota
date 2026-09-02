@@ -443,16 +443,12 @@ async function loadUsers() {
                 <td>
 
                     <button
-                        class="action-btn"
+                        class="${isActive ? 'btn-deactivate' : 'btn-reactivate'}"
                         type="button"
                         data-user-id="${escapeHTML(userId)}"
                         data-active="${isActive}"
                     >
-                        ${
-                            isActive
-                                ? "Deactivate"
-                                : "Reactivate"
-                        }
+                        ${isActive ? 'Deactivate' : 'Reactivate'}
                     </button>
 
                 </td>
@@ -463,17 +459,15 @@ async function loadUsers() {
 
         document
             .querySelectorAll(
-                "#userRows .action-btn"
+                "#userRows .btn-deactivate, #userRows .btn-reactivate"
             )
             .forEach(button => {
-
                 button.addEventListener(
                     "click",
                     () => {
                         toggleUserStatus(button);
                     }
                 );
-
             });
 
     }
@@ -670,6 +664,11 @@ async function toggleUserStatus(button) {
    POST /api/users
 ============================================================ */
 
+/* ============================================================
+   CREATE ACCOUNT
+   POST /api/users/users
+============================================================ */
+
 async function createAccount(event) {
 
     event.preventDefault();
@@ -723,6 +722,7 @@ async function createAccount(event) {
             "roleSelect"
         )?.value;
 
+    // Validation
     if (
         !firstName ||
         !lastName ||
@@ -763,9 +763,10 @@ async function createAccount(event) {
 
     try {
 
+        // ✅ FIXED: Correct API endpoint
         const response =
             await fetch(
-                `${API_BASE_URL}/api/users`,
+                `${API_BASE_URL}/api/users/users`,
                 {
                     method: "POST",
 
@@ -810,7 +811,7 @@ async function createAccount(event) {
         }
 
         console.log(
-            "POST /api/users:",
+            "POST /api/users/users:",
             response.status,
             data
         );
@@ -840,6 +841,13 @@ async function createAccount(event) {
             );
         }
 
+        if (response.status === 405) {
+
+            throw new Error(
+                "Method not allowed. Please check the API endpoint."
+            );
+        }
+
         if (!response.ok) {
 
             throw new Error(
@@ -852,30 +860,32 @@ async function createAccount(event) {
 
         form.reset();
 
-        await loadUsers();
-
-        await loadAuditLogs();
-
-        if (
-            typeof openModal ===
-            "function"
-        ) {
-
-            openModal(
-                "successModal"
+        // Go back to users view
+        const addAccountView =
+            document.getElementById(
+                "view-add-account"
             );
 
-        }
-        else {
+        const usersView =
+            document.getElementById(
+                "view-users"
+            );
 
-            document
-                .getElementById(
-                    "successModal"
-                )
-                ?.classList.add(
-                    "show"
-                );
+        if (addAccountView && usersView) {
+
+            addAccountView.classList.remove(
+                "active-view"
+            );
+
+            usersView.classList.add(
+                "active-view"
+            );
         }
+
+        await loadUsers();
+        await loadAuditLogs();
+
+        alert("✅ Account created successfully!");
 
     }
     catch (error) {
@@ -1158,6 +1168,237 @@ async function loadAuditLogs() {
         `;
     }
 }
+
+
+/* ============================================================
+   ETL RUN LOGS
+   GET /api/etl-run-log/
+============================================================ */
+
+async function loadETLRunLogs() {
+
+    const etlRows =
+        document.getElementById("etlRows");
+
+    if (!etlRows) {
+        console.warn(
+            "ETL run log table body #etlRows not found."
+        );
+        return;
+    }
+
+    etlRows.innerHTML = `
+        <tr>
+            <td
+                colspan="3"
+                style="text-align:center;"
+            >
+                Loading ETL logs...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/etl-run-log/`,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders()
+                }
+            );
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        }
+        catch {
+            data = {};
+        }
+
+        console.log(
+            "GET /api/etl-run-log/:",
+            response.status,
+            data
+        );
+
+        /* AUTH FAILURE */
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+
+        /* FORBIDDEN */
+
+        if (response.status === 403) {
+
+            etlRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="3"
+                        class="api-error"
+                    >
+                        ${escapeHTML(
+                            getErrorMessage(
+                                data,
+                                "You do not have permission to view ETL logs."
+                            )
+                        )}
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        /* OTHER API ERRORS */
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Failed to load ETL run logs."
+                )
+            );
+        }
+
+
+        /* RESPONSE FORMAT */
+
+        let logs = [];
+
+        if (Array.isArray(data)) {
+
+            logs = data;
+
+        }
+        else if (Array.isArray(data.logs)) {
+
+            logs = data.logs;
+
+        }
+        else if (Array.isArray(data.data)) {
+
+            logs = data.data;
+
+        }
+        else {
+
+            throw new Error(
+                "Unexpected ETL log response format."
+            );
+        }
+
+
+        /* NO LOGS */
+
+        if (logs.length === 0) {
+
+            etlRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="3"
+                        style="text-align:center;"
+                    >
+                        No ETL logs available.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        /* RENDER LOGS */
+
+        etlRows.innerHTML = "";
+
+        logs.forEach(log => {
+
+            const row =
+                document.createElement("tr");
+
+
+            const runDateTime =
+                formatAuditDate(
+                    log.run_date_time
+                );
+
+
+            const dataSource =
+                log.data_source || "—";
+
+
+            const status =
+                log.status || "—";
+
+
+            const statusClass =
+                status.toLowerCase() === "success"
+                    ? "active"
+                    : status.toLowerCase() === "failed"
+                        ? "inactive"
+                        : "";
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${escapeHTML(runDateTime)}
+                </td>
+
+                <td>
+                    ${escapeHTML(dataSource)}
+                </td>
+
+                <td>
+                    <span
+                        class="status-pill ${statusClass}"
+                    >
+                        ${escapeHTML(status)}
+                    </span>
+                </td>
+
+            `;
+
+
+            etlRows.appendChild(row);
+
+        });
+
+    }
+    catch (error) {
+
+        console.error(
+            "Load ETL run logs error:",
+            error
+        );
+
+        etlRows.innerHTML = `
+            <tr>
+                <td
+                    colspan="3"
+                    class="api-error"
+                >
+
+                    Failed to load ETL logs.
+
+                    <br><br>
+
+                    ${escapeHTML(error.message)}
+
+                </td>
+            </tr>
+        `;
+    }
+}
+
 
 
 /* ============================================================
@@ -1751,6 +1992,10 @@ document.addEventListener(
 
         loadAuditLogs();
 
+        /* ETL RUN LOGS */
+
+        loadETLRunLogs();
+
 
         /* SEARCH */
 
@@ -1772,13 +2017,43 @@ document.addEventListener(
                 "click",
                 () => {
 
-                    if (
-                        typeof switchView ===
-                        "function"
-                    ) {
+                    // Show the Add Account form directly
+                    const addAccountView =
+                        document.getElementById(
+                            "view-add-account"
+                        );
 
-                        switchView(
-                            "add-account"
+                    const usersView =
+                        document.getElementById(
+                            "view-users"
+                        );
+
+                    if (addAccountView && usersView) {
+
+                        usersView.classList.remove(
+                            "active-view"
+                        );
+
+                        addAccountView.classList.add(
+                            "active-view"
+                        );
+
+                        // Update nav highlight
+                        document
+                            .querySelectorAll(
+                                ".nav-item"
+                            )
+                            .forEach(item => {
+                                item.classList.remove(
+                                    "active"
+                                );
+                            });
+
+                    } else {
+
+                        // Fallback: open modal or alert
+                        alert(
+                            "Add Account form is not available. Please check the page."
                         );
                     }
 
@@ -1809,14 +2084,70 @@ document.addEventListener(
                         form.reset();
                     }
 
-                    if (
-                        typeof switchView ===
-                        "function"
-                    ) {
-
-                        switchView(
-                            "users"
+                    // Go back to users view
+                    const addAccountView =
+                        document.getElementById(
+                            "view-add-account"
                         );
+
+                    const usersView =
+                        document.getElementById(
+                            "view-users"
+                        );
+
+                    if (addAccountView && usersView) {
+
+                        addAccountView.classList.remove(
+                            "active-view"
+                        );
+
+                        usersView.classList.add(
+                            "active-view"
+                        );
+
+                        // Update nav highlight
+                        document
+                            .querySelectorAll(
+                                ".nav-item"
+                            )
+                            .forEach(item => {
+                                item.classList.remove(
+                                    "active"
+                                );
+                            });
+
+                        // Highlight Manage Users nav item
+                        document
+                            .querySelector(
+                                '.nav-item[data-view="users"]'
+                            )
+                            ?.classList.add(
+                                "active"
+                            );
+
+                    } else {
+
+                        // Fallback: reload users view
+                        document
+                            .querySelectorAll(
+                                ".view"
+                            )
+                            .forEach(view => {
+                                view.classList.remove(
+                                    "active-view"
+                                );
+                            });
+
+                        const usersView2 =
+                            document.getElementById(
+                                "view-users"
+                            );
+
+                        if (usersView2) {
+                            usersView2.classList.add(
+                                "active-view"
+                            );
+                        }
                     }
 
                 }

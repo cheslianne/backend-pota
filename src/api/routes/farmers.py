@@ -5,16 +5,26 @@ from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.models.farmers import Farmer
+from src.models.planting_intents import PlantingIntent  # ✅ ADD THIS
+from src.models.offtake_requests import OfftakeRequest  # ✅ ADD THIS
 from src.api.schemas.farmers import (
     FarmerCreate,
     FarmerUpdate,
     FarmerResponse,
 )
 
+from src.core.auth import get_current_user
+from src.models.users import User
+from src.models.planting_intents import PlantingIntent
+from src.models.offtake_requests import OfftakeRequest
+
+
 router = APIRouter(
     prefix="/farmers",
     tags=["Farmers"]
 )
+
+
 
 
 # ============================================================
@@ -370,27 +380,40 @@ def update_farmer(
 # DELETE FARMER
 # ============================================================
 
-@router.delete(
-    "/{farmer_id}",
-    status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{farmer_id}")
 def delete_farmer(
     farmer_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    farmer = (
-        db.query(Farmer)
-        .filter(Farmer.farmer_id == farmer_id)
-        .first()
-    )
-
+    farmer = db.query(Farmer).filter(Farmer.farmer_id == farmer_id).first()
+    
     if not farmer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Farmer not found."
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    
+    # ✅ CHECK FOR RELATED RECORDS
+    planting_intents = db.query(PlantingIntent).filter(
+        PlantingIntent.farmer_id == farmer_id
+    ).count()
+    
+    offtake_requests = db.query(OfftakeRequest).filter(
+        OfftakeRequest.farmer_id == farmer_id
+    ).count()
+    
+    if planting_intents > 0 or offtake_requests > 0:
+        error_message = (
+            f"Cannot delete farmer '{farmer.first_name} {farmer.last_name}'.\n\n"
+            f"This farmer has existing records in the system:\n"
+            f"• Planting Intents: {planting_intents}\n"
+            f"• Offtake Requests: {offtake_requests}\n\n"
+            f"Please delete or reassign these records first before deleting the farmer."
         )
-
+        raise HTTPException(
+            status_code=400,
+            detail=error_message
+        )
+    
     db.delete(farmer)
     db.commit()
-
-    return None
+    
+    return {"detail": f"Farmer '{farmer.first_name} {farmer.last_name}' deleted successfully"}

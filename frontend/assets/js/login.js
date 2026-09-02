@@ -5,10 +5,16 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const formStatus = document.getElementById('formStatus');
 
+
+
+
 // Eye icon elements
 const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 const eyeIcon = document.getElementById('eyeIcon');
 const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+
+
 
 // Toggle Password Visibility Logic
 if (togglePasswordBtn && passwordInput) {
@@ -29,13 +35,25 @@ if (togglePasswordBtn && passwordInput) {
   });
 }
 
+
+
+
 // FastAPI backend
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
+
+
+
 /* ---------- Field Validation ---------- */
+
+
+
 
 function setError(fieldEl, isInvalid) {
   fieldEl.classList.toggle('has-error', isInvalid);
+
+
+
 
   const input = fieldEl.querySelector('input');
   if (input) {
@@ -43,7 +61,13 @@ function setError(fieldEl, isInvalid) {
   }
 }
 
+
+
+
 /* ---------- Role-Based Dashboard ---------- */
+
+
+
 
 function getDashboardByRole(role) {
   const dashboards = {
@@ -58,18 +82,36 @@ function getDashboardByRole(role) {
     'AEW': './dashboards/aew.html'         // Add this
   };
 
+
+
+
   return dashboards[role] || null;
 }
 
+
+
+
 /* ---------- Login ---------- */
+
+
+
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+
+
+
   const username = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  
+
+
+
+
   let hasError = false;
+
+
+
 
   // Validate username
   if (username === '') {
@@ -79,6 +121,9 @@ form.addEventListener('submit', async (e) => {
     setError(emailField, false);
   }
 
+
+
+
   // Validate password
   if (password === '') {
     setError(passwordField, true);
@@ -87,6 +132,9 @@ form.addEventListener('submit', async (e) => {
     setError(passwordField, false);
   }
 
+
+
+
   // Stop if validation failed
   if (hasError) {
     formStatus.textContent = '';
@@ -94,9 +142,15 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+
+
+
   // Show loading message
   formStatus.className = 'form-status show';
   formStatus.textContent = 'Logging in...';
+
+
+
 
   try {
     /* ---------- Send Login Request to FastAPI ---------- */
@@ -112,7 +166,13 @@ form.addEventListener('submit', async (e) => {
       })
     });
 
+
+
+
     const data = await response.json();
+
+
+
 
     /* ---------- Handle Failed Login ---------- */
     if (!response.ok) {
@@ -121,6 +181,9 @@ form.addEventListener('submit', async (e) => {
       );
     }
 
+
+
+
     /* ---------- Save Authentication Data ---------- */
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('token_type', data.token_type);
@@ -128,8 +191,14 @@ form.addEventListener('submit', async (e) => {
     localStorage.setItem('username', data.username);
     localStorage.setItem('role', data.role);
 
+
+
+
     /* ---------- Determine Dashboard ---------- */
     const dashboard = getDashboardByRole(data.role);
+
+
+
 
     if (!dashboard) {
       throw new Error(
@@ -137,13 +206,22 @@ form.addEventListener('submit', async (e) => {
       );
     }
 
+
+
+
     /* ---------- Login Successful ---------- */
     formStatus.className = 'form-status show';
     formStatus.textContent = 'Login successful! Redirecting...';
 
+
+
+
     setTimeout(() => {
       window.location.href = dashboard;
     }, 600);
+
+
+
 
   } catch (error) {
     console.error('Login error:', error);

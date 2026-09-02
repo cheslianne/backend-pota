@@ -32,290 +32,364 @@
 
 
 
-  <style>
+<style>
     .hidden {
-      display: none !important;
+        display: none !important;
     }
-
-
-
 
     .btn-disabled-filter {
-      opacity: 0.4;
-      cursor: default;
+        opacity: 0.4;
+        cursor: default;
     }
-
-
-
 
     .api-error {
-      color: #8C2A1C;
-      text-align: center;
-      padding: 20px;
+        color: #8C2A1C;
+        text-align: center;
+        padding: 20px;
     }
-
-
-
 
     .alert-container-card {
-      padding: 24px;
+        padding: 24px;
     }
-
-
-
 
     .alert-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
-
-
-
 
     .alert-card {
-      background: #E2E2E2;
-      border-radius: 14px;
-      padding: 18px 24px;
-      cursor: pointer;
-      transition: 0.2s ease;
+        background: #E2E2E2;
+        border-radius: 14px;
+        padding: 18px 24px;
+        cursor: pointer;
+        transition: 0.2s ease;
     }
-
-
-
 
     .alert-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
-
-
-
 
     .alert-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
     }
-
-
-
 
     .alert-title-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
-
-
-
 
     .alert-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--ink);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ink);
     }
-
-
-
 
     .sev-pill {
-      display: inline-block;
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 3px 12px;
-      border-radius: 999px;
+        display: inline-block;
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 3px 12px;
+        border-radius: 999px;
     }
-
-
-
 
     .sev-pill.high {
-      background: #E8C3B9;
-      color: #8C2A1C;
+        background: #E8C3B9;
+        color: #8C2A1C;
     }
-
-
-
 
     .sev-pill.medium {
-      background: #E5DA9D;
-      color: #7A6310;
+        background: #E5DA9D;
+        color: #7A6310;
     }
-
-
-
 
     .sev-pill.low {
-      background: #D1E0D7;
-      color: #2D6A4F;
+        background: #D1E0D7;
+        color: #2D6A4F;
     }
-
-
-
 
     .status-pill-btn {
-      border: none;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 5px 16px;
-      border-radius: 999px;
-      cursor: pointer;
+        border: none;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 16px;
+        border-radius: 999px;
+        cursor: pointer;
     }
-
-
-
 
     .status-pill-btn.unresolved {
-      background: #E8B4AC;
-      color: #8B2D22;
+        background: #E8B4AC;
+        color: #8B2D22;
     }
-
-
-
 
     .status-pill-btn.acknowledged {
-      background: #A3D9B1;
-      color: #1E5C31;
+        background: #A3D9B1;
+        color: #1E5C31;
     }
-
-
-
 
     .alert-desc {
-      font-size: 13px;
-      color: #555;
-      line-height: 1.45;
-      margin: 0 0 12px;
+        font-size: 13px;
+        color: #555;
+        line-height: 1.45;
+        margin: 0 0 12px;
     }
-
-
-
 
     .alert-stats {
-      display: flex;
-      align-items: center;
-      gap: 36px;
-      font-size: 12.5px;
-      color: #666;
+        display: flex;
+        align-items: center;
+        gap: 36px;
+        font-size: 12.5px;
+        color: #666;
     }
-
-
-
 
     .alert-stats span b {
-      color: #222;
-      font-weight: 600;
+        color: #222;
+        font-weight: 600;
     }
-
-
-
 
     .alert-date {
-      margin-left: auto;
-      font-size: 12px;
-      color: #777;
+        margin-left: auto;
+        font-size: 12px;
+        color: #777;
     }
-
-
-
 
     .alert-detail-box {
-      max-width: 460px;
-      text-align: left;
-      padding: 28px 32px;
+        max-width: 460px;
+        text-align: left;
+        padding: 28px 32px;
     }
-
-
-
 
     .alert-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
     }
-
-
-
 
     .alert-modal-header h2 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--green);
-      margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--green);
+        margin: 0;
     }
-
-
-
 
     .modal-stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      background: #F6F3EB;
-      padding: 14px 18px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      margin-bottom: 24px;
-      font-size: 13px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        background: #F6F3EB;
+        padding: 14px 18px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-bottom: 24px;
+        font-size: 13px;
     }
-
-
-
 
     .modal-stats-grid div {
-      color: var(--muted);
+        color: var(--muted);
     }
-
-
-
 
     .modal-stats-grid div b {
-      color: var(--ink);
-      display: block;
-      font-size: 14px;
-      margin-top: 2px;
+        color: var(--ink);
+        display: block;
+        font-size: 14px;
+        margin-top: 2px;
     }
-
-
-
 
     .modal-actions-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
     }
-
-
-
 
     .action-btn:disabled {
-      opacity: 0.6;
-      cursor: wait;
+        opacity: 0.6;
+        cursor: wait;
     }
-
-
-
 
     .loading-row {
-      text-align: center;
-      padding: 20px;
+        text-align: center;
+        padding: 20px;
     }
 
-
-
-
-    /* ADDED:
-       Keeps the Add Account button aligned to the right. */
     .add-account-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
     }
-  </style>
-</head>
+
+    /* ============================================================
+       USER TABLE - CLEAN MODERN STYLES
+    ============================================================ */
+
+    .table-wrapper {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid #e8e4de;
+        margin-top: 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        min-width: 600px;
+    }
+
+    thead {
+        background: #f8f6f2;
+    }
+
+    thead th {
+        text-align: left;
+        padding: 14px 18px;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #5a554a;
+        border-bottom: 2px solid #e0dcd4;
+    }
+
+    tbody td {
+        padding: 12px 18px;
+        border-bottom: 1px solid #edeae4;
+        vertical-align: middle;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:hover {
+        background: #faf8f5;
+    }
+
+    /* Name */
+    .name-pill {
+        font-weight: 500;
+        color: #1e1a16;
+    }
+
+    /* Username */
+    .username-pill {
+        color: #5a554a;
+        font-size: 13px;
+    }
+
+    /* Role Badges */
+    .role {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+
+    /* Status Badge */
+    .status-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    }
+
+    .status-badge.active {
+        background: #e6f4ea;
+        color: #1e1a16 !important; /* FORCE BLACK */
+    }
+
+    .status-badge.inactive {
+        background: #fce8e6;
+        color: #1e1a16 !important; /* FORCE BLACK */
+    }
+
+
+    /* Action Buttons */
+    .btn-deactivate,
+    .btn-reactivate {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-family: inherit;
+        min-width: 100px;
+        white-space: nowrap;
+    }
+
+    .btn-deactivate {
+        background: #fce8e6;
+        color: #b3261e;
+    }
+
+    .btn-deactivate:hover {
+        background: #f5d0cc;
+        transform: translateY(-1px);
+    }
+
+    .btn-deactivate:active {
+        transform: translateY(0);
+    }
+
+    .btn-reactivate {
+        background: #e6f4ea;
+        color: #1e7e34;
+    }
+
+    .btn-reactivate:hover {
+        background: #c8e6d0;
+        transform: translateY(-1px);
+    }
+
+    .btn-reactivate:active {
+        transform: translateY(0);
+    }
+
+    /* Actions Column */
+    td:last-child {
+        text-align: center !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .table-wrapper {
+            border-radius: 0;
+        }
+        
+        table {
+            font-size: 13px;
+        }
+        
+        thead th,
+        tbody td {
+            padding: 10px 12px;
+        }
+        
+        .btn-deactivate,
+        .btn-reactivate {
+            padding: 4px 12px;
+            font-size: 12px;
+            min-width: 80px;
+        }
+    }
+</style>
+
 
 
 
@@ -704,68 +778,28 @@
 
 
       <div class="card">
+    <div class="card-title">
+        User Account Management
+    </div>
 
-
-
-
-        <div class="card-title">
-          User Account Management
-        </div>
-
-
-
-
+    <div class="table-wrapper">
         <table>
-
-
-
-
-          <thead>
-
-
-
-
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-
-
-
-
-          </thead>
-
-
-
-
-          <tbody id="userRows">
-
-
-
-
-            <tr>
-              <td colspan="5" class="loading-row">
-                Loading users...
-              </td>
-            </tr>
-
-
-
-
-          </tbody>
-
-
-
-
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:12px 16px;">Name</th>
+                    <th style="text-align:left; padding:12px 16px;">Username</th>
+                    <th style="text-align:left; padding:12px 16px;">Role</th>
+                    <th style="text-align:left; padding:12px 16px;">Status</th>
+                    <th style="text-align:center; padding:12px 16px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="userRows">
+                <!-- Rows populated by JavaScript -->
+            </tbody>
         </table>
+    </div>
+</div>
 
-
-
-
-      </div>
 
 
 
@@ -783,363 +817,84 @@
         >
           Add Account
         </button>
-
-
-
-
       </div>
-
-
-
-
     </section>
 
+    <section class="view" id="view-add-account">
 
-
-
-
-
-
-
-    <section
-      class="view"
-      id="view-add-account"
-    >
-
-
-
-
-      <div class="main-header">
+    <div class="main-header">
         <h1>Add New Account</h1>
-      </div>
+    </div>
 
+    <div class="card">
 
+        <form id="addAccountForm" novalidate>
 
+            <div class="form-grid">
 
-      <div class="card">
+                <div class="form-field">
+                    <label for="firstName">First Name *</label>
+                    <input type="text" id="firstName" required>
+                </div>
 
+                <div class="form-field">
+                    <label for="lastName">Last Name *</label>
+                    <input type="text" id="lastName" required>
+                </div>
 
+                <div class="form-field">
+                    <label for="newUsername">Username *</label>
+                    <input type="text" id="newUsername" required>
+                </div>
 
+                <div class="form-field">
+                    <label for="newEmail">Email *</label>
+                    <input type="email" id="newEmail" required>
+                </div>
 
-        <form
-          id="addAccountForm"
-          novalidate
-        >
+                <div class="form-field">
+                    <label for="newPassword">Password *</label>
+                    <input type="password" id="newPassword" required>
+                </div>
 
+                <div class="form-field">
+                    <label for="phoneNumber">Phone Number *</label>
+                    <input type="tel" id="phoneNumber" required>
+                </div>
 
+                <div class="form-field">
+                    <label for="confirmPassword">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
 
-
-          <div class="form-grid">
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="firstName">
-                First Name *
-              </label>
-
-
-
-
-              <input
-                type="text"
-                id="firstName"
-                required
-              >
-
-
-
-
-            </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="lastName">
-                Last Name *
-              </label>
-
-
-
-
-              <input
-                type="text"
-                id="lastName"
-                required
-              >
-
-
-
+                <div class="form-field">
+                    <label for="roleSelect">Role *</label>
+                    <select id="roleSelect" required>
+                        <option value="" disabled selected>Select a role</option>
+                        <option value="System Administrator">System Administrator</option>
+                        <option value="DA-RFO Officer">DA-RFO Officer</option>
+                        <option value="Provincial Coordinator">Provincial Coordinator</option>
+                        <option value="Municipal Coordinator">Municipal Coordinator</option>
+                        <option value="Agricultural Extension Worker">Agricultural Extension Worker</option>
+                    </select>
+                </div>
 
             </div>
 
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="newUsername">
-                Username *
-              </label>
-
-
-
-
-              <input
-                type="text"
-                id="newUsername"
-                required
-              >
-
-
-
-
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelAddAccount">Cancel</button>
+                <button type="submit" class="btn-primary">Create Account</button>
             </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="newEmail">
-                Email *
-              </label>
-
-
-
-
-              <input
-                type="email"
-                id="newEmail"
-                required
-              >
-
-
-
-
-            </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="newPassword">
-                Password *
-              </label>
-
-
-
-
-              <input
-                type="password"
-                id="newPassword"
-                required
-              >
-
-
-
-
-            </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="phoneNumber">
-                Phone Number *
-              </label>
-
-
-
-
-              <input
-                type="tel"
-                id="phoneNumber"
-                required
-              >
-
-
-
-
-            </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="confirmPassword">
-                Confirm Password *
-              </label>
-
-
-
-
-              <input
-                type="password"
-                id="confirmPassword"
-                required
-              >
-
-
-
-
-            </div>
-
-
-
-
-            <div class="form-field">
-
-
-
-
-              <label for="roleSelect">
-                Role *
-              </label>
-
-
-
-
-              <select id="roleSelect" required>
-
-
-
-
-                <option
-                  value=""
-                  disabled
-                  selected
-                >
-                  Select a role
-                </option>
-
-
-
-
-                <option value="System Administrator">
-                  System Administrator
-                </option>
-
-
-
-
-                <option value="DA-RFO Officer">
-                  DA-RFO
-                </option>
-
-
-
-
-                <option value="Provincial Coordinator">
-                  Provincial Coordinator
-                </option>
-
-
-
-
-                <option value="Municipal Coordinator">
-                  Municipal Coordinator
-                </option>
-
-
-
-
-                <option value="AEW">
-                  AEW
-                </option>
-
-
-
-
-              </select>
-
-
-
-
-            </div>
-
-
-
-
-          </div>
-
-
-
-
-
-
-
-
-          <div class="form-actions">
-
-
-
-
-            <button
-              type="button"
-              class="btn-secondary"
-              id="cancelAddAccount"
-            >
-              Cancel
-            </button>
-
-
-
-
-            <button
-              type="submit"
-              class="btn-primary"
-            >
-              Create Account
-            </button>
-
-
-
-
-          </div>
-
-
-
 
         </form>
 
+    </div>
+
+</section>
 
 
 
-      </div>
 
-
-
-
-    </section>
 
 
 
@@ -1229,65 +984,36 @@
 
 
 
-        <table>
+      
+<table>
 
+    <thead>
 
+        <tr>
+            <th>Run Date/Time</th>
+            <th>Data Source</th>
+            <th>Status</th>
+        </tr>
 
+    </thead>
 
-          <thead>
+    <tbody id="etlRows">
 
-
-
-
-            <tr>
-              <th>Run Date/Time</th>
-              <th>Data Source</th>
-              <th>Records Processed</th>
-              <th>Records Rejected</th>
-              <th>Errors</th>
-              <th>Duration</th>
-              <th>Status</th>
-            </tr>
-
-
-
-
-          </thead>
-
-
-
-
-          <tbody id="etlRows">
-
-
-
-
-            <tr>
-
-
-
-
-              <td
-                colspan="7"
+        <tr>
+            <td
+                colspan="3"
                 style="text-align:center;"
-              >
-                No ETL logs available.
-              </td>
+            >
+                Loading ETL logs...
+            </td>
+        </tr>
+
+    </tbody>
+
+</table>
 
 
 
-
-            </tr>
-
-
-
-
-          </tbody>
-
-
-
-
-        </table>
 
 
 

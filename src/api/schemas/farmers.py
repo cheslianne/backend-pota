@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import date
+from typing import Optional
 
 
 class FarmerBase(BaseModel):
@@ -7,7 +8,7 @@ class FarmerBase(BaseModel):
     first_name: str
     last_name: str
     municipality: str
-    barangay: str
+    barangay: Optional[str] = None
     address: str
     sex: str
     birthdate: date

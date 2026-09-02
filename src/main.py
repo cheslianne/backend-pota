@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
 from src.models.report_submission import ReportSubmission
 from src.models.report_validation_history import ReportValidationHistory
+from src.api.routes import etl_run_log
 from src.api.routes import (
     users,
     auth,
@@ -19,6 +20,7 @@ from src.api.routes import (
     report_submission,
     audit_logs,
     email,
+    report_submission,
 )
 
 
@@ -143,6 +145,19 @@ app.include_router(
     prefix="/api/report-submissions",
     tags=["Report Submissions"]
 )
+
+app.include_router(
+    report_submission.router,
+    prefix="/api/report-submissions",
+    tags=["Report Submissions"]
+)
+
+app.include_router(
+    etl_run_log.router,
+    prefix="/api/etl-run-log",
+    tags=["ETL Run Log"]
+)
+
 
 # =========================================================
 # ROOT

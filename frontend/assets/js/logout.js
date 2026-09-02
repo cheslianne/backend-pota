@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
 
+
   const modalStyle = document.createElement("style");
   modalStyle.innerHTML = `
     .esaka-logout-overlay {
@@ -84,6 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
   `;
   document.head.appendChild(modalStyle);
 
+
+
+
   if (!document.getElementById("globalLogoutModal")) {
     const modalMarkup = document.createElement("div");
     modalMarkup.className = "esaka-logout-overlay";
@@ -101,13 +105,22 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.appendChild(modalMarkup);
   }
 
+
+
+
   const logoutModal = document.getElementById("globalLogoutModal");
   const cancelBtn = document.getElementById("globalLogoutCancelBtn");
   const confirmBtn = document.getElementById("globalLogoutConfirmBtn");
 
+
+
+
   window.openLogoutModal = function () {
     if (logoutModal) logoutModal.classList.add("show");
   };
+
+
+
 
   if (cancelBtn) {
     cancelBtn.addEventListener("click", function (e) {
@@ -116,6 +129,9 @@ document.addEventListener("DOMContentLoaded", function () {
       logoutModal.classList.remove("show");
     });
   }
+
+
+
 
   if (confirmBtn) {
     confirmBtn.addEventListener("click", function (e) {
@@ -128,6 +144,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+
+
+
   if (logoutModal) {
     logoutModal.addEventListener("click", function (e) {
       if (e.target === logoutModal) {
@@ -136,22 +155,30 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+
+
+
   document.addEventListener("click", function (e) {
+
 
     if (e.target.closest("#globalLogoutModal")) {
         return;
     }
 
+
     const target = e.target.closest(
         "#signoutBtn, #signOutButton, #logoutBtn, .signout"
     );
+
 
     if (target) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
 
+
         console.log("Sign Out clicked");
+
 
         window.openLogoutModal();
     }
