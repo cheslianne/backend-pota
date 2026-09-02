@@ -64,6 +64,8 @@ let OFFTAKE_REQUESTS_DATA = [];
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 let forecastLoadStarted = false;
+let forecastRetryTimer = null;
+let forecastRetryAttempts = 0;
 
 
 /* ============================================================
@@ -2649,6 +2651,23 @@ async function loadForecastResults() {
         renderForecastResults(forecasts);
         
         initPriceChart();
+
+        if (forecastRetryTimer) {
+            clearTimeout(forecastRetryTimer);
+            forecastRetryTimer = null;
+        }
+
+        if (forecasts.length === 0) {
+            if (forecastRetryAttempts < 10) {
+                forecastRetryAttempts += 1;
+                forecastRetryTimer = setTimeout(function() {
+                    forecastRetryTimer = null;
+                    loadForecastResults();
+                }, 30000);
+            }
+        } else {
+            forecastRetryAttempts = 0;
+        }
 
     } catch (error) {
         console.error("Failed to load forecast results:", error);
