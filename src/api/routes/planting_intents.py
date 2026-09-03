@@ -416,7 +416,10 @@ def read_planting_intent(
     return build_planting_intent_response(
         planting_intent,
         farmer,
-        planting_intent.status or "Pending"
+        get_planting_intent_status(
+            planting_intent.planting_intent_id,
+            db,
+        )
     )
 
 # ============================================================
@@ -515,7 +518,10 @@ def update_planting_intent(
     return build_planting_intent_response(
         db_planting,
         farmer,
-        db_planting.status or "Pending"
+        get_planting_intent_status(
+            db_planting.planting_intent_id,
+            db,
+        )
     )
 
 # ============================================================
@@ -561,3 +567,26 @@ def delete_planting_intent(
         "message":
             "Planting intent deleted successfully."
     }
+
+
+def get_planting_intent_status(
+    planting_intent_id: int,
+    db: Session,
+):
+    result = (
+        db.query(ReportSubmission.status)
+        .join(
+            RawPlantReport,
+            RawPlantReport.report_id == ReportSubmission.report_id,
+        )
+        .join(
+            ReportPlantingIntent,
+            ReportPlantingIntent.report_id == RawPlantReport.report_id,
+        )
+        .filter(
+            ReportPlantingIntent.planting_intent_id == planting_intent_id,
+        )
+        .order_by(ReportSubmission.report_id.desc())
+        .first()
+    )
+    return result[0] if result and result[0] else "Pending"
