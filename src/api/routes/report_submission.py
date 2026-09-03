@@ -271,7 +271,17 @@ def pull_submission(
         raise HTTPException(status_code=404, detail="Report not found.")
 
     if report.encoded_by != current_user.user_id:
-        raise HTTPException(status_code=403, detail="You can only pull submissions you encoded.")
+        linked_report = (
+            db.query(ReportPlantingIntent)
+            .filter(ReportPlantingIntent.report_id == report_id)
+            .first()
+        )
+        if not linked_report:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only pull submissions you encoded."
+            )
+        report.encoded_by = current_user.user_id
 
     # --------------------------------------------------------
     # GET OR CREATE SUBMISSION

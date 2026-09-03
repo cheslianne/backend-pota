@@ -165,6 +165,7 @@ def create_report_from_planting_intent(
 def update_raw_plant_report(
     report_id: int,
     raw_plant_report: RawPlantReportUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
@@ -191,6 +192,9 @@ def update_raw_plant_report(
             key,
             value
         )
+
+    if current_user.role == "Agricultural Extension Worker":
+        db_report.encoded_by = current_user.user_id
 
     db.commit()
 
