@@ -105,6 +105,7 @@ def extract_location_from_address(address: str):
 )
 def create_farmer(
     farmer: FarmerCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Check duplicate RSBSA ID
@@ -160,6 +161,11 @@ def create_farmer(
         birthdate=farmer.birthdate,
         email_address=farmer.email_address,
         phone_number=farmer.phone_number,
+        added_by_user_id=(
+            current_user.user_id
+            if current_user.role == "Agricultural Extension Worker"
+            else None
+        ),
     )
 
     try:
@@ -187,13 +193,15 @@ def create_farmer(
     response_model=list[FarmerResponse]
 )
 def get_farmers(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    farmers = (
-        db.query(Farmer)
-        .order_by(Farmer.farmer_id.desc())
-        .all()
-    )
+    farmer_query = db.query(Farmer)
+    if current_user.role == "Agricultural Extension Worker":
+        farmer_query = farmer_query.filter(
+            Farmer.added_by_user_id == current_user.user_id
+        )
+    farmers = farmer_query.order_by(Farmer.farmer_id.desc()).all()
 
     # ========================================================
     # REPAIR EXISTING NULL LOCATION DATA
@@ -245,11 +253,19 @@ def get_farmers(
 )
 def get_farmer(
     farmer_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     farmer = (
         db.query(Farmer)
-        .filter(Farmer.farmer_id == farmer_id)
+        .filter(
+            Farmer.farmer_id == farmer_id,
+            (
+                Farmer.added_by_user_id == current_user.user_id
+                if current_user.role == "Agricultural Extension Worker"
+                else True
+            )
+        )
         .first()
     )
 
@@ -300,11 +316,19 @@ def get_farmer(
 def update_farmer(
     farmer_id: int,
     farmer_data: FarmerUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     farmer = (
         db.query(Farmer)
-        .filter(Farmer.farmer_id == farmer_id)
+        .filter(
+            Farmer.farmer_id == farmer_id,
+            (
+                Farmer.added_by_user_id == current_user.user_id
+                if current_user.role == "Agricultural Extension Worker"
+                else True
+            )
+        )
         .first()
     )
 
@@ -386,7 +410,12 @@ def delete_farmer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    farmer = db.query(Farmer).filter(Farmer.farmer_id == farmer_id).first()
+    farmer_query = db.query(Farmer).filter(Farmer.farmer_id == farmer_id)
+    if current_user.role == "Agricultural Extension Worker":
+        farmer_query = farmer_query.filter(
+            Farmer.added_by_user_id == current_user.user_id
+        )
+    farmer = farmer_query.first()
     
     if not farmer:
         raise HTTPException(status_code=404, detail="Farmer not found")

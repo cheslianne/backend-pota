@@ -29,6 +29,17 @@ def ensure_planting_intent_columns():
             ADD COLUMN IF NOT EXISTS attachment_path VARCHAR(500);
         """))
 
+        connection.execute(text("""
+            ALTER TABLE farmers
+            ADD COLUMN IF NOT EXISTS added_by_user_id INTEGER
+            REFERENCES users(user_id);
+        """))
+
+        connection.execute(text("""
+            CREATE INDEX IF NOT EXISTS ix_farmers_added_by_user_id
+            ON farmers (added_by_user_id);
+        """))
+
 
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)

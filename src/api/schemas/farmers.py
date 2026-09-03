@@ -35,6 +35,8 @@ class FarmerUpdate(BaseModel):
 
 class FarmerResponse(FarmerBase):
     farmer_id: int
+    added_by_user_id: Optional[int] = None
+    added_by_name: Optional[str] = None
 
     model_config = ConfigDict(
         from_attributes=True

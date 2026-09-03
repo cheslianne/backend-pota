@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date
+from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey
 from sqlalchemy.orm import relationship
 
 from src.core.database import Base
@@ -8,6 +8,13 @@ class Farmer(Base):
     __tablename__ = "farmers"
 
     farmer_id = Column(Integer, primary_key=True, index=True)
+
+    added_by_user_id = Column(
+        Integer,
+        ForeignKey("users.user_id"),
+        nullable=True,
+        index=True,
+    )
 
     rsbsa_id = Column(String(30), unique=True, nullable=False)
 
@@ -38,3 +45,15 @@ class Farmer(Base):
         "OfftakeRequest",
         back_populates="farmer"
     )
+
+    added_by = relationship(
+        "User",
+        foreign_keys=[added_by_user_id],
+        back_populates="added_farmers",
+    )
+
+    @property
+    def added_by_name(self):
+        if not self.added_by:
+            return None
+        return f"{self.added_by.first_name} {self.added_by.last_name}"

@@ -125,3 +125,9 @@ class User(Base):
         "RawPlantReport",
         back_populates="user"
     )
+
+    added_farmers = relationship(
+        "Farmer",
+        foreign_keys="Farmer.added_by_user_id",
+        back_populates="added_by"
+    )
