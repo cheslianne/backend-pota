@@ -1609,11 +1609,28 @@ async function savePlantingIntentChanges() {
             return;
         }
 
-        const volumeValue = String(updatedData.volume).replace(/,/g, "").replace(/kg/gi, "").trim();
+        const volumeValue = Number(
+            String(updatedData.volume)
+                .replace(/,/g, "")
+                .replace(/kg/gi, "")
+                .trim()
+        );
+        const farmerIdValue = Number(updatedData.farmer_id);
+
+        if (!Number.isFinite(volumeValue) || volumeValue <= 0) {
+            alert("Please enter a valid volume in kilograms.");
+            return;
+        }
+
+        if (!Number.isInteger(farmerIdValue) || farmerIdValue <= 0) {
+            alert("The selected farmer is invalid.");
+            return;
+        }
+
         const payload = {
-            farmer_id: updatedData.farmer_id,
+            farmer_id: farmerIdValue,
             commodity: updatedData.commodity,
-            volume: updatedData.volume,
+            volume: volumeValue,
             planting_date: updatedData.planting_date,
             harvest_date: updatedData.harvest_date,
             remarks: updatedData.remarks || null
@@ -1635,7 +1652,14 @@ async function savePlantingIntentChanges() {
             let errorData = null;
             try { errorData = await response.json(); } catch(e) {}
             let errorMessage = "Failed to update planting intent.";
-            if (errorData && errorData.detail) errorMessage = errorData.detail;
+            if (errorData && errorData.detail) {
+                errorMessage = Array.isArray(errorData.detail)
+                    ? errorData.detail.map(function(item) {
+                        const field = Array.isArray(item.loc) ? item.loc.join(".") : "field";
+                        return field + ": " + item.msg;
+                    }).join("\n")
+                    : String(errorData.detail);
+            }
             throw new Error(errorMessage);
         }
 
