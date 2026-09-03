@@ -66,6 +66,7 @@ let priceChartInstance = null;
 let forecastLoadStarted = false;
 let forecastRetryTimer = null;
 let forecastRetryAttempts = 0;
+let plantingIntentDetailsHistoryActive = false;
 
 
 /* ============================================================
@@ -874,6 +875,22 @@ function initPlantingIntent() {
 
     // BACK FROM DETAILS
     document.getElementById("backFromPlantingIntentDetailsBtn")?.addEventListener("click", function() {
+        if (plantingIntentDetailsHistoryActive) {
+            history.back();
+            return;
+        }
+
+        closePlantingIntentDetails();
+    });
+
+    window.addEventListener("popstate", function() {
+        if (plantingIntentDetailsHistoryActive) {
+            plantingIntentDetailsHistoryActive = false;
+            closePlantingIntentDetails();
+        }
+    });
+
+    function closePlantingIntentDetails() {
         window.isEditingPlantingIntent = false;
 
         const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
@@ -903,7 +920,7 @@ function initPlantingIntent() {
 
         window.currentSelectedPlantingIntent = null;
         fetchPlantingIntents();
-    });
+    }
 
     // EDIT BUTTON
     document.getElementById("editPlantingIntentBtn")?.addEventListener("click", function() {
@@ -1309,6 +1326,11 @@ function openPlantingIntentDetails(intent) {
 
     window.currentSelectedPlantingIntent = intent;
 
+    if (!plantingIntentDetailsHistoryActive) {
+        history.pushState({ plantingIntentDetails: true }, "", window.location.href);
+        plantingIntentDetailsHistoryActive = true;
+    }
+
     if (list) list.classList.add("hidden-element");
     details.classList.remove("hidden-element");
 
@@ -1362,7 +1384,10 @@ function openPlantingIntentDetails(intent) {
     console.log("Current status:", status);
     
     // ✅ Check if status is DRAFT or PENDING (editable states)
-    const isEditable = status === "DRAFT" || status === "PENDING" || status === "Pending";
+    const normalizedStatus = String(status).trim().toUpperCase().replace(/[ -]+/g, "_");
+    const isEditable = normalizedStatus === "DRAFT" ||
+                       normalizedStatus === "PENDING" ||
+                       normalizedStatus === "REVISION_REQUIRED";
     const isSubmitted = status === "FOR_MUNICIPAL_VALIDATION" || 
                         status === "FOR_PROVINCIAL_VALIDATION" || 
                         status === "FOR_DA_RFO_VALIDATION" ||
