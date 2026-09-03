@@ -953,7 +953,7 @@ function initPlantingIntent() {
             let reportId = intent.report_id || intent.planting_intent_id;
             const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
             const foundReport = allReports.find(function(r) {
-                return r.planting_intent_id === intent.planting_intent_id;
+                return String(r.planting_intent_id) === String(intent.planting_intent_id);
             });
             if (foundReport) {
                 reportId = foundReport.report_id || foundReport.id;
@@ -1028,7 +1028,7 @@ function initPlantingIntent() {
         let reportId = null;
         const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
         const existingReport = allReports.find(function(r) {
-            return r.planting_intent_id === intent.planting_intent_id;
+            return String(r.planting_intent_id) === String(intent.planting_intent_id);
         });
 
         if (existingReport) {
