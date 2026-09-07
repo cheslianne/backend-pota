@@ -1399,6 +1399,282 @@ async function loadETLRunLogs() {
     }
 }
 
+/* ============================================================
+   MANUAL ETL RUN
+   POST /api/etl-run-log/manual-run
+============================================================ */
+
+
+async function manualRunETL() {
+
+    const manualRunBtn =
+        document.getElementById("manualRunBtn");
+
+    if (!manualRunBtn) {
+        console.warn(
+            "Manual ETL button #manualRunBtn not found."
+        );
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to run the ETL pipeline manually?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    manualRunBtn.disabled = true;
+    manualRunBtn.textContent = "Running ETL...";
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/etl-run-log/manual-run`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders()
+                }
+            );
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        }
+        catch {
+            data = {};
+        }
+
+        console.log(
+            "POST /api/etl-run-log/manual-run:",
+            response.status,
+            data
+        );
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+        if (response.status === 403) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "You do not have permission to run the ETL pipeline."
+                )
+            );
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Failed to start ETL pipeline."
+                )
+            );
+        }
+
+        /*
+         * ETL has started in the background.
+         * Do NOT show completion alert yet.
+         */
+        console.log(
+            "ETL pipeline started. Waiting for completion..."
+        );
+
+        /*
+         * Wait until the ETL logs show that
+         * all 7 steps have finished.
+         */
+        await waitForETLCompletion();
+
+        /*
+         * Refresh ETL logs after completion.
+         */
+        await loadETLRunLogs();
+
+        /*
+         * FINAL SUCCESS MESSAGE
+         */
+        alert(
+            "✅ ETL Pipeline Completed Successfully!"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Manual ETL run error:",
+            error
+        );
+
+        alert(
+            "❌ ETL Pipeline Failed.\n\n" +
+            (
+                error.message ||
+                "Unable to complete the ETL pipeline."
+            )
+        );
+
+    }
+    finally {
+
+        manualRunBtn.disabled = false;
+        manualRunBtn.textContent = "Manual Run";
+
+    }
+}
+
+
+/* ============================================================
+   WAIT FOR ETL COMPLETION
+============================================================ */
+
+async function waitForETLCompletion() {
+
+    const maxAttempts = 60;
+
+    const interval = 3000;
+
+    for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+    ) {
+
+        console.log(
+            `Checking ETL status... Attempt ${attempt}/${maxAttempts}`
+        );
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/etl-run-log/`,
+                    {
+                        method: "GET",
+                        headers: getAuthHeaders()
+                    }
+                );
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                throw new Error("Session expired.");
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to check ETL run status."
+                );
+            }
+
+            const data =
+                await response.json();
+
+            let logs = [];
+
+            if (Array.isArray(data)) {
+
+                logs = data;
+
+            }
+            else if (Array.isArray(data.logs)) {
+
+                logs = data.logs;
+
+            }
+            else if (Array.isArray(data.data)) {
+
+                logs = data.data;
+            }
+
+            /*
+             * We expect 7 ETL steps.
+             */
+            if (logs.length >= 7) {
+
+                /*
+                 * Get the newest 7 logs.
+                 */
+                const latestLogs =
+                    logs
+                        .slice(0, 7);
+
+                /*
+                 * Check if all 7 are finished.
+                 */
+                const allFinished =
+                    latestLogs.every(
+                        log =>
+                            log.status &&
+                            (
+                                log.status.toLowerCase() ===
+                                    "success" ||
+
+                                log.status.toLowerCase() ===
+                                    "failed"
+                            )
+                    );
+
+                if (allFinished) {
+
+                    const hasFailed =
+                        latestLogs.some(
+                            log =>
+                                log.status &&
+                                log.status.toLowerCase() ===
+                                    "failed"
+                        );
+
+                    if (hasFailed) {
+
+                        throw new Error(
+                            "One or more ETL steps failed."
+                        );
+                    }
+
+                    console.log(
+                        "All 7 ETL steps completed successfully."
+                    );
+
+                    return true;
+                }
+            }
+
+        }
+        catch (error) {
+
+            console.error(
+                "ETL status check error:",
+                error
+            );
+
+            throw error;
+        }
+
+        /*
+         * Wait 3 seconds before checking again.
+         */
+        await new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    interval
+                )
+        );
+    }
+
+    throw new Error(
+        "ETL pipeline is taking too long to complete."
+    );
+}
 
 
 /* ============================================================
@@ -1948,10 +2224,52 @@ function initializeAuditSearch() {
     );
 }
 
+/* ============================================================
+   SEARCH ETL RUN LOGS
+============================================================ */
+
+function initializeETLSearch() {
+
+    const searchInput =
+        document.getElementById(
+            "searchETL"
+        );
+
+    if (!searchInput) {
+        return;
+    }
+
+    searchInput.addEventListener(
+        "input",
+        () => {
+
+            const search =
+                searchInput.value
+                    .trim()
+                    .toLowerCase();
+
+            document
+                .querySelectorAll(
+                    "#etlRows tr"
+                )
+                .forEach(row => {
+
+                    const text =
+                        row.textContent
+                            .toLowerCase();
+
+                    row.style.display =
+                        text.includes(search)
+                            ? ""
+                            : "none";
+                });
+        }
+    );
+}
 
 /* ============================================================
    DOM READY
-============================================================ */
+=========================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -1996,12 +2314,27 @@ document.addEventListener(
 
         loadETLRunLogs();
 
+        /* MANUAL ETL RUN */
+
+const manualRunBtn =
+    document.getElementById("manualRunBtn");
+
+if (manualRunBtn) {
+
+    manualRunBtn.addEventListener(
+        "click",
+        manualRunETL
+    );
+
+}
+
 
         /* SEARCH */
 
         initializeUserSearch();
 
         initializeAuditSearch();
+        initializeETLSearch();
 
 
         /* ADD ACCOUNT */

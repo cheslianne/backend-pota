@@ -20,7 +20,6 @@ from src.api.routes import (
     report_submission,
     audit_logs,
     email,
-    report_submission,
 )
 
 
@@ -146,11 +145,6 @@ app.include_router(
     tags=["Report Submissions"]
 )
 
-app.include_router(
-    report_submission.router,
-    prefix="/api/report-submissions",
-    tags=["Report Submissions"]
-)
 
 app.include_router(
     etl_run_log.router,
