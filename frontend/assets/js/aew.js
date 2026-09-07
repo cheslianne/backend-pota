@@ -60,7 +60,6 @@ let mapInstance = null;
 let currentOfftakeRequest = null;
 let OFFTAKE_REQUESTS_DATA = [];
 
-// Add this near other state variables (around line 40)
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 

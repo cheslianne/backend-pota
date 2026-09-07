@@ -437,13 +437,10 @@
         letter-spacing: 0.02em;
     }
 
-    /* ✅ DRAFT STATUS - Add this */
     .status-pill.draft {
         background-color: #6c757d !important;  /* Gray color */
         color: #FFFFFF !important;
     }
-
-    /* ✅ PENDING STATUS - Same as Draft */
     .status-pill.pending {
         background-color: #6c757d !important;  /* Gray color */
         color: #FFFFFF !important;
@@ -619,11 +616,7 @@
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 32px;
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 28px;
-      align-items: start;
+      padding: 24px;
     }
 
     .fair-price-left-pane h2 {
@@ -639,176 +632,54 @@
       margin-bottom: 16px;
       line-height: 1.4;
     }
-
-    .crop-image-placeholder {
-      width: 100%;
-      height: 140px;
-      background: #ECE5D4;
-      border: 1.5px dashed var(--border);
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 16px;
-    }
-
-    .fair-price-filters {
+    .vegetable-collage-banner {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
+      width: 100%;
+      height: 180px;
+      margin-top: 16px;
+    }
+
+    .vegetable-item {
       position: relative;
-      align-items: start;
-    }
-
-    .fair-price-filters > select {
-      width: 100%;
-      padding: 10px 14px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(46, 42, 34, 0.08);
       border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 13.5px;
-      font-weight: 600;
-      background: #FFFFFF;
-      color: var(--ink);
-      outline: none;
-      cursor: pointer;
+      background: #3b2314;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .fair-price-filters > select:focus {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+    .vegetable-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(46, 42, 34, 0.15);
     }
 
-    /* CUSTOM MONTH DROPDOWN FIX */
-    .custom-month-dropdown {
-      position: relative;
+    .vegetable-item img {
       width: 100%;
-      z-index: 1000;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
     }
 
-    .custom-month-button {
-      width: 100%;
-      min-height: 42px;
-      padding: 10px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: #FFFFFF;
-      color: var(--ink);
-      font-family: inherit;
-      font-size: 13.5px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      outline: none;
-      transition: all 0.2s ease;
+    .vegetable-item:hover img {
+      transform: scale(1.06);
     }
 
-    .custom-month-button:hover {
-      border-color: var(--green);
-    }
-
-    .custom-month-button:focus,
-    .custom-month-dropdown.open .custom-month-button {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
-    }
-
-    .month-dropdown-arrow {
-      font-size: 10px;
-      color: var(--muted);
-      transition: transform 0.2s ease;
-    }
-
-    .custom-month-dropdown.open .month-dropdown-arrow {
-      transform: rotate(180deg);
-    }
-
-    .custom-month-menu {
+    .vegetable-label {
       position: absolute;
-      top: calc(100% + 6px);
+      bottom: 0;
       left: 0;
       right: 0;
-      background: #FFFFFF;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      box-shadow: 0 10px 24px rgba(46, 42, 34, 0.18);
-      max-height: 240px;
-      overflow-y: auto;
-      display: none;
-      z-index: 10000;
-    }
-
-    .custom-month-dropdown.open .custom-month-menu {
-      display: block;
-    }
-
-    .month-option {
-      display: block;
-      width: 100%;
-      padding: 10px 14px;
-      border: none;
-      background: #FFFFFF;
-      color: var(--ink);
-      font-family: inherit;
-      font-size: 13.5px;
-      font-weight: 500;
-      text-align: left;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .month-option:hover {
-      background: var(--green-light);
-    }
-
-    .month-option.active {
-      background: #E7EDDF;
-      color: var(--green-dark);
+      background: linear-gradient(to top, rgba(46, 42, 34, 0.85), transparent);
+      color: #fff;
+      font-size: 12.5px;
       font-weight: 700;
-    }
-
-    .hidden-month-select {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      overflow: hidden !important;
-    }
-
-    .fair-price-right-pane {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .price-metric-bar {
-      background: #5D4037;
-      border-radius: var(--radius-sm);
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #FFFFFF;
-      box-shadow: 0 4px 12px rgba(93, 64, 55, 0.15);
-    }
-
-    .price-metric-bar .metric-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      opacity: 0.9;
-    }
-
-    .price-metric-bar .metric-value {
-      font-size: 26px;
-      font-weight: 800;
-      color: #FFDE9E;
+      padding: 12px 10px 8px 10px;
+      text-align: center;
+      letter-spacing: 0.03em;
     }
 
     .market-forecast-card {
@@ -1696,81 +1567,36 @@
               <h2>Fair Price Intelligence</h2>
               <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
               
-              <div class="crop-image-placeholder">
-                <img id="cropImageDisplay" src="https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80" alt="Crop" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
-              </div>
-
-              <div class="fair-price-filters">
-                <select id="fairPriceCropSelect">
-                  <option value="red-onion">Red Onion</option>
-                  <option value="white-onion">White Onion</option>
-                  <option value="tomato" selected>Tomato</option>
-                  <option value="squash">Squash</option>
-                </select>
-
-                <!-- CUSTOM MONTH DROPDOWN -->
-                <div class="custom-month-dropdown" id="customMonthDropdown">
-                  <button type="button" class="custom-month-button" id="fairPriceMonthButton" aria-haspopup="listbox" aria-expanded="false">
-                    <span id="fairPriceMonthText">Month (All)</span>
-                    <span class="month-dropdown-arrow">▼</span>
-                  </button>
-                  <div class="custom-month-menu" id="fairPriceMonthMenu" role="listbox">
-                    <button type="button" class="month-option active" data-value="all">Month (All)</button>
-                    <button type="button" class="month-option" data-value="jan">January</button>
-                    <button type="button" class="month-option" data-value="feb">February</button>
-                    <button type="button" class="month-option" data-value="mar">March</button>
-                    <button type="button" class="month-option" data-value="apr">April</button>
-                    <button type="button" class="month-option" data-value="may">May</button>
-                    <button type="button" class="month-option" data-value="jun">June</button>
-                    <button type="button" class="month-option" data-value="jul">July</button>
-                    <button type="button" class="month-option" data-value="aug">August</button>
-                    <button type="button" class="month-option" data-value="sep">September</button>
-                    <button type="button" class="month-option" data-value="oct">October</button>
-                    <button type="button" class="month-option" data-value="nov">November</button>
-                    <button type="button" class="month-option" data-value="dec">December</button>
-                  </div>
-                  <select id="fairPriceMonthSelect" class="hidden-month-select" aria-hidden="true" tabindex="-1">
-                    <option value="all">Month (All)</option>
-                    <option value="jan">January</option>
-                    <option value="feb">February</option>
-                    <option value="mar">March</option>
-                    <option value="apr">April</option>
-                    <option value="may">May</option>
-                    <option value="jun">June</option>
-                    <option value="jul">July</option>
-                    <option value="aug">August</option>
-                    <option value="sep">September</option>
-                    <option value="oct">October</option>
-                    <option value="nov">November</option>
-                    <option value="dec">December</option>
-                  </select>
+              <div class="vegetable-collage-banner">
+                <div class="vegetable-item">
+                  <img src="../images/tomato.jpg" alt="Tomato">
+                  <div class="vegetable-label">Tomato</div>
                 </div>
-              </div>
-            </div>
-
-            <!-- RIGHT -->
-            <div class="fair-price-right-pane">
-              <div class="price-metric-bar">
-                <span class="metric-label">Lowest Price</span>
-                <span class="metric-value" id="lowestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
-              </div>
-              <div class="price-metric-bar">
-                <span class="metric-label">Highest Price</span>
-                <span class="metric-value" id="highestPriceDisplay">₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span></span>
+                <div class="vegetable-item">
+                  <img src="../images/squash.jpg" alt="Squash">
+                  <div class="vegetable-label">Squash</div>
+                </div>
+                <div class="vegetable-item">
+                  <img src="../images/whiteonion.jpg" alt="White Onion">
+                  <div class="vegetable-label">White Onion</div>
+                </div>
+                <div class="vegetable-item">
+                  <img src="../images/onion.jpg" alt="Red Onion">
+                  <div class="vegetable-label">Red Onion</div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- FORECAST RESULTS -->
           <div class="market-forecast-card">
-            <h3 class="forecast-title">📊 10-Year Market Price Forecast (2026 – 2035)</h3>
-            <p class="forecast-subtitle">Click a year to view monthly projections and trend breakdowns</p>
+           
             <div id="forecastResultsContainer"></div>
           </div>
 
           <!-- PRICE TREND CHART -->
           <div class="market-forecast-card" style="margin-top: 20px;">
-            <h3 class="forecast-title">📈 Price Trend Analysis</h3>
+            <h3 class="forecast-title"> Price Trend Analysis</h3>
             <p class="forecast-subtitle">Monthly price trends for selected commodities</p>
             <div style="position: relative; height: 300px; width: 100%;">
               <canvas id="priceTrendChart"></canvas>
