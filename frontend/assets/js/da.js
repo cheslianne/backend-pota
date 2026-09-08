@@ -355,67 +355,251 @@ function initSignout() {
 
 }
 
-
 /* ============================================================
    LEAFLET MAP
 ============================================================ */
 
 function initMap() {
 
-    const mapEl =
-        document.getElementById("map");
+    const mapEl = document.getElementById("map");
 
-
-    if (
-        !mapEl ||
-        typeof L === "undefined"
-    ) {
-
+    if (!mapEl || typeof L === "undefined") {
         return;
-
     }
 
+    const pampangaBounds = L.latLngBounds(
+        [14.85, 120.35],
+        [15.35, 120.95]
+    );
 
-    const pampangaBounds =
-        L.latLngBounds(
-            [14.85, 120.35],
-            [15.35, 120.95]
-        );
+    mapInstance = L.map("map", {
 
+        maxBounds: pampangaBounds,
 
-    mapInstance =
-        L.map(
-            "map",
-            {
+        maxBoundsViscosity: 1.0,
 
-                maxBounds:
-                    pampangaBounds,
+        minZoom: 10
 
-                maxBoundsViscosity: 1.0,
-
-                minZoom: 10
-
-            }
-        ).setView(
-            [15.0794, 120.6200],
-            10
-        );
+    }).setView(
+        [15.0794, 120.6200],
+        10
+    );
 
 
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-
             attribution:
                 "&copy; OpenStreetMap contributors",
 
             maxZoom: 18
-
         }
     ).addTo(mapInstance);
 
+
+    // ============================================================
+    // PAMPANGA MUNICIPALITY COORDINATES
+    // Static coordinates only for displaying the map marker.
+    // These are NOT stored in the database.
+    // ============================================================
+
+    const municipalityCoordinates = {
+
+        "Angeles": [15.1450, 120.5887],
+
+        "Apalit": [14.9470, 120.7700],
+
+        "Arayat": [15.1500, 120.7690],
+
+        "Bacolor": [15.0000, 120.6520],
+
+        "Candaba": [15.0950, 120.8260],
+
+        "Floridablanca": [14.9770, 120.5280],
+
+        "Guagua": [14.9650, 120.6350],
+
+        "Lubao": [14.9400, 120.6000],
+
+        "Mabalacat": [15.2230, 120.5740],
+
+        "Macabebe": [14.9080, 120.7150],
+
+        "Magalang": [15.2160, 120.6630],
+
+        "Masantol": [14.8960, 120.7100],
+
+        "Mexico": [15.0640, 120.7190],
+
+        "Minalin": [14.9670, 120.6840],
+
+        "Porac": [15.0710, 120.5420],
+
+        "San Fernando": [15.0343, 120.6840],
+
+        "San Luis": [15.0400, 120.7870],
+
+        "San Simon": [14.9990, 120.7800],
+
+        "Santa Ana": [15.0950, 120.7720],
+
+        "Santa Rita": [15.0190, 120.6110],
+
+        "Santo Tomas": [14.9950, 120.7090]
+
+    };
+
+
+    // ============================================================
+    // LOAD MUNICIPALITY MAP DATA
+    // ============================================================
+
+    loadMunicipalityMapData(
+        municipalityCoordinates
+    );
+
 }
 
+
+/* ============================================================
+   LOAD MUNICIPALITY MAP DATA
+============================================================ */
+
+async function loadMunicipalityMapData(
+    municipalityCoordinates
+) {
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Municipality Map Data:",
+            result
+        );
+
+
+        if (
+            !result.data ||
+            !Array.isArray(result.data)
+        ) {
+
+            console.warn(
+                "No municipality map data found."
+            );
+
+            return;
+
+        }
+
+
+        // ========================================================
+        // CREATE ONE MARKER PER MUNICIPALITY
+        // ========================================================
+
+        result.data.forEach(
+            municipalityData => {
+
+                const municipality =
+                    municipalityData.municipality;
+
+                const coordinates =
+                    municipalityCoordinates[
+                        municipality
+                    ];
+
+
+                // Skip if municipality has no
+                // static coordinate
+                if (!coordinates) {
+
+                    console.warn(
+                        `No coordinates found for municipality: ${municipality}`
+                    );
+
+                    return;
+
+                }
+
+
+                let popupContent = `
+                    <div style="min-width: 180px;">
+                        <strong>Municipality:</strong>
+                        ${municipality}
+                        <br><br>
+                `;
+
+
+                // =================================================
+                // ADD COMMODITIES
+                // =================================================
+
+                municipalityData.commodities.forEach(
+                    item => {
+
+                        popupContent += `
+                            <strong>Commodity:</strong>
+                            ${item.commodity}
+                            <br>
+
+                            <strong>Status:</strong>
+                            ${item.status}
+                            <br><br>
+                        `;
+
+                    }
+                );
+
+
+                popupContent += `
+                    </div>
+                `;
+
+
+                // =================================================
+                // CREATE MARKER
+                // =================================================
+
+                L.marker(coordinates)
+                    .addTo(mapInstance)
+                    .bindPopup(
+                        popupContent
+                    );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load municipality map data:",
+            error
+        );
+
+    }
+
+}
 
 /* ============================================================
    BUYER REGISTRY INITIALIZATION
@@ -2188,61 +2372,141 @@ function initAlertThreshold() {
     -------------------------------------------- */
 
     saveBtn?.addEventListener(
-        "click",
-        async () => {
+    "click",
+    async () => {
 
-            const commodity =
-                document.getElementById(
-                    "commoditySelect"
-                )?.value;
+        const commodity =
+            document.getElementById(
+                "commoditySelect"
+            )?.value;
 
+        const baseDemand =
+            document.getElementById(
+                "baseDemandInput"
+            )?.value;
 
-            const baseDemand =
-                document.getElementById(
-                    "baseDemandInput"
-                )?.value;
-
-
-            const oversupplyThreshold =
-                thresholdRange?.value;
+        const oversupplyThreshold =
+            thresholdRange?.value;
 
 
-            const etlSchedule =
-                document.getElementById(
-                    "etlSelect"
-                )?.value;
+        // --------------------------------------------
+        // VALIDATION
+        // --------------------------------------------
+
+        if (!commodity) {
+            alert("Please select a commodity.");
+            return;
+        }
+
+        if (!baseDemand || Number(baseDemand) <= 0) {
+            alert("Please enter a valid target demand.");
+            return;
+        }
 
 
-            const payload = {
+        // --------------------------------------------
+        // PAYLOAD
+        // --------------------------------------------
 
-                commodity:
-                    commodity || null,
+        const payload = {
 
-                baseDemand:
-                    baseDemand || null,
+            commodity:
+                commodity,
 
-                oversupplyThreshold:
-                    oversupplyThreshold || null,
+            base_demand:
+                Number(baseDemand),
 
-                etlSchedule:
-                    etlSchedule || null
+            oversupply_threshold:
+                Number(oversupplyThreshold)
 
-            };
+        };
 
+
+        console.log(
+            "Saving threshold configuration:",
+            payload
+        );
+
+
+        // --------------------------------------------
+        // SAVE TO BACKEND
+        // --------------------------------------------
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/alert-thresholds`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${localStorage.getItem("token")}`
+                        },
+
+                        body:
+                            JSON.stringify(payload)
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            // --------------------------------------------
+            // ERROR
+            // --------------------------------------------
+
+            if (!response.ok) {
+
+                console.error(
+                    "Save threshold error:",
+                    data
+                );
+
+                alert(
+                    data.detail ||
+                    "Failed to save threshold configuration."
+                );
+
+                return;
+            }
+
+
+            // --------------------------------------------
+            // SUCCESS
+            // --------------------------------------------
 
             console.log(
-                "Threshold configuration:",
-                payload
+                "Threshold saved successfully:",
+                data
             );
-
 
             alert(
                 "Threshold configuration saved successfully!"
             );
 
-        }
-    );
 
+        } catch (error) {
+
+            console.error(
+                "Error saving threshold:",
+                error
+            );
+
+            alert(
+                "Unable to connect to the server."
+            );
+
+        }
+
+    }
+);
 }
 
 /* ============================================================
