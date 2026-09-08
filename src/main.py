@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
 from src.models.report_submission import ReportSubmission
 from src.models.report_validation_history import ReportValidationHistory
+from src.api.routes import raw_plant_reports
 from src.api.routes import etl_run_log
 from src.api.routes import (
     users,
@@ -157,6 +158,13 @@ app.include_router(
     prefix="/api/etl-run-log",
     tags=["ETL Run Log"]
 )
+
+app.include_router(
+    raw_plant_reports.router, 
+    prefix="/api/raw-plant-reports", 
+    tags=["Raw Plant Reports"]
+)
+
 
 
 # =========================================================

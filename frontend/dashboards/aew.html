@@ -5,16 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEW — eSaka</title>
 
-  <!-- Clean, Modern Google Fonts for High Readability -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
 
-  <!-- Chart.js for price trends visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
@@ -56,7 +53,6 @@
     a { color: inherit; }
     button, input, select, textarea { font-family: inherit; }
 
-    /* --- TOPBAR --- */
     .topbar {
       display: flex;
       align-items: center;
@@ -205,7 +201,6 @@
       letter-spacing: 0.04em;
     }
 
-    /* --- SIDEBAR --- */
     .layout {
       display: flex;
       min-height: calc(100vh - var(--topbar-height));
@@ -302,7 +297,6 @@
       color: #FFF;
     }
 
-    /* --- MAIN CONTENT & ACTION PANELS --- */
     .main {
       flex: 1;
       padding: 32px 40px;
@@ -348,7 +342,6 @@
       padding: 22px 24px;
     }
 
-    /* --- HCI SEARCH BOX AFFORDANCE --- */
     .search-box {
       display: flex;
       align-items: center;
@@ -383,7 +376,6 @@
       color: var(--ink);
     }
 
-    /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     table {
       width: 100%;
       border-collapse: separate;
@@ -423,7 +415,6 @@
 
     .clickable-row { cursor: pointer; }
 
-    /* --- VISIBLE HIGH-CONTRAST STATUS BADGES --- */
     .status-pill {
         display: inline-block;
         padding: 4px 12px;
@@ -437,19 +428,16 @@
         letter-spacing: 0.02em;
     }
 
-    /* ✅ DRAFT STATUS - Add this */
     .status-pill.draft {
-        background-color: #6c757d !important;  /* Gray color */
+        background-color: #6c757d !important;
         color: #FFFFFF !important;
     }
 
-    /* ✅ PENDING STATUS - Same as Draft */
     .status-pill.pending {
-        background-color: #6c757d !important;  /* Gray color */
+        background-color: #6c757d !important;
         color: #FFFFFF !important;
     }
 
-    /* ✅ SUBMITTED STATUS */
     .status-pill.submitted,
     .status-pill.active,
     .status-pill.confirmed,
@@ -458,21 +446,42 @@
         background-color: var(--status-confirmed) !important;
     }
 
-    /* ✅ REVISION STATUS */
     .status-pill.revision,
     .status-pill.mediating,
     .status-pill.flagged {
-        background-color: #D97706 !important;  /* Orange */
+        background-color: #D97706 !important;
     }
 
-    /* ✅ REJECTED STATUS */
     .status-pill.rejected,
     .status-pill.cancelled {
         background-color: var(--status-rejected) !important;
     }
 
+    .status-pill.flagged {
+        background-color: #C0392B !important;
+        color: #FFFFFF !important;
+    }
 
-    /* --- SOLID PRIMARY & OUTLINE BUTTONS --- */
+    .status-pill.draft-status {
+        background-color: #6c757d !important;
+        color: #FFFFFF !important;
+    }
+
+    .status-pill.pending-status {
+        background-color: #D97706 !important;
+        color: #FFFFFF !important;
+    }
+
+    .status-pill.approved-status {
+        background-color: #2E7D32 !important;
+        color: #FFFFFF !important;
+    }
+
+    .status-pill.submitted-level {
+        background-color: #2980B9 !important;
+        color: #FFFFFF !important;
+    }
+
     .btn-primary {
       appearance: none;
       background: var(--green);
@@ -519,7 +528,6 @@
       margin-top: 22px;
     }
 
-    /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -566,7 +574,6 @@
 
     .form-field-full { grid-column: 1 / -1; }
 
-    /* --- OFFTAKE MEMORANDUM --- */
     .confirm-offtake-box {
       background: #FFFFFF;
       border: 1.5px solid var(--border);
@@ -608,7 +615,6 @@
       background: #F4EFE6;
     }
 
-    /* --- FAIR PRICE DASHBOARD --- */
     .fair-price-dashboard-container {
       display: flex;
       flex-direction: column;
@@ -681,7 +687,6 @@
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
-    /* CUSTOM MONTH DROPDOWN FIX */
     .custom-month-dropdown {
       position: relative;
       width: 100%;
@@ -875,7 +880,6 @@
       border: 1.5px solid var(--border);
     }
 
-    /* --- MODALS --- */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -1004,39 +1008,40 @@
     .btn-danger { background: #A1382B !important; }
     .btn-danger:hover { background: #84281D !important; }
 
-    /* ============================================================
-      REPORT TAB STATUS COLORS
-    ============================================================ */
+/* ============================================================
+   STATUS PILL COLORS (for Finalized Planting Intents)
+============================================================ */
 
-    /* FLAGGED status */
-    .status-pill.flagged {
-        background-color: #C0392B !important;
-        color: #FFFFFF !important;
-    }
+.status-pill-NOT-PLANTED {
+    background-color: #6c757d !important;
+    color: #FFFFFF !important;
+}
 
-    /* DRAFT status */
-    .status-pill.draft-status {
-        background-color: #6c757d !important;
-        color: #FFFFFF !important;
-    }
+.status-pill-PLANTED {
+    background-color: #D97706 !important;
+    color: #FFFFFF !important;
+}
 
-    /* PENDING status */
-    .status-pill.pending-status {
-        background-color: #D97706 !important;
-        color: #FFFFFF !important;
-    }
+.status-pill-HARVESTED {
+    background-color: #2E7D32 !important;
+    color: #FFFFFF !important;
+}
 
-    /* APPROVED status */
-    .status-pill.approved-status {
-        background-color: #2E7D32 !important;
-        color: #FFFFFF !important;
-    }
+.status-pill-MEDIATING {
+    background-color: #2980B9 !important;
+    color: #FFFFFF !important;
+}
 
-    /* Submitted to higher level */
-    .status-pill.submitted-level {
-        background-color: #2980B9 !important;
-        color: #FFFFFF !important;
-    }
+/* Dropdown hover effect */
+.status-option:hover {
+    background-color: #f0f0f0 !important;
+}
+
+/* Active status in dropdown */
+.status-option.active-status {
+    background-color: #e8f0fe !important;
+    font-weight: 600;
+}
 
   </style>
 </head>
@@ -1048,8 +1053,6 @@
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
-
-      <!-- PNG Logos -->
       <div class="logos">
         <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
         <img src="../images/esakaname.png" alt="eSaka" class="brand-name-img">
@@ -1061,7 +1064,6 @@
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
-
       <div class="user-info">
         <div class="avatar">JD</div>
         <div class="user-text">
@@ -1101,7 +1103,6 @@
           Reports
         </button>
       </div>
-
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -1111,182 +1112,293 @@
     <!-- MAIN CONTENT -->
     <main class="main">
 
-      <!-- VIEW 1: Farmers -->
+      <!-- ============================================================
+          VIEW 1: FARMERS
+      ============================================================ -->
       <section class="view active-view" id="view-farmers">
-        <div id="farmersListSubview">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>All Farmers Directory</h1>
-              <p>Municipal masterlist and RSBSA verification records.</p>
-            </div>
-            <div class="header-actions">
-              <div class="search-box">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="searchFarmersInput" placeholder="Search farmers...">
+          <!-- ========================================================
+              FARMERS LIST SUBVIEW
+          ========================================================= -->
+          <div id="farmersListSubview">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>All Farmers Directory</h1>
+                      <p>Municipal masterlist and RSBSA verification records.</p>
+                  </div>
+                  <div class="header-actions">
+                      <!-- SEARCH -->
+                      <div class="search-box">
+                          <svg viewBox="0 0 24 24">
+                              <circle cx="11" cy="11" r="7"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                          <input type="text" id="searchFarmersInput" placeholder="Search farmers...">
+                      </div>
+                      <!-- ADD FARMER -->
+                      <button class="btn-primary" id="addFarmerBtn" type="button">+ Add Farmer</button>
+                  </div>
               </div>
-              <button class="btn-primary" id="addFarmerBtn" type="button">+ Add Farmer</button>
-            </div>
+              <!-- ====================================================
+                  FARMERS TABLE
+              ===================================================== -->
+              <div class="card">
+                  <table>
+                      <thead>
+                          <tr>
+                              <th>Name</th>
+                              <th>RSBSA-ID</th>
+                              <th>Municipality</th>
+                              <th>Barangay</th>
+                              <th style="text-align:center;">Status</th>
+                          </tr>
+                      </thead>
+                      <tbody id="farmersTableBody">
+                          <!-- Farmer records are populated by aew.js -->
+                      </tbody>
+                  </table>
+                  <!-- =================================================
+                      PAGINATION
+                  ================================================== -->
+                  <div class="pagination-container">
+                      <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+                      <div class="pagination-controls" id="paginationControls">
+                          <button class="btn-page" id="prevPageBtn" type="button" disabled>&laquo; Prev</button>
+                          <div id="pageNumberBtns" class="page-numbers-wrap"></div>
+                          <button class="btn-page" id="nextPageBtn" type="button">Next &raquo;</button>
+                      </div>
+                  </div>
+              </div>
           </div>
-
-          <div class="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>RSBSA-ID</th>
-                  <th>Municipality</th>
-                  <th>Barangay</th>
-                  <th class="center-col">Status</th>
-                </tr>
-              </thead>
-              <tbody id="farmersTableBody"></tbody>
-            </table>
-
-            <div class="pagination-container">
-              <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
-              <div class="pagination-controls" id="paginationControls">
-                <button class="btn-page" id="prevPageBtn" type="button" disabled>&laquo; Prev</button>
-                <div id="pageNumberBtns" class="page-numbers-wrap"></div>
-                <button class="btn-page" id="nextPageBtn" type="button">Next &raquo;</button>
+          <!-- ========================================================
+              REGISTER FARMER SUBVIEW
+          ========================================================= -->
+          <div id="registerFarmerSubview" class="hidden-element">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>Register a Farmer</h1>
+                      <p>Create a verified entry linked to the Department of Agriculture database.</p>
+                  </div>
               </div>
-            </div>
+              <!-- ====================================================
+                  REGISTRATION CARD
+              ===================================================== -->
+              <div class="card">
+                  <form id="registerFarmerForm">
+                      <div class="form-grid-two">
+                          <!-- FARMER ID -->
+                          <div class="form-field-item">
+                              <label>Farmer ID (RSBSA ID) <span class="req">*</span></label>
+                              <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
+                          </div>
+                          <!-- MUNICIPALITY -->
+                          <div class="form-field-item">
+                              <label>Municipality <span class="req">*</span></label>
+                              <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
+                          </div>
+                          <!-- FIRST NAME -->
+                          <div class="form-field-item">
+                              <label>First Name <span class="req">*</span></label>
+                              <input type="text" id="regFirstName" placeholder="Pancho" required>
+                          </div>
+                          <!-- BARANGAY -->
+                          <div class="form-field-item">
+                              <label>Barangay <span class="req">*</span></label>
+                              <input type="text" id="regBarangay" placeholder="e.g. San Agustin" required>
+                          </div>
+                          <!-- MIDDLE NAME -->
+                          <div class="form-field-item">
+                              <label>Middle Name</label>
+                              <input type="text" id="regMiddleName" placeholder="Reyes">
+                          </div>
+                          <!-- LAST NAME -->
+                          <div class="form-field-item">
+                              <label>Last Name <span class="req">*</span></label>
+                              <input type="text" id="regLastName" placeholder="De Jesus" required>
+                          </div>
+                          <!-- SUFFIX -->
+                          <div class="form-field-item">
+                              <label>Suffix</label>
+                              <input type="text" id="regSuffix" placeholder="Jr.">
+                          </div>
+                          <!-- SEX -->
+                          <div class="form-field-item">
+                              <label>Sex <span class="req">*</span></label>
+                              <select id="regSex" required>
+                                  <option value="Male">Male</option>
+                                  <option value="Female">Female</option>
+                              </select>
+                          </div>
+                          <!-- BIRTHDATE -->
+                          <div class="form-field-item">
+                              <label>Birthdate <span class="req">*</span></label>
+                              <input type="date" id="regBirthdate" required>
+                          </div>
+                          <!-- PHONE -->
+                          <div class="form-field-item">
+                              <label>Phone Number <span class="req">*</span></label>
+                              <input type="tel" id="regPhone" placeholder="0999654399" required>
+                          </div>
+                          <!-- EMAIL -->
+                          <div class="form-field-item">
+                              <label>Email <span class="req">*</span></label>
+                              <input type="email" id="regEmail" placeholder="panchodj@gmail.com" required>
+                          </div>
+                      </div>
+                      <!-- =================================================
+                          FORM ACTIONS
+                      ================================================== -->
+                      <div class="actions-right-row">
+                          <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
+                          <button class="btn-primary" type="submit">Submit</button>
+                      </div>
+                  </form>
+              </div>
           </div>
-        </div>
-
-        <!-- Register Farmer Subview -->
-        <div id="registerFarmerSubview" class="hidden-element">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>Register a Farmer</h1>
-              <p>Create a verified entry linked to the Department of Agriculture database.</p>
-            </div>
+          <!-- ========================================================
+              MANAGE FARMER SUBVIEW
+          ========================================================= -->
+          <div id="manageFarmerSubview" class="hidden-element">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>Manage Farmer Record</h1>
+                      <p>Review and update contact details for this farmer beneficiary.</p>
+                  </div>
+              </div>
+              <div class="card">
+                  <!-- OFFICIAL RECORD NOTICE -->
+                  <div class="higher-ups-note">
+                      <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from arbitrary alteration.
+                  </div>
+                  <!-- =================================================
+                      FARMER INFORMATION
+                  ================================================== -->
+                  <div class="form-grid-two">
+                      <!-- FARMER ID -->
+                      <div class="form-field-item">
+                          <label>Farmer ID (RSBSA ID)</label>
+                          <input type="text" id="manFarmerId" readonly class="input-readonly">
+                      </div>
+                      <!-- ADDRESS -->
+                      <div class="form-field-item">
+                          <label>Address</label>
+                          <input type="text" id="manAddress" readonly class="man-editable input-readonly">
+                      </div>
+                      <!-- FIRST NAME -->
+                      <div class="form-field-item">
+                          <label>First Name</label>
+                          <input type="text" id="manFirstName" readonly class="input-readonly">
+                      </div>
+                      <!-- MIDDLE NAME -->
+                      <div class="form-field-item">
+                          <label>Middle Name</label>
+                          <input type="text" id="manMiddleName" readonly class="input-readonly">
+                      </div>
+                      <!-- LAST NAME -->
+                      <div class="form-field-item">
+                          <label>Last Name</label>
+                          <input type="text" id="manLastName" readonly class="input-readonly">
+                      </div>
+                      <!-- SUFFIX -->
+                      <div class="form-field-item">
+                          <label>Suffix</label>
+                          <input type="text" id="manSuffix" readonly class="input-readonly">
+                      </div>
+                      <!-- SEX -->
+                      <div class="form-field-item">
+                          <label>Sex</label>
+                          <input type="text" id="manSex" readonly class="input-readonly">
+                      </div>
+                      <!-- BIRTHDATE -->
+                      <div class="form-field-item">
+                          <label>Birthdate</label>
+                          <input type="text" id="manBirthdate" readonly class="input-readonly">
+                      </div>
+                      <!-- PHONE -->
+                      <div class="form-field-item">
+                          <label>Phone Number</label>
+                          <input type="tel" id="manPhone" readonly class="man-editable input-readonly">
+                      </div>
+                      <!-- EMAIL -->
+                      <div class="form-field-item">
+                          <label>Email</label>
+                          <input type="email" id="manEmail" readonly class="man-editable input-readonly">
+                      </div>
+                  </div>
+                  <!-- =================================================
+                      MANAGE ACTIONS
+                  ================================================== -->
+                  <div class="actions-right-row">
+                      <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
+                      <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
+                      <button class="btn-primary btn-danger" id="deleteFarmerBtn" type="button">Delete</button>
+                  </div>
+              </div>
           </div>
-
-          <div class="card">
-            <form id="registerFarmerForm">
-              <div class="form-grid-two">
-                <div class="form-field-item">
-                  <label>Farmer ID (RSBSA ID) <span class="req">*</span></label>
-                  <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Municipality <span class="req">*</span></label>
-                  <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
-                </div>
-                <div class="form-field-item">
-                  <label>First Name <span class="req">*</span></label>
-                  <input type="text" id="regFirstName" placeholder="Pancho" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Barangay <span class="req">*</span></label>
-                  <input type="text" id="regBarangay" placeholder="e.g. San Agustin" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Middle Name</label>
-                  <input type="text" id="regMiddleName" placeholder="Reyes">
-                </div>
-                <div class="form-field-item">
-                  <label>Last Name <span class="req">*</span></label>
-                  <input type="text" id="regLastName" placeholder="De Jesus" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Suffix</label>
-                  <input type="text" id="regSuffix" placeholder="Jr.">
-                </div>
-                <div class="form-field-item">
-                  <label>Sex <span class="req">*</span></label>
-                  <select id="regSex" required>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div class="form-field-item">
-                  <label>Birthdate <span class="req">*</span></label>
-                  <input type="date" id="regBirthdate" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Phone Number <span class="req">*</span></label>
-                  <input type="tel" id="regPhone" placeholder="0999654399" required>
-                </div>
-                <div class="form-field-item">
-                  <label>Email <span class="req">*</span></label>
-                  <input type="email" id="regEmail" placeholder="panchodj@gmail.com" required>
-                </div>
-              </div>
-
-              <div class="actions-right-row">
-                <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
-                <button class="btn-primary" type="submit">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- Manage Farmer Subview -->
-        <div id="manageFarmerSubview" class="hidden-element">
-          <div class="main-header">
-            <div class="header-left">
-              <h1>Manage Farmer Record</h1>
-              <p>Review and update contact details for this farmer beneficiary.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="higher-ups-note">
-              <b>Official Record Notice:</b> Official identity fields are verified against the DA/RSBSA Masterlist and locked from arbitrary alteration.
-            </div>
-
-            <div class="form-grid-two">
-              <div class="form-field-item">
-                <label>Farmer ID (RSBSA ID)</label>
-                <input type="text" id="manFarmerId" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Address</label>
-                <input type="text" id="manAddress" readonly class="man-editable input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>First Name</label>
-                <input type="text" id="manFirstName" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Middle Name</label>
-                <input type="text" id="manMiddleName" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Last Name</label>
-                <input type="text" id="manLastName" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Suffix</label>
-                <input type="text" id="manSuffix" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Sex</label>
-                <input type="text" id="manSex" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Birthdate</label>
-                <input type="text" id="manBirthdate" readonly class="input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Phone Number</label>
-                <input type="tel" id="manPhone" readonly class="man-editable input-readonly">
-              </div>
-              <div class="form-field-item">
-                <label>Email</label>
-                <input type="email" id="manEmail" readonly class="man-editable input-readonly">
-              </div>
-            </div>
-
-            <div class="actions-right-row">
-              <button class="btn-outline-report" id="backFromManageFarmerBtn" type="button">Back</button>
-              <button class="btn-outline-report" id="toggleEditFarmerBtn" type="button">Edit Contact Info</button>
-              <button class="btn-primary btn-danger" id="deleteFarmerBtn" type="button">Delete</button>
-            </div>
-          </div>
-        </div>
       </section>
+      <!-- ============================================================
+          FARMER REGISTRATION CONFIRMATION MODAL
+          IMPORTANT: These IDs are required by aew.js
+      ============================================================ -->
+      <div class="modal-overlay" id="confirmFarmerModal">
+          <div class="modal-box">
+              <h2>Confirm Farmer Registration</h2>
+              <p id="confirmFarmerText">Are you sure you want to register this farmer?</p>
+              <div class="modal-actions">
+                  <button class="btn-outline-report" id="reviewFarmerBtn" type="button">Review</button>
+                  <button class="modal-btn-confirm" id="confirmSaveFarmerBtn" type="button">Confirm &amp; Save</button>
+              </div>
+          </div>
+      </div>
+      <!-- ============================================================
+          FARMER ADDED SUCCESS MODAL
+      ============================================================ -->
+      <div class="modal-overlay" id="farmerAddedModal">
+          <div class="modal-box">
+              <h2>Farmer Added Successfully</h2>
+              <p>The farmer has been successfully registered in the system.</p>
+              <div class="modal-actions">
+                  <button class="modal-btn-confirm" id="closeFarmerAddedBtn" type="button">Done</button>
+              </div>
+          </div>
+      </div>
+      <!-- ============================================================
+          DELETE FARMER CONFIRMATION MODAL
+      ============================================================ -->
+      <div class="modal-overlay" id="deleteFarmerModal">
+          <div class="modal-box">
+              <h2>Delete Farmer</h2>
+              <p>Are you sure you want to delete this farmer? This action cannot be undone.</p>
+              <div class="modal-actions">
+                  <button class="btn-outline-report" id="cancelDeleteFarmerBtn" type="button">Cancel</button>
+                  <button class="modal-btn-confirm btn-danger" id="confirmDeleteFarmerBtn" type="button">Delete</button>
+              </div>
+          </div>
+      </div>
+      <!-- ============================================================
+          DELETE ERROR MODAL - WITH DETAILED MESSAGE
+      ============================================================ -->
+      <div class="modal-overlay" id="deleteErrorModal">
+          <div class="modal-box" style="max-width: 500px; text-align: left;">
+              <h2 style="margin: 0; font-size: 20px; color: #C0392B; text-align: center;">Cannot Delete Farmer</h2>
+              <div style="background: #F8F6F2; border-radius: 8px; padding: 16px 20px; margin: 16px 0; border-left: 4px solid #C0392B;">
+                  <p style="font-size: 14px; color: #555; margin: 0 0 8px 0; font-weight: 600;">
+                      This farmer has existing records in the system.
+                  </p>
+                  <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555;">
+                      <li style="margin-bottom: 4px;">Planting Intents</li>
+                      <li>Offtake Requests</li>
+                  </ul>
+              </div>
+              <p style="font-size: 13px; color: #777; margin-bottom: 20px; text-align: center;">
+                  Please delete the farmer's planting intents and offtake requests first, then try again.
+              </p>
+              <div style="display: flex; justify-content: center; gap: 12px;">
+                  <button class="btn-primary" id="closeDeleteErrorBtn" type="button" style="background: #5B6B4F;">
+                      Got it
+                  </button>
+              </div>
+          </div>
+      </div>
 
       <!-- VIEW 2: Planting Intent -->
 <section class="view" id="view-planting-intent">
@@ -1528,6 +1640,7 @@
             <div class="actions-right-row">
                 <button class="btn-outline-report" id="backFromPlantingIntentDetailsBtn" type="button">Back</button>
                 <button class="btn-primary" id="editPlantingIntentBtn" type="button" style="background: #D97706;">Edit Details</button>
+                <button class="btn-primary btn-danger" id="deletePlantingIntentBtn" type="button" style="background:#C0392B; display:none;">Delete</button>
                 <button class="btn-primary" id="submitPlantingIntentBtn" type="button" style="background: #2E7D32;">Submit Report</button>
             </div>
         </div>
@@ -1801,237 +1914,259 @@
       </section>
 
       <!-- VIEW 6: REPORTS -->
-<section class="view" id="view-reports">
-    
-    <!-- ============================================================
-         REPORTS MAIN VIEW (List of Reports)
-    ============================================================ -->
-    <div id="reportsMainSubview">
-        <div class="main-header">
-            <div class="header-left">
-                <h1>Submit Report</h1>
-                <p>Submit weekly planting and harvest reports to Municipal Coordinator.</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn-primary" id="createReportBtn" type="button">+ Submit New Report</button>
-            </div>
-        </div>
+      <section class="view" id="view-reports">
+          
+          <!-- ============================================================
+              REPORTS MAIN VIEW (List of Reports)
+          ============================================================ -->
+          <div id="reportsMainSubview">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>Submit Report</h1>
+                      <p>Submit weekly planting and harvest reports to Municipal Coordinator.</p>
+                  </div>
+                  <div class="header-actions">
+                      <button class="btn-primary" id="createReportBtn" type="button">+ Submit New Report</button>
+                  </div>
+              </div>
 
-        <div class="card">
-            <!-- ============================================================
-                 INDIVIDUAL REPORTS (AEW's own reports)
-            ============================================================ -->
-            <div style="margin-bottom: 24px;">
-                <h3 style="font-size:14px; font-weight:700; color:var(--ink); margin-bottom:12px;">
-                    Individual Reports
-                    <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
-                        (Click a row to view details)
-                    </span>
-                </h3>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Report ID</th>
-                                <th>Title</th>
-                                <th>Submitted Date</th>
-                                <th class="center-col">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="individualReportsTableBody">
-                            <tr>
-                                <td colspan="4" style="padding:30px; text-align:center; color:#999;">No individual reports found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+              <div class="card">
+                  <!-- ============================================================
+                      FINALIZED PLANTING INTENTS (AEW's own reports - Drafts)
+                  ============================================================ -->
+                  <div style="margin-bottom: 24px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                          <h3 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">
+                              Finalized Planting Intents
+                              <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
+                                  (Click a row to view details)
+                              </span>
+                          </h3>
+                          <!-- FILTER BY STATUS -->
+                          <div style="display:flex; align-items:center; gap:8px;">
+                              <label style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Filter:</label>
+                              <select id="individualReportFilter" style="padding:6px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:12px; background:#fff; cursor:pointer;">
+                                  <option value="all">All Statuses</option>
+                                  <option value="NOT PLANTED">Not Planted</option>
+                                  <option value="PLANTED">Planted</option>
+                                  <option value="HARVESTED">Harvested</option>
+                                  <option value="MEDIATING">Mediating</option>
+                              </select>
+                          </div>
+                      </div>
+                      <div style="overflow-x:auto;">
+                          <table style="width:100%; border-collapse:collapse;">
+                              <thead>
+                                  <tr>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">REPORT ID</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:120px;">FARMER NAME</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">COMMODITY</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">EST. VOLUME</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">PLANTING DATE</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">HARVEST DATE</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">STATUS</th>
+                                  </tr>
+                              </thead>
+                              <tbody id="individualReportsTableBody">
+                                  <tr>
+                                      <td colspan="7" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td>
+                                  </tr>
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
 
-            <!-- ============================================================
-                 SUBMITTED REPORTS (Compilation of submitted reports)
-            ============================================================ -->
-            <div>
-                <h3 style="font-size:14px; font-weight:700; color:var(--ink); margin-bottom:12px;">
-                    Submitted Reports
-                    <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
-                        (Compilation of submitted reports to Municipal Level)
-                    </span>
-                </h3>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Report ID</th>
-                                <th>Title</th>
-                                <th>Submitted Date</th>
-                                <th class="center-col">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="submittedReportsTableBody">
-                            <tr>
-                                <td colspan="3" style="padding:30px; text-align:center; color:#999;">No submitted reports found.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+                  <!-- ============================================================
+                      SUBMITTED REPORTS (Reports sent to Municipal)
+                  ============================================================ -->
+                  <div>
+                      <h3 style="font-size:18px; font-weight:700; color:var(--ink); margin-bottom:12px;">
+                          Submitted Reports
+                          <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
+                              (Reports submitted to Municipal Coordinator)
+                          </span>
+                      </h3>
+                      <div style="overflow-x:auto;">
+                          <table style="width:100%; border-collapse:collapse; text-align:center;">
+                              <thead>
+                                  <tr>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Report ID</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Title</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Submitted Date</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Status</th>
+                                  </tr>
+                              </thead>
+                              <tbody id="submittedReportsTableBody">
+                                  <tr>
+                                      <td colspan="4" style="padding:30px; text-align:center; color:#999;">No submitted reports found.</td>
+                                  </tr>
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          </div>
 
-    <!-- ============================================================
-         SUBMIT NEW REPORT (Create Report from Planting Intents)
-    ============================================================ -->
-    <div id="submitReportSubview" class="hidden-element">
-        <div class="main-header">
-            <div class="header-left">
-                <h1>Submit New Report</h1>
-                <p>Select planting intents to include in your weekly report.</p>
-            </div>
-        </div>
+          <!-- ============================================================
+              CREATE NEW REPORT (Select Planting Intents)
+          ============================================================ -->
+          <div id="submitReportSubview" class="hidden-element">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>Create New Report</h1>
+                      <p>Select planting intents to include in your weekly report.</p>
+                  </div>
+              </div>
 
-        <div class="card">
-            <form id="submitReportForm">
-                <!-- ============================================================
-                     SELECT PLANTING INTENTS TO ADD
-                ============================================================ -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:8px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
-                        Planting Intents <span class="req">*</span>
-                    </label>
-                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                        <select id="reportIntentSelect" style="flex:1; min-width:200px; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#fff;">
-                            <option value="">Select Planting Intent</option>
-                        </select>
-                        <button type="button" class="btn-primary" id="addIntentToReportBtn" style="white-space:nowrap;">+ Add Row</button>
-                    </div>
-                    
-                    <!-- Selected Intents Table -->
-                    <div style="overflow-x:auto; border:1.5px solid var(--border); border-radius:var(--radius-sm);">
-                        <table style="margin:0;">
-                            <thead>
-                                <tr>
-                                    <th>Planting Intent</th>
-                                    <th>Commodity</th>
-                                    <th>Estimated Volume</th>
-                                    <th>Farmer</th>
-                                    <th class="center-col">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="selectedIntentsTableBody">
-                                <tr>
-                                    <td colspan="5" style="padding:20px; text-align:center; color:#999;">No planting intents selected. Click "Add Row" to add.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+              <div class="card">
+                  <form id="submitReportForm">
+                      
+                      <!-- ============================================================
+                          REPORT TITLE
+                      ============================================================ -->
+                      <div class="form-field-item" style="margin-bottom:20px;">
+                          <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
+                              Report Title <span class="req">*</span>
+                          </label>
+                          <input type="text" id="reportTitleInput" style="width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; outline:none; background:#fff;" placeholder="e.g. Weekly Planting Report - Week 1" required>
+                      </div>
+                      
+                      <!-- ============================================================
+                          SELECT PLANTING INTENTS TO ADD
+                      ============================================================ -->
+                      <div style="margin-bottom: 20px;">
+                          <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:8px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
+                              Planting Intents <span class="req">*</span>
+                          </label>
+                          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                              <select id="reportIntentSelect" style="flex:1; min-width:200px; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#fff;">
+                                  <option value="">Select Planting Intent</option>
+                              </select>
+                              <button type="button" class="btn-primary" id="addIntentToReportBtn" style="white-space:nowrap;">+ Add Row</button>
+                          </div>
+                          
+                          <!-- Selected Intents Table -->
+                          <div style="overflow-x:auto; border:1.5px solid var(--border); border-radius:var(--radius-sm);">
+                              <table style="margin:0;">
+                                  <thead>
+                                      <tr>
+                                          <th>Barangay</th>
+                                          <th>Farmer</th>
+                                          <th>Commodity</th>
+                                          <th>Volume</th>
+                                          <th class="center-col">Action</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody id="selectedIntentsTableBody">
+                                      <tr>
+                                          <td colspan="5" style="padding:20px; text-align:center; color:#999;">No planting intents selected. Click "Add Row" to add.</td>
+                                      </tr>
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
 
-                <!-- ============================================================
-                     NOTES / REMARKS
-                ============================================================ -->
-                <div class="form-field-item" style="margin-bottom:20px;">
-                    <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
-                        Notes / Remarks <span class="req">*</span>
-                    </label>
-                    <textarea id="reportNotesInput" style="width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; outline:none; background:#fff; resize:vertical; height:90px;" placeholder="Add details or remarks regarding this report submission..." required></textarea>
-                </div>
+                      <!-- ============================================================
+                          NOTES / REMARKS
+                      ============================================================ -->
+                      <div class="form-field-item" style="margin-bottom:20px;">
+                          <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
+                              Notes / Remarks <span class="req">*</span>
+                          </label>
+                          <textarea id="reportNotesInput" style="width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; outline:none; background:#fff; resize:vertical; height:90px;" placeholder="Add details or remarks regarding this report submission..." required></textarea>
+                      </div>
 
-                <!-- ============================================================
-                     SUPPORTING DOCUMENTS / ATTACHMENTS
-                ============================================================ -->
-                <div class="form-field-item" style="margin-bottom:20px;">
-                    <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
-                        Supporting Documents / Attachments <span class="req">*</span>
-                    </label>
-                    <div style="display:flex; gap:12px; align-items:center;">
-                        <input type="file" id="reportFileInput" style="display:none;" multiple>
-                        <input type="text" id="reportDocFilename" placeholder="No file chosen" readonly style="flex:1; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#F4EFE6; cursor:pointer;">
-                        <button type="button" class="btn-outline-report" id="selectReportFileBtn">Select File</button>
-                    </div>
-                    <div id="selectedFilesList" style="margin-top:8px; font-size:12px; color:var(--muted);"></div>
-                </div>
+                      <!-- ============================================================
+                          SUPPORTING DOCUMENTS / ATTACHMENTS
+                      ============================================================ -->
+                      <div class="form-field-item" style="margin-bottom:20px;">
+                          <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em;">
+                              Supporting Documents / Attachments <span class="req">*</span>
+                          </label>
+                          <div style="display:flex; gap:12px; align-items:center;">
+                              <input type="file" id="reportFileInput" style="display:none;" multiple>
+                              <input type="text" id="reportDocFilename" placeholder="No file chosen" readonly style="flex:1; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#F4EFE6; cursor:pointer;">
+                              <button type="button" class="btn-outline-report" id="selectReportFileBtn">Select File</button>
+                          </div>
+                          <div id="selectedFilesList" style="margin-top:8px; font-size:12px; color:var(--muted);"></div>
+                      </div>
 
-                <!-- ============================================================
-                     ACTIONS
-                ============================================================ -->
-                <div class="actions-right-row">
-                    <button class="btn-outline-report" id="cancelReportBtn" type="button">Cancel</button>
-                    <button class="btn-outline-report" id="saveReportDraftBtn" type="button">Save as Draft</button>
-                    <button class="btn-primary" id="submitReportFinalBtn" type="button">Submit Report</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                      <!-- ============================================================
+                          ACTIONS
+                      ============================================================ -->
+                      <div class="actions-right-row">
+                          <button class="btn-outline-report" id="cancelReportBtn" type="button">Cancel</button>
+                          <button class="btn-primary" id="saveReportDraftBtn" type="button">Save as Draft</button>
+                          <button class="btn-primary" id="submitReportFinalBtn" type="button">Submit to Municipal</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
 
-    <!-- ============================================================
-         REPORT DETAILS VIEW (Individual Report)
-    ============================================================ -->
-    <div id="reportDetailsSubview" class="hidden-element">
-        <div class="main-header">
-            <div class="header-left">
-                <h1>Report Details</h1>
-                <p id="reportDetailsTitle">Viewing report details</p>
-            </div>
-        </div>
+          <!-- ============================================================
+              REPORT DETAILS VIEW
+          ============================================================ -->
+          <div id="reportDetailsSubview" class="hidden-element">
+              <div class="main-header">
+                  <div class="header-left">
+                      <h1>Report Details</h1>
+                      <p id="reportDetailsTitle">Viewing report details</p>
+                  </div>
+              </div>
 
-        <div class="card">
-            <!-- Report Info -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 30px; margin-bottom:20px;">
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Report ID</label>
-                    <p id="detailReportId" style="font-size:14px; font-weight:600;">—</p>
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Status</label>
-                    <p id="detailReportStatus" style="font-size:14px; font-weight:600;">—</p>
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Submitted Date</label>
-                    <p id="detailReportDate" style="font-size:14px; font-weight:600;">—</p>
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Notes</label>
-                    <p id="detailReportNotes" style="font-size:14px;">—</p>
-                </div>
-            </div>
+              <div class="card">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 30px; margin-bottom:20px;">
+                      <div>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Report ID</label>
+                          <p id="detailReportId" style="font-size:14px; font-weight:600;">—</p>
+                      </div>
+                      <div>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Status</label>
+                          <p id="detailReportStatus" style="font-size:14px; font-weight:600;">—</p>
+                      </div>
+                      <div>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Submitted Date</label>
+                          <p id="detailReportDate" style="font-size:14px; font-weight:600;">—</p>
+                      </div>
+                      <div>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Notes</label>
+                          <p id="detailReportNotes" style="font-size:14px;">—</p>
+                      </div>
+                  </div>
 
-            <!-- Attachments -->
-            <div style="margin-bottom:20px;">
-                <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Attachments</label>
-                <div id="detailReportAttachments" style="font-size:14px; color:var(--ink);">
-                    No attachments
-                </div>
-            </div>
+                  <div style="margin-bottom:20px;">
+                      <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Attachments</label>
+                      <div id="detailReportAttachments" style="font-size:14px; color:var(--ink);">No attachments</div>
+                  </div>
 
-            <!-- Included Intents -->
-            <div>
-                <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Included Planting Intents</label>
-                <div style="overflow-x:auto; margin-top:8px;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Farmer</th>
-                                <th>Commodity</th>
-                                <th>Volume</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailReportIntentsBody">
-                            <tr><td colspan="3" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                  <div>
+                      <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Included Planting Intents</label>
+                      <div style="overflow-x:auto; margin-top:8px;">
+                          <table>
+                              <thead>
+                                  <tr>
+                                      <th>Intent ID</th>
+                                      <th>Farmer</th>
+                                      <th>Commodity</th>
+                                      <th>Volume</th>
+                                  </tr>
+                              </thead>
+                              <tbody id="detailReportIntentsBody">
+                                  <tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
 
-            <!-- Actions -->
-            <div class="actions-right-row" style="margin-top:20px; padding-top:16px; border-top:1.5px solid var(--border);">
-                <button class="btn-outline-report" id="backFromReportDetailsBtn" type="button">Back to Reports</button>
-                <button class="btn-primary" id="editReportBtn" type="button" style="background:#D97706; display:none;">Edit</button>
-                <button class="btn-primary" id="resubmitReportBtn" type="button" style="background:#2E7D32; display:none;">Resubmit</button>
-            </div>
-        </div>
-    </div>
+                  <div class="actions-right-row" style="margin-top:20px; padding-top:16px; border-top:1.5px solid var(--border);">
+                      <button class="btn-outline-report" id="backFromReportDetailsBtn" type="button">Back to Reports</button>
+                      <button class="btn-primary" id="editReportBtn" type="button" style="background:#D97706; display:none;">Edit</button>
+                      <button class="btn-primary" id="resubmitReportBtn" type="button" style="background:#2E7D32; display:none;">Resubmit</button>
+                  </div>
+              </div>
+          </div>
 
-</section>
+      </section>
 
   <!-- SCRIPTS -->
   <script>
@@ -2168,6 +2303,5 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/aew.js"></script>
   <script src="../assets/js/logout.js"></script>
-  
 </body>
 </html>
