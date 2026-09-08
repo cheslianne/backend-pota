@@ -29,7 +29,7 @@ class FarmerUpdate(BaseModel):
     address: str | None = None
     sex: str | None = None
     birthdate: date | None = None
-    email_address: EmailStr | None = None
+    email_address: str | None = None
     phone_number: str | None = None
 
 
