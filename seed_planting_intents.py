@@ -67,14 +67,14 @@ def seed_planting_intents():
                 ]
                 remarks = remarks_list[(i + j) % len(remarks_list)]
                 
-                # ✅ REMOVED: 'status' field
                 planting_intents_data.append({
                     "farmer_id": farmer.farmer_id,
                     "commodity": commodity,
                     "planting_date": planting_date,
                     "harvest_date": harvest_date,
                     "volume": volume,
-                    "remarks": f"{remarks} - {farmer.first_name} {farmer.last_name}"
+                    "remarks": f"{remarks} - {farmer.first_name} {farmer.last_name}",
+                    "status": "DRAFT",
                 })
         
         # Count existing intents to avoid duplicates

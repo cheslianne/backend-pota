@@ -30,6 +30,18 @@ def ensure_planting_intent_columns():
         """))
 
         connection.execute(text("""
+            ALTER TABLE planting_intents
+            ADD COLUMN IF NOT EXISTS status VARCHAR(20)
+            DEFAULT 'DRAFT';
+        """))
+
+        connection.execute(text("""
+            UPDATE planting_intents
+            SET status = 'DRAFT'
+            WHERE status IS NULL;
+        """))
+
+        connection.execute(text("""
             ALTER TABLE farmers
             ADD COLUMN IF NOT EXISTS aew_id INTEGER
             REFERENCES users(user_id);
