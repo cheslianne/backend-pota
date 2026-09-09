@@ -105,51 +105,41 @@ def extract_location_from_address(address: str):
 )
 def create_farmer(
     farmer: FarmerCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),  # ✅ Get logged-in user
     db: Session = Depends(get_db)
 ):
+    # Only AEWs can register farmers
+    if current_user.role != "Agricultural Extension Worker":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Agricultural Extension Workers can register farmers."
+        )
+    
     # Check duplicate RSBSA ID
-    existing_farmer = (
-        db.query(Farmer)
-        .filter(Farmer.rsbsa_id == farmer.rsbsa_id)
-        .first()
-    )
-
+    existing_farmer = db.query(Farmer).filter(Farmer.rsbsa_id == farmer.rsbsa_id).first()
     if existing_farmer:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="RSBSA ID already exists."
         )
 
-    # ========================================================
-    # EXTRACT BARANGAY + MUNICIPALITY FROM ADDRESS
-    # ========================================================
-
-    extracted_barangay, extracted_municipality = (
-        extract_location_from_address(farmer.address)
-    )
-
-    # If extraction fails, use the submitted values
+    # Extract barangay + municipality from address
+    extracted_barangay, extracted_municipality = extract_location_from_address(farmer.address)
     barangay = extracted_barangay or farmer.barangay
     municipality = extracted_municipality or farmer.municipality
 
-    # Validate required location values
     if not barangay:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to extract barangay from address."
         )
-
     if not municipality:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to extract municipality from address."
         )
 
-    # ========================================================
-    # CREATE FARMER
-    # ========================================================
-
+    # CREATE FARMER WITH aew_id (auto-assigned to current AEW)
     new_farmer = Farmer(
         rsbsa_id=farmer.rsbsa_id,
         first_name=farmer.first_name,
@@ -161,21 +151,15 @@ def create_farmer(
         birthdate=farmer.birthdate,
         email_address=farmer.email_address,
         phone_number=farmer.phone_number,
-        added_by_user_id=(
-            current_user.user_id
-            if current_user.role == "Agricultural Extension Worker"
-            else None
-        ),
+        aew_id=current_user.user_id,
     )
 
     try:
         db.add(new_farmer)
         db.commit()
         db.refresh(new_farmer)
-
     except Exception as e:
         db.rollback()
-
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create farmer: {str(e)}"
@@ -193,53 +177,46 @@ def create_farmer(
     response_model=list[FarmerResponse]
 )
 def get_farmers(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),  # ✅ Get logged-in user
     db: Session = Depends(get_db)
 ):
-    farmer_query = db.query(Farmer)
+    """
+    Get farmers.
+    AEWs only see their assigned farmers.
+    Admins/DA-RFO see all farmers.
+    """
+    
+    query = db.query(Farmer)
+    
     if current_user.role == "Agricultural Extension Worker":
-        farmer_query = farmer_query.filter(
-            Farmer.added_by_user_id == current_user.user_id
-        )
-    farmers = farmer_query.order_by(Farmer.farmer_id.desc()).all()
-
-    # ========================================================
-    # REPAIR EXISTING NULL LOCATION DATA
-    # ========================================================
-
+        query = query.filter(Farmer.aew_id == current_user.user_id)
+        print(f"🔍 AEW {current_user.username} filtering farmers by aew_id: {current_user.user_id}")
+    
+    farmers = query.order_by(Farmer.farmer_id.desc()).all()
+    
+    print(f"Found {len(farmers)} farmers for user {current_user.username}")
+    
     updated = False
-
     for farmer in farmers:
-
-        if (
-            (farmer.municipality is None or farmer.barangay is None)
-            and farmer.address
-        ):
-            extracted_barangay, extracted_municipality = (
-                extract_location_from_address(farmer.address)
-            )
-
+        if ((farmer.municipality is None or farmer.barangay is None) and farmer.address):
+            extracted_barangay, extracted_municipality = extract_location_from_address(farmer.address)
             if farmer.barangay is None and extracted_barangay:
                 farmer.barangay = extracted_barangay
                 updated = True
-
             if farmer.municipality is None and extracted_municipality:
                 farmer.municipality = extracted_municipality
                 updated = True
-
-    # Save repaired records
+    
     if updated:
         try:
             db.commit()
-
         except Exception as e:
             db.rollback()
-
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to update farmer location data: {str(e)}"
             )
-
+    
     return farmers
 
 

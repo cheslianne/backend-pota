@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import desc, func
 import os
 import uuid
 from datetime import datetime
 
 from src.core.database import get_db
+from src.core.auth import get_current_user
 
 from src.models.planting_intents import PlantingIntent
 from src.models.farmers import Farmer
 from src.models.report_submission import ReportSubmission
 from src.models.report_planting_intents import ReportPlantingIntent
 from src.models.raw_plant_reports import RawPlantReport
+from src.models.users import User
+from src.models.alert_threshold_configs import AlertThresholdConfig
 
 from src.api.schemas.planting_intents import (
     PlantingIntentCreate,
@@ -25,73 +29,170 @@ router = APIRouter()
 # ============================================================
 
 UPLOAD_DIR = "uploads/planting_intent_attachments"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
-)
 
 # ============================================================
-# HELPER
-# BUILD FRONTEND-FRIENDLY RESPONSE
+# HELPER - BUILD FRONTEND-FRIENDLY RESPONSE
 # ============================================================
 
-def build_planting_intent_response(
-    planting_intent: PlantingIntent,
-    farmer: Farmer,
-    status: str,
-):
+def build_planting_intent_response(planting_intent: PlantingIntent, farmer: Farmer, status: str):
     return {
-        "planting_intent_id":
-            planting_intent.planting_intent_id,
-
-        "farmer_id":
-            planting_intent.farmer_id,
-
-        "farmer_name":
-            f"{farmer.first_name} {farmer.last_name}",
-
-        "location":
-            farmer.address,
-
-        "commodity":
-            planting_intent.commodity,
-
-        "planting_date":
-            planting_intent.planting_date,
-
-        "harvest_date":
-            planting_intent.harvest_date,
-
-        "volume":
-            planting_intent.volume,
-
-        "remarks":
-            planting_intent.remarks,
-
-        "status":
-            status,
-
-        "created_at":
-            planting_intent.created_at,
-            
-        "attachment_url":  # Add this field
-            f"/api/planting-intents/{planting_intent.planting_intent_id}/attachment"
-            if planting_intent.attachment_path
-            else None,
-            
-        "notes":  # Add this field
-            planting_intent.notes,
+        "planting_intent_id": planting_intent.planting_intent_id,
+        "farmer_id": planting_intent.farmer_id,
+        "farmer_name": f"{farmer.first_name} {farmer.last_name}",
+        "location": farmer.address,
+        "commodity": planting_intent.commodity,
+        "planting_date": planting_intent.planting_date,
+        "harvest_date": planting_intent.harvest_date,
+        "volume": planting_intent.volume,
+        "remarks": planting_intent.remarks,
+        "status": status,
+        "created_at": planting_intent.created_at,
+        "attachment_url": f"/api/planting-intents/{planting_intent.planting_intent_id}/attachment"
+        if planting_intent.attachment_path
+        else None,
+        "notes": planting_intent.notes,
     }
 
+
 # ============================================================
-# CREATE PLANTING INTENT WITH ATTACHMENT (NEW ROUTE)
+# GET PLANTING INTENTS WITH PAGINATION
 # ============================================================
 
-@router.post(
-    "/with-attachment",
-    response_model=PlantingIntentResponse
-)
+@router.get("/")
+def get_planting_intents(
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    status: str | None = Query(None, description="Filter by status (Draft, Submitted, Locked)"),
+    commodity: str | None = Query(None, description="Filter by commodity"),
+    search: str | None = Query(None, description="Search by farmer name"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get planting intents with pagination.
+    Only shows intents for farmers under the current AEW.
+    """
+    
+    # Base query - only show intents for farmers under this AEW
+    query = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(Farmer.aew_id == current_user.user_id)
+    )
+    
+    # Apply filters
+    if status:
+        query = query.filter(PlantingIntent.status == status)
+    
+    if commodity:
+        query = query.filter(PlantingIntent.commodity.ilike(f"%{commodity}%"))
+    
+    if search:
+        query = query.filter(
+            (Farmer.first_name.ilike(f"%{search}%")) |
+            (Farmer.last_name.ilike(f"%{search}%"))
+        )
+    
+    # Get total count for pagination
+    total = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * per_page
+    intents = (
+        query
+        .order_by(desc(PlantingIntent.created_at))
+        .offset(offset)
+        .limit(per_page)
+        .all()
+    )
+    
+    # Build response
+    result = []
+    for intent in intents:
+        farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
+        if farmer:
+            result.append({
+                "planting_intent_id": intent.planting_intent_id,
+                "farmer_id": intent.farmer_id,
+                "farmer_name": f"{farmer.first_name} {farmer.last_name}",
+                "commodity": intent.commodity,
+                "volume": intent.volume,
+                "location": f"{farmer.barangay}, {farmer.municipality}" if farmer else "Unknown",
+                "planting_date": intent.planting_date,
+                "harvest_date": intent.harvest_date,
+                "status": intent.status or "Draft",
+                "created_at": intent.created_at,
+                "remarks": intent.remarks,
+            })
+    
+    return {
+        "data": result,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page if total > 0 else 1,
+            "has_next": page < ((total + per_page - 1) // per_page) if total > 0 else False,
+            "has_prev": page > 1,
+        }
+    }
+
+
+# ============================================================
+# GET INTENT COUNTS
+# ============================================================
+
+@router.get("/counts")
+def get_intent_counts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get counts of draft, submitted, and total intents for the current AEW.
+    """
+    
+    draft_count = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(Farmer.aew_id == current_user.user_id)
+        .filter(PlantingIntent.status == "Draft")
+        .count()
+    )
+    
+    submitted_count = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(Farmer.aew_id == current_user.user_id)
+        .filter(PlantingIntent.status == "Submitted")
+        .count()
+    )
+    
+    # Locked/Used in report
+    locked_count = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(Farmer.aew_id == current_user.user_id)
+        .filter(PlantingIntent.status == "Locked")
+        .count()
+    )
+    
+    total_count = draft_count + submitted_count + locked_count
+    
+    return {
+        "draft": draft_count,
+        "submitted": submitted_count,
+        "locked": locked_count,
+        "total": total_count,
+    }
+
+
+# ============================================================
+# CREATE PLANTING INTENT WITH ATTACHMENT
+# ============================================================
+
+@router.post("/with-attachment", response_model=PlantingIntentResponse)
 async def create_planting_intent_with_attachment(
     farmer_id: int = Form(...),
     commodity: str = Form(...),
@@ -100,45 +201,33 @@ async def create_planting_intent_with_attachment(
     harvest_date: str = Form(...),
     notes: str | None = Form(None),
     attachment: UploadFile | None = File(None),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Create a planting intent with optional file attachment.
     """
     
-    # --------------------------------------------------------
-    # CHECK IF FARMER EXISTS
-    # --------------------------------------------------------
+    # Check if farmer exists and belongs to this AEW
+    farmer = db.query(Farmer).filter(
+        Farmer.farmer_id == farmer_id,
+        Farmer.aew_id == current_user.user_id
+    ).first()
     
-    farmer = (
-        db.query(Farmer)
-        .filter(
-            Farmer.farmer_id == farmer_id
-        )
-        .first()
-    )
-
     if not farmer:
         raise HTTPException(
             status_code=404,
-            detail="Farmer not found"
+            detail="Farmer not found or not under your supervision"
         )
-
-    # --------------------------------------------------------
-    # HANDLE ATTACHMENT
-    # --------------------------------------------------------
     
+    # Handle attachment
     attachment_path = None
     
     if attachment:
-        # Validate file extension
         filename = attachment.filename or ""
         extension = os.path.splitext(filename)[1].lower()
         
-        allowed_extensions = {
-            ".pdf", ".jpg", ".jpeg", ".png", 
-            ".gif", ".doc", ".docx", ".xls", ".xlsx"
-        }
+        allowed_extensions = {".pdf", ".jpg", ".jpeg", ".png", ".gif", ".doc", ".docx", ".xls", ".xlsx"}
         
         if extension not in allowed_extensions:
             raise HTTPException(
@@ -146,7 +235,6 @@ async def create_planting_intent_with_attachment(
                 detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
             )
         
-        # Validate file size (max 5MB)
         file_content = await attachment.read()
         if len(file_content) > 5 * 1024 * 1024:
             raise HTTPException(
@@ -154,16 +242,11 @@ async def create_planting_intent_with_attachment(
                 detail="File size exceeds 5MB limit"
             )
         
-        # Save file with unique name
         unique_filename = f"{uuid.uuid4()}{extension}"
         attachment_path = os.path.join(UPLOAD_DIR, unique_filename)
         
         with open(attachment_path, "wb") as file:
             file.write(file_content)
-    
-    # --------------------------------------------------------
-    # CREATE PLANTING INTENT
-    # --------------------------------------------------------
     
     # Parse dates
     try:
@@ -175,6 +258,7 @@ async def create_planting_intent_with_attachment(
             detail="Invalid date format. Use YYYY-MM-DD"
         )
     
+    # Create planting intent
     db_planting = PlantingIntent(
         farmer_id=farmer_id,
         commodity=commodity,
@@ -183,76 +267,136 @@ async def create_planting_intent_with_attachment(
         harvest_date=harvest_date_obj,
         notes=notes,
         attachment_path=attachment_path,
-        status="Pending"  # Default status
+        status="Draft"
     )
-
+    
     db.add(db_planting)
     db.commit()
     db.refresh(db_planting)
-
-    # --------------------------------------------------------
-    # RETURN WITH FARMER DETAILS
-    # --------------------------------------------------------
     
-    return build_planting_intent_response(
-        db_planting,
-        farmer,
-        "Pending"
-    )
+    return build_planting_intent_response(db_planting, farmer, "Draft")
+
 
 # ============================================================
 # CREATE PLANTING INTENT (Original - without attachment)
 # ============================================================
 
-@router.post(
-    "/",
-    response_model=PlantingIntentResponse
-)
+@router.post("/", response_model=PlantingIntentResponse)
 def create_planting_intent(
     planting_intent: PlantingIntentCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
-    # --------------------------------------------------------
-    # CHECK IF FARMER EXISTS
-    # --------------------------------------------------------
-
-    farmer = (
-        db.query(Farmer)
-        .filter(
-            Farmer.farmer_id
-            == planting_intent.farmer_id
-        )
-        .first()
-    )
-
+    # Check if farmer exists and belongs to this AEW
+    farmer = db.query(Farmer).filter(
+        Farmer.farmer_id == planting_intent.farmer_id,
+        Farmer.aew_id == current_user.user_id
+    ).first()
+    
     if not farmer:
         raise HTTPException(
             status_code=404,
-            detail="Farmer not found"
+            detail="Farmer not found or not under your supervision"
         )
-
-    # --------------------------------------------------------
-    # CREATE PLANTING INTENT
-    # --------------------------------------------------------
-
+    
     db_planting = PlantingIntent(
-        **planting_intent.model_dump()
+        **planting_intent.model_dump(),
+        status="DRAFT"
     )
-
+    
     db.add(db_planting)
     db.commit()
     db.refresh(db_planting)
+    
+    return build_planting_intent_response(db_planting, farmer, "DRAFT")
 
-    # --------------------------------------------------------
-    # RETURN WITH FARMER DETAILS
-    # --------------------------------------------------------
+@router.get("/municipality-map")
+def get_municipality_map_data(
+    db: Session = Depends(get_db),
+):
+    """
+    Municipality-level supply status for the DA-RFO map.
+    """
 
-    return build_planting_intent_response(
-        db_planting,
-        farmer,
-        "Pending"
+    rows = (
+        db.query(
+            Farmer.municipality,
+            PlantingIntent.commodity,
+            func.sum(PlantingIntent.volume).label("total_supply"),
+        )
+        .join(
+            PlantingIntent,
+            PlantingIntent.farmer_id == Farmer.farmer_id,
+        )
+        .filter(
+            PlantingIntent.status == "SUBMITTED",
+            Farmer.municipality.isnot(None),
+            Farmer.municipality != "",
+        )
+        .group_by(
+            Farmer.municipality,
+            PlantingIntent.commodity,
+        )
+        .all()
     )
+
+    configs = (
+        db.query(AlertThresholdConfig)
+        .filter(AlertThresholdConfig.is_active.is_(True))
+        .all()
+    )
+
+    config_map = {
+        config.commodity.lower(): config
+        for config in configs
+    }
+
+    municipality_data = {}
+
+    for row in rows:
+        municipality = row.municipality.strip()
+        commodity = row.commodity.strip()
+        total_supply = float(row.total_supply or 0)
+
+        config = config_map.get(commodity.lower())
+
+        if not config:
+            continue
+
+        base_demand = float(config.base_demand or 0)
+        threshold_percent = float(
+            config.oversupply_threshold or 100
+        )
+
+        alert_limit = (
+            base_demand * threshold_percent / 100
+        )
+
+       
+        if total_supply > alert_limit:
+            status = "OVERSUPPLY"
+        elif total_supply > base_demand:
+            status = "SURPLUS"
+        elif total_supply < base_demand:
+            status = "DEFICIT"
+        else:
+            status = "BALANCE"
+
+        if municipality not in municipality_data:
+            municipality_data[municipality] = {
+                "municipality": municipality,
+                "commodities": [],
+            }
+
+        municipality_data[municipality]["commodities"].append({
+            "commodity": commodity,
+            "status": status,
+            "estimated": True,
+        })
+
+    return {
+        "data": list(municipality_data.values())
+    }
 
 # ============================================================
 # GET ATTACHMENT
@@ -263,6 +407,7 @@ from fastapi.responses import FileResponse
 @router.get("/{planting_intent_id}/attachment")
 def get_planting_intent_attachment(
     planting_intent_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -271,31 +416,29 @@ def get_planting_intent_attachment(
     
     planting_intent = (
         db.query(PlantingIntent)
-        .filter(
-            PlantingIntent.planting_intent_id == planting_intent_id
-        )
+        .filter(PlantingIntent.planting_intent_id == planting_intent_id)
         .first()
     )
     
     if not planting_intent:
-        raise HTTPException(
-            status_code=404,
-            detail="Planting intent not found"
-        )
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    # Check if this intent belongs to a farmer under this AEW
+    farmer = db.query(Farmer).filter(
+        Farmer.farmer_id == planting_intent.farmer_id,
+        Farmer.aew_id == current_user.user_id
+    ).first()
+    
+    if not farmer:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     if not planting_intent.attachment_path:
-        raise HTTPException(
-            status_code=404,
-            detail="No attachment found for this planting intent"
-        )
+        raise HTTPException(status_code=404, detail="No attachment found")
     
     file_path = os.path.abspath(planting_intent.attachment_path)
     
     if not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=404,
-            detail="Attachment file does not exist on the server"
-        )
+        raise HTTPException(status_code=404, detail="Attachment file does not exist")
     
     # Determine media type
     extension = os.path.splitext(file_path)[1].lower()
@@ -318,237 +461,179 @@ def get_planting_intent_attachment(
         path=file_path,
         media_type=media_type,
         filename=os.path.basename(file_path),
-        content_disposition_type="inline"  # or "attachment" to force download
+        content_disposition_type="inline"
     )
 
-# ============================================================
-# GET ALL PLANTING INTENTS
-# IMPORTANT:
-# Keep this BEFORE /{planting_intent_id}
-# ============================================================
-
-@router.get(
-    "/",
-    response_model=list[PlantingIntentResponse]
-)
-def read_planting_intents(
-    db: Session = Depends(get_db)
-):
-    results = (
-        db.query(
-            PlantingIntent,
-            Farmer,
-            ReportSubmission.status
-        )
-        .join(
-            Farmer,
-            PlantingIntent.farmer_id
-            == Farmer.farmer_id
-        )
-        .outerjoin(
-            ReportPlantingIntent,
-            PlantingIntent.planting_intent_id
-            == ReportPlantingIntent.planting_intent_id
-        )
-        .outerjoin(
-            RawPlantReport,
-            ReportPlantingIntent.report_id
-            == RawPlantReport.report_id
-        )
-        .outerjoin(
-            ReportSubmission,
-            RawPlantReport.report_id
-            == ReportSubmission.report_id
-        )
-        .order_by(
-            PlantingIntent.planting_intent_id.desc()
-        )
-        .all()
-    )
-
-    return [
-        build_planting_intent_response(
-            planting_intent,
-            farmer,
-            status or "Pending"
-        )
-        for planting_intent, farmer, status in results
-    ]
 
 # ============================================================
 # GET SINGLE PLANTING INTENT
 # ============================================================
 
-@router.get(
-    "/{planting_intent_id}",
-    response_model=PlantingIntentResponse
-)
-def read_planting_intent(
-    planting_intent_id: int,
+@router.get("/")
+def get_planting_intents(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
+    status: str | None = Query(None),
+    commodity: str | None = Query(None),
+    search: str | None = Query(None),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
-    result = (
-        db.query(
-            PlantingIntent,
-            Farmer
-        )
-        .join(
-            Farmer,
-            PlantingIntent.farmer_id
-            == Farmer.farmer_id
-        )
-        .filter(
-            PlantingIntent.planting_intent_id
-            == planting_intent_id
-        )
-        .first()
+    """
+    Get planting intents with pagination.
+    """
+    
+    query = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        # .filter(Farmer.aew_id == current_user.user_id)  # 
     )
-
-    if not result:
-        raise HTTPException(
-            status_code=404,
-            detail="Planting intent not found"
+    
+    # Apply filters
+    if status:
+        query = query.filter(PlantingIntent.status == status)
+    
+    if commodity:
+        query = query.filter(PlantingIntent.commodity.ilike(f"%{commodity}%"))
+    
+    if search:
+        query = query.filter(
+            (Farmer.first_name.ilike(f"%{search}%")) |
+            (Farmer.last_name.ilike(f"%{search}%"))
         )
-
-    planting_intent, farmer = result
-
-    return build_planting_intent_response(
-        planting_intent,
-        farmer,
-        get_planting_intent_status(
-            planting_intent.planting_intent_id,
-            db,
-        )
+    
+    # Get total count
+    total = query.count()
+    print(f"Total planting intents found: {total}")
+    
+    # Apply pagination
+    offset = (page - 1) * per_page
+    intents = (
+        query
+        .order_by(desc(PlantingIntent.created_at))
+        .offset(offset)
+        .limit(per_page)
+        .all()
     )
+    
+    print(f"Intents returned: {len(intents)}")  
+    
+    # Build response
+    result = []
+    for intent in intents:
+        farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
+        if farmer:
+            result.append({
+                "planting_intent_id": intent.planting_intent_id,
+                "farmer_id": intent.farmer_id,
+                "farmer_name": f"{farmer.first_name} {farmer.last_name}",
+                "commodity": intent.commodity,
+                "volume": intent.volume,
+                "location": f"{farmer.barangay}, {farmer.municipality}",
+                "planting_date": intent.planting_date,
+                "harvest_date": intent.harvest_date,
+                "status": intent.status or "Draft",
+                "created_at": intent.created_at,
+                "remarks": intent.remarks,
+            })
+    
+    return {
+        "data": result,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page if total > 0 else 1,
+            "has_next": page < ((total + per_page - 1) // per_page) if total > 0 else False,
+            "has_prev": page > 1,
+        }
+    }
+
 
 # ============================================================
 # UPDATE PLANTING INTENT
 # ============================================================
 
-@router.put(
-    "/{planting_intent_id}",
-    response_model=PlantingIntentResponse
-)
+@router.put("/{planting_intent_id}", response_model=PlantingIntentResponse)
 def update_planting_intent(
     planting_intent_id: int,
     planting_intent: PlantingIntentUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     db_planting = (
         db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
         .filter(
-            PlantingIntent.planting_intent_id
-            == planting_intent_id
+            PlantingIntent.planting_intent_id == planting_intent_id,
+            Farmer.aew_id == current_user.user_id
         )
         .first()
     )
-
+    
     if not db_planting:
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    if db_planting.status != "DRAFT":
         raise HTTPException(
-            status_code=404,
-            detail="Planting intent not found"
+            status_code=400,
+            detail="Cannot edit a planting intent that has already been submitted."
         )
-
-    # --------------------------------------------------------
-    # GET UPDATE DATA
-    # --------------------------------------------------------
-
-    update_data = planting_intent.model_dump(
-        exclude_unset=True
-    )
-
-    # --------------------------------------------------------
-    # IF FARMER ID IS BEING UPDATED,
-    # CHECK THAT FARMER EXISTS
-    # --------------------------------------------------------
-
+    
+    update_data = planting_intent.model_dump(exclude_unset=True)
+    
+    # Don't allow status update through this endpoint
+    if "status" in update_data:
+        del update_data["status"]
+    
     if "farmer_id" in update_data:
-
-        farmer = (
-            db.query(Farmer)
-            .filter(
-                Farmer.farmer_id
-                == update_data["farmer_id"]
-            )
-            .first()
-        )
-
+        farmer = db.query(Farmer).filter(
+            Farmer.farmer_id == update_data["farmer_id"],
+            Farmer.aew_id == current_user.user_id
+        ).first()
         if not farmer:
-            raise HTTPException(
-                status_code=404,
-                detail="Farmer not found"
-            )
-
-    # --------------------------------------------------------
-    # APPLY UPDATES
-    # --------------------------------------------------------
-
+            raise HTTPException(status_code=404, detail="Farmer not found")
+    
     for key, value in update_data.items():
-
-        setattr(
-            db_planting,
-            key,
-            value
-        )
-
+        setattr(db_planting, key, value)
+    
     db.commit()
     db.refresh(db_planting)
-
-    # --------------------------------------------------------
-    # GET UPDATED FARMER
-    # --------------------------------------------------------
-
-    farmer = (
-        db.query(Farmer)
-        .filter(
-            Farmer.farmer_id
-            == db_planting.farmer_id
-        )
-        .first()
-    )
-
-    if not farmer:
-        raise HTTPException(
-            status_code=404,
-            detail="Farmer not found"
-        )
-
+    
+    farmer = db.query(Farmer).filter(Farmer.farmer_id == db_planting.farmer_id).first()
     return build_planting_intent_response(
         db_planting,
         farmer,
-        get_planting_intent_status(
-            db_planting.planting_intent_id,
-            db,
-        )
+        db_planting.status or "DRAFT"
     )
 
 # ============================================================
 # DELETE PLANTING INTENT
 # ============================================================
 
-@router.delete(
-    "/{planting_intent_id}"
-)
+@router.delete("/{planting_intent_id}")
 def delete_planting_intent(
     planting_intent_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     db_planting = (
         db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
         .filter(
-            PlantingIntent.planting_intent_id
-            == planting_intent_id
+            PlantingIntent.planting_intent_id == planting_intent_id,
+            Farmer.aew_id == current_user.user_id
         )
         .first()
     )
-
+    
     if not db_planting:
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    if db_planting.status != "DRAFT":
         raise HTTPException(
-            status_code=404,
-            detail="Planting intent not found"
+            status_code=400,
+            detail="Cannot delete a planting intent that has already been submitted."
         )
     
     # Delete the attachment file if it exists
@@ -559,34 +644,92 @@ def delete_planting_intent(
                 os.remove(file_path)
             except Exception as e:
                 print(f"Warning: Could not delete attachment file: {e}")
-
+    
     db.delete(db_planting)
     db.commit()
-
-    return {
-        "message":
-            "Planting intent deleted successfully."
-    }
+    
+    return {"message": "Planting intent deleted successfully."}
 
 
-def get_planting_intent_status(
+# ============================================================
+# SUBMIT PLANTING INTENT (Move from Draft to Submitted)
+# ============================================================
+
+@router.post("/{planting_intent_id}/submit")
+def submit_planting_intent(
     planting_intent_id: int,
-    db: Session,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    result = (
-        db.query(ReportSubmission.status)
-        .join(
-            RawPlantReport,
-            RawPlantReport.report_id == ReportSubmission.report_id,
-        )
-        .join(
-            ReportPlantingIntent,
-            ReportPlantingIntent.report_id == RawPlantReport.report_id,
-        )
+    """
+    Submit a planting intent - moves from DRAFT to SUBMITTED status.
+    Once submitted, it cannot be edited or deleted.
+    """
+    
+    db_planting = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
         .filter(
-            ReportPlantingIntent.planting_intent_id == planting_intent_id,
+            PlantingIntent.planting_intent_id == planting_intent_id,
+            Farmer.aew_id == current_user.user_id
         )
-        .order_by(ReportSubmission.report_id.desc())
         .first()
     )
-    return result[0] if result and result[0] else "Pending"
+    
+    if not db_planting:
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    if db_planting.status != "DRAFT":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot submit a planting intent with status: {db_planting.status}"
+        )
+    
+    db_planting.status = "SUBMITTED"
+    db.commit()
+    db.refresh(db_planting)
+    
+    return {
+        "message": "Planting intent submitted successfully",
+        "planting_intent_id": db_planting.planting_intent_id,
+        "status": db_planting.status
+    }
+
+@router.post("/{planting_intent_id}/pull")
+def pull_planting_intent(
+    planting_intent_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Pull a planting intent back to DRAFT from SUBMITTED.
+    """
+    
+    db_planting = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(
+            PlantingIntent.planting_intent_id == planting_intent_id,
+            Farmer.aew_id == current_user.user_id
+        )
+        .first()
+    )
+    
+    if not db_planting:
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    if db_planting.status != "SUBMITTED":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot pull a planting intent with status: {db_planting.status}"
+        )
+    
+    db_planting.status = "DRAFT"
+    db.commit()
+    db.refresh(db_planting)
+    
+    return {
+        "message": "Planting intent pulled back to DRAFT",
+        "planting_intent_id": db_planting.planting_intent_id,
+        "status": db_planting.status
+    }

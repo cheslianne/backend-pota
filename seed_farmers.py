@@ -1,215 +1,306 @@
+# seed_farmers.py
 import sys
 import os
-import importlib
-import pkgutil
+from datetime import datetime
 
-
-# Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-
-# Auto-import all models to resolve SQLAlchemy relationships
-try:
-    import src.models as models_pkg
-    for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
-        importlib.import_module(f"src.models.{module_name}")
-except Exception as err:
-    print(f"Notice during models import: {err}")
-
-
-from src.core.database import SessionLocal, engine, Base
-from sqlalchemy.inspection import inspect
-
-
-try:
-    from src.models.farmers import Farmer
-except ModuleNotFoundError:
-    from src.models.farmers import Farmer
-
-
-Base.metadata.create_all(bind=engine)
-
-
+from src.core.database import SessionLocal
+from src.models.farmers import Farmer
+from src.models.users import User
 
 
 def seed_farmers():
     db = SessionLocal()
-
-
-    # Kunin ang listahan ng valid columns ng Farmer model
-    mapper = inspect(Farmer)
-    valid_columns = {col.key for col in mapper.attrs}
-
-
-    raw_samples = [
-        {
-            "rsbsa_id": "RSBSA-03-2026-001",
-            "first_name": "Pancho",
-            "middle_name": "Reyes",
-            "last_name": "De Jesus",
-            "name": "Pancho De Jesus",
-            "full_name": "Pancho De Jesus",
-            "suffix": "Jr.",
-            "address": "Brgy. Sta. Barbara, San Jose City",
-            "municipality": "San Jose City",
-            "barangay": "Sta. Barbara",
-            "region": "Region III",
-            "sex": "Male",
-            "gender": "Male",
-            "birthdate": "1978-05-12",
-            "phone_number": "09996543991",
-            "phone": "09996543991",
-            "contact_number": "09996543991",
-            "email_address": "pancho.dj@gmail.com",
-            "email": "pancho.dj@gmail.com",
-            "status": "Active",
-            "is_active": True
-        },
-        {
-            "rsbsa_id": "RSBSA-03-2026-002",
-            "first_name": "Maria",
-            "middle_name": "Santos",
-            "last_name": "Cruz",
-            "name": "Maria Cruz",
-            "full_name": "Maria Cruz",
-            "suffix": "",
-            "address": "Brgy. Malasin, San Jose City",
-            "municipality": "San Jose City",
-            "barangay": "Malasin",
-            "region": "Region III",
-            "sex": "Female",
-            "gender": "Female",
-            "birthdate": "1984-11-23",
-            "phone_number": "09187654321",
-            "phone": "09187654321",
-            "contact_number": "09187654321",
-            "email_address": "maria.cruz@gmail.com",
-            "email": "maria.cruz@gmail.com",
-            "status": "Active",
-            "is_active": True
-        },
-        {
-            "rsbsa_id": "RSBSA-03-2026-003",
-            "first_name": "Juan",
-            "middle_name": "Alvarez",
-            "last_name": "Mercado",
-            "name": "Juan Mercado",
-            "full_name": "Juan Mercado",
-            "suffix": "Sr.",
-            "address": "Brgy. Abar 1st, San Jose City",
-            "municipality": "San Jose City",
-            "barangay": "Abar 1st",
-            "region": "Region III",
-            "sex": "Male",
-            "gender": "Male",
-            "birthdate": "1969-02-18",
-            "phone_number": "09201122334",
-            "phone": "09201122334",
-            "contact_number": "09201122334",
-            "email_address": "juan.mercado@gmail.com",
-            "email": "juan.mercado@gmail.com",
-            "status": "Active",
-            "is_active": True
-        },
-        {
-            "rsbsa_id": "RSBSA-03-2026-004",
-            "first_name": "Elena",
-            "middle_name": "Dela Rosa",
-            "last_name": "Bautista",
-            "name": "Elena Bautista",
-            "full_name": "Elena Bautista",
-            "suffix": "",
-            "address": "Brgy. Caanawan, San Jose City",
-            "municipality": "San Jose City",
-            "barangay": "Caanawan",
-            "region": "Region III",
-            "sex": "Female",
-            "gender": "Female",
-            "birthdate": "1990-08-30",
-            "phone_number": "09459871234",
-            "phone": "09459871234",
-            "contact_number": "09459871234",
-            "email_address": "elena.bautista@gmail.com",
-            "email": "elena.bautista@gmail.com",
-            "status": "Active",
-            "is_active": True
-        },
-        {
-            "rsbsa_id": "RSBSA-03-2026-005",
-            "first_name": "Rodrigo",
-            "middle_name": "Gomez",
-            "last_name": "Aquino",
-            "name": "Rodrigo Aquino",
-            "full_name": "Rodrigo Aquino",
-            "suffix": "",
-            "address": "Brgy. Sibut, San Jose City",
-            "municipality": "San Jose City",
-            "barangay": "Sibut",
-            "region": "Region III",
-            "sex": "Male",
-            "gender": "Male",
-            "birthdate": "1975-10-05",
-            "phone_number": "09173334455",
-            "phone": "09173334455",
-            "contact_number": "09173334455",
-            "email_address": "rodrigo.aquino@gmail.com",
-            "email": "rodrigo.aquino@gmail.com",
-            "status": "Active",
-            "is_active": True
-        }
-    ]
-
-
+    
     try:
-        # Linisin ang dating dummy test string
-        if "rsbsa_id" in valid_columns:
-            db.query(Farmer).filter(Farmer.rsbsa_id == "string").delete()
-        if "first_name" in valid_columns:
-            db.query(Farmer).filter(Farmer.first_name == "string").delete()
-
-
-        count_added = 0
-        for sample in raw_samples:
-            # I-filter lang ang mga attributes na tunay na column sa Farmer model
-            filtered_data = {k: v for k, v in sample.items() if k in valid_columns}
-
-
-            # Check duplication base sa rsbsa_id kung meron
-            existing = None
-            if "rsbsa_id" in filtered_data:
-                existing = db.query(Farmer).filter(Farmer.rsbsa_id == filtered_data["rsbsa_id"]).first()
-
-
-            if not existing:
-                farmer = Farmer(**filtered_data)
-                db.add(farmer)
-                count_added += 1
-                display_name = sample.get("first_name", "") + " " + sample.get("last_name", "")
-                print(f"Added Farmer: {display_name} ({sample.get('rsbsa_id', '')})")
-            else:
-                print(f"Farmer already exists: {sample.get('rsbsa_id', '')}")
-
-
+        print("=" * 60)
+        print("SEEDING FARMERS (15 farmers - 5 per AEW)")
+        print("LOCATION: PAMPANGA")
+        print("=" * 60)
+        
+        # Get AEWs for assignment
+        aew_juan = db.query(User).filter(User.username == "aew_juan").first()
+        aew_maria = db.query(User).filter(User.username == "aew_maria").first()
+        aew_pedro = db.query(User).filter(User.username == "aew_pedro").first()
+        
+        aew_map = {
+            "juan": aew_juan.user_id if aew_juan else None,
+            "maria": aew_maria.user_id if aew_maria else None,
+            "pedro": aew_pedro.user_id if aew_pedro else None
+        }
+        
+        print(f"\n📋 AEWs found:")
+        print(f"   Juan (ID: {aew_map['juan']})")
+        print(f"   Maria (ID: {aew_map['maria']})")
+        print(f"   Pedro (ID: {aew_map['pedro']})")
+        
+        farmers_data = [
+            # ============================================================
+            # Farmers for AEW Juan (5 farmers) - Pampanga
+            # ============================================================
+            {
+                "rsbsa_id": "RSBSA-2024-001",
+                "first_name": "Juan",
+                "last_name": "Dela Cruz",
+                "municipality": "San Fernando",
+                "barangay": "Brgy. San Jose",
+                "address": "Brgy. San Jose, San Fernando, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1975, 6, 15).date(),
+                "email_address": "juan.delacruz@example.com",
+                "phone_number": "09123456789",
+                "aew_id": aew_map["juan"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-002",
+                "first_name": "Ramon",
+                "last_name": "Reyes",
+                "municipality": "Angeles City",
+                "barangay": "Brgy. Balibago",
+                "address": "Brgy. Balibago, Angeles City, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1988, 1, 10).date(),
+                "email_address": "ramon.reyes@example.com",
+                "phone_number": "09345678901",
+                "aew_id": aew_map["juan"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-003",
+                "first_name": "Pedro",
+                "last_name": "Cruz",
+                "municipality": "Mexico",
+                "barangay": "Brgy. San Roque",
+                "address": "Brgy. San Roque, Mexico, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1978, 3, 25).date(),
+                "email_address": "pedro.cruz@example.com",
+                "phone_number": "09567890123",
+                "aew_id": aew_map["juan"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-004",
+                "first_name": "Luz",
+                "last_name": "Villanueva",
+                "municipality": "Apalit",
+                "barangay": "Brgy. San Isidro",
+                "address": "Brgy. San Isidro, Apalit, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1985, 11, 8).date(),
+                "email_address": "luz.villanueva@example.com",
+                "phone_number": "09678901234",
+                "aew_id": aew_map["juan"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-005",
+                "first_name": "Fernando",
+                "last_name": "Garcia",
+                "municipality": "Mabalacat",
+                "barangay": "Brgy. San Francisco",
+                "address": "Brgy. San Francisco, Mabalacat, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1980, 7, 12).date(),
+                "email_address": "fernando.garcia@example.com",
+                "phone_number": "09789012345",
+                "aew_id": aew_map["juan"]
+            },
+            
+            # ============================================================
+            # Farmers for AEW Maria (5 farmers) - Pampanga
+            # ============================================================
+            {
+                "rsbsa_id": "RSBSA-2024-006",
+                "first_name": "Maria",
+                "last_name": "Santos",
+                "municipality": "San Fernando",
+                "barangay": "Brgy. San Juan",
+                "address": "Brgy. San Juan, San Fernando, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1982, 9, 20).date(),
+                "email_address": "maria.santos@example.com",
+                "phone_number": "09234567890",
+                "aew_id": aew_map["maria"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-007",
+                "first_name": "Elena",
+                "last_name": "Gonzales",
+                "municipality": "Angeles City",
+                "barangay": "Brgy. San Agustin",
+                "address": "Brgy. San Agustin, Angeles City, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1990, 12, 5).date(),
+                "email_address": "elena.gonzales@example.com",
+                "phone_number": "09456789012",
+                "aew_id": aew_map["maria"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-008",
+                "first_name": "Ricardo",
+                "last_name": "Mendoza",
+                "municipality": "Guagua",
+                "barangay": "Brgy. San Isidro",
+                "address": "Brgy. San Isidro, Guagua, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1976, 4, 18).date(),
+                "email_address": "ricardo.mendoza@example.com",
+                "phone_number": "09890123456",
+                "aew_id": aew_map["maria"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-009",
+                "first_name": "Cecilia",
+                "last_name": "Fernandez",
+                "municipality": "Santa Ana",
+                "barangay": "Brgy. San Nicolas",
+                "address": "Brgy. San Nicolas, Santa Ana, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1987, 2, 28).date(),
+                "email_address": "cecilia.fernandez@example.com",
+                "phone_number": "09901234567",
+                "aew_id": aew_map["maria"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-010",
+                "first_name": "Andres",
+                "last_name": "Aquino",
+                "municipality": "Candaba",
+                "barangay": "Brgy. San Fernando",
+                "address": "Brgy. San Fernando, Candaba, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1972, 8, 22).date(),
+                "email_address": "andres.aquino@example.com",
+                "phone_number": "09912345678",
+                "aew_id": aew_map["maria"]
+            },
+            
+            # ============================================================
+            # Farmers for AEW Pedro (5 farmers) - Pampanga
+            # ============================================================
+            {
+                "rsbsa_id": "RSBSA-2024-011",
+                "first_name": "Jose",
+                "last_name": "Reyes",
+                "municipality": "Mabalacat",
+                "barangay": "Brgy. San Vicente",
+                "address": "Brgy. San Vicente, Mabalacat, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1979, 5, 15).date(),
+                "email_address": "jose.reyes@example.com",
+                "phone_number": "09456789012",
+                "aew_id": aew_map["pedro"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-012",
+                "first_name": "Teresa",
+                "last_name": "Mercado",
+                "municipality": "Apalit",
+                "barangay": "Brgy. San Miguel",
+                "address": "Brgy. San Miguel, Apalit, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1983, 11, 30).date(),
+                "email_address": "teresa.mercado@example.com",
+                "phone_number": "09567890123",
+                "aew_id": aew_map["pedro"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-013",
+                "first_name": "Rogelio",
+                "last_name": "Dimaano",
+                "municipality": "Mexico",
+                "barangay": "Brgy. San Jose",
+                "address": "Brgy. San Jose, Mexico, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1974, 9, 8).date(),
+                "email_address": "rogelio.dimaano@example.com",
+                "phone_number": "09678901234",
+                "aew_id": aew_map["pedro"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-014",
+                "first_name": "Luzviminda",
+                "last_name": "Pascual",
+                "municipality": "Macabebe",
+                "barangay": "Brgy. San Juan",
+                "address": "Brgy. San Juan, Macabebe, Pampanga",
+                "sex": "Female",
+                "birthdate": datetime(1989, 4, 12).date(),
+                "email_address": "luzviminda.pascual@example.com",
+                "phone_number": "09789012345",
+                "aew_id": aew_map["pedro"]
+            },
+            {
+                "rsbsa_id": "RSBSA-2024-015",
+                "first_name": "Gregorio",
+                "last_name": "Fernandez",
+                "municipality": "Lubao",
+                "barangay": "Brgy. San Isidro",
+                "address": "Brgy. San Isidro, Lubao, Pampanga",
+                "sex": "Male",
+                "birthdate": datetime(1977, 7, 20).date(),
+                "email_address": "gregorio.fernandez@example.com",
+                "phone_number": "09890123456",
+                "aew_id": aew_map["pedro"]
+            }
+        ]
+        
+        created_count = 0
+        skipped_count = 0
+        
+        for farmer_data in farmers_data:
+            existing = db.query(Farmer).filter(
+                Farmer.rsbsa_id == farmer_data["rsbsa_id"]
+            ).first()
+            
+            if existing:
+                print(f"⏭️ Farmer {farmer_data['rsbsa_id']} already exists.")
+                skipped_count += 1
+                continue
+            
+            farmer = Farmer(**farmer_data)
+            db.add(farmer)
+            created_count += 1
+            
+            aew_name = "Unknown"
+            if farmer_data["aew_id"] == aew_map["juan"]:
+                aew_name = "Juan"
+            elif farmer_data["aew_id"] == aew_map["maria"]:
+                aew_name = "Maria"
+            elif farmer_data["aew_id"] == aew_map["pedro"]:
+                aew_name = "Pedro"
+            
+            print(f"✅ Created farmer: {farmer_data['first_name']} {farmer_data['last_name']} → AEW {aew_name} ({farmer_data['municipality']})")
+        
         db.commit()
+        
         print("\n" + "=" * 60)
-        print(f"FARMERS SEED SUCCESSFUL! Added {count_added} new farmer(s).")
+        print("✅ SEED COMPLETE")
         print("=" * 60)
-
-
+        print(f"   Created: {created_count} farmers")
+        print(f"   Skipped: {skipped_count} farmers (already exist)")
+        print("\n📊 Summary by AEW:")
+        
+        for aew in [aew_juan, aew_maria, aew_pedro]:
+            if aew:
+                count = db.query(Farmer).filter(Farmer.aew_id == aew.user_id).count()
+                print(f"   {aew.first_name} {aew.last_name}: {count} farmers")
+        
+        print("\n📋 AEW Credentials:")
+        print("-" * 60)
+        if aew_juan:
+            print(f"   aew_juan   | SecureAEW123!  | {aew_juan.first_name} {aew_juan.last_name}")
+        if aew_maria:
+            print(f"   aew_maria  | SecureAEW123!  | {aew_maria.first_name} {aew_maria.last_name}")
+        if aew_pedro:
+            print(f"   aew_pedro  | SecureAEW123!  | {aew_pedro.first_name} {aew_pedro.last_name}")
+        print("=" * 60)
+        
     except Exception as e:
-        print("\n" + "=" * 60)
-        print("ERROR WHILE SEEDING FARMERS")
-        print("=" * 60)
-        print(e)
+        print(f"❌ Error: {e}")
         db.rollback()
-
-
     finally:
         db.close()
 
 
-
-
 if __name__ == "__main__":
     seed_farmers()
-

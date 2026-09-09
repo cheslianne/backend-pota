@@ -9,33 +9,19 @@ class Farmer(Base):
 
     farmer_id = Column(Integer, primary_key=True, index=True)
 
-    added_by_user_id = Column(
-        Integer,
-        ForeignKey("users.user_id"),
-        nullable=True,
-        index=True,
-    )
-
+    aew_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, index=True)
     rsbsa_id = Column(String(30), unique=True, nullable=False)
-
     first_name = Column(String(50), nullable=False)
-
     last_name = Column(String(50), nullable=False)
-
     municipality = Column(String(100), nullable=False)
-
     barangay = Column(String(100), nullable=False)
-
     address = Column(Text, nullable=False)
-
     sex = Column(String(10), nullable=False)
-
     birthdate = Column(Date, nullable=False)
-
     email_address = Column(String(100), nullable=True)
-
     phone_number = Column(String(15), nullable=False)
 
+    # Relationships
     planting_intents = relationship(
         "PlantingIntent",
         back_populates="farmer"
@@ -46,14 +32,4 @@ class Farmer(Base):
         back_populates="farmer"
     )
 
-    added_by = relationship(
-        "User",
-        foreign_keys=[added_by_user_id],
-        back_populates="added_farmers",
-    )
-
-    @property
-    def added_by_name(self):
-        if not self.added_by:
-            return None
-        return f"{self.added_by.first_name} {self.added_by.last_name}"
+    aew = relationship("User", back_populates="farmers")

@@ -126,8 +126,4 @@ class User(Base):
         back_populates="user"
     )
 
-    added_farmers = relationship(
-        "Farmer",
-        foreign_keys="Farmer.added_by_user_id",
-        back_populates="added_by"
-    )
+    farmers = relationship("Farmer", back_populates="aew")

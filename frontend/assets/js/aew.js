@@ -50,6 +50,8 @@ let currentFarmersPage = 1;
 let currentPlantingIntentsPage = 1;
 const farmersPerPage = 10;
 const plantingIntentsPerPage = 10;
+let currentDraftIntentsPage = 1;
+let currentSubmittedIntentsPage = 1;
 
 // Farmer state
 let currentActiveFarmer = null;
@@ -60,7 +62,9 @@ let mapInstance = null;
 let currentOfftakeRequest = null;
 let OFFTAKE_REQUESTS_DATA = [];
 
-// Add this near other state variables (around line 40)
+
+// Forecasting
+
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 let forecastLoadStarted = false;
@@ -87,9 +91,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSignout();
     setupUserProfile();
     initForecastResults();
+    initReporting();
 
     await fetchFarmers();
-    await loadAllReports();
+    await fetchPlantingIntents();
+    await loadReports();
     await fetchOfftakeRequests();
 
     initializePlantingIntentSearch();
@@ -395,7 +401,7 @@ function createFarmerTableRow(farmer) {
         <td><span class="pill">${escapeHtml(farmer.rsbsa_id || "-")}</span></td>
         <td><span class="pill">${escapeHtml(farmer.municipality || "-")}</span></td>
         <td><span class="pill">${escapeHtml(farmer.barangay || "-")}</span></td>
-        <td><span class="status-pill active">${escapeHtml(farmer.status || "Active")}</span></td>
+        <td style="text-align: center;"><span class="status-pill active">${escapeHtml(farmer.status || "Active")}</span></td>
     `;
 
     tr.addEventListener("click", function() {
@@ -404,6 +410,7 @@ function createFarmerTableRow(farmer) {
 
     return tr;
 }
+
 
 function updatePagination() {
     const total = FARMERS_DATA.length;
@@ -518,211 +525,449 @@ function initFarmerSubviews() {
     const addBtn = document.getElementById("addFarmerBtn");
     const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
     const backManBtn = document.getElementById("backFromManageFarmerBtn");
-    const regForm = document.getElementById("registerFarmerForm");
-    const toggleEditBtn = document.getElementById("toggleEditFarmerBtn");
-    const deleteBtn = document.getElementById("deleteFarmerBtn");
-    const confirmDeleteBtn = document.getElementById("confirmDeleteFarmerBtn");
 
-    initFarmerSearch();
+    
 
-    // ADD FARMER
-    addBtn?.addEventListener("click", function() {
-        if (regForm) regForm.reset();
-        setValue("regFarmerId", "");
-        listSubview?.classList.add("hidden-element");
-        regSubview?.classList.remove("hidden-element");
-    });
+    // ============================================================
+    // ADD FARMER BUTTON
+    // ============================================================
+    if (addBtn) {
+        addBtn.addEventListener("click", function() {
+            console.log("Add Farmer button clicked");
+            const regForm = document.getElementById("registerFarmerForm");
+            if (regForm) regForm.reset();
+            setValue("regFarmerId", "");
+            if (listSubview) listSubview.classList.add("hidden-element");
+            if (regSubview) regSubview.classList.remove("hidden-element");
+        });
+    }
 
-    // CANCEL REGISTER
-    cancelRegBtn?.addEventListener("click", function() {
-        if (regForm) regForm.reset();
-        listSubview?.classList.remove("hidden-element");
-        regSubview?.classList.add("hidden-element");
-    });
+    // ============================================================
+    // CANCEL REGISTER BUTTON
+    // ============================================================
+    if (cancelRegBtn) {
+        cancelRegBtn.addEventListener("click", function() {
+            console.log("Cancel Register button clicked");
+            const regForm = document.getElementById("registerFarmerForm");
+            if (regForm) regForm.reset();
+            if (listSubview) listSubview.classList.remove("hidden-element");
+            if (regSubview) regSubview.classList.add("hidden-element");
+        });
+    }
 
+    // ============================================================
     // BACK FROM MANAGE
-    backManBtn?.addEventListener("click", function() {
-        manSubview?.classList.add("hidden-element");
-        listSubview?.classList.remove("hidden-element");
-        currentActiveFarmer = null;
-        isEditMode = false;
-    });
+    // ============================================================
+    if (backManBtn) {
+        backManBtn.addEventListener("click", function() {
+            if (manSubview) manSubview.classList.add("hidden-element");
+            if (listSubview) listSubview.classList.remove("hidden-element");
+            currentActiveFarmer = null;
+            isEditMode = false;
+        });
+    }
 
+    // ============================================================
     // REGISTER FARMER
-    regForm?.addEventListener("submit", async function(event) {
-        event.preventDefault();
+    // ============================================================
+    const regForm = document.getElementById("registerFarmerForm");
+    if (regForm) {
+        console.log("Register Farmer Form found");
 
-        const barangay = getValue("regBarangay");
-        const municipality = getValue("regMunicipality");
+        regForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log("Form submitted!");
 
-        const farmerData = {
-            rsbsa_id: getValue("regFarmerId"),
-            first_name: getValue("regFirstName"),
-            middle_name: getValue("regMiddleName"),
-            last_name: getValue("regLastName"),
-            suffix: getValue("regSuffix"),
-            address: barangay + ", " + municipality,
-            barangay: barangay,
-            municipality: municipality,
-            sex: getValue("regSex"),
-            birthdate: getValue("regBirthdate"),
-            phone_number: getValue("regPhone"),
-            email_address: getValue("regEmail")
-        };
+            // ========================================================
+            // GET FORM VALUES
+            // ========================================================
+            const rsbsaId = document.getElementById("regFarmerId")?.value?.trim() || "";
+            const municipality = document.getElementById("regMunicipality")?.value?.trim() || "";
+            const barangay = document.getElementById("regBarangay")?.value?.trim() || "";
+            const firstName = document.getElementById("regFirstName")?.value?.trim() || "";
+            const middleName = document.getElementById("regMiddleName")?.value?.trim() || "";
+            const lastName = document.getElementById("regLastName")?.value?.trim() || "";
+            const suffix = document.getElementById("regSuffix")?.value?.trim() || "";
+            const sex = document.getElementById("regSex")?.value || "";
+            const birthdate = document.getElementById("regBirthdate")?.value || "";
+            const phone = document.getElementById("regPhone")?.value?.trim() || "";
+            const email = document.getElementById("regEmail")?.value?.trim() || "";
 
-        if (!farmerData.rsbsa_id || !farmerData.first_name || !farmerData.last_name || !farmerData.address) {
-            alert("Please fill in all required fields.");
-            return;
-        }
+            // ========================================================
+            // BASIC VALIDATION
+            // ========================================================
+            if (!rsbsaId || !municipality || !barangay || !firstName || !lastName || !sex || !birthdate || !phone || !email) {
+                alert("Please complete all required fields.");
+                return;
+            }
 
-        const confirmText = document.getElementById("confirmFarmerText");
-        if (confirmText) {
-            confirmText.textContent = "Register " + farmerData.first_name + " " + farmerData.last_name + " from " + farmerData.address + "?";
-        }
+            // ========================================================
+            // CREATE FARMER DATA
+            // ========================================================
+            const farmerData = {
+                rsbsa_id: rsbsaId,
+                first_name: firstName,
+                middle_name: middleName,
+                last_name: lastName,
+                suffix: suffix,
+                address: barangay + ", " + municipality,
+                barangay: barangay,
+                municipality: municipality,
+                sex: sex,
+                birthdate: birthdate,
+                phone_number: phone,
+                email_address: email
+            };
 
-        window._pendingFarmer = farmerData;
-        document.getElementById("confirmFarmerModal")?.classList.add("show");
-    });
+            console.log("Farmer data:", farmerData);
 
+            // ========================================================
+            // STORE PENDING FARMER
+            // ========================================================
+            window._pendingFarmer = farmerData;
+
+            // ========================================================
+            // SHOW CONFIRMATION MODAL
+            // ========================================================
+            const confirmText = document.getElementById("confirmFarmerText");
+            if (confirmText) {
+                confirmText.textContent = "Register " + firstName + " " + lastName + " from " + barangay + ", " + municipality + "?";
+            }
+
+            const modal = document.getElementById("confirmFarmerModal");
+            if (modal) {
+                modal.classList.add("show");
+                console.log("Confirmation modal shown.");
+            } else {
+                console.error("ERROR: confirmFarmerModal was not found.");
+                alert("Confirmation window could not be opened.");
+            }
+        });
+        console.log("Submit handler attached to form.");
+    } else {
+        console.error("ERROR: registerFarmerForm was not found.");
+    }
+
+
+    // ============================================================
     // CONFIRM SAVE FARMER
-    document.getElementById("confirmSaveFarmerBtn")?.addEventListener("click", async function() {
-        const farmerData = window._pendingFarmer;
-        if (!farmerData) {
-            alert("No farmer data to save.");
-            return;
-        }
-
-        try {
-            await apiRequest(FARMERS_ENDPOINT, {
-                method: "POST",
-                body: JSON.stringify(farmerData)
-            });
-
-            document.getElementById("confirmFarmerModal")?.classList.remove("show");
-            await fetchFarmers();
-            document.getElementById("farmerAddedModal")?.classList.add("show");
-            regForm?.reset();
-            window._pendingFarmer = null;
-        } catch (error) {
-            console.error("Create farmer error:", error);
-            document.getElementById("confirmFarmerModal")?.classList.remove("show");
-            alert("Failed to add farmer.\n\n" + (error.message || "Please check the FastAPI server."));
-        }
-    });
+    // ============================================================
+    const confirmSaveBtn = document.getElementById(
+        "confirmSaveFarmerBtn"
+    );
+    if (confirmSaveBtn) {
+        confirmSaveBtn.addEventListener(
+            "click",
+            async function() {
+                const farmerData = window._pendingFarmer;
+                // ====================================================
+                // CHECK DATA
+                // ====================================================
+                if (!farmerData) {
+                    alert(
+                        "No farmer data to save."
+                    );
+                    return;
+                }
+                console.log(
+                    "Saving farmer:",
+                    farmerData
+                );
+                // Disable button while saving
+                this.disabled = true;
+                this.textContent = "Saving...";
+                try {
+                    // ================================================
+                    // GET AUTH TOKEN
+                    // ================================================
+                    const token = getAuthToken();
+                    console.log(
+                        "Authentication token:",
+                        token ? "Present" : "Missing"
+                    );
+                    // ================================================
+                    // SEND POST REQUEST
+                    // ================================================
+                    const response = await fetch(
+                        FARMERS_ENDPOINT,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": token
+                                    ? `Bearer ${token}`
+                                    : ""
+                            },
+                            body: JSON.stringify(
+                                farmerData
+                            )
+                        }
+                    );
+                    console.log(
+                        "POST response status:",
+                        response.status
+                    );
+                    // ================================================
+                    // HANDLE ERROR
+                    // ================================================
+                    if (!response.ok) {
+                        let errorData = null;
+                        try {
+                            errorData =
+                                await response.json();
+                        } catch (e) {
+                            console.error(
+                                "Could not read error response."
+                            );
+                        }
+                        let errorMessage =
+                            "Failed to add farmer.";
+                        if (
+                            errorData &&
+                            errorData.detail
+                        ) {
+                            errorMessage =
+                                typeof errorData.detail === "string"
+                                    ? errorData.detail
+                                    : JSON.stringify(
+                                        errorData.detail
+                                    );
+                        }
+                        throw new Error(
+                            errorMessage
+                        );
+                    }
+                    // ================================================
+                    // SUCCESS
+                    // ================================================
+                    const result =
+                        await response.json();
+                    console.log(
+                        "Farmer created successfully:",
+                        result
+                    );
+                    // Close confirmation modal
+                    document
+                        .getElementById(
+                            "confirmFarmerModal"
+                        )
+                        ?.classList.remove("show");
+                    // Refresh farmer table
+                    await fetchFarmers();
+                    // Show success modal
+                    document
+                        .getElementById(
+                            "farmerAddedModal"
+                        )
+                        ?.classList.add("show");
+                    // Reset form
+                    const form =
+                        document.getElementById(
+                            "registerFarmerForm"
+                        );
+                    if (form) {
+                        form.reset();
+                    }
+                    // Clear pending farmer
+                    window._pendingFarmer = null;
+                } catch (error) {
+                    console.error(
+                        "Error adding farmer:",
+                        error
+                    );
+                    document
+                        .getElementById(
+                            "confirmFarmerModal"
+                        )
+                        ?.classList.remove("show");
+                    alert(
+                        "Failed to add farmer.\n\n" +
+                        (error.message ||
+                            "Check FastAPI server.")
+                    );
+                } finally {
+                    // Restore button
+                    this.disabled = false;
+                    this.textContent =
+                        "Confirm & Save";
+                }
+            }
+        );
+    } else {
+        console.error(
+            "ERROR: confirmSaveFarmerBtn was not found."
+        );
+    }
 
     // CLOSE FARMER ADDED MODAL
-    document.getElementById("closeFarmerAddedBtn")?.addEventListener("click", function() {
-        document.getElementById("farmerAddedModal")?.classList.remove("show");
-        regSubview?.classList.add("hidden-element");
-        listSubview?.classList.remove("hidden-element");
-    });
+    const closeFarmerAddedBtn = document.getElementById("closeFarmerAddedBtn");
+    if (closeFarmerAddedBtn) {
+        closeFarmerAddedBtn.addEventListener("click", function() {
+            document.getElementById("farmerAddedModal")?.classList.remove("show");
+            if (regSubview) regSubview.classList.add("hidden-element");
+            if (listSubview) listSubview.classList.remove("hidden-element");
+        });
+    }
 
+    // REVIEW FARMER BUTTON
+    const reviewFarmerBtn = document.getElementById("reviewFarmerBtn");
+    if (reviewFarmerBtn) {
+        reviewFarmerBtn.addEventListener("click", function() {
+            document.getElementById("confirmFarmerModal")?.classList.remove("show");
+        });
+    }
+
+    // ============================================================
     // EDIT / SAVE FARMER
-    toggleEditBtn?.addEventListener("click", async function() {
-        const editableInputs = document.querySelectorAll(".man-editable");
+    // ============================================================
+    const toggleEditBtn = document.getElementById("toggleEditFarmerBtn");
+    if (toggleEditBtn) {
+        toggleEditBtn.addEventListener("click", async function() {
+            const editableInputs = document.querySelectorAll(".man-editable");
 
-        if (!isEditMode) {
-            isEditMode = true;
-            editableInputs.forEach(function(input) {
-                input.readOnly = false;
-                input.classList.add("input-editable-active");
-                input.classList.remove("input-readonly");
-            });
-            this.textContent = "Save Changes";
+            if (!isEditMode) {
+                isEditMode = true;
+                editableInputs.forEach(function(input) {
+                    input.readOnly = false;
+                    input.classList.add("input-editable-active");
+                    input.classList.remove("input-readonly");
+                });
+                this.textContent = "Save Changes";
 
-            // Create Cancel button
-            let cancelBtn = document.getElementById("cancelEditFarmerBtn");
-            if (!cancelBtn) {
-                cancelBtn = document.createElement("button");
-                cancelBtn.id = "cancelEditFarmerBtn";
-                cancelBtn.className = "btn-outline-report";
-                cancelBtn.textContent = "Cancel";
-                cancelBtn.style.marginRight = "8px";
-                this.parentNode.insertBefore(cancelBtn, this);
-                cancelBtn.addEventListener("click", cancelFarmerEdit);
+                let cancelBtn = document.getElementById("cancelEditFarmerBtn");
+                if (!cancelBtn) {
+                    cancelBtn = document.createElement("button");
+                    cancelBtn.id = "cancelEditFarmerBtn";
+                    cancelBtn.className = "btn-outline-report";
+                    cancelBtn.textContent = "Cancel";
+                    cancelBtn.style.marginRight = "8px";
+                    this.parentNode.insertBefore(cancelBtn, this);
+                    cancelBtn.addEventListener("click", cancelFarmerEdit);
+                }
+                cancelBtn.style.display = "inline-flex";
+                return;
             }
-            cancelBtn.style.display = "inline-flex";
-            return;
-        }
 
-        if (!currentActiveFarmer) {
-            alert("No farmer selected.");
-            return;
-        }
+            if (!currentActiveFarmer) {
+                alert("No farmer selected.");
+                return;
+            }
 
-        const confirmSave = confirm("Are you sure you want to save these changes?\n\nFarmer: " + getFarmerFullName(currentActiveFarmer));
-        if (!confirmSave) return;
+            const confirmSave = confirm("Are you sure you want to save these changes?\n\nFarmer: " + getFarmerFullName(currentActiveFarmer));
+            if (!confirmSave) return;
 
-        const updateData = {
-            address: getValue("manAddress"),
-            phone_number: getValue("manPhone"),
-            email_address: getValue("manEmail")
-        };
+            const email = getValue("manEmail");
+            if (!email) {
+                alert("Please enter an email address.");
+                return;
+            }
 
-        try {
-            const farmerId = currentActiveFarmer.farmer_id;
+            const updateData = {
+                address: getValue("manAddress"),
+                phone_number: getValue("manPhone"),
+                email_address: getValue("manEmail")
+            };
 
-            await apiRequest(FARMERS_ENDPOINT + farmerId, {
-                method: "PUT",
-                body: JSON.stringify(updateData)
-            });
+            try {
+                const farmerId = currentActiveFarmer.farmer_id;
 
-            isEditMode = false;
-            editableInputs.forEach(function(input) {
-                input.readOnly = true;
-                input.classList.remove("input-editable-active");
-                input.classList.add("input-readonly");
-            });
+                await apiRequest(FARMERS_ENDPOINT + farmerId, {
+                    method: "PUT",
+                    body: JSON.stringify(updateData)
+                });
 
-            this.textContent = "Edit Contact Info";
+                isEditMode = false;
+                editableInputs.forEach(function(input) {
+                    input.readOnly = true;
+                    input.classList.remove("input-editable-active");
+                    input.classList.add("input-readonly");
+                });
 
-            const cancelBtn = document.getElementById("cancelEditFarmerBtn");
-            if (cancelBtn) cancelBtn.style.display = "none";
+                this.textContent = "Edit Contact Info";
 
-            await fetchFarmers();
-            alert("Farmer updated successfully.");
-        } catch (error) {
-            console.error("Update farmer error:", error);
-            alert("Failed to update farmer.\n\n" + (error.message || "Check FastAPI server."));
-        }
-    });
+                const cancelBtn = document.getElementById("cancelEditFarmerBtn");
+                if (cancelBtn) cancelBtn.style.display = "none";
 
+                await fetchFarmers();
+                alert("Farmer updated successfully.");
+            } catch (error) {
+                console.error("Update farmer error:", error);
+                alert("Failed to update farmer.\n\n" + (error.message || "Check FastAPI server."));
+            }
+        });
+    }
+
+    // ============================================================
     // DELETE FARMER
-    deleteBtn?.addEventListener("click", function() {
-        if (!currentActiveFarmer) {
-            alert("No farmer selected.");
-            return;
-        }
-        document.getElementById("deleteFarmerModal")?.classList.add("show");
-    });
+    // ============================================================
+    const deleteBtn = document.getElementById("deleteFarmerBtn");
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", function() {
+            if (!currentActiveFarmer) {
+                alert("No farmer selected.");
+                return;
+            }
+            document.getElementById("deleteFarmerModal")?.classList.add("show");
+        });
+    }
 
+    // ============================================================
     // CONFIRM DELETE
-    confirmDeleteBtn?.addEventListener("click", async function() {
-        if (!currentActiveFarmer) return;
+    // ============================================================
+    const confirmDeleteBtn = document.getElementById("confirmDeleteFarmerBtn");
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener("click", async function() {
+            if (!currentActiveFarmer) return;
 
-        try {
-            const farmerId = currentActiveFarmer.farmer_id;
+            // Disable button to prevent double-click
+            this.disabled = true;
+            this.textContent = "Deleting...";
 
-            await apiRequest(FARMERS_ENDPOINT + farmerId, {
-                method: "DELETE"
-            });
+            try {
+                const farmerId = currentActiveFarmer.farmer_id;
 
-            document.getElementById("deleteFarmerModal")?.classList.remove("show");
-            currentActiveFarmer = null;
-            await fetchFarmers();
+                await apiRequest(FARMERS_ENDPOINT + farmerId, {
+                    method: "DELETE"
+                });
 
-            manSubview?.classList.add("hidden-element");
-            listSubview?.classList.remove("hidden-element");
+                document.getElementById("deleteFarmerModal")?.classList.remove("show");
+                currentActiveFarmer = null;
+                await fetchFarmers();
 
-            alert("Farmer deleted successfully.");
-        } catch (error) {
-            console.error("Delete farmer error:", error);
-            document.getElementById("deleteFarmerModal")?.classList.remove("show");
-            document.getElementById("deleteErrorModal")?.classList.add("show");
-        }
-    });
+                const manSubview = document.getElementById("manageFarmerSubview");
+                const listSubview = document.getElementById("farmersListSubview");
+                if (manSubview) manSubview.classList.add("hidden-element");
+                if (listSubview) listSubview.classList.remove("hidden-element");
 
+                alert("Farmer deleted successfully.");
+
+            } catch (error) {
+                console.error("Delete farmer error:", error);
+                document.getElementById("deleteFarmerModal")?.classList.remove("show");
+                
+                const errorModal = document.getElementById("deleteErrorModal");
+                const errorText = errorModal?.querySelector("p");
+                if (errorText) {
+                    if (error.message && error.message.includes("existing records")) {
+                        errorText.textContent = "This farmer has existing planting intents or offtake requests. Please delete those first, then try again.";
+                    } else {
+                        errorText.textContent = error.message || "The farmer could not be deleted. Please try again.";
+                    }
+                }
+                errorModal?.classList.add("show");
+                
+            } finally {
+                this.disabled = false;
+                this.textContent = "Delete";
+            }
+        });
+    }
+
+
+    // ============================================================
     // CLOSE DELETE ERROR MODAL
+    // ============================================================
     document.getElementById("closeDeleteErrorBtn")?.addEventListener("click", function() {
         document.getElementById("deleteErrorModal")?.classList.remove("show");
     });
@@ -733,7 +978,9 @@ function initFarmerSubviews() {
         }
     });
 
+    // ============================================================
     // CANCEL DELETE
+    // ============================================================
     document.getElementById("cancelDeleteFarmerBtn")?.addEventListener("click", function() {
         document.getElementById("deleteFarmerModal")?.classList.remove("show");
     });
@@ -744,7 +991,9 @@ function initFarmerSubviews() {
         }
     });
 
+    // ============================================================
     // PAGINATION
+    // ============================================================
     document.getElementById("prevPageBtn")?.addEventListener("click", function() {
         if (currentFarmersPage > 1) {
             currentFarmersPage--;
@@ -759,6 +1008,7 @@ function initFarmerSubviews() {
             renderFarmersTable();
         }
     });
+
 }
 
 /* ============================================================
@@ -855,6 +1105,7 @@ function initPlantingIntent() {
     const formSubview = document.getElementById("submitPlantIntentSubview");
     const modal = document.getElementById("plantIntentSubmittedModal");
 
+    initPlantingIntentTabs();
     fetchPlantingIntents();
 
     // ADD BUTTON
@@ -905,7 +1156,7 @@ function initPlantingIntent() {
 
         const submitBtn = document.getElementById("submitPlantingIntentBtn");
         if (submitBtn) {
-            submitBtn.textContent = "Submit Report";
+            submitBtn.textContent = "Submit Intent";
             submitBtn.style.display = "inline-flex";
             submitBtn.style.background = "#2E7D32";
             submitBtn.disabled = false;
@@ -922,169 +1173,6 @@ function initPlantingIntent() {
         fetchPlantingIntents();
     }
 
-    // EDIT BUTTON
-    document.getElementById("editPlantingIntentBtn")?.addEventListener("click", function() {
-        togglePlantingIntentEditMode();
-    });
-
-    // SUBMIT / PULL BUTTON
-    document.getElementById("submitPlantingIntentBtn")?.addEventListener("click", async function() {
-    const intent = window.currentSelectedPlantingIntent;
-    if (!intent) {
-        alert("No planting intent selected.");
-        return;
-    }
-
-    const currentText = this.textContent.trim();
-
-    // ====================================================
-    // PULL SUBMISSION
-    // ====================================================
-
-    if (currentText.includes("Pull")) {
-        if (!confirm("Are you sure you want to PULL this submission back for revisions?")) {
-            return;
-        }
-
-        this.disabled = true;
-        this.textContent = "Pulling...";
-
-        try {
-            let reportId = intent.report_id || intent.planting_intent_id;
-            const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
-            const foundReport = allReports.find(function(r) {
-                return String(r.planting_intent_id) === String(intent.planting_intent_id);
-            });
-            if (foundReport) {
-                reportId = foundReport.report_id || foundReport.id;
-            }
-
-            await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/" + reportId + "/pull", { method: "POST" });
-
-            intent.status = "DRAFT";
-            intent.revision_count = (intent.revision_count || 0) + 1;
-            intent.updated_at = new Date().toISOString();
-            intent.report_id = reportId;
-            window.currentSelectedPlantingIntent = intent;
-
-            const pullIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
-                return item.planting_intent_id === intent.planting_intent_id;
-            });
-            if (pullIndex !== -1) {
-                PLANTING_INTENTS_DATA[pullIndex].status = "DRAFT";
-                PLANTING_INTENTS_DATA[pullIndex].revision_count = intent.revision_count;
-                PLANTING_INTENTS_DATA[pullIndex].updated_at = intent.updated_at;
-            }
-
-            filteredPlantingIntents = [];
-            currentPlantingIntentsPage = 1;
-            renderPlantingIntentsTable();
-            openPlantingIntentDetails(intent);
-
-            alert("✅ Submission pulled back successfully. You can now edit the report.");
-
-         } catch (error) {
-            console.error("Pull error:", error);
-            alert("Failed to pull submission.\n\n" + (error.message || "Please try again."));
-            // Only reset label on failure — success path already set it via openPlantingIntentDetails()
-            this.textContent = "Pull Submission";
-        } finally {
-            this.disabled = false;
-        }
-
-        // ✅ IMPORTANT: Stop here, don't run the submit code
-        return;
-    }
-
-    // ====================================================
-    // SUBMIT REPORT (Only runs if button text is NOT "Pull")
-    // ====================================================
-
-    if (!intent.planting_date) {
-        alert("Planting date is required.");
-        return;
-    }
-
-    const estimatedYield = String(intent.volume || "").replace(/,/g, "").replace(/kg/gi, "").trim();
-    if (!estimatedYield || !/^\d+(\.\d+)?$/.test(estimatedYield)) {
-        alert("Estimated yield must be a valid number.");
-        return;
-    }
-
-    const encodedBy = localStorage.getItem("user_id");
-    if (!encodedBy) {
-        alert("Logged-in user ID was not found.");
-        return;
-    }
-
-    if (!confirm("Are you sure you want to SUBMIT this planting report?")) {
-        return;
-    }
-
-    this.disabled = true;
-    this.textContent = "Submitting...";
-
-    try {
-        let reportId = null;
-        const allReports = await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/all-reports", { method: "GET" });
-        const existingReport = allReports.find(function(r) {
-            return String(r.planting_intent_id) === String(intent.planting_intent_id);
-        });
-
-        if (existingReport) {
-            reportId = existingReport.report_id;
-            await apiRequest(API_BASE_URL + "/api/raw-plant-reports/" + reportId, {
-                method: "PUT",
-                body: JSON.stringify({
-                    planting_date: intent.planting_date,
-                    estimated_yield: estimatedYield
-                })
-            });
-        } else {
-            const createdReport = await apiRequest(RAW_PLANT_REPORTS_ENDPOINT + "/" + intent.planting_intent_id, {
-                method: "POST"
-            });
-            reportId = createdReport?.report_id || createdReport?.id;
-        }
-
-        if (!reportId) throw new Error("No report ID found.");
-
-        await apiRequest(REPORT_SUBMISSIONS_ENDPOINT + "/" + reportId + "/submit", {
-            method: "POST"
-        });
-
-        intent.status = "FOR_MUNICIPAL_VALIDATION";
-        intent.updated_at = new Date().toISOString();
-        intent.report_id = reportId;
-        window.currentSelectedPlantingIntent = intent;
-
-        const submitIndex = PLANTING_INTENTS_DATA.findIndex(function(item) {
-            return item.planting_intent_id === intent.planting_intent_id;
-        });
-        if (submitIndex !== -1) {
-            PLANTING_INTENTS_DATA[submitIndex].status = "FOR_MUNICIPAL_VALIDATION";
-            PLANTING_INTENTS_DATA[submitIndex].updated_at = intent.updated_at;
-            PLANTING_INTENTS_DATA[submitIndex].report_id = reportId;
-        }
-
-        filteredPlantingIntents = [];
-        currentPlantingIntentsPage = 1;
-        renderPlantingIntentsTable();
-        openPlantingIntentDetails(intent);
-
-        alert("✅ Planting Report submitted successfully!\n\nStatus: FOR_MUNICIPAL_VALIDATION");
-
-    } catch (error) {
-        console.error("Submit error:", error);
-        alert("Failed to submit planting report.\n\n" + (error.message || "Please try again."));
-        // Only reset label on failure — success path already set it via openPlantingIntentDetails()
-        this.textContent = "Submit Report";
-    } finally {
-        this.disabled = false;
-    }
-});
-
-
     // SUBMIT PLANTING INTENT FORM
     document.getElementById("submitPlantIntentForm")?.addEventListener("submit", async function(event) {
         event.preventDefault();
@@ -1100,12 +1188,286 @@ function initPlantingIntent() {
     });
 }
 
-/* ============================================================
-   NORMALIZE PLANTING INTENT
-============================================================ */
+// ============================================================
+// SUBMIT PLANTING INTENT STATUS
+// ============================================================
+
+async function submitPlantingIntentStatus(intent) {
+    if (!intent) {
+        alert("No planting intent selected.");
+        return;
+    }
+
+    const intentId = intent.planting_intent_id;
+
+    if (!intentId) {
+        alert("Planting Intent ID not found.");
+        return;
+    }
+
+    if (!confirm(
+        "Are you sure you want to submit this planting intent?"
+    )) {
+        return;
+    }
+
+    const submitBtn =
+        document.getElementById("submitPlantingIntentBtn");
+
+    try {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Submitting...";
+        }
+
+        const url =
+            PLANTING_INTENTS_ENDPOINT +
+            intentId +
+            "/submit";
+
+        console.log("Submitting planting intent:", url);
+
+        const result = await apiRequest(url, {
+            method: "POST"
+        });
+
+        console.log("Submit response:", result);
+
+        // Update current intent
+        intent.status = "SUBMITTED";
+        intent.updated_at = new Date().toISOString();
+
+        // Update main data array
+        const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
+            return String(item.planting_intent_id) === String(intentId);
+        });
+
+        if (index !== -1) {
+            PLANTING_INTENTS_DATA[index].status = "SUBMITTED";
+            PLANTING_INTENTS_DATA[index].updated_at = intent.updated_at;
+        }
+
+        // Reset filtered data
+        filteredPlantingIntents = null;
+
+        // Refresh planting intent tables
+        renderPlantingIntentsTable();
+
+        // Keep updated intent selected
+        window.currentSelectedPlantingIntent = intent;
+
+        // Refresh details view
+        openPlantingIntentDetails(intent);
+
+        alert("Planting intent submitted successfully.");
+
+    } catch (error) {
+        console.error("Submit planting intent error:", error);
+
+        alert(
+            "Failed to submit planting intent.\n\n" +
+            (error.message || "Please try again.")
+        );
+
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+// ============================================================
+// DELETE PLANTING INTENT (DRAFT ONLY)
+// ============================================================
+
+async function deletePlantingIntent(intent) {
+    if (!intent) {
+        alert("No planting intent selected.");
+        return;
+    }
+
+    const status = (intent.status || "DRAFT").toUpperCase();
+
+    if (status !== "DRAFT") {
+        alert("Only Draft planting intents can be deleted.");
+        return;
+    }
+
+    if (!confirm(
+        `Are you sure you want to permanently delete this planting intent for "${intent.commodity}"?\n\nThis action cannot be undone.`
+    )) {
+        return;
+    }
+
+    try {
+        const url =
+            PLANTING_INTENTS_ENDPOINT +
+            intent.planting_intent_id;
+
+        console.log("Deleting planting intent:", url);
+
+        await apiRequest(url, {
+            method: "DELETE"
+        });
+
+        // Remove locally
+        PLANTING_INTENTS_DATA =
+            PLANTING_INTENTS_DATA.filter(function(item) {
+                return String(item.planting_intent_id) !==
+                       String(intent.planting_intent_id);
+            });
+
+        filteredPlantingIntents = null;
+
+        renderPlantingIntentsTable();
+
+        const list =
+            document.getElementById("plantingIntentListSubview");
+
+        const details =
+            document.getElementById("plantingIntentDetailsSubview");
+
+        if (list) {
+            list.classList.remove("hidden-element");
+        }
+
+        if (details) {
+            details.classList.add("hidden-element");
+        }
+
+        window.currentSelectedPlantingIntent = null;
+
+        alert("Planting intent deleted successfully.");
+
+    } catch (error) {
+        console.error("Delete planting intent error:", error);
+
+        alert(
+            "Failed to delete planting intent.\n\n" +
+            (error.message || "Please try again.")
+        );
+    }
+}
+
+// ============================================================
+// PULL PLANTING INTENT BACK TO DRAFT
+// ============================================================
+
+async function pullPlantingIntent(intent) {
+    if (!intent) {
+        alert("No planting intent selected.");
+        return;
+    }
+
+    const intentId = intent.planting_intent_id;
+
+    if (!intentId) {
+        alert("Planting Intent ID not found.");
+        return;
+    }
+
+    if (!confirm(
+        "Are you sure you want to revert this planting intent to DRAFT?"
+    )) {
+        return;
+    }
+
+    try {
+        const url =
+            PLANTING_INTENTS_ENDPOINT +
+            intentId +
+            "/pull";
+
+        console.log("Reverting planting intent to Draft:", url);
+
+        const result = await apiRequest(url, {
+            method: "POST"
+        });
+
+        console.log("Pull response:", result);
+
+        // Update local object
+        intent.status = "DRAFT";
+        intent.updated_at = new Date().toISOString();
+
+        // Update main data array
+        const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
+            return String(item.planting_intent_id) === String(intentId);
+        });
+
+        if (index !== -1) {
+            PLANTING_INTENTS_DATA[index].status = "DRAFT";
+            PLANTING_INTENTS_DATA[index].updated_at = intent.updated_at;
+        }
+
+        // Clear filtered data so the table rebuilds from the main data
+        filteredPlantingIntents = null;
+
+        // Refresh planting intent table
+        renderPlantingIntentsTable();
+
+        // Update current details
+        window.currentSelectedPlantingIntent = intent;
+
+        // Re-open details so buttons reflect DRAFT status
+        openPlantingIntentDetails(intent);
+
+        alert("Planting intent reverted to DRAFT successfully.");
+
+    } catch (error) {
+        console.error("Pull planting intent error:", error);
+
+        alert(
+            "Failed to revert planting intent to DRAFT.\n\n" +
+            (error.message || "Please try again.")
+        );
+    }
+}
 
 /* ============================================================
-   NORMALIZE PLANTING INTENT (Continued)
+   INIT PLANTING INTENT SUB-TABS
+============================================================ */
+
+function initPlantingIntentTabs() {
+    const tabButtons = document.querySelectorAll('.sub-tab-btn');
+    const draftContainer = document.getElementById('draftIntentsContainer');
+    const submittedContainer = document.getElementById('submittedIntentsContainer');
+
+    if (!tabButtons.length) return;
+
+    // Set initial state
+    if (draftContainer) draftContainer.style.display = 'block';
+    if (submittedContainer) submittedContainer.style.display = 'none';
+
+    tabButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+
+            // Update active tab
+            tabButtons.forEach(function(btn) {
+                btn.classList.remove('active');
+                btn.style.borderBottom = 'none';
+                btn.style.color = 'var(--muted)';
+            });
+            this.classList.add('active');
+            this.style.borderBottom = '3px solid var(--green)';
+            this.style.color = 'var(--green)';
+
+            // Show/hide containers
+            if (tab === 'draft') {
+                if (draftContainer) draftContainer.style.display = 'block';
+                if (submittedContainer) submittedContainer.style.display = 'none';
+            } else {
+                if (draftContainer) draftContainer.style.display = 'none';
+                if (submittedContainer) submittedContainer.style.display = 'block';
+            }
+        });
+    });
+}
+
+
+/* ============================================================
+   NORMALIZE PLANTING INTENT
 ============================================================ */
 
 function normalizePlantingIntent(intent) {
@@ -1133,188 +1495,430 @@ function normalizePlantingIntent(intent) {
 
 function initializePlantingIntentSearch() {
     const searchInput = document.getElementById("searchPlantingIntentsInput");
-    if (!searchInput) {
-        console.warn("Search input #searchPlantingIntentsInput not found");
-        return;
-    }
+    if (!searchInput) return;
 
-    searchInput.addEventListener("input", function() {
-        const keyword = this.value.toLowerCase().trim();
+    function performSearch() {
+        const keyword = searchInput.value.toLowerCase().trim();
 
         if (!keyword) {
-            filteredPlantingIntents = [];
-            currentPlantingIntentsPage = 1;
+            // ✅ Reset to show all data
+            filteredPlantingIntents = null;
+            currentDraftIntentsPage = 1;
+            currentSubmittedIntentsPage = 1;
             renderPlantingIntentsTable();
             return;
         }
 
-        const searchWords = keyword.split(/\s+/).filter(function(w) { return w.length > 0; });
+        const searchWords = keyword.split(/\s+/).filter(Boolean);
 
-        const filtered = PLANTING_INTENTS_DATA.filter(function(intent) {
-            const searchableFields = [
-                intent.farmer_name || "",
-                intent.commodity || "",
-                intent.location || "",
-                intent.remarks || "",
-                intent.status || "",
-                String(intent.volume || "")
-            ];
-            const searchableText = searchableFields.join(" ").toLowerCase();
+        filteredPlantingIntents = PLANTING_INTENTS_DATA.filter(function(intent) {
+            const searchableText = [
+                intent.farmer_name || '',
+                intent.commodity || '',
+                intent.location || '',
+                intent.remarks || '',
+                intent.status || '',
+                String(intent.volume || ''),
+                intent.planting_date || '',
+                intent.harvest_date || ''
+            ].join(" ").toLowerCase();
+
             return searchWords.every(function(word) {
                 return searchableText.includes(word);
             });
         });
 
-        console.log("Search for '" + keyword + "' found " + filtered.length + " planting intents");
-
-        filteredPlantingIntents = filtered;
-        currentPlantingIntentsPage = 1;
+        currentDraftIntentsPage = 1;
+        currentSubmittedIntentsPage = 1;
         renderPlantingIntentsTable();
-    });
+    }
+
+    searchInput.addEventListener("input", performSearch);
+    
+    searchInput.addEventListener("search", performSearch);
 }
+
+
 
 /* ============================================================
    FETCH PLANTING INTENTS
 ============================================================ */
 
 async function fetchPlantingIntents() {
-    const tbody = document.getElementById("plantingIntentsTableBody");
+    const tbody = document.getElementById('draftIntentsTableBody');
     if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center;">Loading planting intents...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center;">Loading planting intents...</td></tr>`;
     }
 
     try {
-        console.log("Fetching planting intents:", PLANTING_INTENTS_ENDPOINT);
+        console.log("📡 Fetching planting intents from:", PLANTING_INTENTS_ENDPOINT);
+        
         const data = await apiRequest(PLANTING_INTENTS_ENDPOINT, { method: "GET" });
-        console.log("Planting Intents API response:", data);
+        console.log("📡 API Response:", data);
 
-        if (!Array.isArray(data)) {
-            throw new Error("Invalid planting intents response. Expected an array.");
+        if (data && data.data && Array.isArray(data.data)) {
+            PLANTING_INTENTS_DATA = data.data.map(normalizePlantingIntent);
+            console.log("Loaded " + PLANTING_INTENTS_DATA.length + " planting intents from paginated response");
+        } 
+        else if (Array.isArray(data)) {
+            PLANTING_INTENTS_DATA = data.map(normalizePlantingIntent);
+            console.log("Loaded " + PLANTING_INTENTS_DATA.length + " planting intents from array response");
+        } 
+        else {
+            console.error("Unexpected response format:", data);
+            throw new Error("Invalid planting intents response. Expected an array or paginated object.");
         }
 
-        PLANTING_INTENTS_DATA = data.map(normalizePlantingIntent);
-        filteredPlantingIntents = [];
-        currentPlantingIntentsPage = 1;
+        filteredPlantingIntents = null;
+        currentDraftIntentsPage = 1;
+        currentSubmittedIntentsPage = 1;
         renderPlantingIntentsTable();
 
-        console.log("Successfully loaded " + PLANTING_INTENTS_DATA.length + " planting intent(s).");
-
-        setTimeout(function() {
-            const paginationContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
-            if (!paginationContainer) {
-                createPlantingIntentPagination();
-            }
-        }, 100);
-
         return PLANTING_INTENTS_DATA;
+        
     } catch (error) {
         console.error("Unable to load planting intents:", error);
         PLANTING_INTENTS_DATA = [];
+        
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load planting intents.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding:30px; text-align:center; color:#C0392B;">
+                        <div style="font-size:24px; margin-bottom:8px;">❌</div>
+                        <strong>Failed to load planting intents.</strong>
+                        <br>
+                        <small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small>
+                        <br><br>
+                        <button onclick="fetchPlantingIntents()" style="
+                            padding: 8px 20px; 
+                            background: #2E7D32; 
+                            color: #fff; 
+                            border: none; 
+                            border-radius: 6px; 
+                            cursor: pointer; 
+                            font-weight: 600;
+                        ">
+                            🔄 Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
         }
+        
         handleAuthError(error);
         return [];
     }
 }
 
-/* ============================================================
-   RENDER PLANTING INTENTS TABLE
-============================================================ */
+
+
+// ============================================================
+// RENDER PLANTING INTENTS TABLE
+// ============================================================
 
 function renderPlantingIntentsTable() {
-    const tbody = document.getElementById("plantingIntentsTableBody");
-    if (!tbody) {
-        console.warn("plantingIntentsTableBody not found.");
+    const draftTbody = document.getElementById('draftIntentsTableBody');
+    const submittedTbody = document.getElementById('submittedIntentsTableBody');
+
+    if (!draftTbody || !submittedTbody) {
+        console.warn('Planting intent table bodies not found.');
         return;
     }
 
-    tbody.innerHTML = "";
+    // Clear tables
+    draftTbody.innerHTML = '';
+    submittedTbody.innerHTML = '';
 
-    const searchInput = document.getElementById("searchPlantingIntentsInput");
-    const isSearching = Boolean(searchInput?.value.trim());
-
-    const dataSource = isSearching
-        ? filteredPlantingIntents
+    const dataSource = (filteredPlantingIntents !== null && filteredPlantingIntents.length >= 0) 
+        ? filteredPlantingIntents 
         : PLANTING_INTENTS_DATA;
 
-    const totalCount = dataSource.length;
+    console.log("Rendering with data source:", dataSource.length, "intents");
 
-  if (dataSource.length === 0) {
-    const message = isSearching
-        ? "No planting intents match your search."
-        : "No planting intents found.";
+    // Filter draft intents
+    const draftIntents = dataSource.filter(function(intent) {
+        const status = (intent.status || 'Pending').toLowerCase();
+        return status === 'draft' || status === 'pending';
+    });
 
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="7" style="padding:30px;text-align:center;color:#777;">
-                ${message}
-            </td>
-        </tr>
-    `;
+    // Filter submitted intents
+    const submittedIntents = dataSource.filter(function(intent) {
+        const status = (intent.status || '').toLowerCase();
+        return status === 'submitted' || 
+               status === 'for_municipal_validation' || 
+               status === 'for_provincial_validation' || 
+               status === 'for_da_rfo_validation' ||
+               status === 'revision_required' ||
+               status === 'final_approved';
+    });
 
-    updatePlantingIntentPagination(0);
-    return;
+    // Update counters
+    const draftCount = document.getElementById('draftCount');
+    const submittedCount = document.getElementById('submittedCount');
+    if (draftCount) draftCount.textContent = draftIntents.length;
+    if (submittedCount) submittedCount.textContent = submittedIntents.length;
+
+    // ============================================================
+    // RENDER DRAFT INTENTS
+    // ============================================================
+    if (draftIntents.length === 0) {
+        draftTbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="padding:40px; text-align:center; color:#999;">
+                    ${filteredPlantingIntents !== null ? 'No Draft Intents match your search.' : 'No Draft Intents found.'}
+                    ${filteredPlantingIntents !== null ? '<br><small>Try adjusting your search terms.</small>' : '<br>Click "Add Plant Intent" to create your first planting plan.'}
+                </td>
+            </tr>
+        `;
+    } else {
+        const draftStart = (currentDraftIntentsPage - 1) * plantingIntentsPerPage;
+        const paginatedDraftIntents = draftIntents.slice(draftStart, draftStart + plantingIntentsPerPage);
+
+        paginatedDraftIntents.forEach(function(intent) {
+            const tr = createPlantingIntentRow(intent, 'draft');
+            draftTbody.appendChild(tr);
+        });
+    }
+
+    // ============================================================
+    // RENDER SUBMITTED INTENTS
+    // ============================================================
+    if (submittedIntents.length === 0) {
+        submittedTbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="padding:40px; text-align:center; color:#999;">
+                    ${filteredPlantingIntents !== null ? 'No Submitted Intents match your search.' : 'No Submitted Intents found.'}
+                    ${filteredPlantingIntents !== null ? '<br><small>Try adjusting your search terms.</small>' : '<br>Submit a draft intent to see it here.'}
+                </td>
+            </tr>
+        `;
+    } else {
+        const submittedStart = (currentSubmittedIntentsPage - 1) * plantingIntentsPerPage;
+        const paginatedSubmittedIntents = submittedIntents.slice(submittedStart, submittedStart + plantingIntentsPerPage);
+
+        paginatedSubmittedIntents.forEach(function(intent) {
+            const tr = createPlantingIntentRow(intent, 'submitted');
+            submittedTbody.appendChild(tr);
+        });
+    }
+
+    // ============================================================
+    // RENDER PAGINATION
+    // ============================================================
+    renderPagination(draftIntents.length, "draft");
+    renderPagination(submittedIntents.length, "submitted");
 }
 
-    const start = (currentPlantingIntentsPage - 1) * plantingIntentsPerPage;
-    const end = start + plantingIntentsPerPage;
-    const paginatedItems = dataSource.slice(start, end);
 
-    if (paginatedItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center; color:#777;">No planting intents found on this page.</td></tr>`;
+
+// ============================================================
+// SIMPLE PAGINATION - ayaw gumana letche
+// ============================================================
+
+function renderPagination(totalCount, type) {
+    // If no items or less than per page, remove pagination and return
+    if (totalCount <= plantingIntentsPerPage) {
+        const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
+        const container = document.getElementById(containerId);
+        if (container) {
+            const existing = container.querySelector(".planting-intent-pagination");
+            if (existing) existing.remove();
+        }
         return;
     }
 
-    paginatedItems.forEach(function(intent) {
-        const tr = document.createElement("tr");
-        tr.className = "clickable-row";
+    const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        const farmerName = intent.farmer_name || "-";
-        const commodity = intent.commodity || "-";
-        const volume = formatPlantingVolume(intent.volume);
-        const location = intent.location || "-";
-        const plantingDate = formatPlantingDate(intent.planting_date);
-        const harvestDate = formatPlantingDate(intent.harvest_date);
-        const status = intent.status || "Pending";
+    const card = container.querySelector(".card");
+    if (!card) return;
 
-        let statusClass = "pending";
-        if (status === "FOR_MUNICIPAL_VALIDATION" || status === "FOR_PROVINCIAL_VALIDATION" || status === "FOR_DA_RFO_VALIDATION") {
-            statusClass = "submitted";
-        } else if (status === "FINAL_APPROVED") {
-            statusClass = "approved";
+    // Remove existing pagination
+    const existing = card.querySelector(".planting-intent-pagination");
+    if (existing) existing.remove();
+
+    // Get current page
+    let currentPage = type === "draft" ? currentDraftIntentsPage : currentSubmittedIntentsPage;
+    const totalPages = Math.ceil(totalCount / plantingIntentsPerPage);
+    
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+        if (type === "draft") {
+            currentDraftIntentsPage = currentPage;
+        } else {
+            currentSubmittedIntentsPage = currentPage;
         }
+    }
 
-        tr.innerHTML = `
-            <td><span class="pill">${escapeHtml(farmerName)}</span></td>
-            <td><span class="pill">${escapeHtml(commodity)}</span></td>
-            <td><span class="pill">${escapeHtml(volume)}</span></td>
-            <td><span class="pill">${escapeHtml(location)}</span></td>
-            <td><span class="pill">${escapeHtml(plantingDate)}</span></td>
-            <td><span class="pill">${escapeHtml(harvestDate)}</span></td>
-            <td><span class="status-pill ${statusClass}">${escapeHtml(status)}</span></td>
-        `;
+    const startItem = (currentPage - 1) * plantingIntentsPerPage + 1;
+    const endItem = Math.min(currentPage * plantingIntentsPerPage, totalCount);
 
-        tr.addEventListener("click", function() {
-            openPlantingIntentDetails(intent);
+    let html = `
+        <div class="pagination-container planting-intent-pagination" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #DFD8C6;">
+            <span class="pagination-info" style="font-size: 12.5px; color: #625E52;">
+                Showing ${startItem}-${endItem} of ${totalCount} planting intents
+            </span>
+            <div class="pagination-controls">
+                <button class="btn-page prev-pg-btn" type="button" ${currentPage <= 1 ? 'disabled' : ''}>
+                    &laquo; Prev
+                </button>
+    `;
+
+    // Generate page buttons (show max 5)
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+
+    if (startPage > 1) {
+        html += `<button class="btn-page pg-btn" data-page="1">1</button>`;
+        if (startPage > 2) {
+            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="btn-page pg-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
+        }
+        html += `<button class="btn-page pg-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    html += `
+                <button class="btn-page next-pg-btn" type="button" ${currentPage >= totalPages ? 'disabled' : ''}>
+                    Next &raquo;
+                </button>
+            </div>
+        </div>
+    `;
+
+    card.insertAdjacentHTML('beforeend', html);
+
+    // ATTACH EVENT LISTENERS
+    const paginationDiv = card.querySelector(".planting-intent-pagination");
+    if (!paginationDiv) return;
+
+    paginationDiv.querySelectorAll(".pg-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            const page = parseInt(this.dataset.page);
+            if (type === "draft") {
+                currentDraftIntentsPage = page;
+            } else {
+                currentSubmittedIntentsPage = page;
+            }
+            renderPlantingIntentsTable();
         });
-
-        tbody.appendChild(tr);
     });
 
-    updatePlantingIntentPagination(totalCount);
+    const prevBtn = paginationDiv.querySelector(".prev-pg-btn");
+    if (prevBtn) {
+        prevBtn.addEventListener("click", function() {
+            if (type === "draft") {
+                if (currentDraftIntentsPage > 1) currentDraftIntentsPage--;
+            } else {
+                if (currentSubmittedIntentsPage > 1) currentSubmittedIntentsPage--;
+            }
+            renderPlantingIntentsTable();
+        });
+    }
+
+    const nextBtn = paginationDiv.querySelector(".next-pg-btn");
+    if (nextBtn) {
+        nextBtn.addEventListener("click", function() {
+            if (type === "draft") {
+                if (currentDraftIntentsPage < totalPages) currentDraftIntentsPage++;
+            } else {
+                if (currentSubmittedIntentsPage < totalPages) currentSubmittedIntentsPage++;
+            }
+            renderPlantingIntentsTable();
+        });
+    }
 }
+
+
+
+/* ============================================================
+   CREATE PLANTING INTENT ROW
+============================================================ */
+
+function createPlantingIntentRow(intent, type) {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+
+    const farmerName = intent.farmer_name || '-';
+    const commodity = intent.commodity || '-';
+    const volume = formatPlantingVolume(intent.volume);
+    const location = intent.location || '-';
+    const plantingDate = formatPlantingDate(intent.planting_date);
+    const harvestDate = formatPlantingDate(intent.harvest_date);
+    const status = intent.status || 'Pending';
+    const intentId = intent.planting_intent_id || '';
+
+    let statusText = '';
+    let statusClass = '';
+
+    if (type === 'draft') {
+        statusText = 'Draft';
+        statusClass = 'draft';
+    } else {
+        const statusLower = status.toLowerCase();
+        
+        if (statusLower === 'pending') {
+            statusText = 'Draft';
+            statusClass = 'draft';
+        } else if (statusLower === 'submitted' || 
+                   statusLower === 'for_municipal_validation' || 
+                   statusLower === 'for_provincial_validation' || 
+                   statusLower === 'for_da_rfo_validation') {
+            statusText = 'Submitted';
+            statusClass = 'submitted';
+        } else if (statusLower === 'revision_required') {
+            statusText = 'Revision Required';
+            statusClass = 'revision';
+        } else if (statusLower === 'final_approved') {
+            statusText = 'Approved';
+            statusClass = 'approved';
+        } else {
+            statusText = status;
+            statusClass = 'pending';
+        }
+    }
+
+    tr.innerHTML = `
+        <td><span class="pill">#${escapeHtml(String(intentId))}</span></td>
+        <td><span class="pill">${escapeHtml(farmerName)}</span></td>
+        <td><span class="pill">${escapeHtml(commodity)}</span></td>
+        <td><span class="pill">${escapeHtml(volume)}</span></td>
+        <td><span class="pill">${escapeHtml(location)}</span></td>
+        <td><span class="pill">${escapeHtml(plantingDate)}</span></td>
+        <td><span class="pill">${escapeHtml(harvestDate)}</span></td>
+        <td class="center-col">
+            <span class="status-pill ${statusClass}">${escapeHtml(statusText)}</span>
+        </td>
+    `;
+
+    tr.addEventListener('click', function(e) {
+        openPlantingIntentDetails(intent);
+    });
+
+    return tr;
+}
+
+
 
 /* ============================================================
    OPEN PLANTING INTENT DETAILS
 ============================================================ */
 
-/* ============================================================
-   OPEN PLANTING INTENT DETAILS - FIXED
-============================================================ */
-
 function openPlantingIntentDetails(intent) {
-    console.log("Selected Planting Intent:", intent);
+    console.log("Opening details for:", intent);
 
     const list = document.getElementById("plantingIntentListSubview");
     const details = document.getElementById("plantingIntentDetailsSubview");
@@ -1334,7 +1938,7 @@ function openPlantingIntentDetails(intent) {
     if (list) list.classList.add("hidden-element");
     details.classList.remove("hidden-element");
 
-    // Display data
+    // Populate details
     setValue("detailPlantingIntentId", intent.planting_intent_id || "");
     setValue("detailFarmerName", intent.farmer_name || "");
     setValue("detailFarmerId", intent.farmer_id || "");
@@ -1345,23 +1949,21 @@ function openPlantingIntentDetails(intent) {
     setValue("detailHarvestDate", intent.harvest_date || "");
     setValue("detailRemarks", intent.remarks || "");
 
-    // Display revision info
+    // Revision info
     const revisionInfo = document.getElementById("detailRevisionInfo");
     if (revisionInfo) {
         if (intent.revision_count !== undefined && intent.revision_count > 0) {
             revisionInfo.textContent = "Revision #" + intent.revision_count + " | Last updated: " + formatPlantingDate(intent.updated_at || intent.created_at);
             revisionInfo.style.display = "block";
         } else {
-            revisionInfo.textContent = "Original submission";
-            revisionInfo.style.display = "block";
+            revisionInfo.style.display = "none";
         }
     }
 
     // Reset Edit Mode
     window.isEditingPlantingIntent = false;
 
-    // Make all fields readonly
-    const detailInputs = details.querySelectorAll("input, textarea, select");
+    const detailInputs = details.querySelectorAll("input, textarea");
     detailInputs.forEach(function(input) {
         if (input.tagName === "SELECT") {
             input.disabled = true;
@@ -1376,74 +1978,75 @@ function openPlantingIntentDetails(intent) {
     const editBtn = document.getElementById("editPlantingIntentBtn");
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
     const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+    const deleteBtn = document.getElementById("deletePlantingIntentBtn");
 
     if (backBtn) backBtn.style.display = "inline-flex";
 
-    // ✅ CHECK STATUS - Use the actual status from the intent object
-    const status = intent.status || "PENDING";
-    console.log("Current status:", status);
-    
-    // ✅ Check if status is DRAFT or PENDING (editable states)
-    const normalizedStatus = String(status).trim().toUpperCase().replace(/[ -]+/g, "_");
-    const isEditable = normalizedStatus === "DRAFT" ||
-                       normalizedStatus === "PENDING" ||
-                       normalizedStatus === "REVISION_REQUIRED";
-    const isSubmitted = status === "FOR_MUNICIPAL_VALIDATION" || 
-                        status === "FOR_PROVINCIAL_VALIDATION" || 
-                        status === "FOR_DA_RFO_VALIDATION" ||
-                        status === "SUBMITTED";
+    // ✅ Check status
+    const status = (intent.status || "DRAFT").toUpperCase();
+    const isDraft = status === "DRAFT";
+    const isSubmitted = status === "SUBMITTED";
 
-    console.log("isEditable:", isEditable);
-    console.log("isSubmitted:", isSubmitted);
+    console.log("Status:", status, "| Draft:", isDraft, "| Submitted:", isSubmitted);
 
-    if (isSubmitted) {
-        // Already submitted - Show "Pull Submission" button
+    if (isDraft) {
+        // ✅ DRAFT - Show Edit, Delete, and Submit buttons
+        if (editBtn) {
+            editBtn.style.display = "inline-flex";
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#D97706";
+            editBtn.style.cursor = "pointer";
+            editBtn.disabled = false;
+            editBtn.onclick = function() {
+                togglePlantingIntentEditMode();
+            };
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.style.display = "inline-flex";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.style.background = "#C0392B";
+            deleteBtn.style.cursor = "pointer";
+            deleteBtn.disabled = false;
+            deleteBtn.onclick = function() {
+                deletePlantingIntent(intent);
+            };
+        }
+        
         if (submitBtn) {
-            submitBtn.textContent = "Pull Submission";
+            submitBtn.textContent = "Submit Intent";
+            submitBtn.style.display = "inline-flex";
+            submitBtn.style.background = "#2E7D32";
+            submitBtn.style.color = "#fff";
+            submitBtn.disabled = false;
+            submitBtn.title = "Submit this intent (status will change to SUBMITTED)";
+            submitBtn.onclick = function() {
+                submitPlantingIntentStatus(intent);
+            };
+        }
+        
+    } else if (isSubmitted) {
+        // ✅ SUBMITTED - Hide Edit and Delete, show Pull button
+        if (editBtn) {
+            editBtn.style.display = "none";
+            editBtn.disabled = true;
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.style.display = "none";
+            deleteBtn.disabled = true;
+        }
+        
+        if (submitBtn) {
+            submitBtn.textContent = "Revert to Draft";
             submitBtn.style.display = "inline-flex";
             submitBtn.style.background = "#D97706";
             submitBtn.style.color = "#fff";
             submitBtn.disabled = false;
-            submitBtn.title = "Pull back this submission for revisions";
-        }
-        // Disable Edit button
-        if (editBtn) {
-            editBtn.textContent = "Edit Details";
-            editBtn.style.background = "#999";
-            editBtn.style.cursor = "not-allowed";
-            editBtn.disabled = true;
-        }
-    } else if (isEditable) {
-        // ✅ DRAFT/PENDING - Show "Submit Report" button
-        if (submitBtn) {
-            submitBtn.textContent = "Submit Report";
-            submitBtn.style.display = "inline-flex";
-            submitBtn.style.background = "#2E7D32";
-            submitBtn.style.color = "#fff";
-            submitBtn.disabled = false;
-            submitBtn.title = "Submit this report for validation";
-        }
-        // ✅ ENABLE Edit button
-        if (editBtn) {
-            editBtn.textContent = "Edit Details";
-            editBtn.style.background = "#D97706";
-            editBtn.style.cursor = "pointer";
-            editBtn.disabled = false;
-        }
-    } else {
-        // Fallback - unknown status
-        if (submitBtn) {
-            submitBtn.textContent = "Submit Report";
-            submitBtn.style.display = "inline-flex";
-            submitBtn.style.background = "#2E7D32";
-            submitBtn.style.color = "#fff";
-            submitBtn.disabled = false;
-        }
-        if (editBtn) {
-            editBtn.textContent = "Edit Details";
-            editBtn.style.background = "#D97706";
-            editBtn.style.cursor = "pointer";
-            editBtn.disabled = false;
+            submitBtn.title = "Pull back this submission to DRAFT";
+            submitBtn.onclick = function() {
+                pullPlantingIntent(intent);
+            };
         }
     }
 
@@ -1452,9 +2055,9 @@ function openPlantingIntentDetails(intent) {
     if (cancelBtn) cancelBtn.remove();
 }
 
-/* ============================================================
-   TOGGLE PLANTING INTENT EDIT MODE
-============================================================ */
+// ============================================================
+// TOGGLE PLANTING INTENT EDIT MODE
+// ============================================================
 
 function togglePlantingIntentEditMode() {
     const intent = window.currentSelectedPlantingIntent;
@@ -1475,23 +2078,30 @@ function togglePlantingIntentEditMode() {
     if (existingCancel) existingCancel.remove();
 
     if (!window.isEditingPlantingIntent) {
+        // ============================================================
+        // ENTER EDIT MODE
+        // ============================================================
         window.isEditingPlantingIntent = true;
 
-         detailInputs.forEach(function(input) {
+        // Enable all editable inputs
+        detailInputs.forEach(function(input) {
             const id = input.id;
-            if (id === "detailPlantingIntentId" || id === "detailFarmerId") return;
-            if (input.tagName === "SELECT") {
-                input.disabled = false;
-            } else {
-                input.readOnly = false;
+            // Keep these fields read-only
+            if (id === "detailPlantingIntentId" || id === "detailFarmerId" || id === "detailFarmerName") {
+                return;
             }
+            input.readOnly = false;
             input.classList.remove("input-readonly");
             input.classList.add("input-editable-active");
+            input.style.border = "1.5px solid #D97706";
+            input.style.background = "#FFFDF7";
         });
 
+        // Update button states
         if (editBtn) {
             editBtn.textContent = "Save Changes";
             editBtn.style.background = "#2E7D32";
+            editBtn.style.display = "inline-flex";
         }
 
         if (submitBtn) {
@@ -1502,6 +2112,7 @@ function togglePlantingIntentEditMode() {
             backBtn.style.display = "none";
         }
 
+        // Create Cancel button
         const cancelBtn = document.createElement("button");
         cancelBtn.id = "cancelEditPlantingIntentBtn";
         cancelBtn.className = "btn-outline-report";
@@ -1513,19 +2124,26 @@ function togglePlantingIntentEditMode() {
             cancelPlantingIntentEdit();
         });
 
-        console.log("Entered edit mode. Back button hidden, Cancel button shown.");
+        console.log("Entered edit mode.");
+
     } else {
+        // ============================================================
+        // EXIT EDIT MODE - Save Changes
+        // ============================================================
         const confirmSave = confirm("Are you sure you want to save these changes?");
-        if (!confirmSave) return;
+        if (!confirmSave) {
+            // If user cancels, just exit without saving
+            cancelPlantingIntentEdit();
+            return;
+        }
         savePlantingIntentChanges();
     }
 }
 
 
-
-/* ============================================================
-   CANCEL PLANTING INTENT EDIT
-============================================================ */
+// ============================================================
+// CANCEL PLANTING INTENT EDIT
+// ============================================================
 
 function cancelPlantingIntentEdit() {
     const intent = window.currentSelectedPlantingIntent;
@@ -1537,8 +2155,11 @@ function cancelPlantingIntentEdit() {
     const details = document.getElementById("plantingIntentDetailsSubview");
     if (!details) return;
 
-    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) return;
+    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) {
+        return;
+    }
 
+    // Restore original values
     setValue("detailPlantingIntentId", intent.planting_intent_id || "");
     setValue("detailFarmerName", intent.farmer_name || "");
     setValue("detailFarmerId", intent.farmer_id || "");
@@ -1549,7 +2170,8 @@ function cancelPlantingIntentEdit() {
     setValue("detailHarvestDate", intent.harvest_date || "");
     setValue("detailRemarks", intent.remarks || "");
 
-   const detailInputs = details.querySelectorAll("input, textarea, select");
+    // Reset input styles
+    const detailInputs = details.querySelectorAll("input, textarea");
     detailInputs.forEach(function(input) {
         if (input.tagName === "SELECT") {
             input.disabled = true;
@@ -1558,22 +2180,33 @@ function cancelPlantingIntentEdit() {
         }
         input.classList.add("input-readonly");
         input.classList.remove("input-editable-active");
+        input.style.border = "";
+        input.style.background = "";
     });
 
     window.isEditingPlantingIntent = false;
 
+    // Restore buttons
     const editBtn = document.getElementById("editPlantingIntentBtn");
     if (editBtn) {
         editBtn.textContent = "Edit Details";
         editBtn.style.background = "#D97706";
+        editBtn.style.display = "inline-flex";
     }
 
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
     if (submitBtn) {
         submitBtn.style.display = "inline-flex";
-        submitBtn.textContent = "Submit Report";
+        // Check if it should show Submit or Pull
+        const status = (intent.status || "DRAFT").toUpperCase();
+        if (status === "SUBMITTED") {
+            submitBtn.textContent = "Revert to Draft";
+            submitBtn.style.background = "#D97706";
+        } else {
+            submitBtn.textContent = "Submit Intent";
+            submitBtn.style.background = "#2E7D32";
+        }
         submitBtn.disabled = false;
-        submitBtn.style.background = "#2E7D32";
     }
 
     const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
@@ -1582,12 +2215,12 @@ function cancelPlantingIntentEdit() {
     const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
     if (cancelBtn) cancelBtn.remove();
 
-    console.log("Planting intent edit cancelled. Back button restored.");
+    console.log("Planting intent edit cancelled.");
 }
 
-/* ============================================================
-   SAVE PLANTING INTENT CHANGES
-============================================================ */
+// ============================================================
+// SAVE PLANTING INTENT CHANGES
+// ============================================================
 
 async function savePlantingIntentChanges() {
     const intent = window.currentSelectedPlantingIntent;
@@ -1613,54 +2246,55 @@ async function savePlantingIntentChanges() {
         return dateString;
     }
 
+    // Get current values from the form
+    const rawCommodity = document.getElementById("detailCommodity")?.value || intent.commodity;
+    const rawVolume = document.getElementById("detailVolume")?.value || intent.volume;
+    const rawLocation = document.getElementById("detailLocation")?.value || intent.location;
     const rawPlantingDate = document.getElementById("detailPlantingDate")?.value || intent.planting_date;
     const rawHarvestDate = document.getElementById("detailHarvestDate")?.value || intent.harvest_date;
+    const rawRemarks = document.getElementById("detailRemarks")?.value || intent.remarks;
 
-    const updatedData = {
-        planting_intent_id: intent.planting_intent_id,
-        farmer_name: document.getElementById("detailFarmerName")?.value || intent.farmer_name,
-        farmer_id: intent.farmer_id,
-        commodity: document.getElementById("detailCommodity")?.value || intent.commodity,
-        volume: document.getElementById("detailVolume")?.value || intent.volume,
-        location: document.getElementById("detailLocation")?.value || intent.location,
-        planting_date: convertToAPIDate(rawPlantingDate),
-        harvest_date: convertToAPIDate(rawHarvestDate),
-        remarks: document.getElementById("detailRemarks")?.value || intent.remarks
+    // Validate required fields
+    if (!rawCommodity || !rawCommodity.trim()) {
+        alert("Please enter Commodity.");
+        document.getElementById("detailCommodity")?.focus();
+        return;
+    }
+
+    const volumeValue = String(rawVolume).replace(/,/g, "").replace(/kg/gi, "").trim();
+    if (!volumeValue || isNaN(Number(volumeValue)) || Number(volumeValue) <= 0) {
+        alert("Please enter a valid volume.");
+        document.getElementById("detailVolume")?.focus();
+        return;
+    }
+
+    const plantingDate = convertToAPIDate(rawPlantingDate);
+    const harvestDate = convertToAPIDate(rawHarvestDate);
+
+    if (!plantingDate) {
+        alert("Please enter a valid Planting Date.");
+        document.getElementById("detailPlantingDate")?.focus();
+        return;
+    }
+
+    if (!harvestDate) {
+        alert("Please enter a valid Harvest Date.");
+        document.getElementById("detailHarvestDate")?.focus();
+        return;
+    }
+
+    const payload = {
+        commodity: rawCommodity.trim(),
+        volume: Number(volumeValue),
+        location: rawLocation || "",
+        planting_date: plantingDate,
+        harvest_date: harvestDate,
+        remarks: rawRemarks || ""
     };
 
+    console.log("Saving changes:", payload);
+
     try {
-        if (!updatedData.planting_date || !updatedData.harvest_date || !updatedData.commodity) {
-            alert("Please fill in all required fields.");
-            return;
-        }
-
-        const volumeValue = Number(
-            String(updatedData.volume)
-                .replace(/,/g, "")
-                .replace(/kg/gi, "")
-                .trim()
-        );
-        const farmerIdValue = Number(updatedData.farmer_id);
-
-        if (!Number.isFinite(volumeValue) || volumeValue <= 0) {
-            alert("Please enter a valid volume in kilograms.");
-            return;
-        }
-
-        if (!Number.isInteger(farmerIdValue) || farmerIdValue <= 0) {
-            alert("The selected farmer is invalid.");
-            return;
-        }
-
-        const payload = {
-            farmer_id: farmerIdValue,
-            commodity: updatedData.commodity,
-            volume: volumeValue,
-            planting_date: updatedData.planting_date,
-            harvest_date: updatedData.harvest_date,
-            remarks: updatedData.remarks || null
-        };
-
         const url = PLANTING_INTENTS_ENDPOINT + intent.planting_intent_id;
         const token = getAuthToken();
 
@@ -1678,26 +2312,24 @@ async function savePlantingIntentChanges() {
             try { errorData = await response.json(); } catch(e) {}
             let errorMessage = "Failed to update planting intent.";
             if (errorData && errorData.detail) {
-                errorMessage = Array.isArray(errorData.detail)
-                    ? errorData.detail.map(function(item) {
-                        const field = Array.isArray(item.loc) ? item.loc.join(".") : "field";
-                        return field + ": " + item.msg;
-                    }).join("\n")
-                    : String(errorData.detail);
+                errorMessage = typeof errorData.detail === "string" ? errorData.detail : JSON.stringify(errorData.detail);
             }
             throw new Error(errorMessage);
         }
 
-        await response.json();
+        const result = await response.json();
+        console.log("Update successful:", result);
 
-        intent.farmer_name = updatedData.farmer_name;
-        intent.commodity = updatedData.commodity;
-        intent.volume = updatedData.volume;
-        intent.location = updatedData.location;
-        intent.planting_date = updatedData.planting_date;
-        intent.harvest_date = updatedData.harvest_date;
-        intent.remarks = updatedData.remarks;
+        // Update local data
+        intent.commodity = payload.commodity;
+        intent.volume = payload.volume;
+        intent.location = payload.location;
+        intent.planting_date = payload.planting_date;
+        intent.harvest_date = payload.harvest_date;
+        intent.remarks = payload.remarks;
+        intent.updated_at = new Date().toISOString();
 
+        // Update the data in the main array
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
             return item.planting_intent_id === intent.planting_intent_id;
         });
@@ -1705,9 +2337,14 @@ async function savePlantingIntentChanges() {
             PLANTING_INTENTS_DATA[index] = intent;
         }
 
+        // Refresh the table
+        renderPlantingIntentsTable();
+
+        // Exit edit mode
         window.isEditingPlantingIntent = false;
 
-         const details = document.getElementById("plantingIntentDetailsSubview");
+        // Reset input styles
+        const details = document.getElementById("plantingIntentDetailsSubview");
         if (details) {
             const inputs = details.querySelectorAll("input, textarea, select");
             inputs.forEach(function(input) {
@@ -1718,19 +2355,30 @@ async function savePlantingIntentChanges() {
                 }
                 input.classList.add("input-readonly");
                 input.classList.remove("input-editable-active");
+                input.style.border = "";
+                input.style.background = "";
             });
         }
 
+        // Restore buttons
         const editBtn = document.getElementById("editPlantingIntentBtn");
         if (editBtn) {
             editBtn.textContent = "Edit Details";
             editBtn.style.background = "#D97706";
+            editBtn.style.display = "inline-flex";
         }
 
         const submitBtn = document.getElementById("submitPlantingIntentBtn");
         if (submitBtn) {
             submitBtn.style.display = "inline-flex";
-            submitBtn.textContent = "Submit Report";
+            const status = (intent.status || "DRAFT").toUpperCase();
+            if (status === "SUBMITTED") {
+                submitBtn.textContent = "Revert to Draft";
+                submitBtn.style.background = "#D97706";
+            } else {
+                submitBtn.textContent = "Submit Intent";
+                submitBtn.style.background = "#2E7D32";
+            }
             submitBtn.disabled = false;
         }
 
@@ -1740,10 +2388,21 @@ async function savePlantingIntentChanges() {
         const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
         if (cancelBtn) cancelBtn.remove();
 
-        renderPlantingIntentsTable();
+        // Update the details view with new values
+        setValue("detailPlantingIntentId", intent.planting_intent_id || "");
+        setValue("detailFarmerName", intent.farmer_name || "");
+        setValue("detailFarmerId", intent.farmer_id || "");
+        setValue("detailCommodity", intent.commodity || "");
+        setValue("detailVolume", formatPlantingVolume(intent.volume));
+        setValue("detailLocation", intent.location || "");
+        setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
+        setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+        setValue("detailRemarks", intent.remarks || "");
+
         alert("Planting Intent updated successfully!");
+
     } catch (error) {
-        console.error("Save planting intent error:", error);
+        console.error("Save error:", error);
         alert("Failed to update planting intent.\n\n" + error.message);
     }
 }
@@ -1835,127 +2494,2186 @@ async function submitPlantingIntent() {
     }
 }
 
-/* ============================================================
-   PLANTING INTENT PAGINATION
-============================================================ */
+// ============================================================
+// PLANTING INTENT PAGINATION
+// ============================================================
 
-function updatePlantingIntentPagination(totalCount) {
-    const paginationContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
-    if (!paginationContainer) {
-        createPlantingIntentPagination();
-        const newContainer = document.querySelector("#plantingIntentListSubview .pagination-container");
-        if (!newContainer) return;
-        updatePaginationUI(newContainer, totalCount);
+function renderPlantingIntentPagination(totalCount, type) {
+    console.log("=== PAGINATION ===");
+    console.log("type:", type, "totalCount:", totalCount);
+    
+    // Get the container for the specific tab
+    const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.warn("Container not found:", containerId);
         return;
     }
-    updatePaginationUI(paginationContainer, totalCount);
-}
 
-function createPlantingIntentPagination() {
-    const listSubview = document.getElementById("plantingIntentListSubview");
-    const card = listSubview?.querySelector(".card");
+    // Find the card inside the container
+    const card = container.querySelector(".card");
+    if (!card) {
+        console.warn("Card not found inside container:", containerId);
+        return;
+    }
 
-    if (!card || card.querySelector(".pagination-container")) return;
+    // Remove existing pagination
+    let paginationDiv = card.querySelector(".planting-intent-pagination");
+    if (paginationDiv) {
+        paginationDiv.remove();
+        paginationDiv = null;
+    }
 
-    const paginationDiv = document.createElement("div");
-    paginationDiv.className = "pagination-container";
-    paginationDiv.innerHTML = `
-        <span class="pagination-info" id="plantingIntentPaginationInfo">
-            Showing 0 of 0
+    // If no items or less than per page, hide pagination
+    if (totalCount <= plantingIntentsPerPage) {
+        console.log("No pagination needed (totalCount <= perPage)");
+        return;
+    }
+
+    // Get current page for this tab
+    const currentPage = type === "draft" ? currentDraftIntentsPage : currentSubmittedIntentsPage;
+    const totalPages = Math.ceil(totalCount / plantingIntentsPerPage);
+
+    // Make sure current page is valid
+    let validPage = Math.min(Math.max(1, currentPage), totalPages);
+    if (type === "draft") {
+        currentDraftIntentsPage = validPage;
+    } else {
+        currentSubmittedIntentsPage = validPage;
+    }
+
+    const startIndex = (validPage - 1) * plantingIntentsPerPage + 1;
+    const endIndex = Math.min(validPage * plantingIntentsPerPage, totalCount);
+
+    // Create pagination div
+    paginationDiv = document.createElement("div");
+    paginationDiv.className = "pagination-container planting-intent-pagination";
+    paginationDiv.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 8px;";
+
+    // Build pagination HTML
+    let html = `
+        <span class="pagination-info" style="font-size: 12.5px; color: var(--muted);">
+            Showing ${startIndex}-${endIndex} of ${totalCount} planting intents
         </span>
-        <div class="pagination-controls">
-            <button class="btn-page" id="prevPlantingIntentPageBtn" type="button" disabled>
+        <div class="pagination-controls" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <button class="btn-page prev-page-btn" type="button" ${validPage <= 1 ? 'disabled' : ''}>
                 &laquo; Prev
             </button>
-            <div id="plantingIntentPageNumberBtns" class="page-numbers-wrap"></div>
-            <button class="btn-page" id="nextPlantingIntentPageBtn" type="button" disabled>
+            <div class="page-numbers-wrap" style="display: flex; gap: 4px;">
+    `;
+
+    // Show page numbers (max 5)
+    let startPage = Math.max(1, validPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+
+    // Add first page if not in range
+    if (startPage > 1) {
+        html += `<button class="btn-page page-btn" data-page="1">1</button>`;
+        if (startPage > 2) {
+            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="btn-page page-btn ${i === validPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+
+    // Add last page if not in range
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
+        }
+        html += `<button class="btn-page page-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    html += `
+            </div>
+            <button class="btn-page next-page-btn" type="button" ${validPage >= totalPages ? 'disabled' : ''}>
                 Next &raquo;
             </button>
         </div>
     `;
 
+    paginationDiv.innerHTML = html;
+
+    // Append to card
     card.appendChild(paginationDiv);
 
-    document.getElementById("prevPlantingIntentPageBtn")
-        ?.addEventListener("click", function () {
-            if (currentPlantingIntentsPage > 1) {
-                currentPlantingIntentsPage--;
-                renderPlantingIntentsTable();
+    // ============================================================
+    // ATTACH EVENT LISTENERS
+    // ============================================================
+
+    // Page number buttons
+    paginationDiv.querySelectorAll(".page-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            const page = parseInt(this.dataset.page);
+            if (type === "draft") {
+                currentDraftIntentsPage = page;
+            } else {
+                currentSubmittedIntentsPage = page;
             }
+            renderPlantingIntentsTable();
         });
+    });
 
-    document.getElementById("nextPlantingIntentPageBtn")
-        ?.addEventListener("click", function () {
-            const searchInput = document.getElementById(
-                "searchPlantingIntentsInput"
-            );
-
-            const dataSource = searchInput?.value.trim()
-                ? filteredPlantingIntents
-                : PLANTING_INTENTS_DATA;
-
-            const totalPages = Math.max(
-                1,
-                Math.ceil(dataSource.length / plantingIntentsPerPage)
-            );
-
-            if (currentPlantingIntentsPage < totalPages) {
-                currentPlantingIntentsPage++;
-                renderPlantingIntentsTable();
+    // Prev button
+    const prevBtn = paginationDiv.querySelector(".prev-page-btn");
+    if (prevBtn) {
+        prevBtn.addEventListener("click", function() {
+            if (type === "draft") {
+                if (currentDraftIntentsPage > 1) currentDraftIntentsPage--;
+            } else {
+                if (currentSubmittedIntentsPage > 1) currentSubmittedIntentsPage--;
             }
+            renderPlantingIntentsTable();
         });
+    }
+
+    // Next button
+    const nextBtn = paginationDiv.querySelector(".next-page-btn");
+    if (nextBtn) {
+        nextBtn.addEventListener("click", function() {
+            const total = type === "draft" 
+                ? draftIntents.length
+                : submittedIntents.length;
+            if (type === "draft") {
+                if (currentDraftIntentsPage < totalPages) currentDraftIntentsPage++;
+            } else {
+                if (currentSubmittedIntentsPage < totalPages) currentSubmittedIntentsPage++;
+            }
+            renderPlantingIntentsTable();
+        });
+    }
 }
 
-function updatePaginationUI(container, totalCount) {
-    const totalPages = Math.max(1, Math.ceil(totalCount / plantingIntentsPerPage));
-    if (currentPlantingIntentsPage > totalPages) currentPlantingIntentsPage = totalPages;
+/* ============================================================
+   REPORTING
+============================================================ */
 
-    const start = totalCount === 0 ? 0 : ((currentPlantingIntentsPage - 1) * plantingIntentsPerPage) + 1;
-    const end = Math.min(currentPlantingIntentsPage * plantingIntentsPerPage, totalCount);
+let INDIVIDUAL_REPORTS_DATA = [];
+let SUBMITTED_REPORTS_DATA = [];
 
-    const info = container.querySelector(".pagination-info");
-    if (info) info.textContent = "Showing " + start + "-" + end + " of " + totalCount + " planting intents";
+let currentIndividualReportsPage = 1;
+let currentSubmittedReportsPage = 1;
 
-    const prevBtn = container.querySelector("#prevPlantingIntentPageBtn");
-    if (prevBtn) prevBtn.disabled = currentPlantingIntentsPage <= 1;
+const reportsPerPage = 10;
 
-    const nextBtn = container.querySelector("#nextPlantingIntentPageBtn");
-    if (nextBtn) nextBtn.disabled = currentPlantingIntentsPage >= totalPages;
 
-    const pageBtns = container.querySelector("#plantingIntentPageNumberBtns");
-    if (pageBtns) {
-        pageBtns.innerHTML = "";
-        const totalPagesToShow = Math.min(totalPages, 5);
+/* ============================================================
+   INITIALIZE REPORTING
+============================================================ */
 
-        for (let i = 1; i <= totalPagesToShow; i++) {
-            const pageBtn = document.createElement("button");
-            pageBtn.className = "btn-page" + (i === currentPlantingIntentsPage ? " active" : "");
-            pageBtn.textContent = i;
-            pageBtn.type = "button";
-            pageBtn.addEventListener("click", function() {
-                currentPlantingIntentsPage = i;
-                renderPlantingIntentsTable();
+function initReporting() {
+    console.log("Initializing Reporting...");
+
+    const createReportBtn = document.getElementById("createReportBtn");
+    const cancelReportBtn = document.getElementById("cancelReportBtn");
+    const saveDraftBtn = document.getElementById("saveReportDraftBtn");
+    const submitFinalBtn = document.getElementById("submitReportFinalBtn");
+    const backDetailsBtn = document.getElementById("backFromReportDetailsBtn");
+    const editReportBtn = document.getElementById("editReportBtn");
+
+    const selectFileBtn = document.getElementById("selectReportFileBtn");
+    const fileInput = document.getElementById("reportFileInput");
+    const fileNameInput = document.getElementById("reportDocFilename");
+
+    // Initialize report filter
+    const filterSelect = document.getElementById('individualReportFilter');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', function() {
+            individualFilterStatus = this.value;
+            renderFinalizedIntents(allIndividualReports);
+        });
+    }
+
+
+
+    /* -----------------------------------------
+       CREATE NEW REPORT
+    ----------------------------------------- */
+    if (createReportBtn) {
+        createReportBtn.addEventListener("click", function () {
+            openSubmitReportSubview();
+        });
+    }
+
+    /* -----------------------------------------
+       CANCEL NEW REPORT
+    ----------------------------------------- */
+    // Cancel report creation
+    if (cancelReportBtn) {
+        cancelReportBtn.addEventListener("click", function () {
+            console.log("❌ Cancelling report creation...");
+            closeAllModals();
+            // Show main view
+            const mainView = document.getElementById("reportsMainSubview");
+            if (mainView) {
+                mainView.classList.remove("hidden-element");
+            }
+        });
+    }
+
+    // Back from report details
+    if (backDetailsBtn) {
+        backDetailsBtn.addEventListener("click", function () {
+            console.log("🔙 Back from details...");
+            closeAllModals();
+        });
+    }
+
+    /* -----------------------------------------
+       SAVE DRAFT
+    ----------------------------------------- */
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener("click", function () {
+            saveReport("DRAFT");
+        });
+    }
+
+    /* -----------------------------------------
+       SUBMIT REPORT
+    ----------------------------------------- */
+    if (submitFinalBtn) {
+        submitFinalBtn.addEventListener("click", function () {
+            saveReport("SUBMITTED");
+        });
+    }
+
+    /* -----------------------------------------
+       BACK FROM DETAILS
+    ----------------------------------------- */
+    if (backDetailsBtn) {
+        backDetailsBtn.addEventListener("click", function () {
+            closeReportDetailsSubview();
+        });
+    }
+
+    /* -----------------------------------------
+       EDIT REPORT
+    ----------------------------------------- */
+    if (editReportBtn) {
+        editReportBtn.addEventListener("click", function () {
+            const reportId = this.dataset.reportId;
+
+            if (!reportId) {
+                alert("Report ID not found.");
+                return;
+            }
+
+            openSubmitReportSubview(reportId);
+        });
+    }
+
+    /* -----------------------------------------
+       FILE SELECT
+    ----------------------------------------- */
+    if (selectFileBtn && fileInput) {
+        selectFileBtn.addEventListener("click", function () {
+            fileInput.click();
+        });
+    }
+
+    if (fileNameInput && fileInput) {
+        fileNameInput.addEventListener("click", function () {
+            fileInput.click();
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener("change", function () {
+            const files = Array.from(this.files || []);
+
+            if (fileNameInput) {
+                fileNameInput.value =
+                    files.length > 0
+                        ? files.map(file => file.name).join(", ")
+                        : "";
+            }
+
+            const list = document.getElementById("selectedFilesList");
+
+            if (list) {
+                if (files.length === 0) {
+                    list.innerHTML = "";
+                } else {
+                    list.innerHTML = files
+                        .map(file => `<div>${escapeHtml(file.name)}</div>`)
+                        .join("");
+                }
+            }
+        });
+    }
+}
+
+// ============================================================
+// RENDER FINALIZED PLANTING INTENTS
+// ============================================================
+
+function renderFinalizedIntents(intents) {
+    const tbody = document.getElementById('individualReportsTableBody');
+    if (!tbody) return;
+
+    // Apply filter
+    let filteredIntents = intents;
+    if (individualFilterStatus !== 'all') {
+        filteredIntents = intents.filter(function(intent) {
+            const status = (intent.status || 'NOT PLANTED').toUpperCase();
+            return status === individualFilterStatus;
+        });
+    }
+
+    if (!filteredIntents || filteredIntents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filteredIntents.map(function(intent) {
+        const status = intent.status || "NOT PLANTED";
+        const statusUpper = status.toUpperCase();
+        const statusClass = 'status-pill-' + statusUpper.toLowerCase().replace(/ /g, '-');
+        
+        return `
+            <tr class="clickable-row" data-intent-id="${intent.planting_intent_id}">
+                <td>#${intent.report_id}</td>
+                <td>${escapeHtml(intent.title)}</td>
+                <td>${intent.submitted_at ? formatPlantingDate(intent.submitted_at) : '-'}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px; justify-content:center; flex-wrap:wrap;">
+                        <span class="status-pill ${statusClass}">${escapeHtml(statusUpper)}</span>
+                        <select class="finalized-status-select" data-intent-id="${intent.planting_intent_id}" style="padding:4px 8px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:11px; background:#fff; cursor:pointer;">
+                            <option value="NOT PLANTED" ${statusUpper === 'NOT PLANTED' ? 'selected' : ''}>Not Planted</option>
+                            <option value="PLANTED" ${statusUpper === 'PLANTED' ? 'selected' : ''}>Planted</option>
+                            <option value="HARVESTED" ${statusUpper === 'HARVESTED' ? 'selected' : ''}>Harvested</option>
+                            <option value="MEDIATING" ${statusUpper === 'MEDIATING' ? 'selected' : ''}>Mediating</option>
+                        </select>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Attach change event to status selects
+    tbody.querySelectorAll('.finalized-status-select').forEach(function(select) {
+        select.addEventListener('change', function(e) {
+            e.stopPropagation();
+            const intentId = this.dataset.intentId;
+            const newStatus = this.value;
+            updateFinalizedIntentStatus(intentId, newStatus);
+        });
+    });
+
+    // Attach click event to rows
+    tbody.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName === 'SELECT') return;
+            const intentId = this.dataset.intentId;
+            openFinalizedIntentDetails(intentId);
+        });
+    });
+}
+
+// ============================================================
+// UPDATE FINALIZED INTENT STATUS
+// ============================================================
+
+async function updateFinalizedIntentStatus(intentId, newStatus) {
+    try {
+        // Update the intent's finalized_status (you may need to add this field to your model)
+        // For now, we'll update it in the local data and re-render
+        const intent = PLANTING_INTENTS_DATA.find(function(i) {
+            return i.planting_intent_id === intentId;
+        });
+        
+        if (intent) {
+            intent.finalized_status = newStatus;
+            
+            // Also update in the allIndividualReports array
+            const reportIntent = allIndividualReports.find(function(r) {
+                return r.planting_intent_id === intentId;
             });
-            pageBtns.appendChild(pageBtn);
+            if (reportIntent) {
+                reportIntent.status = newStatus;
+            }
+        }
+        
+        // Re-render
+        renderFinalizedIntents(allIndividualReports);
+        
+        console.log(`Status updated to ${newStatus} for intent ${intentId}`);
+        
+    } catch (error) {
+        console.error("Failed to update status:", error);
+        alert("Failed to update status. Please try again.");
+    }
+}
+
+// ============================================================
+// CREATE REPORT FROM PLANTING INTENTS
+// ============================================================
+
+async function createReportFromIntents(intentIds, notes, attachments) {
+    try {
+        // Create the report first
+        const reportData = {
+            planting_intent_ids: intentIds,
+            notes: notes,
+            status: "NOT PLANTED" // Default status for individual reports
+        };
+        
+        const response = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/from-intents`, {
+            method: "POST",
+            body: JSON.stringify(reportData)
+        });
+        
+        console.log("Report created:", response);
+        return response;
+    } catch (error) {
+        console.error("Failed to create report:", error);
+        throw error;
+    }
+}
+
+// ============================================================
+// INIT REPORTS
+// ============================================================
+
+function initReports() {
+    const createBtn = document.getElementById('createReportBtn');
+    const cancelBtn = document.getElementById('cancelReportBtn');
+    const addIntentBtn = document.getElementById('addIntentToReportBtn');
+    const reportIntentSelect = document.getElementById('reportIntentSelect');
+    const selectedIntentsBody = document.getElementById('selectedIntentsTableBody');
+    const saveDraftBtn = document.getElementById('saveReportDraftBtn');
+    const submitFinalBtn = document.getElementById('submitReportFinalBtn');
+    
+    // Store selected intents
+    let selectedIntents = [];
+    
+    // Load reports
+    loadReports();
+    
+    // Populate intent dropdown with SUBMITTED intents only
+    function populateIntentDropdown() {
+        if (!reportIntentSelect) return;
+        
+        // Get submitted intents (not yet included in any report)
+        const submittedIntents = PLANTING_INTENTS_DATA.filter(function(intent) {
+            const status = (intent.status || '').toUpperCase();
+            return status === 'SUBMITTED';
+        });
+        
+        reportIntentSelect.innerHTML = '<option value="">Select Planting Intent</option>';
+        
+        submittedIntents.forEach(function(intent) {
+            // Check if already selected
+            if (selectedIntents.some(function(s) { return s.planting_intent_id === intent.planting_intent_id; })) {
+                return;
+            }
+            const option = document.createElement('option');
+            option.value = intent.planting_intent_id;
+            option.textContent = `#${intent.planting_intent_id} - ${intent.commodity} (${intent.farmer_name})`;
+            reportIntentSelect.appendChild(option);
+        });
+    }
+    
+    // Show create report view
+    createBtn?.addEventListener('click', function() {
+        document.getElementById('reportsMainSubview').classList.add('hidden-element');
+        document.getElementById('submitReportSubview').classList.remove('hidden-element');
+        selectedIntents = [];
+        renderSelectedIntents();
+        populateIntentDropdown();
+    });
+    
+    // Cancel report creation
+    cancelBtn?.addEventListener('click', function() {
+        document.getElementById('submitReportSubview').classList.add('hidden-element');
+        document.getElementById('reportsMainSubview').classList.remove('hidden-element');
+        selectedIntents = [];
+        renderSelectedIntents();
+    });
+    
+    // Add intent to report
+    if (addIntentBtn) {
+        addIntentBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("➕ Add row button clicked");
+            
+            const select = document.getElementById("reportIntentSelect");
+            if (!select || !select.value) {
+                alert("Please select a planting intent.");
+                return;
+            }
+
+            const intentId = parseInt(select.value);
+            if (!intentId) {
+                alert("Invalid planting intent.");
+                return;
+            }
+
+            // Find the intent
+            const intent = PLANTING_INTENTS_DATA.find(function(i) {
+                return i.planting_intent_id === intentId;
+            });
+
+            if (!intent) {
+                alert("Planting intent not found.");
+                return;
+            }
+
+            // Initialize selected intents if not exists
+            if (!window.selectedReportIntents) {
+                window.selectedReportIntents = [];
+            }
+
+            // Check if already selected
+            const alreadySelected = window.selectedReportIntents.some(function(item) {
+                return item.planting_intent_id === intentId;
+            });
+
+            if (alreadySelected) {
+                alert("This planting intent is already added.");
+                return;
+            }
+
+            // Add to selected
+            window.selectedReportIntents.push(intent);
+            
+            // Clear the select
+            select.value = '';
+            
+            // Re-render
+            renderSelectedReportIntents();
+            populateReportIntentSelect(); // Refresh dropdown to remove selected items
+            
+            console.log("Intent added:", intent);
+        });
+    }
+    
+    // Render selected intents table
+    function renderSelectedIntents() {
+        if (!selectedIntentsBody) return;
+        
+        if (selectedIntents.length === 0) {
+            selectedIntentsBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding:20px; text-align:center; color:#999;">No planting intents selected. Click "Add Row" to add.</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        selectedIntentsBody.innerHTML = selectedIntents.map(function(intent, index) {
+            return `
+                <tr>
+                    <td>#${intent.planting_intent_id}</td>
+                    <td>${escapeHtml(intent.commodity)}</td>
+                    <td>${escapeHtml(formatPlantingVolume(intent.volume))}</td>
+                    <td>${escapeHtml(intent.farmer_name)}</td>
+                    <td class="center-col">
+                        <button class="btn-danger remove-intent-btn" data-index="${index}" style="padding:4px 10px; font-size:12px; background:#C0392B; color:#fff; border:none; border-radius:4px; cursor:pointer;">Remove</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        // Attach remove event
+        selectedIntentsBody.querySelectorAll('.remove-intent-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                selectedIntents.splice(index, 1);
+                renderSelectedIntents();
+                populateIntentDropdown();
+            });
+        });
+    }
+    
+    // Save as Draft
+    saveDraftBtn?.addEventListener('click', async function() {
+        if (selectedIntents.length === 0) {
+            alert('Please select at least one planting intent.');
+            return;
+        }
+        
+        const notes = document.getElementById('reportNotesInput')?.value || '';
+        
+        this.disabled = true;
+        this.textContent = 'Saving...';
+        
+        try {
+            const intentIds = selectedIntents.map(function(i) { return i.planting_intent_id; });
+            const report = await createReportFromIntents(intentIds, notes, null);
+            
+            alert('Report saved as draft successfully!');
+            document.getElementById('submitReportSubview').classList.add('hidden-element');
+            document.getElementById('reportsMainSubview').classList.remove('hidden-element');
+            selectedIntents = [];
+            renderSelectedIntents();
+            document.getElementById('reportNotesInput').value = '';
+            
+            // Refresh reports
+            await loadReports();
+            
+        } catch (error) {
+            console.error('Save draft error:', error);
+            alert('Failed to save report: ' + error.message);
+        } finally {
+            this.disabled = false;
+            this.textContent = 'Save as Draft';
+        }
+    });
+    
+    // Submit to Municipal
+    submitFinalBtn?.addEventListener('click', async function() {
+        if (selectedIntents.length === 0) {
+            alert('Please select at least one planting intent.');
+            return;
+        }
+        
+        const notes = document.getElementById('reportNotesInput')?.value || '';
+        
+        if (!confirm('Are you sure you want to submit this report to Municipal for validation?')) {
+            return;
+        }
+        
+        this.disabled = true;
+        this.textContent = 'Submitting...';
+        
+        try {
+            const intentIds = selectedIntents.map(function(i) { return i.planting_intent_id; });
+            const report = await createReportFromIntents(intentIds, notes, null);
+            
+            // Update report status to FOR_MUNICIPAL_VALIDATION
+            await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${report.report_id}`, {
+                method: "PUT",
+                body: JSON.stringify({ status: "FOR_MUNICIPAL_VALIDATION" })
+            });
+            
+            // Update the intents status (they are now in the report)
+            for (let id of intentIds) {
+                await apiRequest(`${PLANTING_INTENTS_ENDPOINT}${id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({ status: "FOR_MUNICIPAL_VALIDATION" })
+                });
+            }
+            
+            alert('Report submitted to Municipal successfully!');
+            document.getElementById('submitReportSubview').classList.add('hidden-element');
+            document.getElementById('reportsMainSubview').classList.remove('hidden-element');
+            selectedIntents = [];
+            renderSelectedIntents();
+            document.getElementById('reportNotesInput').value = '';
+            
+            // Refresh data
+            await fetchPlantingIntents();
+            await loadReports();
+            
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('Failed to submit report: ' + error.message);
+        } finally {
+            this.disabled = false;
+            this.textContent = 'Submit to Municipal';
+        }
+    });
+}
+
+// Make sure to call initReports in DOMContentLoaded
+document.addEventListener("DOMContentLoaded", async () => {
+    // ... existing initialization ...
+    initReports();
+});
+
+
+
+// ============================================================
+// REPORTS - LOAD REPORTS (AUTO-SHOW SUBMITTED INTENTS)
+// ============================================================
+
+let allIndividualReports = [];
+let individualFilterStatus = 'all';
+
+async function loadReports() {
+    try {
+        console.log("=== LOAD REPORTS DEBUG ===");
+        console.log("PLANTING_INTENTS_DATA length:", PLANTING_INTENTS_DATA.length);
+        
+        if (!PLANTING_INTENTS_DATA || PLANTING_INTENTS_DATA.length === 0) {
+            console.log("No planting intents data available.");
+            renderFinalizedIntents([]);
+            renderSubmittedReports([]);
+            return;
+        }
+        
+        // DEBUG: Log all intents and their statuses
+        const statusCounts = {};
+        PLANTING_INTENTS_DATA.forEach(function(intent) {
+            const status = String(intent.status || 'UNKNOWN').toUpperCase();
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+        console.log("Status counts:", statusCounts);
+        
+        // ============================================================
+        // 1. FILTER: ALL SUBMITTED INTENTS (CASE INSENSITIVE)
+        // ============================================================
+        const allSubmitted = PLANTING_INTENTS_DATA.filter(function(intent) {
+            const status = String(intent.status || '').toUpperCase();
+            return status === 'SUBMITTED' || 
+                   status === 'FOR_MUNICIPAL_VALIDATION' ||
+                   status === 'FOR_PROVINCIAL_VALIDATION' ||
+                   status === 'FOR_DA_RFO_VALIDATION' ||
+                   status === 'FINAL_APPROVED' ||
+                   status === 'REVISION_REQUIRED';
+        });
+        
+        console.log("All submitted intents found:", allSubmitted.length);
+        
+        // ============================================================
+        // 2. FINALIZED INTENTS = SUBMITTED
+        // ============================================================
+        const finalizedIntents = allSubmitted.filter(function(intent) {
+            const status = String(intent.status || '').toUpperCase();
+            return status === 'SUBMITTED';
+        }).map(function(intent) {
+            return {
+                report_id: intent.planting_intent_id,  // Use planting_intent_id as report_id
+                planting_intent_id: intent.planting_intent_id,
+                farmer_name: intent.farmer_name || 'Unknown',
+                commodity: intent.commodity || '-',
+                volume: intent.volume || 0,
+                planting_date: intent.planting_date || null,
+                harvest_date: intent.harvest_date || null,
+                submitted_at: intent.updated_at || intent.created_at,
+                finalized_status: intent.finalized_status || 'NOT PLANTED',
+                status: intent.status
+            };
+        });
+        
+        console.log("Finalized intents found:", finalizedIntents.length);
+        
+        // ============================================================
+        // 3. SUBMITTED REPORTS (For validation)
+        // ============================================================
+        const submittedReports = allSubmitted.filter(function(intent) {
+            const status = String(intent.status || '').toUpperCase();
+            return status === 'FOR_MUNICIPAL_VALIDATION' || 
+                   status === 'FOR_PROVINCIAL_VALIDATION' || 
+                   status === 'FOR_DA_RFO_VALIDATION' ||
+                   status === 'FINAL_APPROVED' ||
+                   status === 'REVISION_REQUIRED';
+        }).map(function(intent) {
+            return {
+                report_id: intent.planting_intent_id,
+                title: `${intent.commodity} - ${intent.farmer_name}`,
+                submitted_at: intent.updated_at || intent.created_at,
+                status: intent.status,
+                planting_intent_id: intent.planting_intent_id
+            };
+        });
+        
+        console.log("Submitted reports found:", submittedReports.length);
+        
+        // SORT BY DATE (NEWEST FIRST)
+        finalizedIntents.sort(function(a, b) {
+            const dateA = new Date(a.submitted_at || 0);
+            const dateB = new Date(b.submitted_at || 0);
+            return dateB - dateA;
+        });
+        
+        submittedReports.sort(function(a, b) {
+            const dateA = new Date(a.submitted_at || 0);
+            const dateB = new Date(b.submitted_at || 0);
+            return dateB - dateA;
+        });
+        
+        // ============================================================
+        // 4. STORE AND RENDER
+        // ============================================================
+        allIndividualReports = finalizedIntents;
+        
+        renderFinalizedIntents(finalizedIntents);
+        renderSubmittedReports(submittedReports);
+        
+        console.log("=== LOAD REPORTS COMPLETE ===");
+        
+    } catch (error) {
+        console.error("Failed to load reports:", error);
+    }
+}
+
+/* ============================================================
+   REPORT PAGINATION
+============================================================ */
+
+function renderReportPagination(
+    type,
+    totalCount,
+    currentPage
+) {
+    const tableBodyId =
+        type === "individual"
+            ? "individualReportsTableBody"
+            : "submittedReportsTableBody";
+
+    const tbody =
+        document.getElementById(tableBodyId);
+
+    if (!tbody) return;
+
+    const table =
+        tbody.closest("table");
+
+    if (!table) return;
+
+    const existing =
+        table.parentElement.querySelector(
+            ".report-pagination"
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    if (totalCount <= reportsPerPage) {
+        return;
+    }
+
+    const totalPages =
+        Math.ceil(totalCount / reportsPerPage);
+
+    const pagination =
+        document.createElement("div");
+
+    pagination.className =
+        "pagination-container report-pagination";
+
+    const start =
+        (currentPage - 1) * reportsPerPage + 1;
+
+    const end =
+        Math.min(
+            currentPage * reportsPerPage,
+            totalCount
+        );
+
+    pagination.innerHTML = `
+        <span class="pagination-info">
+            Showing ${start}-${end} of ${totalCount} reports
+        </span>
+
+        <div class="pagination-controls">
+
+            <button
+                class="btn-page report-prev"
+                type="button"
+                ${currentPage <= 1 ? "disabled" : ""}
+            >
+                &laquo; Prev
+            </button>
+
+            <span class="page-numbers-wrap"></span>
+
+            <button
+                class="btn-page report-next"
+                type="button"
+                ${currentPage >= totalPages ? "disabled" : ""}
+            >
+                Next &raquo;
+            </button>
+
+        </div>
+    `;
+
+    const pageWrap =
+        pagination.querySelector(".page-numbers-wrap");
+
+    for (
+        let page = 1;
+        page <= totalPages;
+        page++
+    ) {
+        const button =
+            document.createElement("button");
+
+        button.type = "button";
+        button.className =
+            "btn-page" +
+            (
+                page === currentPage
+                    ? " active"
+                    : ""
+            );
+
+        button.textContent = page;
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                if (type === "individual") {
+                    currentIndividualReportsPage =
+                        page;
+
+                    renderIndividualReports();
+
+                } else {
+
+                    currentSubmittedReportsPage =
+                        page;
+
+                    renderSubmittedReports();
+                }
+            }
+        );
+
+        pageWrap.appendChild(button);
+    }
+
+    const prev =
+        pagination.querySelector(".report-prev");
+
+    if (prev) {
+        prev.addEventListener(
+            "click",
+            function () {
+
+                if (type === "individual") {
+                    if (
+                        currentIndividualReportsPage > 1
+                    ) {
+                        currentIndividualReportsPage--;
+                    }
+
+                    renderIndividualReports();
+
+                } else {
+
+                    if (
+                        currentSubmittedReportsPage > 1
+                    ) {
+                        currentSubmittedReportsPage--;
+                    }
+
+                    renderSubmittedReports();
+                }
+            }
+        );
+    }
+
+    const next =
+        pagination.querySelector(".report-next");
+
+    if (next) {
+        next.addEventListener(
+            "click",
+            function () {
+
+                if (type === "individual") {
+
+                    if (
+                        currentIndividualReportsPage <
+                        totalPages
+                    ) {
+                        currentIndividualReportsPage++;
+                    }
+
+                    renderIndividualReports();
+
+                } else {
+
+                    if (
+                        currentSubmittedReportsPage <
+                        totalPages
+                    ) {
+                        currentSubmittedReportsPage++;
+                    }
+
+                    renderSubmittedReports();
+                }
+            }
+        );
+    }
+
+    table.parentElement.appendChild(pagination);
+}
+
+
+/* ============================================================
+   REPORT DETAILS
+============================================================ */
+
+function openReportDetails(report) {
+
+    const mainView =
+        document.getElementById("reportsMainSubview");
+
+    const submitView =
+        document.getElementById("submitReportSubview");
+
+    const detailsView =
+        document.getElementById("reportDetailsSubview");
+
+    if (!detailsView) return;
+
+    if (mainView) {
+        mainView.classList.add("hidden-element");
+    }
+
+    if (submitView) {
+        submitView.classList.add("hidden-element");
+    }
+
+    detailsView.classList.remove("hidden-element");
+
+    window.currentSelectedReport = report;
+
+    const reportId =
+        report.report_id ??
+        report.id ??
+        "—";
+
+    const title =
+        report.title ||
+        "Report Details";
+
+    const status =
+        report.status ||
+        "DRAFT";
+
+    const submittedDate =
+        report.submitted_at ||
+        report.submission_date ||
+        report.created_at;
+
+    setText(
+        "reportDetailsTitle",
+        title
+    );
+
+    setText(
+        "detailReportId",
+        reportId
+    );
+
+    setText(
+        "detailReportStatus",
+        status
+    );
+
+    setText(
+        "detailReportDate",
+        formatReportDate(submittedDate)
+    );
+
+    setText(
+        "detailReportNotes",
+        report.notes ||
+        report.remarks ||
+        "—"
+    );
+
+    renderReportAttachments(report);
+    renderIncludedPlantingIntents(report);
+
+    const editButton =
+        document.getElementById("editReportBtn");
+
+    if (editButton) {
+
+        editButton.dataset.reportId =
+            String(reportId);
+
+        if (
+            String(status).toUpperCase() === "DRAFT"
+        ) {
+            editButton.style.display = "inline-flex";
+        } else {
+            editButton.style.display = "none";
+        }
+    }
+}
+
+
+/* ============================================================
+   REPORT ATTACHMENTS
+============================================================ */
+
+function renderReportAttachments(report) {
+
+    const container =
+        document.getElementById(
+            "detailReportAttachments"
+        );
+
+    if (!container) return;
+
+    const attachments =
+        report.attachments ||
+        report.files ||
+        [];
+
+    if (
+        !Array.isArray(attachments) ||
+        attachments.length === 0
+    ) {
+        container.textContent =
+            "No attachments";
+
+        return;
+    }
+
+    container.innerHTML =
+        attachments.map(function (file) {
+
+            const name =
+                typeof file === "string"
+                    ? file
+                    : (
+                        file.filename ||
+                        file.file_name ||
+                        "Attachment"
+                    );
+
+            const url =
+                typeof file === "object"
+                    ? file.url || file.file_url
+                    : null;
+
+            if (url) {
+                return `
+                    <div style="margin-bottom:6px;">
+                        <a
+                            href="${escapeHtml(url)}"
+                            target="_blank"
+                            rel="noopener"
+                            style="color:var(--green); font-weight:600;"
+                        >
+                            ${escapeHtml(name)}
+                        </a>
+                    </div>
+                `;
+            }
+
+            return `
+                <div style="margin-bottom:6px;">
+                    ${escapeHtml(name)}
+                </div>
+            `;
+
+        }).join("");
+}
+
+
+/* ============================================================
+   INCLUDED PLANTING INTENTS
+============================================================ */
+
+function renderIncludedPlantingIntents(report) {
+
+    const tbody =
+        document.getElementById(
+            "detailReportIntentsBody"
+        );
+
+    if (!tbody) return;
+
+    const intents =
+        report.planting_intents ||
+        report.intents ||
+        report.included_intents ||
+        [];
+
+    if (
+        !Array.isArray(intents) ||
+        intents.length === 0
+    ) {
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="3"
+                    style="padding:20px; text-align:center; color:#999;"
+                >
+                    No intents included.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    tbody.innerHTML =
+        intents.map(function (intent) {
+
+            const farmer =
+                intent.farmer_name ||
+                intent.farmer?.full_name ||
+                intent.farmer?.name ||
+                "N/A";
+
+            const commodity =
+                intent.commodity ||
+                intent.crop ||
+                "N/A";
+
+            const volume =
+                intent.volume ??
+                intent.estimated_volume ??
+                intent.estimated_yield ??
+                "N/A";
+
+            return `
+                <tr>
+                    <td>${escapeHtml(String(farmer))}</td>
+                    <td>${escapeHtml(String(commodity))}</td>
+                    <td>${escapeHtml(String(volume))} kg</td>
+                </tr>
+            `;
+
+        }).join("");
+}
+
+// ============================================================
+// RENDER FINALIZED PLANTING INTENTS (WORKING CLICKABLE PILL)
+// ============================================================
+
+function renderFinalizedIntents(intents) {
+    const tbody = document.getElementById('individualReportsTableBody');
+    if (!tbody) return;
+
+    // Apply filter
+    let filteredIntents = intents;
+    if (individualFilterStatus !== 'all') {
+        filteredIntents = intents.filter(function(intent) {
+            const status = (intent.finalized_status || 'NOT PLANTED').toUpperCase();
+            return status === individualFilterStatus;
+        });
+    }
+
+    if (!filteredIntents || filteredIntents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filteredIntents.map(function(intent) {
+        const status = intent.finalized_status || "NOT PLANTED";
+        const statusUpper = status.toUpperCase();
+        
+        // Status display text
+        let displayText = statusUpper;
+        let bgColor = '#6c757d';
+        
+        if (statusUpper === 'NOT PLANTED') {
+            displayText = 'Not Planted';
+            bgColor = '#6c757d';
+        } else if (statusUpper === 'PLANTED') {
+            displayText = 'Planted';
+            bgColor = '#D97706';
+        } else if (statusUpper === 'HARVESTED') {
+            displayText = 'Harvested';
+            bgColor = '#2E7D32';
+        } else if (statusUpper === 'MEDIATING') {
+            displayText = 'Mediating';
+            bgColor = '#2980B9';
+        }
+        
+        // Format dates
+        const plantingDate = intent.planting_date ? formatPlantingDate(intent.planting_date) : '-';
+        const harvestDate = intent.harvest_date ? formatPlantingDate(intent.harvest_date) : '-';
+        
+        // Use report_id if available, otherwise use planting_intent_id
+        const reportId = intent.report_id || intent.planting_intent_id;
+        
+        return `
+            <tr class="clickable-row" data-intent-id="${intent.planting_intent_id}">
+                <td style="padding:12px 14px; text-align:center; font-weight:600;">#${reportId}</td>
+                <td style="padding:12px 14px; text-align:center;">${escapeHtml(intent.farmer_name)}</td>
+                <td style="padding:12px 14px; text-align:center;">${escapeHtml(intent.commodity)}</td>
+                <td style="padding:12px 14px; text-align:center;">${formatPlantingVolume(intent.volume)}</td>
+                <td style="padding:12px 14px; text-align:center;">${plantingDate}</td>
+                <td style="padding:12px 14px; text-align:center;">${harvestDate}</td>
+                <td style="padding:12px 14px; text-align:center;">
+                    <div class="status-dropdown-wrapper" data-intent-id="${intent.planting_intent_id}" style="position:relative; display:inline-block;">
+                        <span class="status-pill clickable-pill" 
+                              style="cursor:pointer; display:inline-block; padding:4px 16px; border-radius:999px; font-size:11.5px; font-weight:700; color:#FFFFFF; text-shadow:0 1px 1px rgba(0,0,0,0.2); text-align:center; white-space:nowrap; letter-spacing:0.02em; user-select:none; background-color:${bgColor}; transition:all 0.2s ease;">
+                            ${escapeHtml(displayText)}
+                            <span style="font-size:8px; margin-left:6px;">▼</span>
+                        </span>
+                        <div class="status-dropdown-menu" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; background:#FFFFFF; border:1.5px solid #DFD8C6; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:120px; z-index:1000; overflow:hidden;">
+                            <div class="status-option" data-status="NOT PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0; transition:background 0.15s ease;">Not Planted</div>
+                            <div class="status-option" data-status="PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0; transition:background 0.15s ease;">Planted</div>
+                            <div class="status-option" data-status="HARVESTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0; transition:background 0.15s ease;">Harvested</div>
+                            <div class="status-option" data-status="MEDIATING" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; transition:background 0.15s ease;">Mediating</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // ============================================================
+    // ATTACH EVENT LISTENERS FOR DROPDOWNS
+    // ============================================================
+    
+    // Get all pill wrappers
+    const wrappers = tbody.querySelectorAll('.status-dropdown-wrapper');
+    
+    wrappers.forEach(function(wrapper) {
+        const pill = wrapper.querySelector('.clickable-pill');
+        const menu = wrapper.querySelector('.status-dropdown-menu');
+        
+        // Click on pill → toggle dropdown
+        if (pill) {
+            const newPill = pill.cloneNode(true);
+            pill.parentNode.replaceChild(newPill, pill);
+            
+            newPill.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.status-dropdown-menu').forEach(function(m) {
+                    if (m !== menu) {
+                        m.style.display = 'none';
+                    }
+                });
+                
+                // Toggle this dropdown
+                if (menu.style.display === 'block') {
+                    menu.style.display = 'none';
+                } else {
+                    menu.style.display = 'block';
+                }
+            });
+        }
+    });
+    
+    // Click on status option → update status
+    const options = tbody.querySelectorAll('.status-option');
+    options.forEach(function(option) {
+        option.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const newStatus = this.dataset.status;
+            const menu = this.closest('.status-dropdown-menu');
+            const wrapper = menu.closest('.status-dropdown-wrapper');
+            const intentId = wrapper.dataset.intentId;
+            const pill = wrapper.querySelector('.clickable-pill');
+            
+            // Update the pill
+            updateStatusPillVisual(pill, newStatus);
+            
+            // Close dropdown
+            menu.style.display = 'none';
+            
+            // Call update function
+            updateFinalizedIntentStatus(intentId, newStatus);
+        });
+        
+        // Hover effects
+        option.addEventListener('mouseenter', function() {
+            this.style.background = '#f0f0f0';
+        });
+        option.addEventListener('mouseleave', function() {
+            this.style.background = '';
+        });
+    });
+    
+    // Click on row to open details
+    const rows = tbody.querySelectorAll('.clickable-row');
+    rows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't open if clicking on pill or dropdown
+            if (e.target.closest('.status-dropdown-wrapper')) return;
+            const intentId = this.dataset.intentId;
+            console.log("Row clicked:", intentId);
+            openFinalizedIntentDetails(intentId);
+        });
+    });
+}
+
+
+
+// ============================================================
+// UPDATE STATUS PILL VISUALLY
+// ============================================================
+
+function updateStatusPillVisual(pill, newStatus) {
+    const statusUpper = newStatus.toUpperCase();
+    
+    // Update display text
+    let displayText = statusUpper;
+    if (statusUpper === 'NOT PLANTED') displayText = 'Not Planted';
+    else if (statusUpper === 'PLANTED') displayText = 'Planted';
+    else if (statusUpper === 'HARVESTED') displayText = 'Harvested';
+    else if (statusUpper === 'MEDIATING') displayText = 'Mediating';
+    
+    // Update color
+    let bgColor = '#6c757d';
+    if (statusUpper === 'PLANTED') bgColor = '#D97706';
+    else if (statusUpper === 'HARVESTED') bgColor = '#2E7D32';
+    else if (statusUpper === 'MEDIATING') bgColor = '#2980B9';
+    
+    pill.textContent = displayText + ' ▼';
+    pill.style.backgroundColor = bgColor;
+}
+
+
+// ============================================================
+// CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
+// ============================================================
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.status-dropdown-wrapper')) {
+        document.querySelectorAll('.status-dropdown-menu').forEach(function(m) {
+            m.style.display = 'none';
+        });
+    }
+});
+
+// ============================================================
+// UPDATE STATUS PILL VISUALLY
+// ============================================================
+
+function updateStatusPill(pill, newStatus) {
+    const statusUpper = newStatus.toUpperCase();
+    
+    // Update display text
+    let displayText = statusUpper;
+    if (statusUpper === 'NOT PLANTED') displayText = 'Not Planted';
+    else if (statusUpper === 'PLANTED') displayText = 'Planted';
+    else if (statusUpper === 'HARVESTED') displayText = 'Harvested';
+    else if (statusUpper === 'MEDIATING') displayText = 'Mediating';
+    
+    // Update color
+    let bgColor = '#6c757d'; // Default gray
+    if (statusUpper === 'PLANTED') bgColor = '#D97706';
+    else if (statusUpper === 'HARVESTED') bgColor = '#2E7D32';
+    else if (statusUpper === 'MEDIATING') bgColor = '#2980B9';
+    
+    pill.textContent = displayText + ' ▼';
+    pill.style.backgroundColor = bgColor;
+    pill.dataset.currentStatus = statusUpper;
+}
+
+
+// ============================================================
+// UPDATE FINALIZED INTENT STATUS
+// ============================================================
+
+async function updateFinalizedIntentStatus(intentId, newStatus) {
+    try {
+        console.log(`Updating intent ${intentId} to ${newStatus}`);
+        
+        // Find the intent in the main data
+        const intent = PLANTING_INTENTS_DATA.find(function(i) {
+            return i.planting_intent_id === intentId;
+        });
+        
+        if (!intent) {
+            console.error("Intent not found:", intentId);
+            return;
+        }
+        
+        // CALL API TO UPDATE STATUS IN DATABASE
+        try {
+            const url = PLANTING_INTENTS_ENDPOINT + intentId;
+            const token = getAuthToken();
+            
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": token ? "Bearer " + token : ""
+                },
+                body: JSON.stringify({
+                    finalized_status: newStatus
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn("API update failed, but updating UI anyway");
+            } else {
+                console.log("Status updated in database");
+            }
+        } catch (apiError) {
+            console.warn("Could not update status in database:", apiError);
+            // Continue to update UI even if API fails
+        }
+        
+        // UPDATE LOCAL DATA
+        intent.finalized_status = newStatus;
+        intent.updated_at = new Date().toISOString();
+        
+        // Also update in allIndividualReports
+        const reportIntent = allIndividualReports.find(function(r) {
+            return r.planting_intent_id === intentId;
+        });
+        if (reportIntent) {
+            reportIntent.status = newStatus;
+            reportIntent.updated_at = intent.updated_at;
+        }
+        
+        // RE-RENDER
+        renderFinalizedIntents(allIndividualReports);
+        
+        console.log(`Status updated to ${newStatus} for intent ${intentId}`);
+        
+    } catch (error) {
+        console.error("Failed to update status:", error);
+        alert("Failed to update status. Please try again.");
+    }
+}
+
+
+// ============================================================
+// OPEN SUBMIT REPORT SUBVIEW (WITH CLOSE PREVENTION)
+// ============================================================
+
+function openSubmitReportSubview(reportId = null) {
+    console.log("Opening submit report subview...");
+    
+    closeAllModals();
+    
+    resetReportForm();
+    
+    const mainView = document.getElementById("reportsMainSubview");
+    const submitView = document.getElementById("submitReportSubview");
+    const detailsView = document.getElementById("reportDetailsSubview");
+
+    if (mainView) {
+        mainView.classList.add("hidden-element");
+    }
+
+    if (detailsView) {
+        detailsView.classList.add("hidden-element");
+    }
+
+    if (submitView) {
+        submitView.classList.remove("hidden-element");
+    }
+
+    window.selectedReportIntents = [];
+    renderSelectedReportIntents();
+    
+    populateReportIntentSelect();
+
+    if (reportId) {
+        loadReportForEditing(reportId);
+    }
+}
+
+// ============================================================
+// CLOSE ALL MODALS
+// ============================================================
+
+function closeAllModals() {
+    // Close report modals
+    const submitView = document.getElementById("submitReportSubview");
+    const detailsView = document.getElementById("reportDetailsSubview");
+    const mainView = document.getElementById("reportsMainSubview");
+    
+    if (submitView) {
+        submitView.classList.add("hidden-element");
+    }
+    if (detailsView) {
+        detailsView.classList.add("hidden-element");
+    }
+    if (mainView) {
+        mainView.classList.remove("hidden-element");
+    }
+    
+    // Close farmer modals
+    const confirmFarmer = document.getElementById("confirmFarmerModal");
+    const farmerAdded = document.getElementById("farmerAddedModal");
+    const deleteFarmer = document.getElementById("deleteFarmerModal");
+    const deleteError = document.getElementById("deleteErrorModal");
+    
+    if (confirmFarmer) confirmFarmer.classList.remove("show");
+    if (farmerAdded) farmerAdded.classList.remove("show");
+    if (deleteFarmer) deleteFarmer.classList.remove("show");
+    if (deleteError) deleteError.classList.remove("show");
+    
+    // Close planting intent modals
+    const plantIntentSubmitted = document.getElementById("plantIntentSubmittedModal");
+    if (plantIntentSubmitted) plantIntentSubmitted.classList.remove("show");
+    
+    // Close offtake modals
+    const offtakeSubmitted = document.getElementById("offtakeSubmittedModal");
+    if (offtakeSubmitted) offtakeSubmitted.classList.remove("show");
+    
+    // Reset form
+    resetReportForm();
+    
+    // Clear selected intents
+    window.selectedReportIntents = [];
+    
+    console.log("All modals closed");
+}
+
+/* ============================================================
+   CLOSE SUBMIT REPORT
+============================================================ */
+
+function closeSubmitReportSubview() {
+
+    const mainView =
+        document.getElementById("reportsMainSubview");
+
+    const submitView =
+        document.getElementById("submitReportSubview");
+
+    if (submitView) {
+        submitView.classList.add("hidden-element");
+    }
+
+    if (mainView) {
+        mainView.classList.remove("hidden-element");
+    }
+
+    resetReportForm();
+}
+
+
+/* ============================================================
+   CLOSE REPORT DETAILS
+============================================================ */
+
+function closeReportDetailsSubview() {
+
+    const mainView =
+        document.getElementById("reportsMainSubview");
+
+    const detailsView =
+        document.getElementById("reportDetailsSubview");
+
+    if (detailsView) {
+        detailsView.classList.add("hidden-element");
+    }
+
+    if (mainView) {
+        mainView.classList.remove("hidden-element");
+    }
+
+    window.currentSelectedReport = null;
+}
+
+
+// ============================================================
+// POPULATE REPORT INTENT SELECT (WITH BARANGAY, COMMODITY, FARMER)
+// ============================================================
+
+function populateReportIntentSelect() {
+    const select = document.getElementById("reportIntentSelect");
+    if (!select) return;
+
+    select.innerHTML = `
+        <option value="">Select Planting Intent</option>
+    `;
+
+    // Get submitted intents
+    const availableIntents = (PLANTING_INTENTS_DATA || []).filter(function(intent) {
+        const status = String(intent.status || "").toUpperCase();
+        return status === "SUBMITTED";
+    });
+
+    // SORT BY DATE (NEWEST FIRST)
+    availableIntents.sort(function(a, b) {
+        const dateA = new Date(a.updated_at || a.created_at || 0);
+        const dateB = new Date(b.updated_at || b.created_at || 0);
+        return dateB - dateA;
+    });
+
+    availableIntents.forEach(function(intent) {
+        const option = document.createElement("option");
+        option.value = intent.planting_intent_id;
+        
+        const farmer = intent.farmer_name || "Unknown Farmer";
+        const barangay = intent.barangay || intent.location || "-";
+        const commodity = intent.commodity || "Unknown Commodity";
+        const date = intent.updated_at ? formatPlantingDate(intent.updated_at) : '';
+        
+        // Show: Barangay - Commodity - Farmer Name (Date)
+        option.textContent = `${barangay} - ${commodity} - ${farmer} (${date})`;
+        
+        select.appendChild(option);
+    });
+}
+
+
+/* ============================================================
+   RESET REPORT FORM
+============================================================ */
+
+function resetReportForm() {
+    const form = document.getElementById("submitReportForm");
+    if (form) {
+        form.reset();
+    }
+
+    // Clear report title
+    const titleInput = document.getElementById("reportTitleInput");
+    if (titleInput) {
+        titleInput.value = "";
+    }
+
+    const selectedBody = document.getElementById("selectedIntentsTableBody");
+    if (selectedBody) {
+        selectedBody.innerHTML = `
+            <tr>
+                <td colspan="5" style="padding:20px; text-align:center; color:#999;">
+                    No planting intents selected. Click "Add Row" to add.
+                </td>
+            </tr>
+        `;
+    }
+
+    const files = document.getElementById("selectedFilesList");
+    if (files) {
+        files.innerHTML = "";
+    }
+
+    const fileName = document.getElementById("reportDocFilename");
+    if (fileName) {
+        fileName.value = "";
+    }
+
+    const reportFile = document.getElementById("reportFileInput");
+    if (reportFile) {
+        reportFile.value = "";
+    }
+
+    // Reset selected intents
+    window.selectedReportIntents = [];
+    
+    // Reset dropdown
+    const select = document.getElementById("reportIntentSelect");
+    if (select) {
+        select.innerHTML = '<option value="">Select Planting Intent</option>';
+    }
+}
+
+
+/* ============================================================
+   ADD INTENT TO REPORT
+============================================================ */
+
+document.addEventListener(
+    "click",
+    function (event) {
+
+        if (
+            event.target?.id !==
+            "addIntentToReportBtn"
+        ) {
+            return;
         }
 
-        if (totalPages > 5) {
-            const ellipsis = document.createElement("span");
-            ellipsis.textContent = "...";
-            ellipsis.style.padding = "0 8px";
-            ellipsis.style.color = "#777";
-            pageBtns.appendChild(ellipsis);
+        const select =
+            document.getElementById(
+                "reportIntentSelect"
+            );
 
-            const lastBtn = document.createElement("button");
-            lastBtn.className = "btn-page" + (totalPages === currentPlantingIntentsPage ? " active" : "");
-            lastBtn.textContent = totalPages;
-            lastBtn.type = "button";
-            lastBtn.addEventListener("click", function() {
-                currentPlantingIntentsPage = totalPages;
-                renderPlantingIntentsTable();
-            });
-            pageBtns.appendChild(lastBtn);
+        if (!select || !select.value) {
+            alert("Please select a planting intent.");
+            return;
         }
+
+        const intentId =
+            select.value;
+
+        const intent =
+            (PLANTING_INTENTS_DATA || [])
+                .find(function (item) {
+                    return String(
+                        item.planting_intent_id
+                    ) === String(intentId);
+                });
+
+        if (!intent) {
+            alert("Planting intent not found.");
+            return;
+        }
+
+        if (!window.selectedReportIntents) {
+            window.selectedReportIntents = [];
+        }
+
+        const alreadySelected =
+            window.selectedReportIntents.some(
+                function (item) {
+                    return String(
+                        item.planting_intent_id
+                    ) === String(intentId);
+                }
+            );
+
+        if (alreadySelected) {
+            alert("This planting intent is already added.");
+            return;
+        }
+
+        window.selectedReportIntents.push(intent);
+
+        renderSelectedReportIntents();
+    }
+);
+
+
+    document.addEventListener("click", function(e) {
+        // Check if the clicked element is a remove button
+        if (e.target && e.target.classList && e.target.classList.contains('remove-intent-btn')) {
+            const index = parseInt(e.target.dataset.index);
+            if (!isNaN(index) && window.selectedReportIntents && window.selectedReportIntents[index]) {
+                window.selectedReportIntents.splice(index, 1);
+                renderSelectedReportIntents();
+                populateReportIntentSelect();
+            }
+        }
+    });
+
+
+// ============================================================
+// REMOVE SELECTED INTENT (EVENT LISTENER - ONE TIME ONLY)
+// ============================================================
+
+document.addEventListener("click", function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('remove-intent-btn')) {
+        const index = parseInt(e.target.dataset.index);
+        if (!isNaN(index) && window.selectedReportIntents && window.selectedReportIntents[index]) {
+            window.selectedReportIntents.splice(index, 1);
+            renderSelectedReportIntents();
+            populateReportIntentSelect();
+        }
+    }
+});
+
+
+// ============================================================
+// RENDER SELECTED INTENTS
+// ============================================================
+
+function renderSelectedReportIntents() {
+    const tbody = document.getElementById("selectedIntentsTableBody");
+    if (!tbody) return;
+
+    const intents = window.selectedReportIntents || [];
+
+    if (intents.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="padding:20px; text-align:center; color:#999;">
+                    No planting intents selected. Click "Add Row" to add.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = intents.map(function(intent, index) {
+        const barangay = intent.barangay || intent.location || "N/A";
+        const farmer = intent.farmer_name || "N/A";
+        const commodity = intent.commodity || "N/A";
+        const volume = intent.volume ?? intent.estimated_volume ?? "N/A";
+
+        return `
+            <tr>
+                <td>${escapeHtml(String(barangay))}</td>
+                <td>${escapeHtml(String(farmer))}</td>
+                <td>${escapeHtml(String(commodity))}</td>
+                <td>${escapeHtml(String(volume))} kg</td>
+                <td class="center-col">
+                    <button type="button" class="btn-outline-report remove-intent-btn" data-index="${index}" style="padding:2px 10px; font-size:11px; border-color:#C0392B; color:#C0392B;">
+                        Remove
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+
+/* ============================================================
+   REMOVE SELECTED INTENT
+============================================================ */
+
+function removeSelectedReportIntent(index) {
+
+    if (
+        !window.selectedReportIntents ||
+        !window.selectedReportIntents[index]
+    ) {
+        return;
+    }
+
+    window.selectedReportIntents.splice(
+        index,
+        1
+    );
+
+    renderSelectedReportIntents();
+}
+
+
+// ============================================================
+// SAVE / SUBMIT REPORT (WITH INTENT STATUS UPDATE)
+// ============================================================
+
+async function saveReport(status) {
+    const intents = window.selectedReportIntents || [];
+
+    if (intents.length === 0) {
+        alert("Please add at least one planting intent.");
+        return;
+    }
+
+    // Get Report Title
+    const title = document.getElementById("reportTitleInput")?.value?.trim() || "";
+    if (!title) {
+        alert("Please enter a Report Title.");
+        document.getElementById("reportTitleInput")?.focus();
+        return;
+    }
+
+    const notes = document.getElementById("reportNotesInput")?.value?.trim() || "";
+    if (!notes) {
+        alert("Please enter notes / remarks.");
+        return;
+    }
+
+    const reportData = {
+        title: title,
+        status: status,
+        notes: notes,
+        planting_intent_ids: intents.map(function(intent) {
+            return intent.planting_intent_id;
+        })
+    };
+
+    const submitButton = document.getElementById("submitReportFinalBtn");
+    const draftButton = document.getElementById("saveReportDraftBtn");
+
+    try {
+        if (submitButton) submitButton.disabled = true;
+        if (draftButton) draftButton.disabled = true;
+
+        console.log("Saving report:", reportData);
+
+        // CREATE REPORT
+        const result = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/from-intents`, {
+            method: "POST",
+            body: JSON.stringify(reportData)
+        });
+
+        console.log("Report saved:", result);
+
+        // IF SUBMITTED, UPDATE INTENT STATUSES TO FOR_MUNICIPAL_VALIDATION
+        if (status === "SUBMITTED") {
+            const reportId = result.report_id;
+            
+            // Update report status
+            await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${reportId}`, {
+                method: "PUT",
+                body: JSON.stringify({ status: "FOR_MUNICIPAL_VALIDATION" })
+            });
+            
+            // UPDATE EACH INTENT'S STATUS
+            for (let id of reportData.planting_intent_ids) {
+                await apiRequest(`${PLANTING_INTENTS_ENDPOINT}${id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({ status: "FOR_MUNICIPAL_VALIDATION" })
+                });
+            }
+            
+            console.log(" Intents updated to FOR_MUNICIPAL_VALIDATION");
+        }
+
+        alert(
+            status === "SUBMITTED"
+                ? "Report submitted to Municipal successfully!"
+                : "Report saved as draft."
+        );
+
+        closeSubmitReportSubview();
+
+        // REFRESH DATA
+        await fetchPlantingIntents();
+        await loadReports();
+
+    } catch (error) {
+        console.error("Failed to save report:", error);
+        alert("Failed to save report.\n\n" + (error.message || "Please try again."));
+    } finally {
+        if (submitButton) submitButton.disabled = false;
+        if (draftButton) draftButton.disabled = false;
+    }
+}
+
+
+/* ============================================================
+   LOAD REPORT FOR EDITING
+============================================================ */
+
+async function loadReportForEditing(reportId) {
+
+    try {
+
+        const report =
+            await apiRequest(
+                REPORT_SUBMISSIONS_ENDPOINT +
+                "/" +
+                reportId,
+                {
+                    method: "GET"
+                }
+            );
+
+        populateReportForm(report);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load report:",
+            error
+        );
+
+        alert(
+            "Unable to load report details."
+        );
+    }
+}
+
+
+/* ============================================================
+   POPULATE REPORT FORM
+============================================================ */
+
+function populateReportForm(report) {
+
+    const notes =
+        document.getElementById(
+            "reportNotesInput"
+        );
+
+    if (notes) {
+        notes.value =
+            report.notes ||
+            report.remarks ||
+            "";
+    }
+
+    window.selectedReportIntents =
+        report.planting_intents ||
+        report.intents ||
+        [];
+
+    renderSelectedReportIntents();
+
+    populateReportIntentSelect();
+}
+
+
+/* ============================================================
+   ERROR STATES
+============================================================ */
+
+function renderIndividualReportsError(error) {
+
+    const tbody =
+        document.getElementById(
+            "individualReportsTableBody"
+        );
+
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td
+                colspan="4"
+                style="padding:30px; text-align:center; color:#C0392B;"
+            >
+                Failed to load individual reports.
+                <br>
+                <small>
+                    ${escapeHtml(
+                        error?.message ||
+                        "Please check the server."
+                    )}
+                </small>
+            </td>
+        </tr>
+    `;
+}
+
+
+function renderSubmittedReportsError(error) {
+
+    const tbody =
+        document.getElementById(
+            "submittedReportsTableBody"
+        );
+
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td
+                colspan="4"
+                style="padding:30px; text-align:center; color:#C0392B;"
+            >
+                Failed to load submitted reports.
+                <br>
+                <small>
+                    ${escapeHtml(
+                        error?.message ||
+                        "Please check the server."
+                    )}
+                </small>
+            </td>
+        </tr>
+    `;
+}
+
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+function formatReportDate(dateValue) {
+
+    if (!dateValue) {
+        return "—";
+    }
+
+    const date =
+        new Date(dateValue);
+
+    if (isNaN(date.getTime())) {
+        return String(dateValue);
+    }
+
+    return date.toLocaleDateString(
+        "en-US",
+        {
+            month: "numeric",
+            day: "numeric",
+            year: "numeric"
+        }
+    );
+}
+
+
+function setText(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+        element.textContent =
+            value ?? "—";
     }
 }
 
@@ -1978,98 +4696,7 @@ function formatPlantingVolume(volume) {
     return String(volume);
 }
 
-/* ============================================================
-   LOAD ALL REPORTS
-============================================================ */
 
-async function loadAllReports() {
-    try {
-        const endpoint = API_BASE_URL + "/api/report-submissions/all-reports";
-        console.log("Fetching all submitted reports:", endpoint);
-        const reports = await apiRequest(endpoint);
-        console.log("All Reports API response:", reports);
-        renderAllReports(reports);
-    } catch (error) {
-        console.error("Failed to load all submitted reports:", error);
-    }
-}
-
-function renderAllReports(reports) {
-    const container = document.getElementById("allReportsContainer");
-    // The AEW dashboard uses the report-entry table instead of the optional
-    // allReportsContainer used by other dashboards.
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    if (!reports || reports.length === 0) {
-        container.innerHTML = `<div class="empty-state" style="padding: 40px; text-align: center; color: #777; font-size: 15px;">No submitted reports found.</div>`;
-        return;
-    }
-
-    const table = document.createElement("table");
-    table.style.width = "100%";
-    table.style.borderCollapse = "separate";
-    table.style.borderSpacing = "0";
-    table.style.marginTop = "8px";
-
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-        <tr style="background: #DEDDDC;">
-            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">#</th>
-            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Title</th>
-            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Planting Date</th>
-            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Estimated Yield</th>
-            <th style="text-align: center; font-size: 13px; font-weight: 700; color: #222; padding: 14px 10px;">Status</th>
-        </tr>
-    `;
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    reports.forEach(function(report, index) {
-        const title = report.title || (report.commodity || "Crop") + " Harvest Report";
-        const plantingDate = report.planting_date ? new Date(report.planting_date).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) : "N/A";
-        const estimatedYield = report.estimated_yield ?? "N/A";
-        const status = report.status || "UNKNOWN";
-
-        let statusColor = "#8a8a8a";
-        let statusBg = "#f0f0f0";
-        if (status === "FINAL_APPROVED") {
-            statusColor = "#118308";
-            statusBg = "#e8f5e9";
-        } else if (status === "FOR_MUNICIPAL_VALIDATION") {
-            statusColor = "#E5A510";
-            statusBg = "#fff8e1";
-        } else if (status === "REJECTED") {
-            statusColor = "#C0392B";
-            statusBg = "#fde8e5";
-        }
-
-        const tr = document.createElement("tr");
-        tr.style.cursor = "default";
-        tr.addEventListener("mouseenter", function() { tr.style.backgroundColor = "#F6F3EB"; });
-        tr.addEventListener("mouseleave", function() { tr.style.backgroundColor = "transparent"; });
-
-        tr.innerHTML = `
-            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${index + 1}</td>
-            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle; font-weight: 500;">${escapeHtml(title)}</td>
-            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${plantingDate}</td>
-            <td style="padding: 14px 8px; font-size: 13.5px; text-align: center; vertical-align: middle;">${estimatedYield} kg</td>
-            <td style="padding: 14px 8px; text-align: center; vertical-align: middle;">
-                <span style="display: inline-block; padding: 6px 20px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: ${statusColor}; background: ${statusBg}; border: 1px solid ${statusColor}33;">${status}</span>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    table.appendChild(tbody);
-    container.appendChild(table);
-
-    const summary = document.createElement("div");
-    summary.style.cssText = "margin-top: 16px; padding-top: 14px; border-top: 1px solid #E5E5E5; font-size: 13px; color: #666; text-align: right;";
-    summary.textContent = "Total: " + reports.length + " report(s) found.";
-    container.appendChild(summary);
-}
 
 /* ============================================================
    OFFTAKE REQUESTS
@@ -3447,4 +6074,4 @@ function updateChart(commodity) {
     renderChart(forecasts, commodity);
 }
 
-console.log("✅ Price Trend Chart functions loaded!");
+console.log("Price Trend Chart functions loaded!");

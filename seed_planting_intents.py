@@ -1,138 +1,121 @@
+# seed_planting_intents.py
 import sys
 import os
-import importlib
-import pkgutil
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
-
-# Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-
-# Auto-import all models to resolve SQLAlchemy relationships
-try:
-    import src.models as models_pkg
-    for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
-        importlib.import_module(f"src.models.{module_name}")
-except Exception as err:
-    print(f"Notice during models import: {err}")
-
-
-from src.core.database import SessionLocal, engine, Base
-try:
-    from src.models.farmers import Farmer
-except ModuleNotFoundError:
-    from src.models.farmers import Farmer
-
-
+from src.core.database import SessionLocal
 from src.models.planting_intents import PlantingIntent
-
-
-Base.metadata.create_all(bind=engine)
-
-
+from src.models.farmers import Farmer
+from sqlalchemy import func
 
 
 def seed_planting_intents():
     db = SessionLocal()
-
-
+    
     try:
-        # Kunin ang existing farmers para sa valid foreign keys
+        print("=" * 60)
+        print("SEEDING PLANTING INTENTS")
+        print("=" * 60)
+        
+        # Get all farmers
         farmers = db.query(Farmer).all()
-
-
+        
         if not farmers:
-            print("No farmers found! Please run 'python seed_farmers.py' first.")
+            print("❌ No farmers found. Run seed_farmers.py first.")
             return
-
-
-        sample_intents = [
-            {
-                "farmer_index": 0,
-                "commodity": "Red Onion",
-                "planting_date": date(2026, 9, 1),
-                "harvest_date": date(2026, 12, 15),
-                "volume": 12500.00,
-                "remarks": "High yield expected using hybrid seeds."
-            },
-            {
-                "farmer_index": 1 if len(farmers) > 1 else 0,
-                "commodity": "Tomato",
-                "planting_date": date(2026, 9, 10),
-                "harvest_date": date(2026, 11, 25),
-                "volume": 8500.00,
-                "remarks": "Direct market distribution planned."
-            },
-            {
-                "farmer_index": 2 if len(farmers) > 2 else 0,
-                "commodity": "Yellow Corn",
-                "planting_date": date(2026, 9, 15),
-                "harvest_date": date(2027, 1, 20),
-                "volume": 20000.00,
-                "remarks": "Contracted with local livestock feed mill."
-            },
-            {
-                "farmer_index": 3 if len(farmers) > 3 else 0,
-                "commodity": "Eggplant",
-                "planting_date": date(2026, 10, 1),
-                "harvest_date": date(2026, 12, 30),
-                "volume": 6000.00,
-                "remarks": "Targeting central trading post."
-            }
+        
+        print(f"\n📋 Found {len(farmers)} farmers")
+        
+        # Define crops for each farmer
+        crops = [
+            "Red Onion", "White Onion", "Tomato", "Eggplant", 
+            "Yellow Corn", "Squash", "Garlic", "String Beans",
+            "Cabbage", "Pepper", "Papaya", "Mango", "Banana"
         ]
-
-
-        count_added = 0
-        for item in sample_intents:
-            target_farmer = farmers[item["farmer_index"]]
-
-
-            # Check if intent already exists for this farmer & commodity
-            existing = db.query(PlantingIntent).filter(
-                PlantingIntent.farmer_id == target_farmer.farmer_id,
-                PlantingIntent.commodity == item["commodity"]
-            ).first()
-
-
-            if not existing:
-                intent = PlantingIntent(
-                    farmer_id=target_farmer.farmer_id,
-                    commodity=item["commodity"],
-                    planting_date=item["planting_date"],
-                    harvest_date=item["harvest_date"],
-                    volume=item["volume"],
-                    remarks=item["remarks"]
-                )
-                db.add(intent)
-                count_added += 1
-                fname = getattr(target_farmer, "first_name", "")
-                lname = getattr(target_farmer, "last_name", "")
-                print(f"Added Planting Intent: {item['commodity']} for {fname} {lname}")
+        
+        planting_intents_data = []
+        
+        # Create planting intents for each farmer (2-3 per farmer)
+        for i, farmer in enumerate(farmers):
+            # Each farmer gets 2-3 planting intents
+            num_intents = 2 if i % 2 == 0 else 3
+            
+            for j in range(num_intents):
+                crop_index = (i + j) % len(crops)
+                commodity = crops[crop_index]
+                
+                # Random dates within 2026
+                base_date = datetime(2026, 8, 1) + timedelta(days=i * 3 + j * 5)
+                planting_date = base_date
+                harvest_date = planting_date + timedelta(days=60 + (i % 30))
+                
+                # Random volume between 500 and 15000 kg
+                import random
+                volume = random.randint(500, 15000)
+                
+                # Remarks
+                remarks_list = [
+                    "Targeting central trading post",
+                    "For local market",
+                    "Contract with buyer",
+                    "For fiesta season",
+                    "For export quality",
+                    "Organic farming",
+                    "High yield variety"
+                ]
+                remarks = remarks_list[(i + j) % len(remarks_list)]
+                
+                # ✅ REMOVED: 'status' field
+                planting_intents_data.append({
+                    "farmer_id": farmer.farmer_id,
+                    "commodity": commodity,
+                    "planting_date": planting_date,
+                    "harvest_date": harvest_date,
+                    "volume": volume,
+                    "remarks": f"{remarks} - {farmer.first_name} {farmer.last_name}"
+                })
+        
+        # Count existing intents to avoid duplicates
+        existing_count = db.query(PlantingIntent).count()
+        if existing_count > 0:
+            print(f"\n⚠️ Found {existing_count} existing planting intents.")
+            confirm = input("Delete existing planting intents? (yes/no): ")
+            if confirm.lower() == "yes":
+                db.query(PlantingIntent).delete()
+                db.commit()
+                print("✅ Existing planting intents deleted.")
             else:
-                print(f"Intent already exists for {item['commodity']}")
-
-
+                print("❌ Cancelled. Please run again.")
+                return
+        
+        # Insert planting intents
+        created_count = 0
+        for data in planting_intents_data:
+            intent = PlantingIntent(**data)
+            db.add(intent)
+            created_count += 1
+            
+            # Progress indicator
+            if created_count % 5 == 0:
+                print(f"   Created {created_count} planting intents...")
+        
         db.commit()
+        
         print("\n" + "=" * 60)
-        print(f"PLANTING INTENTS SEEDED SUCCESSFULLY! Added {count_added} records.")
+        print("✅ SEED COMPLETE")
         print("=" * 60)
-
-
+        print(f"   Created: {created_count} planting intents")
+        print(f"   Farmers: {len(farmers)} farmers")
+        print("=" * 60)
+        
     except Exception as e:
-        print("\n" + "=" * 60)
-        print("ERROR WHILE SEEDING PLANTING INTENTS")
-        print("=" * 60)
-        print(e)
+        print(f"❌ Error: {e}")
         db.rollback()
-
-
     finally:
         db.close()
 
 
-
-
 if __name__ == "__main__":
     seed_planting_intents()
-
