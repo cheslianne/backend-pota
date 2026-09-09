@@ -3502,6 +3502,44 @@ function renderReportPagination(
     table.parentElement.appendChild(pagination);
 }
 
+function renderSubmittedReports(reports) {
+    const tbody = document.getElementById("submittedReportsTableBody");
+    if (!tbody) return;
+
+    const items = Array.isArray(reports) ? reports : [];
+    const totalPages = Math.max(1, Math.ceil(items.length / reportsPerPage));
+    currentSubmittedReportsPage = Math.min(currentSubmittedReportsPage, totalPages);
+    const start = (currentSubmittedReportsPage - 1) * reportsPerPage;
+    const pageItems = items.slice(start, start + reportsPerPage);
+
+    if (pageItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:30px; text-align:center; color:#999;">No submitted reports found.</td></tr>`;
+        renderReportPagination("submitted", 0, currentSubmittedReportsPage);
+        return;
+    }
+
+    tbody.innerHTML = pageItems.map(function(report) {
+        const status = String(report.status || "SUBMITTED").toUpperCase();
+        const statusClass = status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        return `
+            <tr class="clickable-row" data-report-id="${escapeHtml(String(report.report_id || ""))}">
+                <td>#${escapeHtml(String(report.report_id || "-"))}</td>
+                <td>${escapeHtml(report.title || "Planting Report")}</td>
+                <td>${escapeHtml(report.submitted_at ? formatPlantingDate(report.submitted_at) : "-")}</td>
+                <td><span class="status-pill ${statusClass}">${escapeHtml(status)}</span></td>
+            </tr>
+        `;
+    }).join("");
+
+    tbody.querySelectorAll("tr[data-report-id]").forEach(function(row, index) {
+        row.addEventListener("click", function() {
+            openReportDetails(pageItems[index]);
+        });
+    });
+
+    renderReportPagination("submitted", items.length, currentSubmittedReportsPage);
+}
+
 
 /* ============================================================
    REPORT DETAILS
@@ -5154,7 +5192,6 @@ function initFairPriceMonthDropdown() {
     const monthOptions = document.querySelectorAll('.month-option');
 
     if (!monthButton || !monthDropdown || !monthMenu) {
-        console.warn('Month dropdown elements not found.');
         return;
     }
 
