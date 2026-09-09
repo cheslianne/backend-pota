@@ -83,6 +83,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSidebar();
     initViewNavigation();
     initMap();
+    loadMunicipalityMapData();
     initFarmerSubviews();
     initPlantingIntent();
     initOfftakeRequest();
@@ -303,6 +304,98 @@ function initMap() {
         attribution: "&copy; OpenStreetMap contributors",
         maxZoom: 18
     }).addTo(mapInstance);
+}
+
+/* ============================================================
+   MUNICIPALITY COORDINATES & MAP DATA
+============================================================ */
+
+const municipalityCoordinates = {
+    "Angeles": [15.1450, 120.5887],
+    "Apalit": [14.9470, 120.7700],
+    "Arayat": [15.1500, 120.7690],
+    "Bacolor": [15.0000, 120.6520],
+    "Candaba": [15.0950, 120.8260],
+    "Floridablanca": [14.9770, 120.5280],
+    "Guagua": [14.9650, 120.6350],
+    "Lubao": [14.9400, 120.6000],
+    "Mabalacat": [15.2230, 120.5740],
+    "Macabebe": [14.9080, 120.7150],
+    "Masantol": [14.8960, 120.7100],
+    "Mexico": [15.0640, 120.7190],
+    "Minalin": [14.9670, 120.6840],
+    "Porac": [15.0710, 120.5420],
+    "San Fernando": [15.0343, 120.6840],
+    "San Luis": [15.0400, 120.7870],
+    "San Simon": [14.9990, 120.7800],
+    "Santa Ana": [15.0950, 120.7720],
+    "Santa Rita": [15.0190, 120.6110],
+    "Santo Tomas": [14.9950, 120.7090]
+};
+
+async function loadMunicipalityMapData() {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("AEW Municipality Map Data:", result);
+
+        if (!result.data || !Array.isArray(result.data)) {
+            console.warn("No municipality map data found.");
+            return;
+        }
+
+        result.data.forEach(municipalityData => {
+            const municipality = municipalityData.municipality;
+            const coordinates = municipalityCoordinates[municipality];
+
+            if (!coordinates) {
+                console.warn(`No coordinates for ${municipality}`);
+                return;
+            }
+
+            let popupContent = `
+                <div style="min-width:200px;">
+                    <strong>Municipality:</strong>
+                    ${municipality}
+                    <br><br>
+            `;
+
+            if (municipalityData.commodities && Array.isArray(municipalityData.commodities)) {
+                municipalityData.commodities.forEach(item => {
+                    popupContent += `
+                        <strong>Commodity:</strong>
+                        ${item.commodity}
+                        <br>
+                        <strong>Status:</strong>
+                        ${item.status}
+                        <br><br>
+                    `;
+                });
+            }
+
+            popupContent += `</div>`;
+
+            L.marker(coordinates)
+                .addTo(mapInstance)
+                .bindPopup(popupContent);
+        });
+
+    } catch (error) {
+        console.error("Failed to load AEW municipality map data:", error);
+    }
 }
 
 /* ============================================================
