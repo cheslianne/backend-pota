@@ -1579,7 +1579,13 @@
                 </div>
                 <div class="form-field-item">
                   <label>Commodity <span class="req">*</span></label>
-                  <input type="text" id="offtakeCommodity" required>
+                  <select id="offtakeCommodity" required>
+                    <option value="">Select Commodity</option>
+                    <option value="White Onion">White Onion</option>
+                    <option value="Red Onion">Red Onion</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Squash">Squash</option>
+                  </select>
                 </div>
                 <div class="form-field-item">
                   <label>Quantity (kg) <span class="req">*</span></label>
@@ -1593,12 +1599,7 @@
                   <label>Harvest Date <span class="req">*</span></label>
                   <input type="date" id="offtakeHarvestDate" required>
                 </div>
-                <div class="form-field-item">
-                  <label>Buyer Name / Organization <span class="req">*</span></label>
-                  <select id="offtakeBuyerSelect" required>
-                    <option value="">Select Buyer</option>
-                  </select>
-                </div>
+                
                 <div class="form-field-item">
                   <label>Delivery Location <span class="req">*</span></label>
                   <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
