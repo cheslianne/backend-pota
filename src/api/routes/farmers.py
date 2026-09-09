@@ -238,7 +238,7 @@ def get_farmer(
         .filter(
             Farmer.farmer_id == farmer_id,
             (
-                Farmer.added_by_user_id == current_user.user_id
+                Farmer.aew_id == current_user.user_id
                 if current_user.role == "Agricultural Extension Worker"
                 else True
             )
@@ -301,7 +301,7 @@ def update_farmer(
         .filter(
             Farmer.farmer_id == farmer_id,
             (
-                Farmer.added_by_user_id == current_user.user_id
+                Farmer.aew_id == current_user.user_id
                 if current_user.role == "Agricultural Extension Worker"
                 else True
             )
@@ -390,7 +390,7 @@ def delete_farmer(
     farmer_query = db.query(Farmer).filter(Farmer.farmer_id == farmer_id)
     if current_user.role == "Agricultural Extension Worker":
         farmer_query = farmer_query.filter(
-            Farmer.added_by_user_id == current_user.user_id
+            Farmer.aew_id == current_user.user_id
         )
     farmer = farmer_query.first()
     

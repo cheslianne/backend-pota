@@ -33,3 +33,9 @@ class Farmer(Base):
     )
 
     aew = relationship("User", back_populates="farmers")
+
+    @property
+    def aew_name(self):
+        if not self.aew:
+            return None
+        return f"{self.aew.first_name} {self.aew.last_name}"

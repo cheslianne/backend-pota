@@ -31,13 +31,28 @@ def ensure_planting_intent_columns():
 
         connection.execute(text("""
             ALTER TABLE farmers
-            ADD COLUMN IF NOT EXISTS added_by_user_id INTEGER
+            ADD COLUMN IF NOT EXISTS aew_id INTEGER
             REFERENCES users(user_id);
         """))
 
         connection.execute(text("""
-            CREATE INDEX IF NOT EXISTS ix_farmers_added_by_user_id
-            ON farmers (added_by_user_id);
+            CREATE INDEX IF NOT EXISTS ix_farmers_aew_id
+            ON farmers (aew_id);
+        """))
+
+        connection.execute(text("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'farmers'
+                      AND column_name = 'added_by_user_id'
+                ) THEN
+                    UPDATE farmers
+                    SET aew_id = added_by_user_id
+                    WHERE aew_id IS NULL AND added_by_user_id IS NOT NULL;
+                END IF;
+            END $$;
         """))
 
 
