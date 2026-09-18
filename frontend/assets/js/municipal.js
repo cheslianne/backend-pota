@@ -1,6 +1,6 @@
 /* ============================================================
    E SAKA — MUNICIPAL COORDINATOR DASHBOARD
-   ============================================================ */
+============================================================ */
 
 const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -9,6 +9,9 @@ const MUNICIPAL_PENDING_ENDPOINT =
 
 const SENT_TO_PROVINCIAL_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions/sent-to-provincial`;
+
+const AWAITING_REVISION_ENDPOINT =
+    `${API_BASE_URL}/api/report-submissions/awaiting-aew-revision`;
 
 const BULK_APPROVE_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions/bulk-approve`;
@@ -20,6 +23,7 @@ const BULK_APPROVE_ENDPOINT =
 
 let pendingReports = [];
 let sentReports = [];
+let awaitingRevisionReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
 let currentSentToProvincialFilter = "all";
@@ -37,34 +41,24 @@ function getAuthToken() {
 
 function getAuthHeaders(extra = {}) {
     const token = getAuthToken();
-
     const headers = {
         "Content-Type": "application/json",
         ...extra
     };
-
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
-
     return headers;
 }
 
 
 /* ============================================================
-   FETCH HELPER WITH TIMEOUT
+   FETCH WITH TIMEOUT
 ============================================================ */
 
-async function fetchJsonWithTimeout(
-    url,
-    options = {},
-    timeoutMs = 10000
-) {
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
     const controller = new AbortController();
-
-    const timeoutId = setTimeout(() => {
-        controller.abort();
-    }, timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
         const response = await fetch(url, {
@@ -72,42 +66,28 @@ async function fetchJsonWithTimeout(
             signal: controller.signal
         });
 
-        const contentType =
-            response.headers.get("content-type") || "";
-
+        const contentType = response.headers.get("content-type") || "";
         let data = null;
 
         if (contentType.includes("application/json")) {
             data = await response.json();
         } else {
             const text = await response.text();
-
-            data = text
-                ? { detail: text }
-                : null;
+            data = text ? { detail: text } : null;
         }
 
         if (!response.ok) {
-            const detail =
-                data?.detail ||
-                data?.message ||
-                `HTTP ${response.status}`;
-
+            const detail = data?.detail || data?.message || `HTTP ${response.status}`;
             throw new Error(detail);
         }
 
         return data;
 
     } catch (err) {
-
         if (err.name === "AbortError") {
-            throw new Error(
-                `API request timed out after ${timeoutMs / 1000} seconds.`
-            );
+            throw new Error(`API request timed out after ${timeoutMs / 1000} seconds.`);
         }
-
         throw err;
-
     } finally {
         clearTimeout(timeoutId);
     }
@@ -119,77 +99,42 @@ async function fetchJsonWithTimeout(
 ============================================================ */
 
 function getInitials(name) {
-
     if (!name) return "--";
 
     const cleaned = String(name)
-        .replace(
-            /^(aew|mcoord|admin|user|municipal|provincial|da)[_\s-]+/i,
-            ""
-        )
+        .replace(/^(aew|mcoord|admin|user|municipal|provincial|pcoord|da)[_\s-]+/i, "")
         .replace(/[_\-.]+/g, " ")
         .trim();
 
     if (!cleaned) return "--";
 
-    const parts = cleaned
-        .split(/\s+/)
-        .filter(Boolean);
+    const parts = cleaned.split(/\s+/).filter(Boolean);
 
-    if (parts.length === 1) {
-        return parts[0]
-            .substring(0, 2)
-            .toUpperCase();
-    }
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
 
-    return (
-        parts[0][0] +
-        parts[1][0]
-    ).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
 }
-
 
 function formatRole(role) {
-
     if (!role) return "";
-
-    return String(role)
-        .replace(/_/g, " ")
-        .toUpperCase();
+    return String(role).replace(/_/g, " ").toUpperCase();
 }
 
-
 function setupUserProfile() {
-
     const storedName =
         localStorage.getItem("full_name") ||
         localStorage.getItem("name") ||
         localStorage.getItem("username");
 
-    const storedRole =
-        localStorage.getItem("role");
+    const storedRole = localStorage.getItem("role");
 
-    const nameEl =
-        document.getElementById("userDisplayName");
+    const nameEl = document.getElementById("userDisplayName");
+    const roleEl = document.getElementById("userDisplayRole");
+    const initEl = document.getElementById("userDisplayInitials");
 
-    const roleEl =
-        document.getElementById("userDisplayRole");
-
-    const initEl =
-        document.getElementById("userDisplayInitials");
-
-    if (nameEl && storedName) {
-        nameEl.textContent = storedName;
-    }
-
-    if (roleEl && storedRole) {
-        roleEl.textContent = formatRole(storedRole);
-    }
-
-    if (initEl) {
-        initEl.textContent =
-            getInitials(storedName || storedRole);
-    }
+    if (nameEl && storedName) nameEl.textContent = storedName;
+    if (roleEl && storedRole) roleEl.textContent = formatRole(storedRole);
+    if (initEl) initEl.textContent = getInitials(storedName || storedRole);
 }
 
 
@@ -198,90 +143,49 @@ function setupUserProfile() {
 ============================================================ */
 
 function initSidebar() {
-
-    const hamburgerBtn =
-        document.getElementById("hamburgerBtn");
-
-    const sidebar =
-        document.getElementById("sidebar");
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
 
     if (!hamburgerBtn || !sidebar) return;
 
     let hoverTimer = null;
 
     hamburgerBtn.addEventListener("mouseenter", () => {
-
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
-
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
         sidebar.classList.add("open");
-
         setTimeout(() => {
-
-            if (window.leafletMap) {
-                window.leafletMap.invalidateSize();
-            }
-
+            if (window.leafletMap) window.leafletMap.invalidateSize();
         }, 300);
     });
 
-
     sidebar.addEventListener("mouseenter", () => {
-
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
-
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
     });
 
-
     sidebar.addEventListener("mouseleave", () => {
-
         hoverTimer = setTimeout(() => {
             sidebar.classList.remove("open");
         }, 200);
-
     });
-
 
     document.addEventListener("click", (e) => {
-
-        if (
-            !sidebar.contains(e.target) &&
-            !hamburgerBtn.contains(e.target)
-        ) {
+        if (!sidebar.contains(e.target) && !hamburgerBtn.contains(e.target)) {
             sidebar.classList.remove("open");
         }
-
     });
 
-
-    sidebar
-        .querySelectorAll(".nav-item")
-        .forEach(item => {
-
-            item.addEventListener("click", () => {
-                sidebar.classList.remove("open");
-            });
-
-        });
-
+    sidebar.querySelectorAll(".nav-item").forEach(item => {
+        item.addEventListener("click", () => sidebar.classList.remove("open"));
+    });
 
     document.addEventListener("keydown", (e) => {
-
-        if (e.key === "Escape") {
-            sidebar.classList.remove("open");
-        }
-
+        if (e.key === "Escape") sidebar.classList.remove("open");
     });
 }
 
 
 /* ============================================================
-   VIEW SWITCHING
+   VIEW NAVIGATION
 ============================================================ */
 
 function initViewNavigation() {
@@ -306,14 +210,12 @@ function initViewNavigation() {
 }
 
 
-
 /* ============================================================
    MAP
 ============================================================ */
 
 const municipalityCoordinates = {
-
-    "Angeles": [15.1450, 120.5887],
+    "Angeles City": [15.1450, 120.5887],
     "Apalit": [14.9470, 120.7700],
     "Arayat": [15.1500, 120.7690],
     "Bacolor": [15.0000, 120.6520],
@@ -334,146 +236,61 @@ const municipalityCoordinates = {
     "Santa Ana": [15.0950, 120.7720],
     "Santa Rita": [15.0190, 120.6110],
     "Santo Tomas": [14.9950, 120.7090]
-
 };
 
-
 function initMap() {
+    const mapEl = document.getElementById("map");
+    if (!mapEl || typeof L === "undefined") return;
 
-    const mapEl =
-        document.getElementById("map");
+    const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
 
-    if (
-        !mapEl ||
-        typeof L === "undefined"
-    ) {
-        return;
-    }
-
-    const pampangaBounds =
-        L.latLngBounds(
-            [14.85, 120.35],
-            [15.35, 120.95]
-        );
-
-    const map =
-        L.map("map", {
-
-            maxBounds: pampangaBounds,
-            maxBoundsViscosity: 1.0,
-            minZoom: 10
-
-        }).setView(
-            [15.0794, 120.6200],
-            10
-        );
+    const map = L.map("map", {
+        maxBounds: pampangaBounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 10
+    }).setView([15.0794, 120.6200], 10);
 
     window.leafletMap = map;
 
-
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution:
-                "&copy; OpenStreetMap contributors",
-
-            maxZoom: 18
-        }
-    ).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 18
+    }).addTo(map);
 }
 
-
 async function loadMunicipalityMapData() {
-
     try {
-
-        if (!window.leafletMap) {
-            return;
-        }
+        if (!window.leafletMap) return;
 
         const res = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
-            {
-                method: "GET",
-
-                headers: {
-                    "Accept":
-                        "application/json"
-                }
-            }
+            { headers: { "Accept": "application/json" } }
         );
 
-        if (!res.ok) {
-            throw new Error(
-                `HTTP ${res.status}`
-            );
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const result =
-            await res.json();
-
-        if (
-            !result.data ||
-            !Array.isArray(result.data)
-        ) {
-            return;
-        }
-
+        const result = await res.json();
+        if (!result.data || !Array.isArray(result.data)) return;
 
         result.data.forEach(md => {
+            const coords = municipalityCoordinates[md.municipality];
+            if (!coords) return;
 
-            const coords =
-                municipalityCoordinates[
-                    md.municipality
-                ];
-
-            if (!coords) {
-                return;
-            }
-
-
-            let popup = `
-                <div style="min-width:180px;">
-                    <strong>Municipality:</strong>
-                    ${escapeHtml(md.municipality)}
-                    <br><br>
-            `;
-
+            let popup = `<div style="min-width:180px;"><strong>Municipality:</strong> ${escapeHtml(md.municipality)}<br><br>`;
 
             if (Array.isArray(md.commodities)) {
-
                 md.commodities.forEach(item => {
-
-                    popup += `
-                        <strong>Commodity:</strong>
-                        ${escapeHtml(item.commodity)}
-                        <br>
-
-                        <strong>Status:</strong>
-                        ${escapeHtml(item.status)}
-                        <br><br>
-                    `;
-
+                    popup += `<strong>Commodity:</strong> ${escapeHtml(item.commodity)}<br><strong>Status:</strong> ${escapeHtml(item.status)}<br><br>`;
                 });
-
             }
 
             popup += "</div>";
 
-
-            L.marker(coords)
-                .addTo(window.leafletMap)
-                .bindPopup(popup);
-
+            L.marker(coords).addTo(window.leafletMap).bindPopup(popup);
         });
 
     } catch (err) {
-
-        console.error(
-            "Map load error:",
-            err
-        );
-
+        console.error("Map load error:", err);
     }
 }
 
@@ -483,31 +300,15 @@ async function loadMunicipalityMapData() {
 ============================================================ */
 
 function formatDate(dateString) {
-
-    if (!dateString) {
-        return "—";
-    }
-
-    const d =
-        new Date(dateString);
-
-    if (isNaN(d.getTime())) {
-        return dateString;
-    }
-
-    return d.toLocaleDateString(
-        "en-US",
-        {
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        }
-    );
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric"
+    });
 }
 
-
 function escapeHtml(value) {
-
     return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -516,11 +317,9 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-
 function statusLabelAndClass(status) {
     const s = String(status || "").toUpperCase();
 
-    // ✅ New status system (ReportStatus enum)
     if (s === "SUBMITTED_MUNICIPAL_PENDING") {
         return { text: "Municipal Pending", cls: "pending" };
     }
@@ -542,33 +341,12 @@ function statusLabelAndClass(status) {
     if (s === "SUBMITTED_REGIONAL_APPROVED") {
         return { text: "Approved", cls: "approved" };
     }
-
-    // ✅ Backward compatibility (old status names)
-    if (s === "FOR_MUNICIPAL_VALIDATION") {
-        return { text: "Municipal Pending", cls: "pending" };
-    }
-    if (s === "FOR_PROVINCIAL_VALIDATION") {
-        return { text: "Provincial Pending", cls: "provincial" };
-    }
-    if (s === "FOR_DA_RFO_VALIDATION") {
-        return { text: "Regional Pending", cls: "rfo" };
-    }
-    if (s === "REVISION_REQUIRED") {
-        return { text: "Revision Required", cls: "revision" };
-    }
-    if (s === "FINAL_APPROVED") {
-        return { text: "Approved", cls: "approved" };
-    }
     if (s === "DRAFT") {
         return { text: "Draft", cls: "draft" };
     }
 
-    return {
-        text: s || "—",
-        cls: "pending"
-    };
+    return { text: s || "—", cls: "pending" };
 }
-
 
 
 /* ============================================================
@@ -576,1112 +354,119 @@ function statusLabelAndClass(status) {
 ============================================================ */
 
 async function loadPendingReports() {
+    const tbody = document.getElementById("pendingReportsBody");
+    if (!tbody) return;
 
-    const tbody =
-        document.getElementById(
-            "pendingReportsBody"
-        );
-
-    if (!tbody) {
-        return;
-    }
-
-
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="8"
-                style="
-                    padding:30px;
-                    text-align:center;
-                    color:#999;
-                ">
-                Loading reports...
-            </td>
-        </tr>
-    `;
-
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>`;
 
     try {
-
-        console.log(
-            "Loading pending reports:",
-            MUNICIPAL_PENDING_ENDPOINT
+        const data = await fetchJsonWithTimeout(
+            MUNICIPAL_PENDING_ENDPOINT,
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            10000
         );
 
-
-        const data =
-            await fetchJsonWithTimeout(
-                MUNICIPAL_PENDING_ENDPOINT,
-                {
-                    method: "GET",
-
-                    headers:
-                        getAuthHeaders({
-                            "Accept":
-                                "application/json"
-                        })
-                },
-                10000
-            );
-
-
-        pendingReports =
-            Array.isArray(data)
-                ? data
-                : [];
-
-        selectedReportIds =
-            new Set();
-
-
-        console.log(
-            "Pending reports loaded:",
-            pendingReports.length
-        );
-
+        pendingReports = Array.isArray(data) ? data : [];
+        selectedReportIds = new Set();
 
         renderPendingReports();
-
         updateBulkApproveButton();
 
-
     } catch (err) {
-
-        console.error(
-            "Load pending error:",
-            err
-        );
-
-
-        const message =
-            err.message ||
-            "Unable to load pending reports.";
-
-
+        console.error("Load pending error:", err);
         tbody.innerHTML = `
             <tr>
-                <td colspan="8"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#C0392B;
-                    ">
-
+                <td colspan="8" style="padding:30px; text-align:center; color:#C0392B;">
                     Failed to load pending reports.
-
-                    <br>
-
-                    <small>
-                        ${escapeHtml(message)}
-                    </small>
-
+                    <br><small>${escapeHtml(err.message || "Unable to load reports.")}</small>
                 </td>
             </tr>
         `;
-
-
-        const badge =
-            document.getElementById(
-                "pendingCountBadge"
-            );
-
-        if (badge) {
-            badge.textContent = "0";
-        }
-
-
+        const badge = document.getElementById("pendingCountBadge");
+        if (badge) badge.textContent = "0";
         pendingReports = [];
-
-        selectedReportIds =
-            new Set();
-
+        selectedReportIds = new Set();
         updateBulkApproveButton();
     }
 }
 
-
-/* ============================================================
-   RENDER PENDING REPORTS
-============================================================ */
-
 function renderPendingReports() {
-
-    const tbody =
-        document.getElementById(
-            "pendingReportsBody"
-        );
-
-    if (!tbody) {
-        return;
-    }
-
+    const tbody = document.getElementById("pendingReportsBody");
+    if (!tbody) return;
 
     const reports = pendingReports.filter(report => {
         const s = String(report.status || "").toUpperCase();
         return s === "SUBMITTED_MUNICIPAL_PENDING" || s === "FOR_MUNICIPAL_VALIDATION";
     });
 
-
-
-    const badge =
-        document.getElementById(
-            "pendingCountBadge"
-        );
-
-    if (badge) {
-        badge.textContent =
-            reports.length;
-    }
-
+    const badge = document.getElementById("pendingCountBadge");
+    if (badge) badge.textContent = reports.length;
 
     tbody.innerHTML = "";
 
-
     if (reports.length === 0) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#999;
-                    ">
-                    No pending reports.
-                </td>
-            </tr>
-        `;
-
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">No pending reports.</td></tr>`;
         return;
     }
 
-
     reports.forEach(report => {
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
+        tr.dataset.reportId = report.report_id;
 
-        const tr =
-            document.createElement("tr");
+        const checked = selectedReportIds.has(report.report_id) ? "checked" : "";
+        if (checked) tr.classList.add("selected");
 
-        tr.className =
-            "clickable-row";
-
-        tr.dataset.reportId =
-            report.report_id;
-
-
-        const checked =
-            selectedReportIds.has(
-                report.report_id
-            )
-                ? "checked"
-                : "";
-
-
-        if (checked) {
-            tr.classList.add(
-                "selected"
-            );
-        }
-
-
-        const sl =
-            statusLabelAndClass(
-                report.status
-            );
-
+        const sl = statusLabelAndClass(report.status);
 
         tr.innerHTML = `
-            <td
-                class="center-col"
-                onclick="event.stopPropagation()"
-            >
-                <input
-                    type="checkbox"
-                    class="row-check"
-                    data-report-id="${escapeHtml(report.report_id)}"
-                    ${checked}
-                >
+            <td class="center-col" onclick="event.stopPropagation()">
+                <input type="checkbox" class="row-check" data-report-id="${escapeHtml(report.report_id)}" ${checked}>
             </td>
-
-            <td class="center-col" style="font-weight: 600;">
-                #${escapeHtml(report.report_id)}
-            </td>
-
-            <td>
-                ${escapeHtml(report.title || "—")}
-            </td>
-
-            <td>
-                ${escapeHtml(report.commodity || "—")}
-            </td>
-
-            <td>
-                ${escapeHtml(report.municipality || "—")}
-            </td>
-
+            <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
+            <td>${escapeHtml(report.title || "—")}</td>
+            <td>${escapeHtml(report.commodity || "—")}</td>
+            <td>${escapeHtml(report.municipality || "—")}</td>
+            <td class="center-col">${formatDate(report.planting_date)}</td>
+            <td class="center-col">${report.estimated_yield ?? "—"}</td>
             <td class="center-col">
-                ${formatDate(report.planting_date)}
-            </td>
-
-            <td class="center-col">
-                ${report.estimated_yield ?? "—"}
-            </td>
-
-            <td class="center-col">
-                <span class="status-pill ${sl.cls}">
-                    ${escapeHtml(sl.text)}
-                </span>
+                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
             </td>
         `;
 
-        tr.addEventListener(
-            "click",
-            (e) => {
-
-                if (
-                    e.target.closest(
-                        "input[type=checkbox]"
-                    )
-                ) {
-                    return;
-                }
-
-                openReportDetail(
-                    report
-                );
-
-            }
-        );
-
-
-        tbody.appendChild(tr);
-
-    });
-
-
-    tbody
-        .querySelectorAll(".row-check")
-        .forEach(cb => {
-
-            cb.addEventListener(
-                "change",
-                (e) => {
-
-                    const id =
-                        Number(
-                            e.target.dataset.reportId
-                        );
-
-                    const row =
-                        e.target.closest("tr");
-
-
-                    if (e.target.checked) {
-
-                        selectedReportIds.add(
-                            id
-                        );
-
-                        if (row) {
-                            row.classList.add(
-                                "selected"
-                            );
-                        }
-
-                    } else {
-
-                        selectedReportIds.delete(
-                            id
-                        );
-
-                        if (row) {
-                            row.classList.remove(
-                                "selected"
-                            );
-                        }
-
-                    }
-
-
-                    updateSelectAllCheckbox();
-                    updateBulkApproveButton();
-
-                }
-            );
-
+        tr.addEventListener("click", (e) => {
+            if (e.target.closest("input[type=checkbox]")) return;
+            openReportDetail(report);
         });
 
+        tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll(".row-check").forEach(cb => {
+        cb.addEventListener("change", (e) => {
+            const id = Number(e.target.dataset.reportId);
+            const row = e.target.closest("tr");
+
+            if (e.target.checked) {
+                selectedReportIds.add(id);
+                if (row) row.classList.add("selected");
+            } else {
+                selectedReportIds.delete(id);
+                if (row) row.classList.remove("selected");
+            }
+
+            updateSelectAllCheckbox();
+            updateBulkApproveButton();
+        });
+    });
 
     updateSelectAllCheckbox();
 }
 
 
 /* ============================================================
-   LOAD SENT TO PROVINCIAL
+   LOAD AWAITING REVISION
 ============================================================ */
-
-async function loadSentToProvincial() {
-
-    const tbody =
-        document.getElementById(
-            "sentToProvincialBody"
-        );
-
-    if (!tbody) {
-        return;
-    }
-
-
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6"
-                style="
-                    padding:30px;
-                    text-align:center;
-                    color:#999;
-                ">
-                Loading reports...
-            </td>
-        </tr>
-    `;
-
-
-    try {
-
-        console.log(
-            "Loading sent-to-provincial reports:",
-            SENT_TO_PROVINCIAL_ENDPOINT
-        );
-
-
-        const data =
-            await fetchJsonWithTimeout(
-                SENT_TO_PROVINCIAL_ENDPOINT,
-                {
-                    method: "GET",
-
-                    headers:
-                        getAuthHeaders({
-                            "Accept":
-                                "application/json"
-                        })
-                },
-                10000
-            );
-
-
-        sentReports =
-            Array.isArray(data)
-                ? data
-                : [];
-
-
-        console.log(
-            "Sent-to-provincial reports loaded:",
-            sentReports.length
-        );
-
-
-        renderSentReports();
-
-
-    } catch (err) {
-
-        console.error(
-            "Load sent error:",
-            err
-        );
-
-
-        const message =
-            err.message ||
-            "Unable to load reports.";
-
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="
-                        padding:30px;
-                        text-align:center;
-                        color:#C0392B;
-                    ">
-
-                    Failed to load reports.
-
-                    <br>
-
-                    <small>
-                        ${escapeHtml(message)}
-                    </small>
-
-                </td>
-            </tr>
-        `;
-
-
-        const badge =
-            document.getElementById(
-                "sentCountBadge"
-            );
-
-        if (badge) {
-            badge.textContent = "0";
-        }
-
-
-        sentReports = [];
-    }
-}
-
-/* ============================================================
-   SENT TO PROVINCIAL — FILTER PILLS
-============================================================ */
-
-function initSentToProvincialFilter() {
-    const pills = document.querySelectorAll("#sentToProvincialFilterPills .filter-pill");
-    console.log("🔍 Found pills:", pills.length);   // ⬅️ DEBUG
-
-    if (!pills.length) {
-        console.warn("Sent to Provincial filter pills not found.");
-        return;
-    }
-
-    pills.forEach((pill, index) => {
-        console.log("🔍 Attaching listener to pill:", index, pill.dataset.filter);   // ⬅️ DEBUG
-
-        pill.addEventListener("click", () => {
-            console.log("🔍 Pill clicked:", pill.dataset.filter);   // ⬅️ DEBUG
-
-            pills.forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-
-            currentSentToProvincialFilter = pill.dataset.filter || "all";
-            console.log("🔍 Filter set to:", currentSentToProvincialFilter);   // ⬅️ DEBUG
-
-            renderSentReports();
-            console.log("🔍 renderSentReports called");   // ⬅️ DEBUG
-        });
-    });
-
-    console.log("✅ Sent to Provincial filter pills initialized");
-}
-
-
-/* ============================================================
-   RENDER SENT TO PROVINCIAL
-============================================================ */
-
-function renderSentReports() {
-    const tbody = document.getElementById("sentToProvincialBody");
-    if (!tbody) return;
-
-    // ✅ DYNAMIC COLUMN HEADER
-    const dateHeader = document.getElementById("sentDateColumnHeader");
-    if (dateHeader) {
-        if (currentSentToProvincialFilter === "approved") {
-            dateHeader.textContent = "Approved At";
-        } else {
-            dateHeader.textContent = "Submitted";
-        }
-    }
-
-    // ✅ FILTER
-    let filteredReports = sentReports;
-    
-    if (currentSentToProvincialFilter === "pending") {
-        filteredReports = sentReports.filter(function(report) {
-            const status = String(report.status || "").toUpperCase();
-            return status === "SUBMITTED_PROVINCIAL_PENDING" ||
-                   status === "SUBMITTED_PROVINCIAL_FLAGGED" ||
-                   status === "SUBMITTED_REGIONAL_PENDING" ||
-                   status === "SUBMITTED_REGIONAL_FLAGGED";
-        });
-    } else if (currentSentToProvincialFilter === "approved") {
-        filteredReports = sentReports.filter(function(report) {
-            const status = String(report.status || "").toUpperCase();
-            return status === "SUBMITTED_REGIONAL_APPROVED" ||
-                   status === "FINAL_APPROVED";
-        });
-    }
-
-    // ✅ BADGE
-    const badge = document.getElementById("sentCountBadge");
-    if (badge) badge.textContent = filteredReports.length;
-
-    // ✅ CLEAR + EMPTY STATE
-    tbody.innerHTML = "";
-
-    if (filteredReports.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" style="padding:30px; text-align:center; color:#999;">
-                    ${currentSentToProvincialFilter === "all"
-                        ? "No reports sent to Provincial yet."
-                        : currentSentToProvincialFilter === "approved"
-                            ? "No approved reports yet."
-                            : "No pending reports."}
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    // ✅ RENDER — dynamic date value
-    filteredReports.forEach(report => {
-        const sl = statusLabelAndClass(report.status);
-        const isFlagged = sl.cls === "flagged";
-
-        const tr = document.createElement("tr");
-        tr.className = "clickable-row";
-        tr.dataset.reportId = report.report_id;
-
-        if (isFlagged) {
-            tr.style.background = "#FFF5F5";
-        }
-
-        // ✅ DYNAMIC DATE VALUE — Approved At kapag "approved" filter
-        let dateValue = "—";
-        if (currentSentToProvincialFilter === "approved") {
-            dateValue = formatDate(report.approved_at || report.updated_at || report.submitted_at);
-        } else {
-            dateValue = formatDate(report.submitted_at);
-        }
-
-        tr.innerHTML = `
-            <td class="center-col" style="font-weight: 600;">
-                #${escapeHtml(report.report_id)}
-            </td>
-            <td>${escapeHtml(report.title || "—")}</td>
-            <td>${escapeHtml(report.commodity || "—")}</td>
-            <td>${escapeHtml(report.municipality || "—")}</td>
-            <td class="center-col">${dateValue}</td>
-            <td class="center-col">
-                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
-            </td>
-        `;
-
-        tr.addEventListener("click", () => {
-            openReportDetail(report);
-        });
-
-        tbody.appendChild(tr);
-    });
-}
-
-
-
-/* ============================================================
-   SEARCH
-============================================================ */
-
-function initSearch() {
-
-    const input =
-        document.getElementById(
-            "reportSearchInput"
-        );
-
-    if (!input) {
-        return;
-    }
-
-
-    input.addEventListener(
-        "input",
-        () => {
-
-            const term =
-                input.value
-                    .trim()
-                    .toLowerCase();
-
-
-            const tbody =
-                document.getElementById(
-                    "pendingReportsBody"
-                );
-
-            if (!tbody) {
-                return;
-            }
-
-
-            const rows =
-                tbody.querySelectorAll(
-                    "tr[data-report-id]"
-                );
-
-
-            rows.forEach(row => {
-
-                const text =
-                    row.textContent
-                        .toLowerCase();
-
-
-                row.style.display =
-                    text.includes(term)
-                        ? ""
-                        : "none";
-
-            });
-
-
-            updateSelectAllCheckbox();
-
-        }
-    );
-}
-
-
-/* ============================================================
-   SELECT ALL
-============================================================ */
-
-function updateSelectAllCheckbox() {
-
-    const cb =
-        document.getElementById(
-            "selectAllCheckbox"
-        );
-
-    if (!cb) {
-        return;
-    }
-
-
-    const visibleCheckboxes =
-        document.querySelectorAll(
-            "#pendingReportsBody tr:not([style*='display: none']) .row-check"
-        );
-
-
-    const totalVisible =
-        visibleCheckboxes.length;
-
-
-    const checkedVisible =
-        Array.from(
-            visibleCheckboxes
-        ).filter(
-            c => c.checked
-        ).length;
-
-
-    if (totalVisible === 0) {
-
-        cb.checked = false;
-        cb.indeterminate = false;
-
-    } else if (checkedVisible === 0) {
-
-        cb.checked = false;
-        cb.indeterminate = false;
-
-    } else if (
-        checkedVisible === totalVisible
-    ) {
-
-        cb.checked = true;
-        cb.indeterminate = false;
-
-    } else {
-
-        cb.checked = false;
-        cb.indeterminate = true;
-
-    }
-}
-
-
-/* ============================================================
-   BULK APPROVE BUTTON
-============================================================ */
-
-function updateBulkApproveButton() {
-
-    const btn =
-        document.getElementById(
-            "bulkApproveBtn"
-        );
-
-    if (!btn) {
-        return;
-    }
-
-
-    if (selectedReportIds.size > 0) {
-
-        btn.disabled = false;
-
-        btn.textContent =
-            `Approve ${selectedReportIds.size} & Send to Provincial`;
-
-    } else {
-
-        btn.disabled = true;
-
-        btn.textContent =
-            "Approve Selected & Send to Provincial";
-    }
-}
-
-
-/* ============================================================
-   BULK ACTIONS
-============================================================ */
-
-function initBulkActions() {
-
-    const selectAllCb =
-        document.getElementById(
-            "selectAllCheckbox"
-        );
-
-    const selectAllBtn =
-        document.getElementById(
-            "selectAllPendingBtn"
-        );
-
-    const bulkBtn =
-        document.getElementById(
-            "bulkApproveBtn"
-        );
-
-
-    if (selectAllCb) {
-
-        selectAllCb.addEventListener(
-            "change",
-            (e) => {
-
-                const checked =
-                    e.target.checked;
-
-
-                const checkboxes =
-                    document.querySelectorAll(
-                        "#pendingReportsBody tr:not([style*='display: none']) .row-check"
-                    );
-
-
-                checkboxes.forEach(cb => {
-
-                    if (
-                        cb.checked !== checked
-                    ) {
-
-                        cb.checked = checked;
-
-                        cb.dispatchEvent(
-                            new Event(
-                                "change",
-                                {
-                                    bubbles: true
-                                }
-                            )
-                        );
-
-                    }
-
-                });
-
-            }
-        );
-
-    }
-
-
-    if (selectAllBtn) {
-
-        selectAllBtn.addEventListener(
-            "click",
-            () => {
-
-                const checkboxes =
-                    document.querySelectorAll(
-                        "#pendingReportsBody tr:not([style*='display: none']) .row-check"
-                    );
-
-
-                if (checkboxes.length === 0) {
-                    return;
-                }
-
-
-                const allChecked =
-                    Array.from(
-                        checkboxes
-                    ).every(
-                        cb => cb.checked
-                    );
-
-
-                checkboxes.forEach(cb => {
-
-                    cb.checked =
-                        !allChecked;
-
-                    cb.dispatchEvent(
-                        new Event(
-                            "change",
-                            {
-                                bubbles: true
-                            }
-                        )
-                    );
-
-                });
-
-            }
-        );
-
-    }
-
-
-    if (bulkBtn) {
-
-        bulkBtn.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    selectedReportIds.size === 0
-                ) {
-                    return;
-                }
-
-                openBulkApproveModal();
-
-            }
-        );
-
-    }
-
-
-    const cancelBtn =
-        document.getElementById(
-            "bulkApproveCancelBtn"
-        );
-
-    const confirmBtn =
-        document.getElementById(
-            "bulkApproveConfirmBtn"
-        );
-
-
-    if (cancelBtn) {
-
-        cancelBtn.addEventListener(
-            "click",
-            () => {
-
-                const modal =
-                    document.getElementById(
-                        "bulkApproveModal"
-                    );
-
-                if (modal) {
-                    modal.classList.remove(
-                        "show"
-                    );
-                }
-
-            }
-        );
-
-    }
-
-
-    if (confirmBtn) {
-
-        confirmBtn.addEventListener(
-            "click",
-            bulkApproveSelected
-        );
-
-    }
-}
-
-
-/* ============================================================
-   OPEN BULK APPROVE MODAL
-============================================================ */
-
-function openBulkApproveModal() {
-
-    const modal =
-        document.getElementById(
-            "bulkApproveModal"
-        );
-
-    const text =
-        document.getElementById(
-            "bulkApproveText"
-        );
-
-    if (!modal || !text) {
-        return;
-    }
-
-
-    const n =
-        selectedReportIds.size;
-
-
-    text.textContent =
-        `Approve ${n} report${n > 1 ? "s" : ""} and send to Provincial?` +
-        ` This action will forward the selected report${n > 1 ? "s" : ""} as-is.`;
-
-
-    modal.classList.add("show");
-}
-
-
-/* ============================================================
-   BULK APPROVE
-============================================================ */
-
-async function bulkApproveSelected() {
-
-    const confirmBtn =
-        document.getElementById(
-            "bulkApproveConfirmBtn"
-        );
-
-    const cancelBtn =
-        document.getElementById(
-            "bulkApproveCancelBtn"
-        );
-
-
-    if (confirmBtn) {
-
-        confirmBtn.disabled = true;
-        confirmBtn.textContent =
-            "Processing...";
-
-    }
-
-
-    if (cancelBtn) {
-        cancelBtn.disabled = true;
-    }
-
-
-    try {
-
-        const result =
-            await fetchJsonWithTimeout(
-                BULK_APPROVE_ENDPOINT,
-                {
-                    method: "POST",
-
-                    headers:
-                        getAuthHeaders(),
-
-                    body: JSON.stringify({
-                        report_ids:
-                            Array.from(
-                                selectedReportIds
-                            )
-                    })
-                },
-                15000
-            );
-
-
-        console.log(
-            "Bulk approve result:",
-            result
-        );
-
-
-        const modal =
-            document.getElementById(
-                "bulkApproveModal"
-            );
-
-        if (modal) {
-            modal.classList.remove(
-                "show"
-            );
-        }
-
-
-        openModal(
-            `${result.approved_count || 0} report${
-                (result.approved_count || 0) > 1
-                    ? "s"
-                    : ""
-            } approved and sent to Provincial.`
-        );
-
-
-        selectedReportIds.clear();
-
-
-        await Promise.allSettled([
-            loadPendingReports(),
-            loadAwaitingRevision(),
-            loadSentToProvincial()
-        ]);
-
-
-    } catch (err) {
-
-        console.error(
-            "Bulk approve error:",
-            err
-        );
-
-
-        const modal =
-            document.getElementById(
-                "bulkApproveModal"
-            );
-
-        if (modal) {
-            modal.classList.remove(
-                "show"
-            );
-        }
-
-
-        openModal(
-            `Error: ${err.message}`
-        );
-
-
-    } finally {
-
-        if (confirmBtn) {
-
-            confirmBtn.disabled = false;
-
-            confirmBtn.textContent =
-                "Confirm";
-
-        }
-
-
-        if (cancelBtn) {
-            cancelBtn.disabled = false;
-        }
-
-    }
-}
-
-
-
-
-const AWAITING_REVISION_ENDPOINT = `${API_BASE_URL}/api/report-submissions/awaiting-aew-revision`;
-
-let awaitingRevisionReports = [];
-
-
-// AWAITING REVISIONS FOR AEW
-
 
 async function loadAwaitingRevision() {
     const tbody = document.getElementById("awaitingRevisionBody");
@@ -1692,10 +477,7 @@ async function loadAwaitingRevision() {
     try {
         const data = await fetchJsonWithTimeout(
             AWAITING_REVISION_ENDPOINT,
-            {
-                method: "GET",
-                headers: getAuthHeaders({ "Accept": "application/json" })
-            },
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
             10000
         );
 
@@ -1710,8 +492,6 @@ async function loadAwaitingRevision() {
         awaitingRevisionReports = [];
     }
 }
-
-// REVISION SECTION FOR MUNICIPAL
 
 function renderAwaitingRevision() {
     const tbody = document.getElementById("awaitingRevisionBody");
@@ -1750,18 +530,330 @@ function renderAwaitingRevision() {
             </td>
         `;
 
-        tr.addEventListener("click", () => {
-            openReportDetail(report);
-        });
-
+        tr.addEventListener("click", () => openReportDetail(report));
         tbody.appendChild(tr);
     });
 }
 
 
+/* ============================================================
+   LOAD SENT TO PROVINCIAL
+============================================================ */
+
+async function loadSentToProvincial() {
+    const tbody = document.getElementById("sentToProvincialBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>`;
+
+    try {
+        const data = await fetchJsonWithTimeout(
+            SENT_TO_PROVINCIAL_ENDPOINT,
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            10000
+        );
+
+        sentReports = Array.isArray(data) ? data : [];
+        renderSentReports();
+
+    } catch (err) {
+        console.error("Load sent error:", err);
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load reports.</td></tr>`;
+        const badge = document.getElementById("sentCountBadge");
+        if (badge) badge.textContent = "0";
+        sentReports = [];
+    }
+}
+
+function renderSentReports() {
+    const tbody = document.getElementById("sentToProvincialBody");
+    if (!tbody) return;
+
+    const dateHeader = document.getElementById("sentDateColumnHeader");
+    if (dateHeader) {
+        dateHeader.textContent =
+            currentSentToProvincialFilter === "approved" ? "Approved At" : "Submitted";
+    }
+
+    let filteredReports = sentReports;
+
+    if (currentSentToProvincialFilter === "pending") {
+        filteredReports = sentReports.filter(function(report) {
+            const status = String(report.status || "").toUpperCase();
+            return status === "SUBMITTED_PROVINCIAL_PENDING" ||
+                   status === "SUBMITTED_PROVINCIAL_FLAGGED" ||
+                   status === "SUBMITTED_REGIONAL_PENDING" ||
+                   status === "SUBMITTED_REGIONAL_FLAGGED";
+        });
+    } else if (currentSentToProvincialFilter === "approved") {
+        filteredReports = sentReports.filter(function(report) {
+            const status = String(report.status || "").toUpperCase();
+            return status === "SUBMITTED_REGIONAL_APPROVED" ||
+                   status === "FINAL_APPROVED";
+        });
+    }
+
+    const badge = document.getElementById("sentCountBadge");
+    if (badge) badge.textContent = filteredReports.length;
+
+    tbody.innerHTML = "";
+
+    if (filteredReports.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding:30px; text-align:center; color:#999;">
+                    ${currentSentToProvincialFilter === "all"
+                        ? "No reports sent to Provincial yet."
+                        : currentSentToProvincialFilter === "approved"
+                            ? "No approved reports yet."
+                            : "No pending reports."}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    filteredReports.forEach(report => {
+        const sl = statusLabelAndClass(report.status);
+        const isFlagged = sl.cls === "flagged";
+
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
+        tr.dataset.reportId = report.report_id;
+
+        if (isFlagged) tr.style.background = "#FFF5F5";
+
+        let dateValue = "—";
+        if (currentSentToProvincialFilter === "approved") {
+            dateValue = formatDate(report.approved_at || report.updated_at || report.submitted_at);
+        } else {
+            dateValue = formatDate(report.submitted_at);
+        }
+
+        tr.innerHTML = `
+            <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
+            <td>${escapeHtml(report.title || "—")}</td>
+            <td>${escapeHtml(report.commodity || "—")}</td>
+            <td>${escapeHtml(report.municipality || "—")}</td>
+            <td class="center-col">${dateValue}</td>
+            <td class="center-col">
+                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
+            </td>
+        `;
+
+        tr.addEventListener("click", () => openReportDetail(report));
+        tbody.appendChild(tr);
+    });
+}
+
+
+/* ============================================================
+   FILTER PILLS — SENT TO PROVINCIAL
+============================================================ */
+
+function initSentToProvincialFilter() {
+    const pills = document.querySelectorAll("#sentToProvincialFilterPills .filter-pill");
+    if (!pills.length) return;
+
+    pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            currentSentToProvincialFilter = pill.dataset.filter || "all";
+            renderSentReports();
+        });
+    });
+}
+
+
+/* ============================================================
+   SEARCH
+============================================================ */
+
+function initSearch() {
+    const input = document.getElementById("reportSearchInput");
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+        const term = input.value.trim().toLowerCase();
+        const tbody = document.getElementById("pendingReportsBody");
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll("tr[data-report-id]");
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? "" : "none";
+        });
+
+        updateSelectAllCheckbox();
+    });
+}
+
+
+/* ============================================================
+   SELECT ALL
+============================================================ */
+
+function updateSelectAllCheckbox() {
+    const cb = document.getElementById("selectAllCheckbox");
+    if (!cb) return;
+
+    const visibleCheckboxes = document.querySelectorAll(
+        "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+    );
+
+    const totalVisible = visibleCheckboxes.length;
+    const checkedVisible = Array.from(visibleCheckboxes).filter(c => c.checked).length;
+
+    if (totalVisible === 0 || checkedVisible === 0) {
+        cb.checked = false;
+        cb.indeterminate = false;
+    } else if (checkedVisible === totalVisible) {
+        cb.checked = true;
+        cb.indeterminate = false;
+    } else {
+        cb.checked = false;
+        cb.indeterminate = true;
+    }
+}
+
+
+/* ============================================================
+   BULK APPROVE
+============================================================ */
+
+function updateBulkApproveButton() {
+    const btn = document.getElementById("bulkApproveBtn");
+    if (!btn) return;
+
+    if (selectedReportIds.size > 0) {
+        btn.disabled = false;
+        btn.textContent = `Approve ${selectedReportIds.size} & Send to Provincial`;
+    } else {
+        btn.disabled = true;
+        btn.textContent = "Approve Selected & Send to Provincial";
+    }
+}
+
+function initBulkActions() {
+    const selectAllCb = document.getElementById("selectAllCheckbox");
+    const selectAllBtn = document.getElementById("selectAllPendingBtn");
+    const bulkBtn = document.getElementById("bulkApproveBtn");
+
+    if (selectAllCb) {
+        selectAllCb.addEventListener("change", (e) => {
+            const checked = e.target.checked;
+            const checkboxes = document.querySelectorAll(
+                "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+            );
+
+            checkboxes.forEach(cb => {
+                if (cb.checked !== checked) {
+                    cb.checked = checked;
+                    cb.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            });
+        });
+    }
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener("click", () => {
+            const checkboxes = document.querySelectorAll(
+                "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+            );
+            if (checkboxes.length === 0) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+        });
+    }
+
+    if (bulkBtn) {
+        bulkBtn.addEventListener("click", () => {
+            if (selectedReportIds.size === 0) return;
+            openBulkApproveModal();
+        });
+    }
+
+    const cancelBtn = document.getElementById("bulkApproveCancelBtn");
+    const confirmBtn = document.getElementById("bulkApproveConfirmBtn");
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            document.getElementById("bulkApproveModal")?.classList.remove("show");
+        });
+    }
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", bulkApproveSelected);
+    }
+}
+
+function openBulkApproveModal() {
+    const modal = document.getElementById("bulkApproveModal");
+    const text = document.getElementById("bulkApproveText");
+    if (!modal || !text) return;
+
+    const n = selectedReportIds.size;
+    text.textContent =
+        `Approve ${n} report${n > 1 ? "s" : ""} and send to Provincial?` +
+        ` This action will forward the selected report${n > 1 ? "s" : ""} as-is.`;
+
+    modal.classList.add("show");
+}
+
+async function bulkApproveSelected() {
+    const confirmBtn = document.getElementById("bulkApproveConfirmBtn");
+    const cancelBtn = document.getElementById("bulkApproveCancelBtn");
+
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = "Processing..."; }
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    try {
+        const result = await fetchJsonWithTimeout(
+            BULK_APPROVE_ENDPOINT,
+            {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    report_ids: Array.from(selectedReportIds)
+                })
+            },
+            15000
+        );
+
+        document.getElementById("bulkApproveModal")?.classList.remove("show");
+
+        openModal(
+            `${result.approved_count || 0} report${(result.approved_count || 0) > 1 ? "s" : ""} approved and sent to Provincial.`
+        );
+
+        selectedReportIds.clear();
+
+        await Promise.allSettled([
+            loadPendingReports(),
+            loadAwaitingRevision(),
+            loadSentToProvincial()
+        ]);
+
+    } catch (err) {
+        console.error("Bulk approve error:", err);
+        document.getElementById("bulkApproveModal")?.classList.remove("show");
+        openModal(`Error: ${err.message}`);
+    } finally {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Confirm"; }
+        if (cancelBtn) cancelBtn.disabled = false;
+    }
+}
+
 
 /* ============================================================
    OPEN REPORT DETAIL
+   (Immutable History + Add-Only New Remark)
 ============================================================ */
 
 async function openReportDetail(report) {
@@ -1788,21 +880,23 @@ async function openReportDetail(report) {
     }
 
     // Get element refs
-    const titleEl = document.getElementById("detailReportTitle");
-    const subtitleEl = document.getElementById("detailReportSubtitle");
-    const idEl = document.getElementById("detailReportId");
-    const municipalityEl = document.getElementById("detailReportMunicipality");
-    const statusEl = document.getElementById("detailReportStatus");
-    const dateEl = document.getElementById("detailReportDate");
-    const encodedByEl = document.getElementById("detailReportEncodedBy");
-    const yieldEl = document.getElementById("detailReportYield");
-    const notesEl = document.getElementById("detailReportNotes");
-    const attachmentsEl = document.getElementById("detailReportAttachments");
-    const intentsBody = document.getElementById("detailReportIntentsBody");
-    const remarksEl = document.getElementById("remarksTextarea");
-    const flagBtn = document.getElementById("flagBtn");
-    const approveBtn = document.getElementById("approveBtn");
-    const backBtn = document.getElementById("backToPendingBtn");
+    const titleEl           = document.getElementById("detailReportTitle");
+    const subtitleEl        = document.getElementById("detailReportSubtitle");
+    const idEl              = document.getElementById("detailReportId");
+    const municipalityEl    = document.getElementById("detailReportMunicipality");
+    const statusEl          = document.getElementById("detailReportStatus");
+    const dateEl            = document.getElementById("detailReportDate");
+    const encodedByEl       = document.getElementById("detailReportEncodedBy");
+    const yieldEl           = document.getElementById("detailReportYield");
+    const notesEl           = document.getElementById("detailReportNotes");
+    const attachmentsEl     = document.getElementById("detailReportAttachments");
+    const intentsBody       = document.getElementById("detailReportIntentsBody");
+    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
+    const remarksEl         = document.getElementById("remarksTextarea");
+    const flagBtn           = document.getElementById("flagBtn");
+    const approveBtn        = document.getElementById("approveBtn");
+    const backBtn           = document.getElementById("backToPendingBtn");
+    const resubmitBtn       = document.getElementById("resubmitReportBtn");
 
     // Fill basic info
     if (titleEl) titleEl.textContent = report.title || `Report #${report.report_id}`;
@@ -1817,164 +911,89 @@ async function openReportDetail(report) {
     // Status pill
     const sl = statusLabelAndClass(report.status);
     if (statusEl) {
-        statusEl.innerHTML = `
-            <span class="status-pill ${sl.cls}">
-                ${escapeHtml(sl.text)}
-            </span>
-        `;
+        statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
     }
 
-    // ✅ Determine current status type
+    // ============================================================
+    // REMARKS HISTORY — READ-ONLY (immutable)
+    // ============================================================
+    if (remarksHistoryEl) {
+        const historyText = report.revision_remarks || "";
+        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
+        remarksHistoryEl.readOnly = true;
+        remarksHistoryEl.style.background = "#F6F3EB";
+        remarksHistoryEl.style.color = "var(--ink)";
+        remarksHistoryEl.style.cursor = "default";
+    }
+
+    // ============================================================
+    // NEW REMARK — always empty, always editable
+    // ============================================================
+    if (remarksEl) {
+        remarksEl.value = "";
+        remarksEl.readOnly = false;
+        remarksEl.disabled = false;
+        remarksEl.style.background = "#FFFFFF";
+        remarksEl.style.color = "var(--ink)";
+        remarksEl.style.cursor = "text";
+        remarksEl.style.borderColor = "var(--border)";
+        remarksEl.style.borderWidth = "1.5px";
+        remarksEl.placeholder = "Type your comment here...";
+    }
+
+    // ============================================================
+    // BUTTON STATES based on status
+    // ============================================================
+
     const statusUpper = String(report.status || "").toUpperCase();
 
-    const isMunicipalPending    = statusUpper === "SUBMITTED_MUNICIPAL_PENDING";
-    const isMunicipalFlagged    = statusUpper === "SUBMITTED_MUNICIPAL_FLAGGED";
-    const isProvincialFlagged   = statusUpper === "SUBMITTED_PROVINCIAL_FLAGGED";
-    const isRegionalFlagged     = statusUpper === "SUBMITTED_REGIONAL_FLAGGED";
-
-    // ✅ Get button refs
-    const editBtn = document.getElementById("editReportBtn");
-    const resubmitBtn = document.getElementById("resubmitReportBtn");
-
-    // ============================================================
-    // CONFIGURATION BY STATUS
-    // ============================================================
+    const isMunicipalPending  = statusUpper === "SUBMITTED_MUNICIPAL_PENDING";
+    const isProvincialFlagged = statusUpper === "SUBMITTED_PROVINCIAL_FLAGGED";
+    const isRegionalFlagged   = statusUpper === "SUBMITTED_REGIONAL_FLAGGED";
+    const isMunicipalFlagged  = statusUpper === "SUBMITTED_MUNICIPAL_FLAGGED";
 
     // Default: hide optional buttons
-    if (editBtn) { editBtn.style.display = "none"; editBtn.disabled = false; }
-    if (resubmitBtn) { resubmitBtn.style.display = "none"; resubmitBtn.disabled = false; }
+    if (resubmitBtn) resubmitBtn.style.display = "none";
 
     if (isMunicipalPending) {
-        // ============================================================
-        // MUNICIPAL PENDING — normal flow
-        // ============================================================
-        
-        // Buttons: Return, Flag, Approve
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
             flagBtn.textContent = "Flag for Revision";
             flagBtn.disabled = false;
-            flagBtn.style.opacity = "1";
-            flagBtn.style.cursor = "pointer";
         }
         if (approveBtn) {
             approveBtn.style.display = "inline-flex";
             approveBtn.textContent = "Approve & Send to Provincial";
             approveBtn.disabled = false;
-            approveBtn.style.opacity = "1";
-            approveBtn.style.cursor = "pointer";
-        }
-
-        // Remarks: Editable
-        if (remarksEl) {
-            remarksEl.readOnly = false;
-            remarksEl.style.background = "";
-            remarksEl.style.color = "";
-            remarksEl.style.cursor = "";
-            remarksEl.style.borderColor = "";
-            remarksEl.placeholder = "Enter remarks (required if flagging for revision)...";
         }
 
     } else if (isMunicipalFlagged) {
-        // ============================================================
-        // MUNICIPAL FLAGGED — nasa AEW na, view-only
-        // ============================================================
-
-        // Buttons: Return lang (i-hide yung iba)
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
-        if (flagBtn) { flagBtn.style.display = "none"; }
-        if (approveBtn) { approveBtn.style.display = "none"; }
+        if (flagBtn) flagBtn.style.display = "none";
+        if (approveBtn) approveBtn.style.display = "none";
 
-        // Remarks: View-only
-        if (remarksEl) {
-            remarksEl.readOnly = true;
-            remarksEl.style.background = "#F6F3EB";
-            remarksEl.style.color = "var(--muted)";
-            remarksEl.style.cursor = "default";
-            remarksEl.style.borderColor = "var(--border)";
-            remarksEl.placeholder = "View only — report is awaiting AEW revision.";
-        }
-
-    } else if (isProvincialFlagged) {
-        // ============================================================
-        // PROVINCIAL FLAGGED — Municipal can edit and resubmit
-        // ============================================================
-
+    } else if (isProvincialFlagged || isRegionalFlagged) {
+        // Flagged by higher level — show Flag + Resubmit
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
-        if (flagBtn) { flagBtn.style.display = "none"; }
-        if (approveBtn) { approveBtn.style.display = "none"; }
-
-        if (editBtn) {
-            editBtn.style.display = "inline-flex";
-            editBtn.textContent = "Edit";
-            editBtn.disabled = false;
-            editBtn.style.opacity = "1";
-            editBtn.style.cursor = "pointer";
+        if (flagBtn) {
+            flagBtn.style.display = "inline-flex";
+            flagBtn.textContent = "Flag for Revision";
+            flagBtn.disabled = false;
         }
-        if (resubmitBtn) {
-            resubmitBtn.style.display = "none";    
-        }
+        if (approveBtn) approveBtn.style.display = "none";
 
-        if (remarksEl) {
-            remarksEl.readOnly = true;
-            remarksEl.style.background = "#F6F3EB";
-            remarksEl.style.color = "var(--muted)";
-            remarksEl.style.cursor = "default";
-            remarksEl.style.borderColor = "var(--border)";
-            remarksEl.placeholder = "Click Edit to modify remarks.";
-        }
-
-    } else if (isRegionalFlagged) {
-        // ============================================================
-        // REGIONAL FLAGGED — Municipal can edit and resubmit din
-        // ============================================================
-
-        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
-        if (flagBtn) { flagBtn.style.display = "none"; }
-        if (approveBtn) { approveBtn.style.display = "none"; }
-
-        if (editBtn) {
-            editBtn.style.display = "inline-flex";
-            editBtn.textContent = "Edit";
-            editBtn.disabled = false;
-        }
         if (resubmitBtn) {
             resubmitBtn.style.display = "inline-flex";
             resubmitBtn.textContent = "Resubmit to Provincial";
             resubmitBtn.disabled = false;
         }
 
-        // Remarks: Editable
-        if (remarksEl) {
-            remarksEl.readOnly = false;
-            remarksEl.style.background = "";
-            remarksEl.style.color = "";
-            remarksEl.style.cursor = "";
-            remarksEl.style.borderColor = "";
-            remarksEl.placeholder = "Enter remarks or notes...";
-        }
-
     } else {
-        // ============================================================
-        // FALLBACK — ibang status (default: view-only)
-        // ============================================================
-
+        // Fallback — read-only
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back"; }
-        if (flagBtn) { flagBtn.style.display = "none"; }
-        if (approveBtn) { approveBtn.style.display = "none"; }
-
-        if (remarksEl) {
-            remarksEl.readOnly = true;
-            remarksEl.style.background = "#F6F3EB";
-            remarksEl.style.color = "var(--muted)";
-            remarksEl.style.cursor = "default";
-        }
-    }
-
-    // ✅ Set remarks value from report
-    if (remarksEl) {
-        remarksEl.value = report.revision_remarks || "";
+        if (flagBtn) flagBtn.style.display = "none";
+        if (approveBtn) approveBtn.style.display = "none";
     }
 
     // Fetch full report
@@ -2016,34 +1035,7 @@ async function openReportDetail(report) {
         const rawRemarks = report.revision_remarks || "";
 
         if (rawRemarks && rawRemarks.trim()) {
-            const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-            if (match) {
-                const header = match[1];
-                const message = match[2];
-
-                remarksContent.innerHTML = `
-                    <div style="
-                        display: inline-block;
-                        font-size: 11px;
-                        font-weight: 700;
-                        color: #C0392B;
-                        background: #FFFFFF;
-                        padding: 3px 10px;
-                        border-radius: 4px;
-                        letter-spacing: 0.02em;
-                        margin-bottom: 10px;
-                    ">
-                        ${escapeHtml(header)}
-                    </div>
-                    <div style="color: #333; line-height: 1.6;">
-                        ${escapeHtml(message)}
-                    </div>
-                `;
-            } else {
-                remarksContent.textContent = rawRemarks;
-            }
-
+            remarksContent.innerHTML = `<div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(rawRemarks)}</div>`;
             remarksWrapper.style.display = "block";
         } else {
             remarksWrapper.style.display = "none";
@@ -2052,7 +1044,6 @@ async function openReportDetail(report) {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
-
 
 
 /* ============================================================
@@ -2081,107 +1072,19 @@ function renderAttachments(attachments) {
 
         if (url) {
             return `
-                <div style="
-                    margin-bottom: 8px;
-                    padding: 12px 16px;
-                    background: #FFFFFF;
-                    border: 1.5px solid var(--border);
-                    border-radius: 8px;
-                    transition: all 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    max-width: 100%;
-                "
-                onmouseover="this.style.borderColor='var(--green)'; this.style.background='#F6F3EB'; this.style.boxShadow='0 2px 8px rgba(91, 107, 79, 0.15)'; this.style.transform='translateY(-1px)';"
-                onmouseout="this.style.borderColor='var(--border)'; this.style.background='#FFFFFF'; this.style.boxShadow='none'; this.style.transform='translateY(0)';">
-                    
-                    <div style="
-                        width: 36px;
-                        height: 36px;
-                        border-radius: 8px;
-                        background: var(--green-light);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        flex-shrink: 0;
-                        font-size: 18px;
-                    ">
-                        📎
-                    </div>
-                    
+                <div style="margin-bottom: 8px; padding: 12px 16px; background: #FFFFFF; border: 1.5px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--green-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">📎</div>
                     <div style="flex: 1; min-width: 0;">
-                        <a href="${escapeHtml(url)}" 
-                           target="_blank" 
-                           rel="noopener"
-                           style="
-                               color: var(--green-dark);
-                               font-weight: 700;
-                               text-decoration: none;
-                               font-size: 13.5px;
-                               display: block;
-                               overflow: hidden;
-                               text-overflow: ellipsis;
-                               white-space: nowrap;
-                           "
-                           title="${escapeHtml(name)}">
+                        <a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="color: var(--green-dark); font-weight: 700; text-decoration: none; font-size: 13.5px;">
                             ${escapeHtml(name)}
                         </a>
-                        <div style="
-                            font-size: 11px;
-                            color: var(--muted);
-                            margin-top: 2px;
-                        ">
-                            Click to view attachment
-                        </div>
-                    </div>
-                    
-                    <div style="
-                        color: var(--green);
-                        font-size: 16px;
-                        flex-shrink: 0;
-                    ">
-                        ↗
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Click to view attachment</div>
                     </div>
                 </div>
             `;
         }
 
-        return `
-            <div style="
-                margin-bottom: 8px;
-                padding: 12px 16px;
-                background: #F6F3EB;
-                border: 1.5px solid var(--border);
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: var(--muted);
-            ">
-                <div style="
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 8px;
-                    background: var(--border-light);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    font-size: 18px;
-                ">
-                    📎
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${escapeHtml(name)}
-                    </div>
-                    <div style="font-size: 11px; margin-top: 2px;">
-                        Not available
-                    </div>
-                </div>
-            </div>
-        `;
+        return `<div style="margin-bottom: 6px;">📎 ${escapeHtml(name)}</div>`;
     }).join("");
 }
 
@@ -2195,13 +1098,7 @@ function renderDetailIntents(intents) {
     if (!tbody) return;
 
     if (!Array.isArray(intents) || intents.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" style="padding:20px; text-align:center; color:#999;">
-                    No intents included.
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
         return;
     }
 
@@ -2218,16 +1115,9 @@ function renderDetailIntents(intents) {
         let statusText = "Not Planted";
         let bgColor = "#6c757d";
 
-        if (harvestStatus === "PLANTED") {
-            statusText = "Planted";
-            bgColor = "#D97706";
-        } else if (harvestStatus === "HARVESTED") {
-            statusText = "Harvested";
-            bgColor = "#2E7D32";
-        } else if (harvestStatus === "MEDIATING") {
-            statusText = "Mediating";
-            bgColor = "#2980B9";
-        }
+        if (harvestStatus === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
+        else if (harvestStatus === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
+        else if (harvestStatus === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
 
         return `
             <tr>
@@ -2238,10 +1128,7 @@ function renderDetailIntents(intents) {
                 <td class="center-col">${escapeHtml(plantingDate)}</td>
                 <td class="center-col">${escapeHtml(harvestDate)}</td>
                 <td class="center-col">
-                    <span class="status-pill"
-                          style="display:inline-block; padding:4px 12px; border-radius:999px;
-                                 font-size:11px; font-weight:700; color:#fff;
-                                 background-color:${bgColor};">
+                    <span class="status-pill" style="background-color:${bgColor};">
                         ${escapeHtml(statusText)}
                     </span>
                 </td>
@@ -2256,53 +1143,24 @@ function renderDetailIntents(intents) {
 ============================================================ */
 
 function closeReportDetail() {
-
     selectedReport = null;
 
-
-    const detailView =
-        document.getElementById(
-            "individualDetailView"
-        );
-
-    const pendingView =
-        document.getElementById(
-            "pendingReportsView"
-        );
-
-    const sentView =
-        document.getElementById(
-            "sentToProvincialView"
-        );
+    const detailView = document.getElementById("individualDetailView");
+    const pendingView = document.getElementById("pendingReportsView");
+    const sentView = document.getElementById("sentToProvincialView");
+    const awaitingView = document.getElementById("awaitingRevisionView");
 
     if (detailView) {
-        detailView.style.display =
-            "none";
-        detailView.classList.add(
-            "hidden-element"
-        );
+        detailView.style.display = "none";
+        detailView.classList.add("hidden-element");
     }
 
-
-    if (pendingView) {
-        pendingView.style.display =
-            "block";
-    }
-
-
-    if (sentView) {
-        sentView.style.display =
-            "block";
-    }
-
-    // Show main Reports header ulit
-    const mainHeader = document.getElementById("reportsMainHeader");
-    if (mainHeader) mainHeader.style.display = "flex";
-
-    // aew pending revisions
-    const awaitingView = document.getElementById("awaitingRevisionView");
+    if (pendingView) pendingView.style.display = "block";
+    if (sentView) sentView.style.display = "block";
     if (awaitingView) awaitingView.style.display = "block";
 
+    const mainHeader = document.getElementById("reportsMainHeader");
+    if (mainHeader) mainHeader.style.display = "flex";
 }
 
 
@@ -2326,7 +1184,6 @@ function initFlagButton() {
             return;
         }
 
-        // ✅ Get current user info from localStorage
         const userName = localStorage.getItem("full_name")
             || localStorage.getItem("username")
             || "Unknown User";
@@ -2338,7 +1195,6 @@ function initFlagButton() {
             return;
         }
 
-        // ✅ Prepend user info sa remarks
         const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
 
         flagBtn.disabled = true;
@@ -2407,7 +1263,6 @@ function initApproveButton() {
             return;
         }
 
-        // ✅ Get current user info from localStorage
         const userName = localStorage.getItem("full_name")
             || localStorage.getItem("username")
             || "Unknown User";
@@ -2415,7 +1270,6 @@ function initApproveButton() {
 
         const remarksInput = document.getElementById("remarksTextarea").value.trim();
 
-        // ✅ If may input → prefix; kung wala → default na may pangalan
         const remarks = remarksInput
             ? `[${userRole}: ${userName}] ${remarksInput}`
             : `Approved by ${userName} (${userRole})`;
@@ -2467,33 +1321,83 @@ function initApproveButton() {
 
 
 /* ============================================================
+   RESUBMIT TO PROVINCIAL
+============================================================ */
+
+function initResubmitButton() {
+    const resubmitBtn = document.getElementById("resubmitReportBtn");
+    if (!resubmitBtn) return;
+
+    resubmitBtn.addEventListener("click", async () => {
+        if (!selectedReport) return;
+
+        const remarksEl = document.getElementById("remarksTextarea");
+        const remarksInput = remarksEl?.value?.trim() || "";
+
+        const userName = localStorage.getItem("full_name")
+            || localStorage.getItem("username")
+            || "Unknown User";
+        const userRole = localStorage.getItem("role") || "Municipal Coordinator";
+
+        const remarks = remarksInput
+            ? `[${userRole}: ${userName}] ${remarksInput}`
+            : `Resubmitted to Provincial by ${userName} (${userRole})`;
+
+        if (!confirm(`Resubmit report #${selectedReport.report_id} to Provincial?`)) {
+            return;
+        }
+
+        resubmitBtn.disabled = true;
+        resubmitBtn.textContent = "Processing...";
+
+        try {
+            const url =
+                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                `?validator_id=${localStorage.getItem("user_id")}` +
+                `&validator_role=municipal_coordinator` +
+                `&remarks=${encodeURIComponent(remarks)}`;
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            openModal("Report resubmitted to Provincial successfully.");
+
+            setTimeout(async () => {
+                closeReportDetail();
+                await loadPendingReports();
+                await loadAwaitingRevision();
+                await loadSentToProvincial();
+            }, 800);
+
+        } catch (err) {
+            console.error("Resubmit error:", err);
+            openModal(`Error: ${err.message}`);
+            resubmitBtn.disabled = false;
+            resubmitBtn.textContent = "Resubmit to Provincial";
+        }
+    });
+}
+
+
+/* ============================================================
    MODAL HELPER
 ============================================================ */
 
 function openModal(message) {
+    const modal = document.getElementById("reportModal");
+    const text = document.getElementById("reportModalText");
 
-    const modal =
-        document.getElementById(
-            "reportModal"
-        );
+    if (!modal || !text) return;
 
-    const text =
-        document.getElementById(
-            "reportModalText"
-        );
-
-
-    if (!modal || !text) {
-        return;
-    }
-
-
-    text.textContent =
-        message;
-
-    modal.classList.add(
-        "show"
-    );
+    text.textContent = message;
+    modal.classList.add("show");
 }
 
 
@@ -2501,278 +1405,36 @@ function openModal(message) {
    INITIALIZATION
 ============================================================ */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        console.log(
-            "Municipal dashboard loaded."
-        );
-
-
-        initSidebar();
-        initViewNavigation();
-        initMap();
-        loadMunicipalityMapData();
-        setupUserProfile();
-        initSearch();
-        initBulkActions();
-        initFlagButton();
-        initApproveButton();
-        initSentToProvincialFilter();
-        
-        // edit report button
-
-        const editReportBtn = document.getElementById("editReportBtn");
-        if (editReportBtn) {
-            editReportBtn.addEventListener("click", () => {
-                if (!selectedReport) return;
-
-                // ✅ Enable remarks textarea + restore styles
-                const remarksEl = document.getElementById("remarksTextarea");
-                if (remarksEl) {
-                    remarksEl.readOnly = false;
-                    remarksEl.style.background = "";
-                    remarksEl.style.color = "";
-                    remarksEl.style.cursor = "";
-                    remarksEl.style.borderColor = "";
-                    remarksEl.placeholder = "Enter remarks or notes...";
-                    remarksEl.focus();
-                }
-
-                // ✅ Hide Edit, show Resubmit
-                editReportBtn.style.display = "none";
-                const resubmitBtn = document.getElementById("resubmitReportBtn");
-                if (resubmitBtn) resubmitBtn.style.display = "inline-flex";
-            });
-        }
-
-        // ✅ Resubmit to Provincial handler
-        const resubmitReportBtn = document.getElementById("resubmitReportBtn");
-        if (resubmitReportBtn) {
-            resubmitReportBtn.addEventListener("click", async () => {
-                if (!selectedReport) return;
-
-                const remarksEl = document.getElementById("remarksTextarea");
-                const remarksInput = remarksEl?.value?.trim() || "";
-
-                const userName = localStorage.getItem("full_name") 
-                    || localStorage.getItem("username") 
-                    || "Unknown User";
-                const userRole = localStorage.getItem("role") || "Municipal Coordinator";
-
-                const remarks = remarksInput
-                    ? `[${userRole}: ${userName}] ${remarksInput}`
-                    : `Resubmitted to Provincial by ${userName} (${userRole})`;
-
-                if (!confirm(
-                    `Resubmit report #${selectedReport.report_id} to Provincial?`
-                )) {
-                    return;
-                }
-
-                resubmitReportBtn.disabled = true;
-                resubmitReportBtn.textContent = "Processing...";
-
-                try {
-                    const url =
-                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
-                        `?validator_id=${localStorage.getItem("user_id")}` +
-                        `&validator_role=municipal_coordinator` +
-                        `&remarks=${encodeURIComponent(remarks)}`;
-
-                    const res = await fetch(url, {
-                        method: "POST",
-                        headers: getAuthHeaders()
-                    });
-
-                    if (!res.ok) {
-                        const errData = await res.json().catch(() => ({}));
-                        throw new Error(errData.detail || `HTTP ${res.status}`);
-                    }
-
-                    openModal("Report resubmitted to Provincial successfully.");
-
-                    setTimeout(async () => {
-                        closeReportDetail();
-                        await loadPendingReports();
-                        await loadAwaitingRevision();
-                        await loadSentToProvincial();
-                    }, 800);
-
-                } catch (err) {
-                    console.error("Resubmit error:", err);
-                    openModal(`Error: ${err.message}`);
-                    resubmitReportBtn.disabled = false;
-                    resubmitReportBtn.textContent = "Resubmit to Provincial";
-                }
-            });
-        }
-
-
-        /* ----------------------------------------------------
-           BACK BUTTON
-        ---------------------------------------------------- */
-
-        const backBtn =
-            document.getElementById(
-                "backToPendingBtn"
-            );
-
-
-        if (backBtn) {
-
-            backBtn.addEventListener(
-                "click",
-                closeReportDetail
-            );
-
-        }
-
-
-        /* ----------------------------------------------------
-           MODAL CONFIRM
-        ---------------------------------------------------- */
-
-        const modalConfirm =
-            document.getElementById(
-                "reportModalConfirmBtn"
-            );
-
-
-        if (modalConfirm) {
-
-            modalConfirm.addEventListener(
-                "click",
-                () => {
-
-                    const modal =
-                        document.getElementById(
-                            "reportModal"
-                        );
-
-                    if (modal) {
-
-                        modal.classList.remove(
-                            "show"
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* ----------------------------------------------------
-           VIEW ATTACHMENTS
-        ---------------------------------------------------- */
-
-        const attachBtn =
-            document.getElementById(
-                "viewAttachmentsBtn"
-            );
-
-
-        if (attachBtn) {
-
-            attachBtn.addEventListener(
-                "click",
-                async () => {
-
-                    if (!selectedReport) {
-                        return;
-                    }
-
-
-                    try {
-
-                        const fullReport =
-                            await fetchJsonWithTimeout(
-                                `${API_BASE_URL}/api/raw-plant-reports/${selectedReport.report_id}`,
-                                {
-                                    method: "GET",
-
-                                    headers:
-                                        getAuthHeaders({
-                                            "Accept":
-                                                "application/json"
-                                        })
-                                },
-                                10000
-                            );
-
-
-                        const atts =
-                            fullReport.attachments ||
-                            [];
-
-
-                        if (
-                            atts.length === 0
-                        ) {
-
-                            openModal(
-                                "No attachments for this report."
-                            );
-
-                            return;
-                        }
-
-
-                        const url =
-                            atts[0].url ||
-                            "";
-
-
-                        if (url) {
-
-                            window.open(
-                                url.startsWith("http")
-                                    ? url
-                                    : `${API_BASE_URL}${url}`,
-                                "_blank"
-                            );
-
-                        } else {
-
-                            openModal(
-                                "Attachment URL not found."
-                            );
-
-                        }
-
-
-                    } catch (err) {
-
-                        console.error(
-                            "Attachment error:",
-                            err
-                        );
-
-
-                        openModal(
-                            `Error: ${err.message}`
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* ----------------------------------------------------
-           LOAD BOTH TABLES INDEPENDENTLY
-        ---------------------------------------------------- */
-
-        await Promise.allSettled([
-            loadPendingReports(),
-            loadAwaitingRevision(),
-            loadSentToProvincial()
-        ]);
-
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("Municipal dashboard loaded.");
+
+    initSidebar();
+    initViewNavigation();
+    initMap();
+    loadMunicipalityMapData();
+    setupUserProfile();
+    initSearch();
+    initBulkActions();
+    initFlagButton();
+    initApproveButton();
+    initSentToProvincialFilter();
+    initResubmitButton();
+
+    const backBtn = document.getElementById("backToPendingBtn");
+    if (backBtn) {
+        backBtn.addEventListener("click", closeReportDetail);
     }
-);
+
+    const modalConfirm = document.getElementById("reportModalConfirmBtn");
+    if (modalConfirm) {
+        modalConfirm.addEventListener("click", () => {
+            document.getElementById("reportModal")?.classList.remove("show");
+        });
+    }
+
+    await Promise.allSettled([
+        loadPendingReports(),
+        loadAwaitingRevision(),
+        loadSentToProvincial()
+    ]);
+});

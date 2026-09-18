@@ -1,28 +1,5 @@
 /* ============================================================
    eSAKA — DA-RFO OFFICER DASHBOARD
-   Dynamic Buyer Registry + Map + Alert Threshold + Reports + Alerts
-   (Reports section aligned with Provincial UI/Logic)
-
-   Backend:
-   GET  /api/buyer-status/pending
-   GET  /api/buyer-status/verified
-   PUT  /api/buyer-status/{buyer_status_id}/verify
-   PUT  /api/buyer-status/{buyer_status_id}/reject
-   GET  /api/buyer-registry/{buyer_registry_id}/attachment
-
-   Reports:
-   GET  /api/report-submissions/for-da-rfo-validation
-   GET  /api/report-submissions/returned-to-provincial
-   GET  /api/report-submissions/approved-by-regional
-   POST /api/report-submissions/bulk-approve
-   POST /api/report-submissions/{report_id}/approve
-   POST /api/report-submissions/{report_id}/revision
-   GET  /api/raw-plant-reports/{report_id}
-============================================================ */
-
-
-/* ============================================================
-   API CONFIGURATION
 ============================================================ */
 
 const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
@@ -31,8 +8,6 @@ const PENDING_BUYERS_ENDPOINT      = `${API_BASE_URL}/api/buyer-status/pending`;
 const VERIFIED_BUYERS_ENDPOINT     = `${API_BASE_URL}/api/buyer-status/verified`;
 const BUYER_STATUS_ENDPOINT        = `${API_BASE_URL}/api/buyer-status`;
 const BUYER_ATTACHMENT_ENDPOINT    = `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
-
-/* ------------------- REPORT ENDPOINTS ------------------- */
 
 const DA_PENDING_ENDPOINT              = `${API_BASE_URL}/api/report-submissions/for-da-rfo-validation`;
 const RETURNED_TO_PROVINCIAL_ENDPOINT  = `${API_BASE_URL}/api/report-submissions/returned-to-provincial`;
@@ -45,34 +20,23 @@ const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions
 ============================================================ */
 
 function getAuthToken() {
-    return (
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("token")
-    );
+    return localStorage.getItem("access_token") || localStorage.getItem("token");
 }
 
 function getAuthHeaders(includeContentType = true) {
     const token = getAuthToken();
     const headers = {};
-
-    if (includeContentType) {
-        headers["Content-Type"] = "application/json";
-    }
-
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
-
+    if (includeContentType) headers["Content-Type"] = "application/json";
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
 }
 
 
 /* ============================================================
-   FETCH HELPER WITH TIMEOUT
+   FETCH WITH TIMEOUT
 ============================================================ */
 
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -104,7 +68,6 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
             throw new Error(`API request timed out after ${timeoutMs / 1000} seconds.`);
         }
         throw err;
-
     } finally {
         clearTimeout(timeoutId);
     }
@@ -121,13 +84,11 @@ let pendingBuyersCache = [];
 let verifiedBuyersCache = [];
 let currentActiveAlertCard = null;
 
-/* ---- REPORT STATE ---- */
 let pendingReports = [];
 let returnedToProvincialReports = [];
 let approvedReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
-let currentApprovedFilter = "all";
 
 
 /* ============================================================
@@ -135,7 +96,6 @@ let currentApprovedFilter = "all";
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", async () => {
-
     initSidebar();
     initViewNavigation();
     initMap();
@@ -146,8 +106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSignout();
     initModalListeners();
     loadUserInformation();
-
-    // Preload reports so switching to Reports view is instant
     loadReports();
 });
 
@@ -157,7 +115,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 ============================================================ */
 
 function loadUserInformation() {
-
     const userName =
         localStorage.getItem("username") ||
         localStorage.getItem("name") ||
@@ -169,9 +126,7 @@ function loadUserInformation() {
     const userDisplayRole = document.getElementById("userDisplayRole");
     const userInitials    = document.getElementById("userDisplayInitials");
 
-    if (userName && userDisplayName) {
-        userDisplayName.textContent = userName;
-    }
+    if (userName && userDisplayName) userDisplayName.textContent = userName;
 
     if (role && userDisplayRole) {
         const roleMap = {
@@ -185,9 +140,7 @@ function loadUserInformation() {
         userDisplayRole.textContent = roleMap[role] || role;
     }
 
-    if (userInitials) {
-        userInitials.textContent = getInitials(userName || role || "");
-    }
+    if (userInitials) userInitials.textContent = getInitials(userName || role || "");
 }
 
 function getInitials(name) {
@@ -202,16 +155,9 @@ function getInitials(name) {
 
     const parts = cleaned.split(/\s+/).filter(Boolean);
 
-    if (parts.length === 1) {
-        return parts[0].substring(0, 2).toUpperCase();
-    }
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
 
     return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-function formatRole(role) {
-    if (!role) return "";
-    return String(role).replace(/_/g, " ").toUpperCase();
 }
 
 
@@ -232,7 +178,6 @@ function initSidebar() {
 
         setTimeout(function () {
             sidebar.classList.add("open");
-
             setTimeout(function () {
                 if (mapInstance) mapInstance.invalidateSize();
             }, 300);
@@ -252,7 +197,6 @@ function initSidebar() {
     document.addEventListener("click", function (event) {
         const isClickInsideSidebar = sidebar.contains(event.target);
         const isClickOnHamburger = hamburgerBtn.contains(event.target);
-
         if (!isClickInsideSidebar && !isClickOnHamburger) {
             sidebar.classList.remove("open");
         }
@@ -282,17 +226,14 @@ function initSidebar() {
 ============================================================ */
 
 function initViewNavigation() {
-
     const navButtons = document.querySelectorAll(".nav-item[data-view]");
     const views = document.querySelectorAll(".view");
 
     navButtons.forEach(button => {
         button.addEventListener("click", () => {
-
             const targetViewKey = button.dataset.view;
 
             views.forEach(view => view.classList.remove("active-view"));
-
             const targetView = document.getElementById("view-" + targetViewKey);
             if (targetView) targetView.classList.add("active-view");
 
@@ -304,13 +245,9 @@ function initViewNavigation() {
                 setTimeout(() => mapInstance.invalidateSize(), 100);
             }
 
-            if (targetViewKey === "buyer-registry") {
-                loadBuyerRegistry();
-            }
+            if (targetViewKey === "buyer-registry") loadBuyerRegistry();
 
-            if (targetViewKey === "reports") {
-                loadReports();
-            }
+            if (targetViewKey === "reports") loadReports();
         });
     });
 }
@@ -336,7 +273,6 @@ function initSignout() {
 ============================================================ */
 
 function initMap() {
-
     const mapEl = document.getElementById("map");
     if (!mapEl || typeof L === "undefined") return;
 
@@ -348,16 +284,13 @@ function initMap() {
         minZoom: 10
     }).setView([15.0794, 120.6200], 10);
 
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution: "&copy; OpenStreetMap contributors",
-            maxZoom: 18
-        }
-    ).addTo(mapInstance);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 18
+    }).addTo(mapInstance);
 
     const municipalityCoordinates = {
-        "Angeles": [15.1450, 120.5887],
+        "Angeles City": [15.1450, 120.5887],
         "Apalit": [14.9470, 120.7700],
         "Arayat": [15.1500, 120.7690],
         "Bacolor": [15.0000, 120.6520],
@@ -383,9 +316,7 @@ function initMap() {
     loadMunicipalityMapData(municipalityCoordinates);
 }
 
-
 async function loadMunicipalityMapData(municipalityCoordinates) {
-
     try {
         const response = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
@@ -395,19 +326,16 @@ async function loadMunicipalityMapData(municipalityCoordinates) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
-
         if (!result.data || !Array.isArray(result.data)) return;
 
         result.data.forEach(municipalityData => {
             const municipality = municipalityData.municipality;
             const coordinates = municipalityCoordinates[municipality];
-
             if (!coordinates) return;
 
             let popupContent = `
                 <div style="min-width: 180px;">
-                    <strong>Municipality:</strong> ${escapeHtml(municipality)}
-                    <br><br>
+                    <strong>Municipality:</strong> ${escapeHtml(municipality)}<br><br>
             `;
 
             (municipalityData.commodities || []).forEach(item => {
@@ -429,67 +357,38 @@ async function loadMunicipalityMapData(municipalityCoordinates) {
 
 
 /* ============================================================
-   BUYER REGISTRY INITIALIZATION
+   BUYER REGISTRY
 ============================================================ */
 
 function initBuyerRegistry() {
-
     loadBuyerRegistry();
 
-    document.getElementById("returnBuyerListBtn")
-        ?.addEventListener("click", showBuyerList);
+    document.getElementById("returnBuyerListBtn")?.addEventListener("click", showBuyerList);
 
-    document.getElementById("viewBuyerAttachmentBtn")
-        ?.addEventListener("click", async () => {
-            if (!currentSelectedBuyer) {
-                showError("No buyer application selected.");
-                return;
-            }
-            await viewBuyerAttachment(currentSelectedBuyer);
-        });
+    document.getElementById("viewBuyerAttachmentBtn")?.addEventListener("click", async () => {
+        if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
+        await viewBuyerAttachment(currentSelectedBuyer);
+    });
 
-    document.getElementById("approveBuyerBtn")
-        ?.addEventListener("click", () => {
-            if (!currentSelectedBuyer) {
-                showError("No buyer application selected.");
-                return;
-            }
-            document.getElementById("confirmApproveModal")?.classList.add("show");
-        });
+    document.getElementById("approveBuyerBtn")?.addEventListener("click", () => {
+        if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
+        document.getElementById("confirmApproveModal")?.classList.add("show");
+    });
 
-    document.getElementById("rejectBuyerBtn")
-        ?.addEventListener("click", () => {
-            if (!currentSelectedBuyer) {
-                showError("No buyer application selected.");
-                return;
-            }
-            document.getElementById("confirmRejectModal")?.classList.add("show");
-        });
+    document.getElementById("rejectBuyerBtn")?.addEventListener("click", () => {
+        if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
+        document.getElementById("confirmRejectModal")?.classList.add("show");
+    });
 
-    document.getElementById("confirmApproveBtn")
-        ?.addEventListener("click", approveSelectedBuyer);
-
-    document.getElementById("confirmRejectBtn")
-        ?.addEventListener("click", rejectSelectedBuyer);
+    document.getElementById("confirmApproveBtn")?.addEventListener("click", approveSelectedBuyer);
+    document.getElementById("confirmRejectBtn")?.addEventListener("click", rejectSelectedBuyer);
 }
 
-
-/* ============================================================
-   VIEW BUYER ATTACHMENT
-============================================================ */
-
 async function viewBuyerAttachment(buyer) {
-
     if (!buyer) { showError("No buyer application selected."); return; }
 
-    const buyerRegistryId =
-        buyer.buyer_registry_id || buyer.buyerRegistryId || buyer.id;
-
-    if (!buyerRegistryId) {
-        console.error("BUYER OBJECT:", buyer);
-        showError("Buyer registry ID is missing.");
-        return;
-    }
+    const buyerRegistryId = buyer.buyer_registry_id || buyer.buyerRegistryId || buyer.id;
+    if (!buyerRegistryId) { showError("Buyer registry ID is missing."); return; }
 
     const button = document.getElementById("viewBuyerAttachmentBtn");
 
@@ -500,25 +399,19 @@ async function viewBuyerAttachment(buyer) {
             button.textContent = "Opening...";
         }
 
-        const endpoint =
-            `${BUYER_ATTACHMENT_ENDPOINT}/${buyerRegistryId}/attachment`;
+        const endpoint = `${BUYER_ATTACHMENT_ENDPOINT}/${buyerRegistryId}/attachment`;
 
-        const response = await fetch(
-            endpoint,
-            { method: "GET", headers: getAuthHeaders(false) }
-        );
+        const response = await fetch(endpoint, { method: "GET", headers: getAuthHeaders(false) });
 
         if (!response.ok) {
             const errorText = await response.text();
             let errorMessage = "Unable to load buyer attachment.";
-
             try {
                 const errorData = JSON.parse(errorText);
                 errorMessage = errorData.detail || errorData.message || errorMessage;
             } catch {
                 if (errorText) errorMessage = errorText;
             }
-
             throw new Error(`Status ${response.status}: ${errorMessage}`);
         }
 
@@ -527,7 +420,6 @@ async function viewBuyerAttachment(buyer) {
         if (!contentType.includes("application/json")) {
             const blob = await response.blob();
             if (!blob.size) throw new Error("The buyer attachment is empty.");
-
             const blobUrl = URL.createObjectURL(blob);
             window.open(blobUrl, "_blank");
             setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
@@ -535,7 +427,6 @@ async function viewBuyerAttachment(buyer) {
         }
 
         const data = await response.json();
-
         const attachmentUrl =
             data.attachment_url || data.file_url || data.document_url ||
             data.url || data.attachment_path || data.file_path || data.document_path;
@@ -543,12 +434,10 @@ async function viewBuyerAttachment(buyer) {
         if (!attachmentUrl) throw new Error("No attachment was found for this buyer.");
 
         let finalUrl = attachmentUrl;
-
         if (!attachmentUrl.startsWith("http://") &&
             !attachmentUrl.startsWith("https://") &&
             !attachmentUrl.startsWith("blob:") &&
             !attachmentUrl.startsWith("data:")) {
-
             finalUrl = attachmentUrl.startsWith("/")
                 ? `${API_BASE_URL}${attachmentUrl}`
                 : `${API_BASE_URL}/${attachmentUrl}`;
@@ -567,28 +456,18 @@ async function viewBuyerAttachment(buyer) {
     }
 }
 
-
-/* ============================================================
-   LOAD BUYER REGISTRY
-============================================================ */
-
 async function loadBuyerRegistry() {
     await Promise.all([loadPendingBuyers(), loadVerifiedBuyers()]);
 }
 
-
 async function loadPendingBuyers() {
-
     const tbody = document.getElementById("pendingBuyersBody");
     if (!tbody) return;
 
     tbody.innerHTML = `<tr><td colspan="2">Loading pending buyer applications...</td></tr>`;
 
     try {
-        const response = await fetch(
-            PENDING_BUYERS_ENDPOINT,
-            { method: "GET", headers: getAuthHeaders() }
-        );
+        const response = await fetch(PENDING_BUYERS_ENDPOINT, { method: "GET", headers: getAuthHeaders() });
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -610,9 +489,7 @@ async function loadPendingBuyers() {
     }
 }
 
-
 function renderPendingBuyers(buyers) {
-
     const tbody = document.getElementById("pendingBuyersBody");
     if (!tbody) return;
 
@@ -639,19 +516,14 @@ function renderPendingBuyers(buyers) {
     });
 }
 
-
 async function loadVerifiedBuyers() {
-
     const tbody = document.getElementById("verifiedBuyersBody");
     if (!tbody) return;
 
     tbody.innerHTML = `<tr><td colspan="5">Loading verified buyers...</td></tr>`;
 
     try {
-        const response = await fetch(
-            VERIFIED_BUYERS_ENDPOINT,
-            { method: "GET", headers: getAuthHeaders() }
-        );
+        const response = await fetch(VERIFIED_BUYERS_ENDPOINT, { method: "GET", headers: getAuthHeaders() });
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -673,9 +545,7 @@ async function loadVerifiedBuyers() {
     }
 }
 
-
 function renderVerifiedBuyers(buyers) {
-
     const tbody = document.getElementById("verifiedBuyersBody");
     if (!tbody) return;
 
@@ -700,13 +570,7 @@ function renderVerifiedBuyers(buyers) {
     });
 }
 
-
-/* ============================================================
-   OPEN BUYER REVIEW
-============================================================ */
-
 function openBuyerReview(buyer) {
-
     currentSelectedBuyer = buyer;
 
     const buyerRegistryList = document.getElementById("buyerRegistryList");
@@ -724,17 +588,13 @@ function openBuyerReview(buyer) {
     renderReviewCommodities(buyer);
 
     const messageTextarea = document.querySelector("#buyerReviewDetails textarea");
-    if (messageTextarea) {
-        messageTextarea.value = buyer.message || "No message provided.";
-    }
+    if (messageTextarea) messageTextarea.value = buyer.message || "No message provided.";
 
     buyerRegistryList?.classList.add("hidden-element");
     buyerReviewDetails?.classList.remove("hidden-element");
 }
 
-
 function renderReviewCommodities(buyer) {
-
     const container = document.getElementById("reviewCommodities");
     if (!container) return;
 
@@ -758,29 +618,15 @@ function renderReviewCommodities(buyer) {
     });
 }
 
-
 function getCommodityArray(buyer) {
-
     if (!buyer) return [];
-
-    if (Array.isArray(buyer.commodities)) {
-        return buyer.commodities.map(i => String(i).trim()).filter(Boolean);
-    }
-
-    if (typeof buyer.commodities === "string") {
-        return buyer.commodities.split(",").map(i => i.trim()).filter(Boolean);
-    }
-
-    if (buyer.commodity) {
-        return [String(buyer.commodity).trim()];
-    }
-
+    if (Array.isArray(buyer.commodities)) return buyer.commodities.map(i => String(i).trim()).filter(Boolean);
+    if (typeof buyer.commodities === "string") return buyer.commodities.split(",").map(i => i.trim()).filter(Boolean);
+    if (buyer.commodity) return [String(buyer.commodity).trim()];
     return [];
 }
 
-
 function showBuyerList() {
-
     const buyerRegistryList = document.getElementById("buyerRegistryList");
     const buyerReviewDetails = document.getElementById("buyerReviewDetails");
 
@@ -790,13 +636,7 @@ function showBuyerList() {
     currentSelectedBuyer = null;
 }
 
-
-/* ============================================================
-   APPROVE / REJECT SELECTED BUYER
-============================================================ */
-
 async function approveSelectedBuyer() {
-
     if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
 
     const buyerStatusId = currentSelectedBuyer.buyer_status_id;
@@ -814,9 +654,7 @@ async function approveSelectedBuyer() {
 
         const data = await parseResponse(response);
 
-        if (!response.ok) {
-            throw new Error(data.detail || data.message || "Unable to approve buyer.");
-        }
+        if (!response.ok) throw new Error(data.detail || data.message || "Unable to approve buyer.");
 
         closeModal("confirmApproveModal");
         alert("Buyer verified successfully.");
@@ -833,9 +671,7 @@ async function approveSelectedBuyer() {
     }
 }
 
-
 async function rejectSelectedBuyer() {
-
     if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
 
     const buyerStatusId = currentSelectedBuyer.buyer_status_id;
@@ -853,9 +689,7 @@ async function rejectSelectedBuyer() {
 
         const data = await parseResponse(response);
 
-        if (!response.ok) {
-            throw new Error(data.detail || data.message || "Unable to reject buyer.");
-        }
+        if (!response.ok) throw new Error(data.detail || data.message || "Unable to reject buyer.");
 
         closeModal("confirmRejectModal");
         alert("Buyer application rejected.");
@@ -919,49 +753,24 @@ function formatDate(dateString) {
     if (!dateString) return "—";
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric"
-    });
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatKg(value) {
-    return `${Number(value || 0).toLocaleString("en-US", {
-        maximumFractionDigits: 2
-    })} kg`;
+    return `${Number(value || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} kg`;
 }
-
-
-/* ============================================================
-   STATUS LABEL & CLASS (shared across DA sections)
-============================================================ */
 
 function statusLabelAndClass(status) {
     const s = String(status || "").toUpperCase();
 
-    if (s === "SUBMITTED_REGIONAL_PENDING" || s === "FOR_DA_RFO_VALIDATION") {
-        return { text: "Regional Pending", cls: "rfo" };
-    }
-    if (s === "SUBMITTED_REGIONAL_FLAGGED") {
-        return { text: "Regional Flagged", cls: "flagged" };
-    }
-    if (s === "SUBMITTED_REGIONAL_APPROVED" || s === "FINAL_APPROVED") {
-        return { text: "Approved", cls: "approved" };
-    }
-    if (s === "SUBMITTED_PROVINCIAL_PENDING" || s === "FOR_PROVINCIAL_VALIDATION") {
-        return { text: "Provincial Pending", cls: "provincial" };
-    }
-    if (s === "SUBMITTED_PROVINCIAL_FLAGGED") {
-        return { text: "Provincial Flagged", cls: "flagged" };
-    }
-    if (s === "SUBMITTED_MUNICIPAL_PENDING") {
-        return { text: "Municipal Pending", cls: "pending" };
-    }
-    if (s === "SUBMITTED_MUNICIPAL_FLAGGED" || s === "REVISION_REQUIRED") {
-        return { text: "Revision Required", cls: "revision" };
-    }
-    if (s === "DRAFT") {
-        return { text: "Draft", cls: "draft" };
-    }
+    if (s === "SUBMITTED_REGIONAL_PENDING" || s === "FOR_DA_RFO_VALIDATION") return { text: "Regional Pending", cls: "rfo" };
+    if (s === "SUBMITTED_REGIONAL_FLAGGED") return { text: "Regional Flagged", cls: "flagged" };
+    if (s === "SUBMITTED_REGIONAL_APPROVED" || s === "FINAL_APPROVED") return { text: "Approved", cls: "approved" };
+    if (s === "SUBMITTED_PROVINCIAL_PENDING" || s === "FOR_PROVINCIAL_VALIDATION") return { text: "Provincial Pending", cls: "provincial" };
+    if (s === "SUBMITTED_PROVINCIAL_FLAGGED") return { text: "Provincial Flagged", cls: "flagged" };
+    if (s === "SUBMITTED_MUNICIPAL_PENDING") return { text: "Municipal Pending", cls: "pending" };
+    if (s === "SUBMITTED_MUNICIPAL_FLAGGED" || s === "REVISION_REQUIRED") return { text: "Revision Required", cls: "revision" };
+    if (s === "DRAFT") return { text: "Draft", cls: "draft" };
 
     return { text: s || "—", cls: "pending" };
 }
@@ -972,7 +781,6 @@ function statusLabelAndClass(status) {
 ============================================================ */
 
 function initAlertThreshold() {
-
     const thresholdRange = document.getElementById("thresholdRange");
     const thresholdValue = document.getElementById("thresholdValue");
     const chips = document.querySelectorAll(".threshold-chip");
@@ -981,20 +789,15 @@ function initAlertThreshold() {
     function updateThreshold(value) {
         if (thresholdRange) thresholdRange.value = value;
         if (thresholdValue) thresholdValue.textContent = `${value}%`;
-
         chips.forEach(chip => {
             chip.classList.toggle("active", chip.dataset.val === String(value));
         });
     }
 
     thresholdRange?.addEventListener("input", e => updateThreshold(e.target.value));
-
-    chips.forEach(chip => {
-        chip.addEventListener("click", () => updateThreshold(chip.dataset.val));
-    });
+    chips.forEach(chip => chip.addEventListener("click", () => updateThreshold(chip.dataset.val)));
 
     saveBtn?.addEventListener("click", async () => {
-
         const commodity = document.getElementById("commoditySelect")?.value;
         const baseDemand = document.getElementById("baseDemandInput")?.value;
         const oversupplyThreshold = thresholdRange?.value;
@@ -1009,25 +812,17 @@ function initAlertThreshold() {
         };
 
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/alert-thresholds`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${localStorage.getItem("token")}`
-                    },
-                    body: JSON.stringify(payload)
-                }
-            );
+            const response = await fetch(`${API_BASE_URL}/api/alert-thresholds`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify(payload)
+            });
 
             const data = await response.json();
-
-            if (!response.ok) {
-                alert(data.detail || "Failed to save threshold configuration.");
-                return;
-            }
-
+            if (!response.ok) { alert(data.detail || "Failed to save threshold configuration."); return; }
             alert("Threshold configuration saved successfully!");
 
         } catch (error) {
@@ -1046,15 +841,11 @@ function initAlertsSection() {
     loadSystemAlertLogs();
 }
 
-
 async function loadSystemAlertLogs() {
-
     const alertList = document.getElementById("alertList");
     if (!alertList) return;
 
-    alertList.innerHTML = `
-        <div style="text-align:center; padding:30px;">Loading system alerts...</div>
-    `;
+    alertList.innerHTML = `<div style="text-align:center; padding:30px;">Loading system alerts...</div>`;
 
     try {
         const response = await fetch(
@@ -1062,28 +853,22 @@ async function loadSystemAlertLogs() {
             { method: "GET", headers: getAuthHeaders(false) }
         );
 
-        if (!response.ok) {
-            throw new Error(`Failed to load municipality map data: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Failed to load municipality map data: ${response.status}`);
 
         const result = await response.json();
 
         if (!result.data || !Array.isArray(result.data)) {
-            alertList.innerHTML = `
-                <div style="text-align:center; padding:30px;">No system alerts found.</div>
-            `;
+            alertList.innerHTML = `<div style="text-align:center; padding:30px;">No system alerts found.</div>`;
             return;
         }
 
         const alertResults = [];
 
         for (const municipalityData of result.data) {
-
             const municipality = municipalityData.municipality;
             if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
 
             for (const item of municipalityData.commodities) {
-
                 const commodity = item.commodity;
                 if (!commodity) continue;
 
@@ -1120,31 +905,22 @@ async function loadSystemAlertLogs() {
 
     } catch (error) {
         console.error("LOAD SYSTEM ALERT LOGS ERROR:", error);
-        alertList.innerHTML = `
-            <div style="text-align:center; padding:30px; color:#C0392B;">
-                Unable to load system alerts.
-            </div>
-        `;
+        alertList.innerHTML = `<div style="text-align:center; padding:30px; color:#C0392B;">Unable to load system alerts.</div>`;
     }
 }
 
-
 function renderSystemAlertLogs(alerts) {
-
     const alertList = document.getElementById("alertList");
     if (!alertList) return;
 
     alertList.innerHTML = "";
 
     if (!alerts.length) {
-        alertList.innerHTML = `
-            <div style="text-align:center; padding:30px;">No active oversupply alerts.</div>
-        `;
+        alertList.innerHTML = `<div style="text-align:center; padding:30px;">No active oversupply alerts.</div>`;
         return;
     }
 
     alerts.forEach(alert => {
-
         const card = document.createElement("div");
         card.className = "alert-card";
         card.dataset.severity = "high";
@@ -1153,28 +929,22 @@ function renderSystemAlertLogs(alerts) {
         const demand = alert.base_demand;
 
         let surplusPercentage = 0;
-        if (demand > 0) {
-            surplusPercentage = ((supply - demand) / demand) * 100;
-        }
+        if (demand > 0) surplusPercentage = ((supply - demand) / demand) * 100;
 
         const alertDate = new Date(alert.date).toLocaleDateString("en-CA");
 
-        const description =
-            `${alert.commodity} supply in ${alert.municipality} is ${Math.round(surplusPercentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
+        const description = `${alert.commodity} supply in ${alert.municipality} is ${Math.round(surplusPercentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
 
         card.innerHTML = `
             <div class="alert-top">
                 <div class="alert-title-group">
                     <span class="alert-title">
-                        ${escapeHtml(alert.commodity)} Oversupply Risk —
-                        ${escapeHtml(alert.municipality)}
+                        ${escapeHtml(alert.commodity)} Oversupply Risk — ${escapeHtml(alert.municipality)}
                     </span>
                     <span class="sev-pill high">High</span>
                 </div>
             </div>
-
             <p class="alert-desc">${escapeHtml(description)}</p>
-
             <div class="alert-stats">
                 <span>Supply: <b>${formatKg(supply)}</b></span>
                 <span>Demand: <b>${formatKg(demand)}</b></span>
@@ -1182,12 +952,6 @@ function renderSystemAlertLogs(alerts) {
                 <span class="alert-date">${alertDate}</span>
             </div>
         `;
-
-        const statusButton = card.querySelector(".status-pill-btn");
-        statusButton?.addEventListener("click", event => {
-            event.stopPropagation();
-            toggleAlertCardStatus(statusButton);
-        });
 
         card.addEventListener("click", () => {
             currentActiveAlertCard = card;
@@ -1198,31 +962,12 @@ function renderSystemAlertLogs(alerts) {
     });
 }
 
-
-function toggleAlertCardStatus(button) {
-
-    const unresolved = button.classList.contains("unresolved");
-
-    if (unresolved) {
-        button.textContent = "Acknowledged";
-        button.classList.remove("unresolved");
-        button.classList.add("acknowledged");
-    } else {
-        button.textContent = "Unresolved";
-        button.classList.remove("acknowledged");
-        button.classList.add("unresolved");
-    }
-}
-
-
 function openAlertDetailModal(card) {
-
     const title = card.querySelector(".alert-title")?.textContent || "—";
     const desc = card.querySelector(".alert-desc")?.textContent || "—";
     const severity = card.querySelector(".sev-pill");
     const stats = card.querySelectorAll(".alert-stats span b");
     const date = card.querySelector(".alert-date")?.textContent || "—";
-    const alertStatus = card.querySelector(".status-pill-btn");
 
     const titleElement = document.getElementById("modalAlertTitle");
     if (titleElement) titleElement.textContent = title;
@@ -1249,16 +994,8 @@ function openAlertDetailModal(card) {
     const dateElement = document.getElementById("modalAlertDate");
     if (dateElement) dateElement.textContent = date;
 
-    const toggleButton = document.getElementById("toggleAlertStatusBtn");
-    if (toggleButton && alertStatus) {
-        toggleButton.textContent = alertStatus.classList.contains("unresolved")
-            ? "Acknowledge Alert"
-            : "Mark as Unresolved";
-    }
-
     document.getElementById("alertDetailModal")?.classList.add("show");
 }
-
 
 const searchAlerts = document.getElementById("searchAlerts");
 searchAlerts?.addEventListener("input", () => {
@@ -1271,24 +1008,11 @@ searchAlerts?.addEventListener("input", () => {
 });
 
 
-document.getElementById("toggleAlertStatusBtn")
-    ?.addEventListener("click", () => {
-
-        if (currentActiveAlertCard) {
-            const button = currentActiveAlertCard.querySelector(".status-pill-btn");
-            if (button) toggleAlertCardStatus(button);
-        }
-
-        document.getElementById("alertDetailModal")?.classList.remove("show");
-    });
-
-
 /* ============================================================
    MODAL LISTENERS
 ============================================================ */
 
 function initModalListeners() {
-
     document.querySelectorAll(".modal-overlay").forEach(modal => {
         modal.addEventListener("click", event => {
             if (event.target === modal) modal.classList.remove("show");
@@ -1304,37 +1028,21 @@ function initModalListeners() {
 
 
 /* ============================================================
-   REPORTS SECTION — ALIGNED WITH PROVINCIAL PATTERN
+   REPORTS SECTION
 ============================================================ */
 
 function initReportsSection() {
-
-    // Init sub-features
     initReportSearch();
     initBulkActions();
-    initReportDetailButtons();   // ← ✅ ADD THIS LINE
-
-    // Initial load
+    initReportDetailButtons();
     loadReports();
 
-    // Observe view activation
     const viewReports = document.getElementById("view-reports");
     const observer = new MutationObserver(() => {
-        if (viewReports?.classList.contains("active-view")) {
-            loadReports();
-        }
+        if (viewReports?.classList.contains("active-view")) loadReports();
     });
-    if (viewReports) {
-        observer.observe(viewReports, { attributes: true, attributeFilter: ["class"] });
-    }
-
-    console.log("✅ DA Reports section initialized.");
+    if (viewReports) observer.observe(viewReports, { attributes: true, attributeFilter: ["class"] });
 }
-
-
-/* ============================================================
-   LOAD ALL REPORT SECTIONS
-============================================================ */
 
 async function loadReports() {
     await Promise.allSettled([
@@ -1344,13 +1052,7 @@ async function loadReports() {
     ]);
 }
 
-
-/* ============================================================
-   LOAD PENDING REPORTS
-============================================================ */
-
 async function loadPendingReports() {
-
     const tbody = document.getElementById("pendingReportsBody");
     if (!tbody) return;
 
@@ -1359,10 +1061,7 @@ async function loadPendingReports() {
     try {
         const data = await fetchJsonWithTimeout(
             DA_PENDING_ENDPOINT,
-            {
-                method: "GET",
-                headers: getAuthHeaders(false)
-            },
+            { method: "GET", headers: getAuthHeaders(false) },
             10000
         );
 
@@ -1382,19 +1081,15 @@ async function loadPendingReports() {
                 </td>
             </tr>
         `;
-
         const badge = document.getElementById("pendingCountBadge");
         if (badge) badge.textContent = "0";
-
         pendingReports = [];
         selectedReportIds = new Set();
         updateBulkApproveButton();
     }
 }
 
-
 function renderPendingReports() {
-
     const tbody = document.getElementById("pendingReportsBody");
     if (!tbody) return;
 
@@ -1467,13 +1162,7 @@ function renderPendingReports() {
     updateSelectAllCheckbox();
 }
 
-
-/* ============================================================
-   LOAD RETURNED TO PROVINCIAL
-============================================================ */
-
 async function loadReturnedToProvincial() {
-
     const tbody = document.getElementById("returnedToProvincialBody");
     if (!tbody) return;
 
@@ -1482,10 +1171,7 @@ async function loadReturnedToProvincial() {
     try {
         const data = await fetchJsonWithTimeout(
             RETURNED_TO_PROVINCIAL_ENDPOINT,
-            {
-                method: "GET",
-                headers: getAuthHeaders(false)
-            },
+            { method: "GET", headers: getAuthHeaders(false) },
             10000
         );
 
@@ -1501,9 +1187,7 @@ async function loadReturnedToProvincial() {
     }
 }
 
-
 function renderReturnedToProvincial() {
-
     const tbody = document.getElementById("returnedToProvincialBody");
     if (!tbody) return;
 
@@ -1539,13 +1223,7 @@ function renderReturnedToProvincial() {
     });
 }
 
-
-/* ============================================================
-   LOAD APPROVED REPORTS
-============================================================ */
-
 async function loadApprovedReports() {
-
     const tbody = document.getElementById("approvedReportsBody");
     if (!tbody) return;
 
@@ -1554,10 +1232,7 @@ async function loadApprovedReports() {
     try {
         const data = await fetchJsonWithTimeout(
             APPROVED_BY_REGIONAL_ENDPOINT,
-            {
-                method: "GET",
-                headers: getAuthHeaders(false)
-            },
+            { method: "GET", headers: getAuthHeaders(false) },
             10000
         );
 
@@ -1573,9 +1248,7 @@ async function loadApprovedReports() {
     }
 }
 
-
 function renderApprovedReports() {
-
     const tbody = document.getElementById("approvedReportsBody");
     if (!tbody) return;
 
@@ -1585,13 +1258,7 @@ function renderApprovedReports() {
     tbody.innerHTML = "";
 
     if (approvedReports.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" style="padding:30px; text-align:center; color:#999;">
-                    No approved reports yet.
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No approved reports yet.</td></tr>`;
         return;
     }
 
@@ -1617,13 +1284,7 @@ function renderApprovedReports() {
     });
 }
 
-
-/* ============================================================
-   SEARCH (Pending Reports)
-============================================================ */
-
 function initReportSearch() {
-
     const input = document.getElementById("reportSearchInput");
     if (!input) return;
 
@@ -1642,13 +1303,7 @@ function initReportSearch() {
     });
 }
 
-
-/* ============================================================
-   SELECT ALL
-============================================================ */
-
 function updateSelectAllCheckbox() {
-
     const cb = document.getElementById("selectAllCheckbox");
     if (!cb) return;
 
@@ -1671,13 +1326,7 @@ function updateSelectAllCheckbox() {
     }
 }
 
-
-/* ============================================================
-   BULK APPROVE BUTTON STATE
-============================================================ */
-
 function updateBulkApproveButton() {
-
     const btn = document.getElementById("bulkApproveBtn");
     if (!btn) return;
 
@@ -1690,13 +1339,7 @@ function updateBulkApproveButton() {
     }
 }
 
-
-/* ============================================================
-   BULK ACTIONS
-============================================================ */
-
 function initBulkActions() {
-
     const selectAllCb = document.getElementById("selectAllCheckbox");
     const selectAllBtn = document.getElementById("selectAllPendingBtn");
     const bulkBtn = document.getElementById("bulkApproveBtn");
@@ -1748,14 +1391,10 @@ function initBulkActions() {
         });
     }
 
-    if (confirmBtn) {
-        confirmBtn.addEventListener("click", bulkApproveSelected);
-    }
+    if (confirmBtn) confirmBtn.addEventListener("click", bulkApproveSelected);
 }
 
-
 function openBulkApproveModal() {
-
     const modal = document.getElementById("bulkApproveModal");
     const text = document.getElementById("bulkApproveText");
     if (!modal || !text) return;
@@ -1768,9 +1407,7 @@ function openBulkApproveModal() {
     modal.classList.add("show");
 }
 
-
 async function bulkApproveSelected() {
-
     const confirmBtn = document.getElementById("bulkApproveConfirmBtn");
     const cancelBtn = document.getElementById("bulkApproveCancelBtn");
 
@@ -1788,13 +1425,9 @@ async function bulkApproveSelected() {
         });
 
         const data = await parseResponse(response);
-
-        if (!response.ok) {
-            throw new Error(data.detail || "Bulk approve failed.");
-        }
+        if (!response.ok) throw new Error(data.detail || "Bulk approve failed.");
 
         document.getElementById("bulkApproveModal")?.classList.remove("show");
-
         alert(`${data.approved_count || 0} report(s) approved.`);
 
         selectedReportIds.clear();
@@ -1817,35 +1450,14 @@ async function bulkApproveSelected() {
 
 
 /* ============================================================
-   APPROVED FILTER PILLS
-============================================================ */
-
-function initApprovedFilter() {
-
-    const pills = document.querySelectorAll("#approvedFilterPills .filter-pill");
-    if (!pills.length) return;
-
-    pills.forEach(pill => {
-        pill.addEventListener("click", () => {
-            pills.forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-            currentApprovedFilter = pill.dataset.filter || "all";
-            renderApprovedReports();
-        });
-    });
-}
-
-
-/* ============================================================
    OPEN REPORT DETAIL
+   (Immutable History + Add-Only New Remark)
 ============================================================ */
 
 async function openReportDetail(report) {
-
     if (!report) return;
     selectedReport = report;
 
-    // Hide subviews
     const mainHeader = document.getElementById("reportsMainHeader");
     if (mainHeader) mainHeader.style.display = "none";
 
@@ -1859,24 +1471,23 @@ async function openReportDetail(report) {
         detailView.style.display = "block";
     }
 
-    // Reference elements
-    const titleEl        = document.getElementById("detailReportTitle");
-    const subtitleEl     = document.getElementById("detailReportSubtitle");
-    const idEl           = document.getElementById("detailReportId");
-    const municipalityEl = document.getElementById("detailReportMunicipality");
-    const statusEl       = document.getElementById("detailReportStatus");
-    const dateEl         = document.getElementById("detailReportDate");
-    const encodedByEl    = document.getElementById("detailReportEncodedBy");
-    const yieldEl        = document.getElementById("detailReportYield");
-    const notesEl        = document.getElementById("detailReportNotes");
-    const attachmentsEl  = document.getElementById("detailReportAttachments");
-    const intentsBody    = document.getElementById("detailReportIntentsBody");
-    const remarksEl      = document.getElementById("remarksTextarea");
-    const flagBtn        = document.getElementById("flagBtn");
-    const approveBtn     = document.getElementById("approveBtn");
-    const backBtn        = document.getElementById("backToPendingBtn");
+    const titleEl           = document.getElementById("detailReportTitle");
+    const subtitleEl        = document.getElementById("detailReportSubtitle");
+    const idEl              = document.getElementById("detailReportId");
+    const municipalityEl    = document.getElementById("detailReportMunicipality");
+    const statusEl          = document.getElementById("detailReportStatus");
+    const dateEl            = document.getElementById("detailReportDate");
+    const encodedByEl       = document.getElementById("detailReportEncodedBy");
+    const yieldEl           = document.getElementById("detailReportYield");
+    const notesEl           = document.getElementById("detailReportNotes");
+    const attachmentsEl     = document.getElementById("detailReportAttachments");
+    const intentsBody       = document.getElementById("detailReportIntentsBody");
+    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
+    const remarksEl         = document.getElementById("remarksTextarea");
+    const flagBtn           = document.getElementById("flagBtn");
+    const approveBtn        = document.getElementById("approveBtn");
+    const backBtn           = document.getElementById("backToPendingBtn");
 
-    // Populate
     if (titleEl)        titleEl.textContent = report.title || `Report #${report.report_id}`;
     if (subtitleEl)     subtitleEl.textContent = `Report #${report.report_id} • ${report.municipality || ""}`;
     if (idEl)           idEl.textContent = report.report_id ?? "—";
@@ -1885,6 +1496,33 @@ async function openReportDetail(report) {
     if (encodedByEl)    encodedByEl.textContent = report.encoded_by_name || "—";
     if (yieldEl)        yieldEl.textContent = report.estimated_yield ?? "—";
     if (notesEl)        notesEl.textContent = report.notes || report.narrative || "—";
+
+    // ============================================================
+    // REMARKS HISTORY — READ-ONLY (immutable)
+    // ============================================================
+    if (remarksHistoryEl) {
+        const historyText = report.revision_remarks || "";
+        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
+        remarksHistoryEl.readOnly = true;
+        remarksHistoryEl.style.background = "#F6F3EB";
+        remarksHistoryEl.style.color = "var(--ink)";
+        remarksHistoryEl.style.cursor = "default";
+    }
+
+    // ============================================================
+    // NEW REMARK — always empty, always editable
+    // ============================================================
+    if (remarksEl) {
+        remarksEl.value = "";
+        remarksEl.readOnly = false;
+        remarksEl.disabled = false;
+        remarksEl.style.background = "#FFFFFF";
+        remarksEl.style.color = "var(--ink)";
+        remarksEl.style.cursor = "text";
+        remarksEl.style.borderColor = "var(--border)";
+        remarksEl.style.borderWidth = "1.5px";
+        remarksEl.placeholder = "Type your comment here...";
+    }
 
     const sl = statusLabelAndClass(report.status);
     if (statusEl) {
@@ -1903,42 +1541,21 @@ async function openReportDetail(report) {
             flagBtn.style.display = "inline-flex";
             flagBtn.textContent = "Flag for Revision";
             flagBtn.disabled = false;
-            flagBtn.classList.remove("active");
         }
         if (approveBtn) {
             approveBtn.style.display = "inline-flex";
             approveBtn.textContent = "Approve & Finalize";
             approveBtn.disabled = false;
-            approveBtn.classList.remove("active");
-        }
-        if (remarksEl) {
-            remarksEl.readOnly = false;
-            remarksEl.style.background = "";
-            remarksEl.style.color = "";
-            remarksEl.style.cursor = "";
-            remarksEl.placeholder = "Enter remarks (required if flagging for revision)...";
         }
     } else {
         if (flagBtn)    flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
-        if (remarksEl) {
-            remarksEl.readOnly = true;
-            remarksEl.style.background = "#F6F3EB";
-            remarksEl.style.color = "var(--muted)";
-            remarksEl.style.cursor = "default";
-        }
     }
 
-    if (remarksEl) remarksEl.value = report.revision_remarks || "";
-
-    // Fetch full report
     try {
         const full = await fetchJsonWithTimeout(
             `${API_BASE_URL}/api/raw-plant-reports/${report.report_id}`,
-            {
-                method: "GET",
-                headers: getAuthHeaders(false)
-            },
+            { method: "GET", headers: getAuthHeaders(false) },
             10000
         );
 
@@ -1964,7 +1581,7 @@ async function openReportDetail(report) {
         }
     }
 
-    // Revision remarks box
+    // Revision remarks box (immutable history)
     const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
     const remarksContent = document.getElementById("detailRevisionRemarks");
 
@@ -1972,21 +1589,7 @@ async function openReportDetail(report) {
         const rawRemarks = report.revision_remarks || "";
 
         if (rawRemarks && rawRemarks.trim()) {
-            const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-            if (match) {
-                remarksContent.innerHTML = `
-                    <div style="display: inline-block; font-size: 11px; font-weight: 700; color: #C0392B; background: #FFFFFF; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.02em; margin-bottom: 10px;">
-                        ${escapeHtml(match[1])}
-                    </div>
-                    <div style="color: #333; line-height: 1.6;">
-                        ${escapeHtml(match[2])}
-                    </div>
-                `;
-            } else {
-                remarksContent.textContent = rawRemarks;
-            }
-
+            remarksContent.innerHTML = `<div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(rawRemarks)}</div>`;
             remarksWrapper.style.display = "block";
         } else {
             remarksWrapper.style.display = "none";
@@ -1998,11 +1601,10 @@ async function openReportDetail(report) {
 
 
 /* ============================================================
-   RENDER ATTACHMENTS
+   RENDER HELPERS
 ============================================================ */
 
 function renderAttachments(attachments) {
-
     const container = document.getElementById("detailReportAttachments");
     if (!container) return;
 
@@ -2040,13 +1642,7 @@ function renderAttachments(attachments) {
     }).join("");
 }
 
-
-/* ============================================================
-   RENDER DETAIL INTENTS
-============================================================ */
-
 function renderDetailIntents(intents) {
-
     const tbody = document.getElementById("detailReportIntentsBody");
     if (!tbody) return;
 
@@ -2092,64 +1688,35 @@ function renderDetailIntents(intents) {
 
 
 /* ============================================================
-   CLOSE REPORT DETAIL (Return button)
+   CLOSE REPORT DETAIL
 ============================================================ */
 
 function closeReportDetail() {
-
-    console.log("🔙 closeReportDetail() called");
-
     selectedReport = null;
 
-    // --------------------------------------------------------
-    // HIDE DETAIL VIEW
-    // --------------------------------------------------------
-
     const detailView = document.getElementById("individualDetailView");
-
     if (detailView) {
         detailView.classList.add("hidden-element");
         detailView.style.display = "none";
-        console.log("   ✔ detailView hidden");
     }
 
-
-    // --------------------------------------------------------
-    // SHOW LIST WRAPPER + SUBVIEWS
-    // --------------------------------------------------------
-
     const listView = document.getElementById("reportsListView");
-
     if (listView) {
         listView.classList.remove("hidden-element");
         listView.style.display = "block";
-        console.log("   ✔ reportsListView shown");
     }
 
     const pendingView = document.getElementById("pendingReportsView");
-    if (pendingView) {
-        pendingView.style.display = "block";
-    }
+    if (pendingView) pendingView.style.display = "block";
 
     const returnedView = document.getElementById("returnedToProvincialView");
-    if (returnedView) {
-        returnedView.style.display = "block";
-    }
+    if (returnedView) returnedView.style.display = "block";
 
     const approvedView = document.getElementById("approvedReportsView");
-    if (approvedView) {
-        approvedView.style.display = "block";
-    }
-
-
-    // --------------------------------------------------------
-    // RESTORE MAIN HEADER
-    // --------------------------------------------------------
+    if (approvedView) approvedView.style.display = "block";
 
     const mainHeader = document.getElementById("reportsMainHeader");
-    if (mainHeader) {
-        mainHeader.style.display = "flex";
-    }
+    if (mainHeader) mainHeader.style.display = "flex";
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -2160,16 +1727,12 @@ function closeReportDetail() {
 ============================================================ */
 
 function initReportDetailButtons() {
-
     function safeAttach(id, handler) {
         const el = document.getElementById(id);
         if (!el) return;
 
-        // Clone to remove all listeners
         const newEl = el.cloneNode(true);
         el.parentNode.replaceChild(newEl, el);
-
-        // Attach fresh listener
         newEl.addEventListener("click", handler);
     }
 
@@ -2184,7 +1747,6 @@ function initReportDetailButtons() {
 ============================================================ */
 
 async function flagReport() {
-
     if (!selectedReport) return;
 
     const validatorId = localStorage.getItem("user_id") ||
@@ -2193,21 +1755,13 @@ async function flagReport() {
     const accessToken = getAuthToken();
     const tokenType = localStorage.getItem("token_type") || "bearer";
 
-    if (!validatorId || !accessToken) {
-        alert("Please log in again.");
-        return;
-    }
+    if (!validatorId || !accessToken) { alert("Please log in again."); return; }
 
-    const userName = localStorage.getItem("full_name")
-        || localStorage.getItem("username")
-        || "Unknown User";
+    const userName = localStorage.getItem("full_name") || localStorage.getItem("username") || "Unknown User";
     const userRole = localStorage.getItem("role") || "DA-RFO Officer";
 
     const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
-    if (!remarksInput) {
-        alert("Revision remarks are required.");
-        return;
-    }
+    if (!remarksInput) { alert("Revision remarks are required."); return; }
 
     const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
 
@@ -2265,11 +1819,10 @@ async function flagReport() {
 
 
 /* ============================================================
-   APPROVE REPORT (Individual)
+   APPROVE REPORT
 ============================================================ */
 
 async function approveReport() {
-
     if (!selectedReport) return;
 
     const validatorId = localStorage.getItem("user_id") ||
@@ -2278,14 +1831,9 @@ async function approveReport() {
     const accessToken = getAuthToken();
     const tokenType = localStorage.getItem("token_type") || "bearer";
 
-    if (!validatorId || !accessToken) {
-        alert("Please log in again.");
-        return;
-    }
+    if (!validatorId || !accessToken) { alert("Please log in again."); return; }
 
-    const userName = localStorage.getItem("full_name")
-        || localStorage.getItem("username")
-        || "Unknown User";
+    const userName = localStorage.getItem("full_name") || localStorage.getItem("username") || "Unknown User";
     const userRole = localStorage.getItem("role") || "DA-RFO Officer";
 
     const remarksInput = document.getElementById("remarksTextarea")?.value.trim();

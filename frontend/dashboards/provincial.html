@@ -958,23 +958,37 @@
               </div>
             </div>
 
-            <!-- ==================== REMARKS ==================== -->
+            <!-- ==================== REMARKS HISTORY (READ-ONLY) ==================== -->
             <div class="notes-row notes-row-clean" style="margin-top: 28px;">
               <div class="notes-field">
-                <label>Remarks</label>
-                <textarea id="remarksTextarea" class="textarea-notes" placeholder="Enter remarks (required if flagging for revision)..."></textarea>
+                <label>Remarks History</label>
+                <textarea
+                  id="remarksHistoryTextarea"
+                  class="textarea-notes"
+                  readonly
+                  placeholder="No remarks yet."
+                  style="background: #F6F3EB; color: var(--muted); cursor: default; min-height: 120px;"
+                ></textarea>
               </div>
             </div>
-          </div>
 
+            <!-- ==================== ADD NEW REMARK ==================== -->
+            <div class="notes-row notes-row-clean" style="margin-top: 16px;">
+              <div class="notes-field">
+                <label>Add New Remark</label>
+                <textarea
+                  id="remarksTextarea"
+                  class="textarea-notes"
+                  placeholder="Type your comment here..."
+                ></textarea>
+              </div>
+            </div>
+            
           <!-- ==================== ACTION BUTTONS ==================== -->
             <div class="detail-actions-row">
               <button class="btn-outline-report" id="backToPendingBtn" type="button">Return</button>
 
               <!-- ✅ EDIT BUTTON — para sa Regional Flagged reports -->
-              <button class="btn-outline-report" id="editReportBtn" type="button" style="display: none;">
-                Edit Remarks
-              </button>
 
               <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
 
@@ -987,8 +1001,8 @@
                 Resubmit to Regional
               </button>
             </div>
-
-
+          </div>
+      </section>
 
       <!-- ===================== VIEW: Map ===================== -->
       <section class="view" id="view-map">

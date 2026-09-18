@@ -9,6 +9,9 @@ class UserBase(BaseModel):
     email_address: EmailStr
     phone_number: str
     role: str
+    region: str | None = None
+    province: str | None = None
+    municipality: str | None = None
 
 
 class UserCreate(UserBase):
@@ -23,6 +26,9 @@ class UserUpdate(BaseModel):
     phone_number: str | None = None
     password: str | None = None
     role: str | None = None
+    region: str | None = None
+    province: str | None = None
+    municipality: str | None = None
 
 
 class UserStatusUpdate(BaseModel):
