@@ -10,5 +10,6 @@ python seed_darfo.py
 python seed_farmers.py
 python seed_buyers.py
 python seed_planting_intents.py
+python seed_alert_thresholds.py
 
 exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}"
