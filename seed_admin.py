@@ -1,17 +1,21 @@
 import sys
 import os
+import importlib
+import pkgutil
 
 # Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.core.database import SessionLocal
+# Auto-import all models to resolve SQLAlchemy relationships
+try:
+    import src.models as models_pkg
+    for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
+        importlib.import_module(f"src.models.{module_name}")
+except Exception as err:
+    print(f"Notice during models import: {err}")
 
-# Import all related models so SQLAlchemy can resolve relationships
+from src.core.database import SessionLocal
 from src.models.users import User
-from src.models.audit_logs import AuditLog
-from src.models.raw_plant_reports import RawPlantReport
-from src.models.report_submission import ReportSubmission
-from src.models.report_validation_history import ReportValidationHistory
 
 from src.core.security import hash_password
 

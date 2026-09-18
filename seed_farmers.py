@@ -1,9 +1,19 @@
 # seed_farmers.py
 import sys
 import os
+import importlib
+import pkgutil
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Auto-import all models to resolve SQLAlchemy relationships
+try:
+    import src.models as models_pkg
+    for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
+        importlib.import_module(f"src.models.{module_name}")
+except Exception as err:
+    print(f"Notice during models import: {err}")
 
 from src.core.database import SessionLocal
 from src.models.farmers import Farmer
