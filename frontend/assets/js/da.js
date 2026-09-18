@@ -357,7 +357,7 @@ function initMap() {
     ).addTo(mapInstance);
 
     const municipalityCoordinates = {
-        "Angeles": [15.1450, 120.5887],
+        "Angeles City": [15.1450, 120.5887],
         "Apalit": [14.9470, 120.7700],
         "Arayat": [15.1500, 120.7690],
         "Bacolor": [15.0000, 120.6520],
