@@ -6,6 +6,7 @@
 
 
 <title>Buyer Registry Form — eSaka</title>
+<script src="assets/js/config.js"></script>
 
 
 <!-- Modern Typography -->
@@ -667,7 +668,7 @@
 
 
 <script>
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
 const BUYER_REGISTRY_ENDPOINT = `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
 
 

@@ -25,7 +25,7 @@
    API CONFIGURATION
 ============================================================ */
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
 
 const PENDING_BUYERS_ENDPOINT      = `${API_BASE_URL}/api/buyer-status/pending`;
 const VERIFIED_BUYERS_ENDPOINT     = `${API_BASE_URL}/api/buyer-status/verified`;
