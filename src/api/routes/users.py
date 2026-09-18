@@ -125,8 +125,12 @@ def create_user(
             "email_address": db_user.email_address,
             "phone_number": db_user.phone_number,
             "role": db_user.role,
-            "is_active": db_user.is_active
+            "region": db_user.region,
+            "province": db_user.province,
+            "municipality": db_user.municipality,
+            "is_active": db_user.is_active,
         },
+
 
         ip_address=(
             request.client.host

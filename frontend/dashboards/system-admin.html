@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>System Admin — eSaka</title>
 
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
   <link rel="stylesheet" href="../assets/css/base.css">
-
 
   <style>
     :root {
@@ -35,13 +32,11 @@
       --radius-md: 12px;
     }
 
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
 
     html, body {
       width: 100%;
@@ -52,10 +47,8 @@
       -webkit-font-smoothing: antialiased;
     }
 
-
     a { color: inherit; }
     button, input, select, textarea { font-family: inherit; }
-
 
     /* --- TOPBAR --- */
     .topbar {
@@ -71,13 +64,11 @@
       height: var(--topbar-height);
     }
 
-
     .topbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
     }
-
 
     .hamburger {
       background: #FFF;
@@ -91,12 +82,10 @@
       transition: all 0.2s ease;
     }
 
-
     .hamburger:hover {
       background: var(--green-light);
       border-color: var(--green);
     }
-
 
     .hamburger span {
       display: block;
@@ -106,13 +95,11 @@
       border-radius: 2px;
     }
 
-
     .logos {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
 
     .topbar-right {
       display: flex;
@@ -120,6 +107,41 @@
       gap: 18px;
     }
 
+    .bell-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+    .bell-wrap:hover {
+      background: var(--green-dark);
+      transform: scale(1.04);
+    }
+
+    .bell-wrap svg {
+      width: 18px;
+      height: 18px;
+      fill: #fff;
+    }
+
+    .bell-dot {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 9px;
+      height: 9px;
+      background: #C0392B;
+      border-radius: 50%;
+      border: 2px solid var(--cream);
+    }
 
     .user-info {
       display: flex;
@@ -130,7 +152,6 @@
       border-radius: 999px;
       border: 1px solid var(--border);
     }
-
 
     .avatar {
       width: 32px;
@@ -145,19 +166,16 @@
       font-size: 13px;
     }
 
-
     .user-text {
       text-align: left;
       line-height: 1.2;
     }
-
 
     .user-name {
       font-size: 13.5px;
       font-weight: 700;
       color: var(--ink);
     }
-
 
     .user-role {
       font-size: 11px;
@@ -167,13 +185,11 @@
       letter-spacing: 0.04em;
     }
 
-
     /* --- SIDEBAR --- */
     .layout {
       display: flex;
       min-height: calc(100vh - var(--topbar-height));
     }
-
 
     .sidebar {
       width: 230px;
@@ -192,18 +208,15 @@
       transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-
     .sidebar.open {
       left: 0;
     }
-
 
     .nav-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
-
 
     .nav-item {
       display: flex;
@@ -223,7 +236,6 @@
       transition: all 0.2s ease;
     }
 
-
     .nav-item svg {
       width: 19px;
       height: 19px;
@@ -231,19 +243,16 @@
       flex-shrink: 0;
     }
 
-
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
     }
-
 
     .nav-item.active {
       background: var(--green-dark);
       color: #FFFFFF;
       font-weight: 700;
     }
-
 
     .signout {
       display: flex;
@@ -262,19 +271,16 @@
       transition: all 0.2s ease;
     }
 
-
     .signout svg {
       width: 18px;
       height: 18px;
       fill: currentColor;
     }
 
-
     .signout:hover {
       background: rgba(192, 57, 43, 0.25);
       color: #FFF;
     }
-
 
     /* --- MAIN CONTENT & ACTION PANELS --- */
     .main {
@@ -283,10 +289,8 @@
       min-width: 0;
     }
 
-
     .view { display: none; }
     .view.active-view { display: block; }
-
 
     .main-header {
       display: flex;
@@ -297,7 +301,6 @@
       margin-bottom: 20px;
     }
 
-
     .main-header h1 {
       font-size: 26px;
       font-weight: 800;
@@ -306,16 +309,12 @@
       margin: 0;
     }
 
-
     .card {
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 24px 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 15px rgba(46, 42, 34, 0.02);
+      padding: 22px 24px;
     }
-
 
     .card-title {
       font-size: 15px;
@@ -326,14 +325,12 @@
       letter-spacing: 0.03em;
     }
 
-
     /* --- SEARCH BOX & HEADER ACTIONS --- */
     .search-row {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
 
     .search-box {
       display: flex;
@@ -347,12 +344,10 @@
       transition: all 0.2s ease;
     }
 
-
     .search-box:focus-within {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
-
 
     .search-box svg {
       width: 15px;
@@ -363,7 +358,6 @@
       flex-shrink: 0;
     }
 
-
     .search-box input {
       border: none;
       outline: none;
@@ -373,15 +367,36 @@
       color: var(--ink);
     }
 
+    .filter-btn {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--muted);
+    }
+
+    .filter-btn:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--green);
+    }
 
     /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     .table-wrapper {
         overflow-x: auto;
-        border-radius: 10px;
-        border: 1.5px solid var(--border);
-        background: var(--white);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-top: 8px;
     }
-
 
     table {
       width: 100%;
@@ -389,61 +404,59 @@
       border-spacing: 0;
     }
 
-
     thead th {
-      text-align: center;
+      text-align: left;
       font-size: 12px;
       font-weight: 700;
       color: var(--muted);
-      padding: 14px 20px;
-      letter-spacing: 0.05em;
+      padding: 12px 14px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       border-bottom: 1.5px solid var(--border);
-      background: #EAE3D2;
+      background: #f8f6f2;
     }
 
-
     tbody td {
-      padding: 16px 20px;
-      font-size: 14px;
+      padding: 13px 14px;
+      font-size: 13.5px;
       vertical-align: middle;
       border-bottom: 1px solid var(--border-light);
       color: var(--ink);
-      text-align: center;
-      font-weight: 500;
-      background: var(--white);
     }
-
 
     tbody tr {
       transition: background 0.15s ease;
-      background: var(--white);
     }
 
-
-    tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td {
-      background: #EDE7D9;
+      background: #F3EEE4;
     }
 
+    .name-pill { font-weight: 500; color: #1e1a16; }
+    .username-pill { color: #5a554a; font-size: 13px; }
+    .location-pill { color: #5a554a; font-size: 12.5px; }
 
-   
-
+    .role {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
 
     .status-badge {
       display: inline-block;
-      padding: 6px 14px;
+      padding: 4px 14px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
       border-radius: 20px;
       letter-spacing: 0.3px;
       text-transform: uppercase;
     }
 
-
-    .status-badge.active { background: #E8F5E9; color: #2E7D32 !important; }
-    .status-badge.inactive { background: #FDE8E8; color: #C0392B !important; }
-
+    .status-badge.active { background: #e6f4ea; color: #1e1a16 !important; }
+    .status-badge.inactive { background: #fce8e6; color: #1e1a16 !important; }
 
     /* --- BUTTONS --- */
     .btn-primary {
@@ -462,12 +475,10 @@
       transition: all 0.2s ease;
     }
 
-
     .btn-primary:hover:not(:disabled) {
       background: var(--green-dark);
       transform: translateY(-1px);
     }
-
 
     .btn-secondary {
       appearance: none;
@@ -482,16 +493,13 @@
       transition: all 0.2s ease;
     }
 
-
     .btn-secondary:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
     }
 
-
     .btn-danger { background: #A1382B !important; color: #FFF !important; }
     .btn-danger:hover { background: #84281D !important; }
-
 
     .btn-deactivate,
     .btn-reactivate,
@@ -512,12 +520,10 @@
       white-space: nowrap;
     }
 
-
-    .btn-deactivate { background: #FDE8E8; color: #C0392B; }
-    .btn-deactivate:hover { background: #FADBD8; transform: translateY(-1px); }
-    .btn-reactivate { background: #E8F5E9; color: #2E7D32; }
-    .btn-reactivate:hover { background: #D5E8D4; transform: translateY(-1px); }
-
+    .btn-deactivate { background: #fce8e6; color: #b3261e; }
+    .btn-deactivate:hover { background: #f5d0cc; transform: translateY(-1px); }
+    .btn-reactivate { background: #e6f4ea; color: #1e7e34; }
+    .btn-reactivate:hover { background: #c8e6d0; transform: translateY(-1px); }
 
     .action-btn {
       border: 1.5px solid var(--border);
@@ -525,18 +531,15 @@
       color: var(--ink);
     }
 
-
     .action-btn:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
       color: var(--green-dark);
     }
 
-
     td:last-child, thead th:last-child {
       text-align: center !important;
     }
-
 
     /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid {
@@ -545,12 +548,10 @@
       gap: 18px 30px;
     }
 
-
     .form-field {
       display: flex;
       flex-direction: column;
     }
-
 
     .form-field label {
       display: block;
@@ -561,7 +562,6 @@
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
-
 
     .form-field input,
     .form-field select {
@@ -576,13 +576,18 @@
       transition: all 0.2s ease;
     }
 
-
     .form-field input:focus,
     .form-field select:focus {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
+    .form-field select:disabled {
+      background: #F0EDE4;
+      color: #9A9488;
+      cursor: not-allowed;
+      opacity: 0.75;
+    }
 
     .form-actions {
       display: flex;
@@ -590,7 +595,6 @@
       gap: 12px;
       margin-top: 24px;
     }
-
 
     /* --- PAGINATION STYLES --- */
     .pagination-container {
@@ -604,10 +608,8 @@
       color: var(--muted);
     }
 
-
     .pagination-controls { display: flex; align-items: center; gap: 6px; }
     .page-numbers-wrap { display: flex; gap: 4px; }
-
 
     .btn-page {
       padding: 5px 11px;
@@ -621,12 +623,10 @@
       transition: all 0.15s ease;
     }
 
-
     .btn-page:hover:not(:disabled) {
       background: #EDE7D8;
       border-color: var(--green);
     }
-
 
     .btn-page.active {
       background: var(--green);
@@ -634,14 +634,11 @@
       border-color: var(--green);
     }
 
-
     .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
-
 
     /* --- ALERTS & PILLS --- */
     .alert-container-card { padding: 24px; }
     .alert-list { display: flex; flex-direction: column; gap: 16px; }
-
 
     .alert-card {
       background: #F6F3EB;
@@ -652,13 +649,11 @@
       transition: 0.2s ease;
     }
 
-
     .alert-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       border-color: var(--green);
     }
-
 
     .alert-top {
       display: flex;
@@ -667,10 +662,8 @@
       margin-bottom: 8px;
     }
 
-
     .alert-title-group { display: flex; align-items: center; gap: 12px; }
     .alert-title { font-size: 15px; font-weight: 700; color: var(--ink); }
-
 
     .sev-pill {
       display: inline-block;
@@ -682,11 +675,9 @@
       letter-spacing: 0.03em;
     }
 
-
     .sev-pill.high { background: #C0392B; color: #FFFFFF; }
     .sev-pill.medium { background: #D97706; color: #FFFFFF; }
     .sev-pill.low { background: var(--status-confirmed); color: #FFFFFF; }
-
 
     .status-pill-btn {
       border: none;
@@ -697,10 +688,8 @@
       cursor: pointer;
     }
 
-
     .status-pill-btn.unresolved { background: #FADBD8; color: #922B21; }
     .status-pill-btn.acknowledged { background: var(--green-light); color: var(--green-dark); }
-
 
     .alert-desc {
       font-size: 13.5px;
@@ -708,7 +697,6 @@
       line-height: 1.5;
       margin: 0 0 12px;
     }
-
 
     .alert-stats {
       display: flex;
@@ -718,10 +706,8 @@
       color: var(--muted);
     }
 
-
     .alert-stats span b { color: var(--ink); font-weight: 700; }
     .alert-date { margin-left: auto; font-size: 12.5px; color: var(--muted); }
-
 
     /* --- MODALS --- */
     .modal-overlay {
@@ -734,9 +720,7 @@
       z-index: 3000;
     }
 
-
     .modal-overlay.show { display: flex; }
-
 
     .modal-box {
       background: var(--cream);
@@ -749,14 +733,12 @@
       width: 90%;
     }
 
-
     .modal-box h2 {
       font-size: 22px;
       font-weight: 800;
       color: var(--green);
       margin-bottom: 10px;
     }
-
 
     .modal-box p {
       font-size: 14px;
@@ -765,12 +747,9 @@
       line-height: 1.45;
     }
 
-
     .modal-actions { display: flex; justify-content: center; gap: 12px; }
 
-
     .alert-detail-box { max-width: 480px; text-align: left; }
-
 
     .alert-modal-header {
       display: flex;
@@ -779,9 +758,7 @@
       margin-bottom: 16px;
     }
 
-
     .alert-modal-header h2 { font-size: 18px; font-weight: 800; color: var(--green); margin: 0; }
-
 
     .modal-stats-grid {
       display: grid;
@@ -795,10 +772,8 @@
       font-size: 13px;
     }
 
-
     .modal-stats-grid div { color: var(--muted); }
     .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
-
 
     .modal-actions-row { display: flex; justify-content: flex-end; gap: 12px; }
     .modal-title { font-size: 20px; font-weight: 800; color: var(--green); margin-bottom: 16px; }
@@ -808,21 +783,23 @@
 </head>
 <body>
 
-
 <div class="topbar">
   <div class="topbar-left">
     <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
       <span></span><span></span><span></span>
     </button>
     <div class="logos">
-      <a href="../home.html" style="display: flex; align-items: center; text-decoration: none;">
-        <img src="../images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
-      </a>
+      <img src="../assets/images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
+      <img src="../assets/images/esakaname.png" alt="eSaka Name" style="height: 28px; width: auto; display: block;">
     </div>
   </div>
 
-
   <div class="topbar-right">
+    <div class="bell-wrap" id="bellBtn" aria-label="Notifications">
+      <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
+      <span class="bell-dot"></span>
+    </div>
+
     <div class="user-info">
       <div class="avatar">SA</div>
       <div class="user-text">
@@ -832,7 +809,6 @@
     </div>
   </div>
 </div>
-
 
 <div class="layout">
   <nav class="sidebar" id="sidebar">
@@ -851,16 +827,13 @@
       </button>
     </div>
 
-
     <a class="signout" href="../index.html" id="signOutButton">
       <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
       Sign Out
     </a>
   </nav>
 
-
   <main class="main">
-
 
     <section class="view active-view" id="view-users">
       <div class="main-header">
@@ -871,12 +844,10 @@
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" id="searchUsers" placeholder="Search users...">
             </div>
-         
           </div>
           <button class="btn-primary" id="addAccountBtn" type="button" style="white-space: nowrap;">+ Add Account</button>
         </div>
       </div>
-
 
       <div class="card">
         <div class="card-title">User Account Management</div>
@@ -887,16 +858,16 @@
                 <th>Name</th>
                 <th>Username</th>
                 <th>Role</th>
+                <th>Location</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="userRows" data-page-size="7">
-              <tr><td colspan="5" class="loading-row">Loading users...</td></tr>
+              <tr><td colspan="6" class="loading-row">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
-
 
         <div class="pagination-container">
           <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
@@ -909,12 +880,10 @@
       </div>
     </section>
 
-
     <section class="view" id="view-add-account">
       <div class="main-header">
         <h1>Add New Account</h1>
       </div>
-
 
       <div class="card">
         <form id="addAccountForm" novalidate>
@@ -958,8 +927,27 @@
                 <option value="AEW">AEW</option>
               </select>
             </div>
-          </div>
 
+            <!-- REGION / PROVINCE / MUNICIPALITY -->
+            <div class="form-field">
+              <label for="regionSelect">Region *</label>
+              <select id="regionSelect" required>
+                <option value="" disabled selected>Loading regions...</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="provinceSelect">Province *</label>
+              <select id="provinceSelect" required disabled>
+                <option value="" disabled selected>Select a province</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="municipalitySelect">Municipality / City *</label>
+              <select id="municipalitySelect" required disabled>
+                <option value="" disabled selected>Select a municipality</option>
+              </select>
+            </div>
+          </div>
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" id="cancelAddAccount">Cancel</button>
@@ -968,7 +956,6 @@
         </form>
       </div>
     </section>
-
 
     <section class="view" id="view-etl">
       <div class="main-header">
@@ -983,7 +970,6 @@
           <button class="btn-primary" id="manualRunBtn" type="button" style="white-space: nowrap;">Manual Run</button>
         </div>
       </div>
-
 
       <div class="card">
         <div class="card-title">ETL Pipeline Run Log</div>
@@ -1004,7 +990,6 @@
       </div>
     </section>
 
-
     <section class="view" id="view-audit">
       <div class="main-header">
         <h1>System Audit Logs</h1>
@@ -1015,7 +1000,6 @@
           </div>
         </div>
       </div>
-
 
       <div class="card">
         <div class="card-title">Platform Audit Log</div>
@@ -1038,7 +1022,6 @@
           </table>
         </div>
 
-
         <div class="pagination-container">
           <span class="pagination-info" id="auditPaginationInfo">Showing 0 of 0</span>
           <div class="pagination-controls" id="auditPaginationControls">
@@ -1050,10 +1033,8 @@
       </div>
     </section>
 
-
   </main>
 </div>
-
 
 <div class="modal-overlay" id="successModal">
   <div class="modal-box">
@@ -1061,7 +1042,6 @@
     <button class="btn-primary modal-ok" id="modalOkBtn" type="button">OK</button>
   </div>
 </div>
-
 
 <!-- AUDIT LOG DETAIL MODAL -->
 <div class="modal-overlay" id="auditDetailModal">
@@ -1074,13 +1054,11 @@
     <div id="modalAuditContent" style="max-height: 350px; overflow-y: auto; font-size: 13.5px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; padding: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 20px;">
     </div>
 
-
     <div class="modal-actions-row">
       <button class="btn-primary" id="closeAuditModalBtn" type="button">Close</button>
     </div>
   </div>
 </div>
-
 
 <div class="modal-overlay" id="alertDetailModal">
   <div class="modal-box alert-detail-box">
@@ -1090,7 +1068,6 @@
     </div>
     <p id="modalAlertDesc" class="alert-desc"></p>
 
-
     <div class="modal-stats-grid">
       <div>Supply: <b id="modalAlertSupply"></b></div>
       <div>Demand: <b id="modalAlertDemand"></b></div>
@@ -1098,14 +1075,12 @@
       <div>Date Logged: <b id="modalAlertDate"></b></div>
     </div>
 
-
     <div class="modal-actions-row">
       <button class="btn-secondary" id="closeAlertModalBtn" type="button">Close</button>
       <button class="btn-primary" id="toggleAlertStatusBtn" type="button">Acknowledge Alert</button>
     </div>
   </div>
 </div>
-
 
 <!-- CONFIRM USER STATUS MODAL -->
 <div class="modal-overlay" id="confirmStatusModal">
@@ -1119,7 +1094,6 @@
   </div>
 </div>
 
-
 <!-- CONFIRM LOGOUT MODAL -->
 <div class="modal-overlay" id="confirmLogoutModal">
   <div class="modal-box">
@@ -1132,11 +1106,8 @@
   </div>
 </div>
 
-
 <script src="../assets/js/dashboard-common.js"></script>
 <script src="../assets/js/system-admin.js"></script>
 
-
 </body>
 </html>
-
