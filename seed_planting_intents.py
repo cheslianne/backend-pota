@@ -91,7 +91,11 @@ def seed_planting_intents():
         existing_count = db.query(PlantingIntent).count()
         if existing_count > 0:
             print(f"\n⚠️ Found {existing_count} existing planting intents.")
-            confirm = input("Delete existing planting intents? (yes/no): ")
+            try:
+                confirm = input("Delete existing planting intents? (yes/no): ")
+            except EOFError:
+                # non-interactive environment (e.g. container deploy) - skip re-seeding
+                confirm = "no"
             if confirm.lower() == "yes":
                 db.query(PlantingIntent).delete()
                 db.commit()
