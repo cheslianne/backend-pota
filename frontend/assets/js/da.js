@@ -79,6 +79,8 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
 ============================================================ */
 
 let mapInstance = null;
+let MUNICIPALITY_MAP_RAW_DATA = [];
+let mapMarkersLayer = null;
 let currentSelectedBuyer = null;
 let pendingBuyersCache = [];
 let verifiedBuyersCache = [];
@@ -315,7 +317,6 @@ function initMap() {
 
     loadMunicipalityMapData(municipalityCoordinates);
 }
-
 async function loadMunicipalityMapData(municipalityCoordinates) {
     try {
         const response = await fetch(
@@ -328,31 +329,182 @@ async function loadMunicipalityMapData(municipalityCoordinates) {
         const result = await response.json();
         if (!result.data || !Array.isArray(result.data)) return;
 
-        result.data.forEach(municipalityData => {
-            const municipality = municipalityData.municipality;
-            const coordinates = municipalityCoordinates[municipality];
-            if (!coordinates) return;
+        MUNICIPALITY_MAP_RAW_DATA = result.data;
+        window._municipalityCoordinates = municipalityCoordinates;
+        renderFilteredMapMarkers();
 
-            let popupContent = `
-                <div style="min-width: 180px;">
-                    <strong>Municipality:</strong> ${escapeHtml(municipality)}<br><br>
-            `;
-
-            (municipalityData.commodities || []).forEach(item => {
-                popupContent += `
-                    <strong>Commodity:</strong> ${escapeHtml(item.commodity)}<br>
-                    <strong>Status:</strong> ${escapeHtml(item.status)}<br><br>
-                `;
-            });
-
-            popupContent += `</div>`;
-
-            L.marker(coordinates).addTo(mapInstance).bindPopup(popupContent);
-        });
+        document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
+        document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
 
     } catch (error) {
         console.error("Failed to load municipality map data:", error);
     }
+}
+
+function renderFilteredMapMarkers() {
+    if (!mapInstance) return;
+
+    if (mapMarkersLayer) {
+        mapInstance.removeLayer(mapMarkersLayer);
+    }
+
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+
+    const municipalityCoordinates = window._municipalityCoordinates || {};
+    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+        const municipality = municipalityData.municipality;
+        const baseCoordinates = municipalityCoordinates[municipality];
+
+        if (!baseCoordinates || !municipalityData.commodities) return;
+
+        const filteredCommodities = municipalityData.commodities.filter(item => {
+            const commodityMatch = selectedCommodity === 'all' ||
+                (item.commodity || "").toLowerCase() === selectedCommodity.toLowerCase();
+            const statusVal = (item.status || "").toUpperCase();
+
+            let statusMatch = true;
+            if (selectedStatus !== 'all') {
+                statusMatch = statusVal.includes(selectedStatus);
+            }
+
+            return commodityMatch && statusMatch;
+        });
+
+        const totalFiltered = filteredCommodities.length;
+
+        filteredCommodities.forEach((item, index) => {
+            const commodity = item.commodity;
+            const status = (item.status || "").toUpperCase();
+
+            const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+            const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+            const markerCoordinates = [offsetLat, offsetLng];
+
+            let markerColor = "#6c757d"; // Gray = No Data
+
+            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+                markerColor = "#C0392B"; // Red
+            } else if (status.includes("BALANCED")) {
+                markerColor = "#2E7D32"; // Green
+            } else if (status.includes("DEFICIT")) {
+                markerColor = "#D97706"; // Amber
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="
+                    background-color: ${markerColor};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const popupContent = `
+                <div style="min-width:180px;">
+                    <strong>Municipality:</strong> ${escapeHtml(municipality)}
+                    <br><br>
+                    <strong>Commodity:</strong> ${escapeHtml(commodity)}
+                    <br>
+                    <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
+                </div>
+            `;
+
+            L.marker(markerCoordinates, { icon: customIcon })
+                .addTo(mapMarkersLayer)
+                .bindPopup(popupContent);
+        });
+    });
+}
+
+function renderFilteredMapMarkers() {
+    if (!mapInstance) return;
+
+    if (mapMarkersLayer) {
+        mapInstance.removeLayer(mapMarkersLayer);
+    }
+
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+
+    const municipalityCoordinates = window._municipalityCoordinates || {};
+    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+        const municipality = municipalityData.municipality;
+        const baseCoordinates = municipalityCoordinates[municipality];
+
+        if (!baseCoordinates || !municipalityData.commodities) return;
+
+        const filteredCommodities = municipalityData.commodities.filter(item => {
+            const commodityMatch = selectedCommodity === 'all' ||
+                (item.commodity || "").toLowerCase() === selectedCommodity.toLowerCase();
+            const statusVal = (item.status || "").toUpperCase();
+
+            let statusMatch = true;
+            if (selectedStatus !== 'all') {
+                statusMatch = statusVal.includes(selectedStatus);
+            }
+
+            return commodityMatch && statusMatch;
+        });
+
+        const totalFiltered = filteredCommodities.length;
+
+        filteredCommodities.forEach((item, index) => {
+            const commodity = item.commodity;
+            const status = (item.status || "").toUpperCase();
+
+            const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+            const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+            const markerCoordinates = [offsetLat, offsetLng];
+
+            let markerColor = "#6c757d"; // Gray = No Data
+
+            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+                markerColor = "#C0392B"; // Red
+            } else if (status.includes("BALANCED")) {
+                markerColor = "#2E7D32"; // Green
+            } else if (status.includes("DEFICIT")) {
+                markerColor = "#D97706"; // Amber
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="
+                    background-color: ${markerColor};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const popupContent = `
+                <div style="min-width:180px;">
+                    <strong>Municipality:</strong> ${escapeHtml(municipality)}
+                    <br><br>
+                    <strong>Commodity:</strong> ${escapeHtml(commodity)}
+                    <br>
+                    <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
+                </div>
+            `;
+
+            L.marker(markerCoordinates, { icon: customIcon })
+                .addTo(mapMarkersLayer)
+                .bindPopup(popupContent);
+        });
+    });
 }
 
 

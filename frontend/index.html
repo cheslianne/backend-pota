@@ -9,10 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --green-primary: #1C4D25;
-    --green-dark: #123318;
-    --gold: #C9A15A;
+    --green-primary: #657104; /* Spinach */
+    --green-dark: #283C21;    /* Kale Leaf */
+    --gold: #FA9401;          /* Turmeric */
     --muted: #4F5A49;
+    --bean-sprout: #F8F7F2;   /* Bean Sprout */
+    --endive: #B5BC76;        /* Endive */
+    --radicchio: #C2512F;     /* Radicchio */
   }
 
   * {
@@ -25,40 +28,80 @@
     width: 100%;
     min-height: 100vh;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background-image: url('images/esakabg.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
+    position: relative;
+    overflow-x: hidden;
   }
 
+  /* ==========================================================
+     BACKGROUND SLIDESHOW STYLES
+     ========================================================== */
+  .bg-slideshow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Binago: 0 para hindi maitago sa likod */
+  }
+
+  .bg-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    /* TINANGGAL ang background-attachment: fixed */
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+
+  .bg-slide.active {
+    opacity: 1;
+  }
+
+  /* Mga background images */
+  .bg-slide:nth-child(1) { background-image: url('images/esakabg.jpg'); }
+  .bg-slide:nth-child(2) { background-image: url('images/esakabg2.jpg'); }
+  .bg-slide:nth-child(3) { background-image: url('images/esakabg3.avif'); }
+
+
+  /* ==========================================================
+     MAIN CARD LAYOUT
+     ========================================================== */
   .landing-card-layout {
     width: 100%;
     max-width: 950px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
+    /* Binago: mas transparent (0.65) at tinanggal ang backdrop-filter */
+    background: rgba(248, 247, 242, 0.65);
     border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 30px 70px rgba(40, 60, 33, 0.3);
+    border: 1px solid rgba(181, 188, 118, 0.4);
     display: flex;
     flex-direction: column;
+    z-index: 1;
+    position: relative;
   }
 
   /* ==========================================================
      TOP SECTION - Logo and Title
      ========================================================== */
   .hero-header {
-    background: var(--green-primary);
+    /* Binago: semi-transparent green (0.72) */
+    background: rgba(101, 113, 4, 0.72);
     padding: 50px 50px 70px 50px;
     color: #ffffff;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
   }
 
   .brand-logo-img {
@@ -66,6 +109,7 @@
     height: auto;
     object-fit: contain;
     margin-bottom: 20px;
+    filter: brightness(0) invert(1);
   }
 
   .hero-title {
@@ -83,7 +127,7 @@
   .hero-desc {
     font-size: 15px;
     line-height: 1.6;
-    color: #D2E2D4;
+    color: var(--bean-sprout);
     font-weight: 500;
     max-width: 650px;
   }
@@ -110,12 +154,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(248, 247, 242, 0.6);
     background: transparent;
     color: #ffffff;
   }
 
-  /* Parehas sila ng kulay pag nag-hover */
   .btn:hover {
     background: var(--gold);
     border-color: var(--gold);
@@ -141,7 +184,7 @@
     border-radius: 18px;
     overflow: hidden;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-    border: 4px solid #ffffff;
+    border: 4px solid var(--bean-sprout);
     height: 240px;
     position: relative;
     background-size: cover;
@@ -154,13 +197,13 @@
   }
 
   .vertical-card:nth-child(1) {
-    background-image: linear-gradient(to top, rgba(0,0,0,0.6), transparent), url('images/esakacrops.jpg');
+    background-image: linear-gradient(to top, rgba(40,60,33,0.75), transparent), url('images/esakacrops.jpg');
   }
   .vertical-card:nth-child(2) {
-    background-image: linear-gradient(to top, rgba(0,0,0,0.6), transparent), url('images/esakadatapic.jpg');
+    background-image: linear-gradient(to top, rgba(40,60,33,0.75), transparent), url('images/esakadatapic.jpg');
   }
   .vertical-card:nth-child(3) {
-    background-image: linear-gradient(to top, rgba(0,0,0,0.6), transparent), url('images/esakabuyermatching.jpg');
+    background-image: linear-gradient(to top, rgba(40,60,33,0.75), transparent), url('images/esakabuyermatching.jpg');
   }
 
   .card-label {
@@ -182,10 +225,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(5px);
+    /* Binago: mas transparent (0.5) */
+    background: rgba(248, 247, 242, 0.5);
     margin-top: 10px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(40, 60, 33, 0.1);
   }
 
   .footer-contact-info {
@@ -193,13 +236,13 @@
     gap: 30px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--green-dark);
   }
 
   .footer-copyright {
     font-size: 13px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--green-dark);
   }
 
   @media (max-width: 768px) {
@@ -237,13 +280,20 @@
 </head>
 <body>
 
+<!-- Background Slideshow Layer -->
+<div class="bg-slideshow">
+  <div class="bg-slide active"></div>
+  <div class="bg-slide"></div>
+  <div class="bg-slide"></div>
+</div>
+
 <div class="landing-card-layout">
  
   <!-- Top Section: Logo, Title, Description, Buttons -->
   <div class="hero-header">
     <img src="images/esakaname.png" alt="eSaka Logo" class="brand-logo-img">
     <h1 class="hero-title">Tamang Presyo. Tamang Tanim. <span>Tamang Kita.</span></h1>
-    <p class="hero-desc">Pinag-uugnay ang mga magsasaka, AEW, at ang Department of Agriculture gamit ang real-time market data at verified buyer matching.</p>
+    <p class="hero-desc">Pinag-uugnay ang mga magsasaka, agricultural extension workers, at ang Department of Agriculture gamit ang real-time market data at verified buyer matching.</p>
    
     <div class="action-buttons">
       <button class="btn" type="button" id="loginBtn">Login</button>
@@ -278,6 +328,7 @@
 </div>
 
 <script>
+  // Navigation scripts
   document.getElementById('loginBtn').addEventListener('click', () => {
     window.location.href = 'login.html';
   });
@@ -285,6 +336,18 @@
   document.getElementById('registryBtn').addEventListener('click', () => {
     window.location.href = 'buyer-registry.html';
   });
+
+  // Background Slideshow Script (Every 4 seconds)
+  const slides = document.querySelectorAll('.bg-slide');
+  let currentSlide = 0;
+
+  function nextSlide() {
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
+  }
+
+  setInterval(nextSlide, 4000);
 </script>
 
 </body>
