@@ -9,7 +9,6 @@ function getAuthToken() {
     return localStorage.getItem("access_token");
 }
 
-
 function getAuthHeaders() {
 
     const token = getAuthToken();
@@ -145,78 +144,6 @@ function initializeLoggedInUser() {
     return true;
 }
 
-// --- PAGINATION STATE ---
-let currentUserPage = 1;
-const usersPerPage = 7;
-let cachedUsers = [];
-
-let currentAuditPage = 1;
-const auditPerPage = 7;
-let cachedAuditLogs = [];
-
-function renderPagination(totalItems, itemsPerPage, currentPage, onPageChange) {
-    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-
-    return {
-        currentPage,
-        totalPages,
-        paginatedSlice: (array) => {
-            const start = (currentPage - 1) * itemsPerPage;
-            return array.slice(start, start + itemsPerPage);
-        },
-        updateUI: (infoId, prevBtnId, nextBtnId, numbersId) => {
-            const infoEl = document.getElementById(infoId);
-            const prevBtn = document.getElementById(prevBtnId);
-            const nextBtn = document.getElementById(nextBtnId);
-            const numbersEl = document.getElementById(numbersId);
-
-            const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-
-            if (infoEl) infoEl.textContent = `Showing ${startItem}-${endItem} of ${totalItems}`;
-            if (prevBtn) prevBtn.disabled = currentPage === 1;
-            if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-            if (numbersEl) {
-                numbersEl.innerHTML = "";
-                
-                // Ellipsis Truncation Logic para hindi sumabog ang UI kapag marami nang pages
-                let pages = [];
-                if (totalPages <= 7) {
-                    for (let i = 1; i <= totalPages; i++) pages.push(i);
-                } else {
-                    if (currentPage <= 4) {
-                        pages = [1, 2, 3, 4, 5, '...', totalPages];
-                    } else if (currentPage >= totalPages - 3) {
-                        pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-                    } else {
-                        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
-                    }
-                }
-
-                pages.forEach(p => {
-                    if (p === '...') {
-                        const span = document.createElement("span");
-                        span.textContent = "...";
-                        span.style.padding = "5px 8px";
-                        span.style.color = "var(--muted)";
-                        numbersEl.appendChild(span);
-                    } else {
-                        const btn = document.createElement("button");
-                        btn.type = "button";
-                        btn.className = `btn-page ${p === currentPage ? "active" : ""}`;
-                        btn.textContent = p;
-                        btn.addEventListener("click", () => onPageChange(p));
-                        numbersEl.appendChild(btn);
-                    }
-                });
-            }
-        }
-    };
-}
-
 
 /* ============================================================
    ADMIN ROLE
@@ -314,6 +241,243 @@ function getRoleStyle(role) {
 
 
 /* ============================================================
+   PAGINATION STATE
+============================================================ */
+
+let currentUserPage = 1;
+const usersPerPage = 7;
+let cachedUsers = [];
+
+let currentAuditPage = 1;
+const auditPerPage = 7;
+let cachedAuditLogs = [];
+
+
+function renderPagination(totalItems, itemsPerPage, currentPage, onPageChange) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    return {
+        currentPage,
+        totalPages,
+        paginatedSlice: (array) => {
+            const start = (currentPage - 1) * itemsPerPage;
+            return array.slice(start, start + itemsPerPage);
+        },
+        updateUI: (infoId, prevBtnId, nextBtnId, numbersId) => {
+            const infoEl = document.getElementById(infoId);
+            const prevBtn = document.getElementById(prevBtnId);
+            const nextBtn = document.getElementById(nextBtnId);
+            const numbersEl = document.getElementById(numbersId);
+
+            const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+            if (infoEl) infoEl.textContent = `Showing ${startItem}-${endItem} of ${totalItems}`;
+            if (prevBtn) prevBtn.disabled = currentPage === 1;
+            if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+            if (numbersEl) {
+                numbersEl.innerHTML = "";
+
+                let pages = [];
+                if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                    if (currentPage <= 4) {
+                        pages = [1, 2, 3, 4, 5, '...', totalPages];
+                    } else if (currentPage >= totalPages - 3) {
+                        pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                    } else {
+                        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                    }
+                }
+
+                pages.forEach(p => {
+                    if (p === '...') {
+                        const span = document.createElement("span");
+                        span.textContent = "...";
+                        span.style.padding = "5px 8px";
+                        span.style.color = "var(--muted)";
+                        numbersEl.appendChild(span);
+                    } else {
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = `btn-page ${p === currentPage ? "active" : ""}`;
+                        btn.textContent = p;
+                        btn.addEventListener("click", () => onPageChange(p));
+                        numbersEl.appendChild(btn);
+                    }
+                });
+            }
+        }
+    };
+}
+
+
+/* ============================================================
+   PSGC API (Philippine Standard Geographic Code)
+   Public API — https://psgc.cloud/
+============================================================ */
+
+const PSGC_API = "https://psgc.cloud/api";
+
+async function fetchRegions() {
+    const res = await fetch(`${PSGC_API}/regions`);
+    if (!res.ok) throw new Error("Failed to load regions");
+    return res.json();
+}
+
+async function fetchProvinces(regionCode) {
+    const res = await fetch(`${PSGC_API}/regions/${regionCode}/provinces`);
+    if (!res.ok) throw new Error("Failed to load provinces");
+    return res.json();
+}
+
+async function fetchMunicipalities(provinceCode) {
+    const res = await fetch(
+        `${PSGC_API}/provinces/${provinceCode}/cities-municipalities`
+    );
+    if (!res.ok) throw new Error("Failed to load municipalities");
+    return res.json();
+}
+
+async function fetchMunicipalitiesFromRegion(regionCode) {
+    const res = await fetch(
+        `${PSGC_API}/regions/${regionCode}/cities-municipalities`
+    );
+    if (!res.ok) throw new Error("Failed to load municipalities");
+    return res.json();
+}
+
+
+/* ============================================================
+   LOCATION CASCADING DROPDOWNS
+============================================================ */
+
+async function initializeLocationDropdowns() {
+
+    const regionSelect = document.getElementById("regionSelect");
+    const provinceSelect = document.getElementById("provinceSelect");
+    const municipalitySelect = document.getElementById("municipalitySelect");
+
+    if (!regionSelect || !provinceSelect || !municipalitySelect) {
+        console.warn("Location dropdowns not found in DOM.");
+        return;
+    }
+
+    // ---- Load regions ----
+    try {
+        const regions = await fetchRegions();
+
+        regionSelect.innerHTML = `<option value="" disabled selected>Select a region</option>`;
+        regions.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.code;
+            opt.textContent = r.name;
+            regionSelect.appendChild(opt);
+        });
+    } catch (err) {
+        console.error("Failed to load regions:", err);
+        regionSelect.innerHTML = `<option value="" disabled selected>Failed to load regions</option>`;
+        return;
+    }
+
+    // ---- Region change → load provinces ----
+    regionSelect.addEventListener("change", async () => {
+        const regionCode = regionSelect.value;
+
+        // Reset downstream
+        provinceSelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
+        provinceSelect.disabled = true;
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality</option>`;
+        municipalitySelect.disabled = true;
+
+        if (!regionCode) return;
+
+        try {
+            const provinces = await fetchProvinces(regionCode);
+
+            if (provinces.length === 0) {
+                // NCR — no provinces, load municipalities directly from region
+                provinceSelect.innerHTML = `<option value="" disabled selected>N/A (no provinces)</option>`;
+
+                const municipalities = await fetchMunicipalitiesFromRegion(regionCode);
+                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+                municipalities.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.code;
+                    opt.textContent = m.name;
+                    municipalitySelect.appendChild(opt);
+                });
+                municipalitySelect.disabled = false;
+                return;
+            }
+
+            provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+            provinces.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.code;
+                opt.textContent = p.name;
+                provinceSelect.appendChild(opt);
+            });
+            provinceSelect.disabled = false;
+        } catch (err) {
+            console.error("Failed to load provinces:", err);
+            provinceSelect.innerHTML = `<option value="" disabled selected>Failed to load</option>`;
+        }
+    });
+
+    // ---- Province change → load municipalities ----
+    provinceSelect.addEventListener("change", async () => {
+        const provinceCode = provinceSelect.value;
+
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
+        municipalitySelect.disabled = true;
+
+        if (!provinceCode) return;
+
+        try {
+            const municipalities = await fetchMunicipalities(provinceCode);
+
+            municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+            municipalities.forEach(m => {
+                const opt = document.createElement("option");
+                opt.value = m.code;
+                opt.textContent = m.name;
+                municipalitySelect.appendChild(opt);
+            });
+            municipalitySelect.disabled = false;
+        } catch (err) {
+            console.error("Failed to load municipalities:", err);
+            municipalitySelect.innerHTML = `<option value="" disabled selected>Failed to load</option>`;
+        }
+    });
+}
+
+
+function resetLocationDropdowns() {
+
+    const regionSelect = document.getElementById("regionSelect");
+    const provinceSelect = document.getElementById("provinceSelect");
+    const municipalitySelect = document.getElementById("municipalitySelect");
+
+    if (regionSelect) regionSelect.selectedIndex = 0;
+
+    if (provinceSelect) {
+        provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+        provinceSelect.disabled = true;
+    }
+
+    if (municipalitySelect) {
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality</option>`;
+        municipalitySelect.disabled = true;
+    }
+}
+
+
+/* ============================================================
    LOAD USERS
    GET /api/users
 ============================================================ */
@@ -329,7 +493,7 @@ async function loadUsers() {
 
     userRows.innerHTML = `
         <tr>
-            <td colspan="5" style="text-align:center;">
+            <td colspan="6" style="text-align:center;">
                 Loading users...
             </td>
         </tr>
@@ -369,7 +533,7 @@ async function loadUsers() {
 
             userRows.innerHTML = `
                 <tr>
-                    <td colspan="5" class="api-error">
+                    <td colspan="6" class="api-error">
                         ${escapeHTML(
                             getErrorMessage(
                                 data,
@@ -393,7 +557,7 @@ async function loadUsers() {
             );
         }
 
-       let users = [];
+        let users = [];
 
         if (Array.isArray(data)) {
             users = data;
@@ -413,7 +577,7 @@ async function loadUsers() {
         if (cachedUsers.length === 0) {
             userRows.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align:center;">
+                    <td colspan="6" style="text-align:center;">
                         No users found.
                     </td>
                 </tr>
@@ -423,9 +587,9 @@ async function loadUsers() {
         }
 
         const pagination = renderPagination(
-            cachedUsers.length, 
-            usersPerPage, 
-            currentUserPage, 
+            cachedUsers.length,
+            usersPerPage,
+            currentUserPage,
             (newPage) => {
                 currentUserPage = newPage;
                 loadUsers();
@@ -449,6 +613,17 @@ async function loadUsers() {
 
             const role =
                 user.role || "—";
+
+            // Location — Municipality, Province, Region
+            const locationParts = [
+                user.municipality,
+                user.province,
+                user.region
+            ].filter(Boolean);
+
+            const locationText = locationParts.length
+                ? locationParts.join(", ")
+                : "—";
 
             let isActive = true;
 
@@ -496,6 +671,12 @@ async function loadUsers() {
                 <td>
                     <span class="role ${roleStyle.cls}">
                         ${escapeHTML(roleStyle.label)}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="location-pill">
+                        ${escapeHTML(locationText)}
                     </span>
                 </td>
 
@@ -557,7 +738,7 @@ async function loadUsers() {
 
         userRows.innerHTML = `
             <tr>
-                <td colspan="5" class="api-error">
+                <td colspan="6" class="api-error">
 
                     Failed to load users.
 
@@ -597,7 +778,7 @@ async function toggleUserStatus(button) {
 
     if (titleEl) titleEl.textContent = currentStatus ? "Confirm Deactivation" : "Confirm Reactivation";
     if (descEl) descEl.textContent = currentStatus ? "Are you sure you want to deactivate this user?" : "Are you sure you want to reactivate this user?";
-    
+
     if (currentStatus) {
         finalBtn.className = "btn-primary btn-danger";
         finalBtn.textContent = "Deactivate";
@@ -620,7 +801,7 @@ async function toggleUserStatus(button) {
 
     document.getElementById("finalStatusBtn").addEventListener("click", async () => {
         modal.classList.remove("show");
-        
+
         button.disabled = true;
         button.textContent = "Updating...";
 
@@ -721,6 +902,21 @@ async function createAccount(event) {
             "roleSelect"
         )?.value;
 
+    // ---- LOCATION ----
+    const regionSelect = document.getElementById("regionSelect");
+    const provinceSelect = document.getElementById("provinceSelect");
+    const municipalitySelect = document.getElementById("municipalitySelect");
+
+    const regionCode = regionSelect?.value;
+    const municipalityCode = municipalitySelect?.value;
+
+    const regionName =
+        regionSelect?.selectedOptions[0]?.textContent?.trim() || "";
+    const provinceName =
+        provinceSelect?.selectedOptions[0]?.textContent?.trim() || "";
+    const municipalityName =
+        municipalitySelect?.selectedOptions[0]?.textContent?.trim() || "";
+
     // Validation
     if (
         !firstName ||
@@ -730,7 +926,9 @@ async function createAccount(event) {
         !password ||
         !confirmPassword ||
         !phone ||
-        !role
+        !role ||
+        !regionCode ||
+        !municipalityCode
     ) {
 
         alert(
@@ -764,7 +962,7 @@ async function createAccount(event) {
 
         const response =
             await fetch(
-                `${API_BASE_URL}/api/users/users`,
+                `${API_BASE_URL}/api/users`,
                 {
                     method: "POST",
 
@@ -793,7 +991,16 @@ async function createAccount(event) {
                                 role,
 
                             password:
-                                password
+                                password,
+
+                            region:
+                                regionName,
+
+                            province:
+                                provinceName,
+
+                            municipality:
+                                municipalityName
 
                         })
                 }
@@ -857,6 +1064,7 @@ async function createAccount(event) {
         }
 
         form.reset();
+        resetLocationDropdowns();
 
         // Go back to users view
         const addAccountView =
@@ -1244,7 +1452,6 @@ async function loadETLRunLogs() {
             return;
         }
 
-
         /* FORBIDDEN */
 
         if (response.status === 403) {
@@ -1268,7 +1475,6 @@ async function loadETLRunLogs() {
             return;
         }
 
-
         /* OTHER API ERRORS */
 
         if (!response.ok) {
@@ -1280,7 +1486,6 @@ async function loadETLRunLogs() {
                 )
             );
         }
-
 
         /* RESPONSE FORMAT */
 
@@ -1308,7 +1513,6 @@ async function loadETLRunLogs() {
             );
         }
 
-
         /* NO LOGS */
 
         if (logs.length === 0) {
@@ -1327,7 +1531,6 @@ async function loadETLRunLogs() {
             return;
         }
 
-
         /* RENDER LOGS */
 
         etlRows.innerHTML = "";
@@ -1337,20 +1540,16 @@ async function loadETLRunLogs() {
             const row =
                 document.createElement("tr");
 
-
             const runDateTime =
                 formatAuditDate(
                     log.run_date_time
                 );
 
-
             const dataSource =
                 log.data_source || "—";
 
-
             const status =
                 log.status || "—";
-
 
             const statusClass =
                 status.toLowerCase() === "success"
@@ -1358,7 +1557,6 @@ async function loadETLRunLogs() {
                     : status.toLowerCase() === "failed"
                         ? "inactive"
                         : "";
-
 
             row.innerHTML = `
 
@@ -1379,7 +1577,6 @@ async function loadETLRunLogs() {
                 </td>
 
             `;
-
 
             etlRows.appendChild(row);
 
@@ -1412,11 +1609,11 @@ async function loadETLRunLogs() {
     }
 }
 
+
 /* ============================================================
    MANUAL ETL RUN
    POST /api/etl-run-log/manual-run
 ============================================================ */
-
 
 async function manualRunETL() {
 
@@ -2223,6 +2420,7 @@ function initializeAuditSearch() {
     );
 }
 
+
 /* ============================================================
    SEARCH ETL RUN LOGS
 ============================================================ */
@@ -2265,6 +2463,8 @@ function initializeETLSearch() {
         }
     );
 }
+
+
 /* ============================================================
    SIDEBAR (Hover-Based)
 ============================================================ */
@@ -2278,7 +2478,6 @@ function initHoverSidebar() {
 
     let hoverTimer = null;
 
-    // Open sidebar when hovering hamburger
     hamburgerBtn.addEventListener("mouseenter", function () {
 
         if (hoverTimer) {
@@ -2295,7 +2494,6 @@ function initHoverSidebar() {
         }, 300);
     });
 
-    // Keep sidebar open when mouse enters sidebar
     sidebar.addEventListener("mouseenter", function () {
 
         if (hoverTimer) {
@@ -2304,7 +2502,6 @@ function initHoverSidebar() {
         }
     });
 
-    // Close sidebar when mouse leaves
     sidebar.addEventListener("mouseleave", function () {
 
         hoverTimer = setTimeout(function () {
@@ -2312,7 +2509,6 @@ function initHoverSidebar() {
         }, 200);
     });
 
-    // Close when clicking outside
     document.addEventListener("click", function (event) {
 
         const isInsideSidebar = sidebar.contains(event.target);
@@ -2323,7 +2519,6 @@ function initHoverSidebar() {
         }
     });
 
-    // Close after clicking nav item
     sidebar.querySelectorAll(".nav-item").forEach(function (item) {
 
         item.addEventListener("click", function () {
@@ -2331,7 +2526,6 @@ function initHoverSidebar() {
         });
     });
 
-    // Close with Escape key
     document.addEventListener("keydown", function (event) {
 
         if (event.key === "Escape") {
@@ -2339,7 +2533,6 @@ function initHoverSidebar() {
         }
     });
 
-    // Close on sign out
     const signoutBtn = sidebar.querySelector(".signout");
 
     if (signoutBtn) {
@@ -2348,6 +2541,7 @@ function initHoverSidebar() {
         });
     }
 }
+
 
 /* ============================================================
    DOM READY
@@ -2382,10 +2576,12 @@ document.addEventListener(
             initViewSwitching();
         }
 
-        // ✅ SIDEBAR — dito mo ilalagay
-    if (typeof  initHoverSidebar === "function") {
-        initHoverSidebar();
-    }
+
+        /* SIDEBAR */
+
+        if (typeof initHoverSidebar === "function") {
+            initHoverSidebar();
+        }
 
 
         /* USERS */
@@ -2399,6 +2595,11 @@ document.addEventListener(
         /* ETL RUN LOGS */
 
         loadETLRunLogs();
+
+        /* LOCATION DROPDOWNS (cascading) */
+
+        initializeLocationDropdowns();
+
 
         /* MANUAL ETL RUN */
 
@@ -2558,6 +2759,8 @@ document.addEventListener(
                     if (form) {
                         form.reset();
                     }
+
+                    resetLocationDropdowns();
 
                     const addAccountView =
                         document.getElementById(
@@ -2855,4 +3058,3 @@ document.addEventListener(
 
     }
 );
-

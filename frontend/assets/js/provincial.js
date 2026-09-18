@@ -7,7 +7,6 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 const PROVINCIAL_PENDING_ENDPOINT      = `${API_BASE_URL}/api/report-submissions/for-provincial-validation`;
 const SENT_TO_REGIONAL_ENDPOINT        = `${API_BASE_URL}/api/report-submissions/sent-to-regional`;
 const RETURNED_TO_MUNICIPAL_ENDPOINT   = `${API_BASE_URL}/api/report-submissions/returned-to-municipal`;
-const RETURNED_FROM_REGIONAL_ENDPOINT  = `${API_BASE_URL}/api/report-submissions/returned-to-provincial`;
 const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions/bulk-approve`;
 
 
@@ -18,11 +17,9 @@ const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions
 let pendingReports = [];
 let sentReports = [];
 let returnedToMunicipalReports = [];
-let returnedFromRegionalReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
 let currentSentToRegionalFilter = "all";
-let isEditingRemarks = false;
 
 
 /* ============================================================
@@ -844,13 +841,13 @@ async function bulkApproveSelected() {
 
 /* ============================================================
    OPEN REPORT DETAIL
+   (Immutable History + Add-Only New Remark)
 ============================================================ */
 
 async function openReportDetail(report) {
 
     if (!report) return;
     selectedReport = report;
-    isEditingRemarks = false;
 
     // Hide list views
     const mainHeader = document.getElementById("reportsMainHeader");
@@ -867,23 +864,23 @@ async function openReportDetail(report) {
     }
 
     // Reference elements
-    const titleEl        = document.getElementById("detailReportTitle");
-    const subtitleEl     = document.getElementById("detailReportSubtitle");
-    const idEl           = document.getElementById("detailReportId");
-    const municipalityEl = document.getElementById("detailReportMunicipality");
-    const statusEl       = document.getElementById("detailReportStatus");
-    const dateEl         = document.getElementById("detailReportDate");
-    const encodedByEl    = document.getElementById("detailReportEncodedBy");
-    const yieldEl        = document.getElementById("detailReportYield");
-    const notesEl        = document.getElementById("detailReportNotes");
-    const attachmentsEl  = document.getElementById("detailReportAttachments");
-    const intentsBody    = document.getElementById("detailReportIntentsBody");
-    const remarksEl      = document.getElementById("remarksTextarea");
-    const flagBtn        = document.getElementById("flagBtn");
-    const approveBtn     = document.getElementById("approveBtn");
-    const editBtn        = document.getElementById("editReportBtn");
-    const resubmitBtn    = document.getElementById("resubmitReportBtn");
-    const backBtn        = document.getElementById("backToPendingBtn");
+    const titleEl           = document.getElementById("detailReportTitle");
+    const subtitleEl        = document.getElementById("detailReportSubtitle");
+    const idEl              = document.getElementById("detailReportId");
+    const municipalityEl    = document.getElementById("detailReportMunicipality");
+    const statusEl          = document.getElementById("detailReportStatus");
+    const dateEl            = document.getElementById("detailReportDate");
+    const encodedByEl       = document.getElementById("detailReportEncodedBy");
+    const yieldEl           = document.getElementById("detailReportYield");
+    const notesEl           = document.getElementById("detailReportNotes");
+    const attachmentsEl     = document.getElementById("detailReportAttachments");
+    const intentsBody       = document.getElementById("detailReportIntentsBody");
+    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
+    const remarksEl         = document.getElementById("remarksTextarea");
+    const flagBtn           = document.getElementById("flagBtn");
+    const approveBtn        = document.getElementById("approveBtn");
+    const resubmitBtn       = document.getElementById("resubmitReportBtn");
+    const backBtn           = document.getElementById("backToPendingBtn");
 
     // Populate basic info
     if (titleEl)        titleEl.textContent = report.title || `Report #${report.report_id}`;
@@ -899,6 +896,33 @@ async function openReportDetail(report) {
     const sl = statusLabelAndClass(report.status);
     if (statusEl) {
         statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
+    }
+
+    // ============================================================
+    // REMARKS HISTORY — READ-ONLY (immutable, append-style)
+    // ============================================================
+    if (remarksHistoryEl) {
+        const historyText = report.revision_remarks || "";
+        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
+        remarksHistoryEl.readOnly = true;
+        remarksHistoryEl.style.background = "#F6F3EB";
+        remarksHistoryEl.style.color = "var(--ink)";
+        remarksHistoryEl.style.cursor = "default";
+    }
+
+    // ============================================================
+    // NEW REMARK — always empty, always editable
+    // ============================================================
+    if (remarksEl) {
+        remarksEl.value = "";
+        remarksEl.readOnly = false;
+        remarksEl.disabled = false;
+        remarksEl.style.background = "#FFFFFF";
+        remarksEl.style.color = "var(--ink)";
+        remarksEl.style.cursor = "text";
+        remarksEl.style.borderColor = "var(--border)";
+        remarksEl.style.borderWidth = "1.5px";
+        remarksEl.placeholder = "Type your comment here...";
     }
 
     // Status flags
@@ -927,10 +951,7 @@ async function openReportDetail(report) {
     // ========================================================
 
     if (isProvincialPending) {
-        // ----------------------------------------------------
         // PENDING — new from Municipal
-        // ----------------------------------------------------
-        if (editBtn)     editBtn.style.display = "none";
         if (resubmitBtn) resubmitBtn.style.display = "none";
 
         if (flagBtn) {
@@ -947,96 +968,50 @@ async function openReportDetail(report) {
             approveBtn.classList.remove("active");
         }
 
-        if (remarksEl) {
-            remarksEl.readOnly = false;
-            remarksEl.disabled = false;
-            remarksEl.style.background = "#FFFFFF";
-            remarksEl.style.color = "var(--ink)";
-            remarksEl.style.cursor = "text";
-            remarksEl.style.borderColor = "var(--border)";
-            remarksEl.style.borderWidth = "1.5px";
-            remarksEl.placeholder = "Enter remarks (required if flagging for revision)...";
-            remarksEl.value = report.revision_remarks || "";
-        }
-
     } else if (isRegionalFlagged) {
-        // ----------------------------------------------------
         // REGIONAL FLAGGED — DA-RFO sent it back to Provincial
-        // ----------------------------------------------------
+        // Buttons: Flag (pabalik sa Municipal) + Resubmit (pabalik sa Regional)
 
-        if (flagBtn)    flagBtn.style.display = "none";
-        if (approveBtn) approveBtn.style.display = "none";
-
-        // ✅ Show Edit button
-        if (editBtn) {
-            editBtn.style.display = "inline-flex";
-            editBtn.textContent = "Edit";
-            editBtn.disabled = false;
-            editBtn.style.borderColor = "";
-            editBtn.style.color = "";
+        if (flagBtn) {
+            flagBtn.style.display = "inline-flex";
+            flagBtn.textContent = "Flag for Revision";
+            flagBtn.disabled = false;
+            flagBtn.classList.remove("active");
         }
 
-        // ✅ Resubmit button — WITH onclick handler
+        if (approveBtn) {
+            approveBtn.style.display = "none";
+        }
+
         if (resubmitBtn) {
-            resubmitBtn.style.display = "none";
-            resubmitBtn.disabled = false;
+            resubmitBtn.style.display = "inline-flex";
             resubmitBtn.textContent = "Resubmit to Regional";
+            resubmitBtn.disabled = false;
+            resubmitBtn.style.background = "#2E7D32";
         }
-
-
-        // ✅ Back button
-        if (backBtn) {
-            backBtn.style.display = "inline-flex";
-            backBtn.textContent = "Return";
-        }
-
-        // ✅ Locked remarks
-        if (remarksEl) {
-            remarksEl.readOnly = true;
-            remarksEl.disabled = false;
-            remarksEl.style.background = "#F6F3EB";
-            remarksEl.style.color = "var(--ink)";
-            remarksEl.style.cursor = "default";
-            remarksEl.style.borderColor = "var(--border)";
-            remarksEl.style.borderWidth = "1.5px";
-            remarksEl.placeholder = "Click 'Edit Remarks' to modify...";
-            remarksEl.value = report.revision_remarks || "";
-        }
-
 
     } else if (isReadOnly) {
-        // ----------------------------------------------------
         // READ-ONLY
-        // ----------------------------------------------------
-        if (editBtn)     editBtn.style.display = "none";
         if (resubmitBtn) resubmitBtn.style.display = "none";
         if (flagBtn)     flagBtn.style.display = "none";
         if (approveBtn)  approveBtn.style.display = "none";
 
         if (remarksEl) {
             remarksEl.readOnly = true;
-            remarksEl.disabled = false;
             remarksEl.style.background = "#F6F3EB";
             remarksEl.style.color = "var(--muted)";
             remarksEl.style.cursor = "default";
-            remarksEl.style.borderColor = "var(--border)";
-            remarksEl.style.borderWidth = "1.5px";
             remarksEl.placeholder = "Read-only — report already forwarded.";
-            remarksEl.value = report.revision_remarks || "";
         }
 
     } else {
-        // ----------------------------------------------------
         // FALLBACK
-        // ----------------------------------------------------
-        if (editBtn)     editBtn.style.display = "none";
         if (resubmitBtn) resubmitBtn.style.display = "none";
         if (flagBtn)     flagBtn.style.display = "none";
         if (approveBtn)  approveBtn.style.display = "none";
 
         if (remarksEl) {
             remarksEl.readOnly = true;
-            remarksEl.disabled = false;
             remarksEl.style.background = "#F6F3EB";
             remarksEl.style.color = "var(--muted)";
             remarksEl.style.cursor = "default";
@@ -1117,49 +1092,6 @@ async function openReportDetail(report) {
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-
-/* ============================================================
-   EDIT REMARKS BUTTON — Toggle Edit Mode
-============================================================ */
-
-function initEditReportButton() {
-    const editBtn = document.getElementById("editReportBtn");
-    const resubmitBtn = document.getElementById("resubmitReportBtn");
-
-    if (editBtn) {
-        editBtn.addEventListener("click", function () {
-            const remarksEl = document.getElementById("remarksTextarea");
-            if (!remarksEl) return;
-
-            remarksEl.readOnly = false;
-            remarksEl.disabled = false;
-            remarksEl.style.background = "#FFFFFF";
-            remarksEl.style.color = "var(--ink)";
-            remarksEl.style.cursor = "text";
-            remarksEl.style.borderColor = "var(--green)";
-            remarksEl.style.borderWidth = "2px";
-            remarksEl.placeholder = "Enter your remarks for the resubmission...";
-            remarksEl.focus();
-
-            editBtn.style.display = "none";
-            if (resubmitBtn) resubmitBtn.style.display = "inline-flex";
-        });
-    }
-
-    if (resubmitBtn) {
-        resubmitBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (!selectedReport) {
-                alert("No report selected.");
-                return;
-            }
-            resubmitToRegional(selectedReport.report_id);
-        });
-    }
 }
 
 
@@ -1351,7 +1283,6 @@ function renderDetailIntents(intents) {
 
 function closeReportDetail() {
     selectedReport = null;
-    isEditingRemarks = false;
 
     document.getElementById("individualDetailView")?.classList.add("hidden-element");
     document.getElementById("individualDetailView")?.style.setProperty("display", "none");
@@ -1362,23 +1293,6 @@ function closeReportDetail() {
 
     const mainHeader = document.getElementById("reportsMainHeader");
     if (mainHeader) mainHeader.style.display = "flex";
-
-    // Reset Edit button
-    const editBtn = document.getElementById("editReportBtn");
-    if (editBtn) {
-        editBtn.style.display = "none";
-        editBtn.textContent = "Edit Remarks";
-        editBtn.style.borderColor = "";
-        editBtn.style.color = "";
-    }
-
-    // Reset Resubmit button
-    const resubmitBtn = document.getElementById("resubmitReportBtn");
-    if (resubmitBtn) {
-        resubmitBtn.style.display = "none";
-        resubmitBtn.disabled = false;
-        resubmitBtn.textContent = "Resubmit to Regional";
-    }
 }
 
 
@@ -1540,6 +1454,27 @@ function initApproveButton() {
 
 
 /* ============================================================
+   RESUBMIT BUTTON HANDLER
+============================================================ */
+
+function initResubmitButton() {
+    const resubmitBtn = document.getElementById("resubmitReportBtn");
+    if (!resubmitBtn) return;
+
+    resubmitBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!selectedReport) {
+            alert("No report selected.");
+            return;
+        }
+        resubmitToRegional(selectedReport.report_id);
+    });
+}
+
+
+/* ============================================================
    MODAL HELPER
 ============================================================ */
 
@@ -1571,7 +1506,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSentToRegionalFilter();
     initFlagButton();
     initApproveButton();
-    initEditReportButton();   // ✅ Edit button handler
+    initResubmitButton();
 
     const backBtn = document.getElementById("backToPendingBtn");
     if (backBtn) {
