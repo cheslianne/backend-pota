@@ -343,4 +343,7 @@ async def send_password_reset_email(
     except Exception as e:
         print(f">>> PASSWORD RESET EMAIL FAILED to {recipient_email}")
         print(f">>> Email error: {e}")
+        # Re-raise so the caller (forgot-password endpoint) knows the send failed
+        # instead of reporting success while no email was actually sent.
+        raise
         return None

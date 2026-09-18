@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     BREVO_SENDER_EMAIL: str
     BREVO_SENDER_NAME: str = "eSaka"
 
+    # Frontend URL used to build links inside emails (e.g. password reset)
+    frontend_url: str = "http://127.0.0.1:5500/frontend"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"

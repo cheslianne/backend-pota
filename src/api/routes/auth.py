@@ -10,6 +10,7 @@ import secrets
 from src.core.database import get_db
 from src.core.auth import create_access_token
 from src.core.security import hash_password
+from src.core.config import settings
 
 from src.models.users import User
 
@@ -202,10 +203,10 @@ async def forgot_password(
     # =====================================================
 
     reset_link = (
-    "http://127.0.0.1:5500/frontend/"
-    "reset-password.html"
-    f"?token={token}"
-)
+        f"{settings.frontend_url.rstrip('/')}/"
+        "reset-password.html"
+        f"?token={token}"
+    )
 
     # =====================================================
     # SEND RESET EMAIL THROUGH BREVO
