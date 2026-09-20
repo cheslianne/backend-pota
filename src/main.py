@@ -6,6 +6,10 @@ from src.models.report_validation_history import ReportValidationHistory
 from src.api.routes import raw_plant_reports
 from src.api.routes import etl_run_log
 from src.api.routes.alert_thresholds import router as alert_thresholds_router
+from src.api.routes.market_price import router as market_price_router
+from src.api.routes.market_price_forecast import (
+    router as market_price_forecast_router
+)
 from src.api.routes import (
     users,
     auth,
@@ -160,6 +164,11 @@ app.include_router(
     tags=["Alert Thresholds"]
 )
 
+app.include_router(market_price_router)
+
+app.include_router(
+    market_price_forecast_router
+)
 
 
 
