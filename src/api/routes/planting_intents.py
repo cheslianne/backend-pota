@@ -43,16 +43,21 @@ def build_planting_intent_response(planting_intent: PlantingIntent, farmer: Farm
         "farmer_id": planting_intent.farmer_id,
         "farmer_name": f"{farmer.first_name} {farmer.last_name}",
         "location": farmer.address,
+        "barangay": farmer.barangay,                   
+        "municipality": farmer.municipality,        
         "commodity": planting_intent.commodity,
         "planting_date": planting_intent.planting_date,
         "harvest_date": planting_intent.harvest_date,
+        "actual_planting_date": planting_intent.actual_planting_date,
+        "actual_harvest_date": planting_intent.actual_harvest_date,
+        "actual_harvest_volume": float(planting_intent.actual_harvest_volume) if planting_intent.actual_harvest_volume else None,
         "volume": planting_intent.volume,
         "remarks": planting_intent.remarks,
         "status": status,
+        "finalized_status": planting_intent.finalized_status or "NOT PLANTED",  
         "created_at": planting_intent.created_at,
         "attachment_url": f"/api/planting-intents/{planting_intent.planting_intent_id}/attachment"
-        if planting_intent.attachment_path
-        else None,
+            if planting_intent.attachment_path else None,
         "notes": planting_intent.notes,
     }
 
@@ -121,16 +126,20 @@ def get_planting_intents(
             "commodity": intent.commodity,
             "volume": intent.volume,
             "location": f"{farmer.barangay}, {farmer.municipality}",
-            "barangay": farmer.barangay,         
-            "municipality": farmer.municipality, 
+            "barangay": farmer.barangay,
+            "municipality": farmer.municipality,
             "planting_date": intent.planting_date,
             "harvest_date": intent.harvest_date,
+            "actual_planting_date": intent.actual_planting_date, 
+            "actual_harvest_date": intent.actual_harvest_date,   
+            "actual_harvest_volume": float(intent.actual_harvest_volume) if intent.actual_harvest_volume else None,
             "status": intent.status or "Draft",
-            "finalized_status": intent.finalized_status or "NOT PLANTED",  
+            "finalized_status": intent.finalized_status or "NOT PLANTED",
             "is_in_report": intent.is_in_report or False,
             "created_at": intent.created_at,
             "remarks": intent.remarks,
         })
+
     
     return {
         "data": result,
@@ -529,18 +538,26 @@ def get_planting_intents(
         farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
         if farmer:
             result.append({
-                "planting_intent_id": intent.planting_intent_id,
-                "farmer_id": intent.farmer_id,
-                "farmer_name": f"{farmer.first_name} {farmer.last_name}",
-                "commodity": intent.commodity,
-                "volume": intent.volume,
-                "location": f"{farmer.barangay}, {farmer.municipality}",
-                "planting_date": intent.planting_date,
-                "harvest_date": intent.harvest_date,
-                "status": intent.status or "Draft",
-                "created_at": intent.created_at,
-                "remarks": intent.remarks,
-            })
+            "planting_intent_id": intent.planting_intent_id,
+            "farmer_id": intent.farmer_id,
+            "farmer_name": f"{farmer.first_name} {farmer.last_name}",
+            "commodity": intent.commodity,
+            "volume": intent.volume,
+            "location": f"{farmer.barangay}, {farmer.municipality}",
+            "barangay": farmer.barangay,
+            "municipality": farmer.municipality,
+            "planting_date": intent.planting_date,
+            "harvest_date": intent.harvest_date,
+            "actual_planting_date": intent.actual_planting_date, 
+            "actual_harvest_date": intent.actual_harvest_date,  
+            "actual_harvest_volume": float(intent.actual_harvest_volume) if intent.actual_harvest_volume else None,
+            "status": intent.status or "Draft",
+            "finalized_status": intent.finalized_status or "NOT PLANTED",
+            "is_in_report": intent.is_in_report or False,
+            "created_at": intent.created_at,
+            "remarks": intent.remarks,
+        })
+
     
     return {
         "data": result,
@@ -742,8 +759,14 @@ def pull_planting_intent(
 
 # Endpoint for Finalized Intents
 
+from datetime import date
+from pydantic import BaseModel, validator
+
 class FinalizedStatusUpdate(BaseModel):
     finalized_status: str
+    actual_planting_date: date | None = None
+    actual_harvest_date: date | None = None
+    actual_harvest_volume: float | None = None  # ✅ ADD THIS
 
 
 @router.patch("/{planting_intent_id}/finalized-status")
@@ -753,19 +776,13 @@ def update_finalized_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Update finalized_status of a planting intent.
-    Allowed: NOT PLANTED, PLANTED, HARVESTED, MEDIATING
-    """
+    """..."""
     ALLOWED = {"NOT PLANTED", "PLANTED", "HARVESTED", "MEDIATING"}
     new_status = payload.finalized_status.upper().strip()
-    
+
     if new_status not in ALLOWED:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid status. Allowed: {', '.join(sorted(ALLOWED))}"
-        )
-    
+        raise HTTPException(status_code=400, detail="Invalid status.")
+
     db_planting = (
         db.query(PlantingIntent)
         .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
@@ -775,16 +792,54 @@ def update_finalized_status(
         )
         .first()
     )
-    
+
     if not db_planting:
         raise HTTPException(status_code=404, detail="Planting intent not found")
-    
+
+    # Validation rules
+    if new_status == "PLANTED":
+        if not payload.actual_planting_date and not db_planting.actual_planting_date:
+            raise HTTPException(
+                status_code=400,
+                detail="Actual planting date is required when marking as PLANTED."
+            )
+        if payload.actual_planting_date:
+            db_planting.actual_planting_date = payload.actual_planting_date
+
+    if new_status == "HARVESTED":
+        # ✅ Require actual harvest date AND volume
+        if not payload.actual_harvest_date and not db_planting.actual_harvest_date:
+            raise HTTPException(
+                status_code=400,
+                detail="Actual harvest date is required when marking as HARVESTED."
+            )
+        if not payload.actual_harvest_volume and not db_planting.actual_harvest_volume:
+            raise HTTPException(
+                status_code=400,
+                detail="Actual harvest volume is required when marking as HARVESTED."
+            )
+        if payload.actual_harvest_date:
+            db_planting.actual_harvest_date = payload.actual_harvest_date
+        if payload.actual_harvest_volume:
+            db_planting.actual_harvest_volume = payload.actual_harvest_volume
+
+    # Optional updates
+    if payload.actual_planting_date and new_status != "PLANTED":
+        db_planting.actual_planting_date = payload.actual_planting_date
+    if payload.actual_harvest_date and new_status != "HARVESTED":
+        db_planting.actual_harvest_date = payload.actual_harvest_date
+    if payload.actual_harvest_volume and new_status != "HARVESTED":
+        db_planting.actual_harvest_volume = payload.actual_harvest_volume
+
     db_planting.finalized_status = new_status
     db.commit()
     db.refresh(db_planting)
-    
+
     return {
         "message": "Finalized status updated successfully",
         "planting_intent_id": db_planting.planting_intent_id,
         "finalized_status": db_planting.finalized_status,
+        "actual_planting_date": db_planting.actual_planting_date,
+        "actual_harvest_date": db_planting.actual_harvest_date,
+        "actual_harvest_volume": float(db_planting.actual_harvest_volume) if db_planting.actual_harvest_volume else None,
     }

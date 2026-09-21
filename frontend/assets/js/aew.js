@@ -1,6 +1,6 @@
 /* ============================================================
    E SAKA — AEW DASHBOARD
-   Complete Frontend JavaScript
+   Complete Frontend JavaScript (FIXED VERSION)
 ============================================================ */
 
 /* ============================================================
@@ -43,14 +43,14 @@ let allBuyers = [];
 
 // Planting Intent
 let PLANTING_INTENTS_DATA = [];
-let filteredPlantingIntents = [];
+let filteredPlantingIntents = null;
 let currentFinalizedIntentsFilter = "all";
 
 // Pagination
 let currentFarmersPage = 1;
 let currentPlantingIntentsPage = 1;
 const farmersPerPage = 10;
-const plantingIntentsPerPage = 999;
+const plantingIntentsPerPage = 10;
 let currentDraftIntentsPage = 1;
 let currentSubmittedIntentsPage = 1;
 
@@ -63,9 +63,7 @@ let mapInstance = null;
 let currentOfftakeRequest = null;
 let OFFTAKE_REQUESTS_DATA = [];
 
-
 // Forecasting
-
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 
@@ -77,7 +75,6 @@ let SUBMITTED_REPORTS_DATA = [];
 let currentIndividualReportsPage = 1;
 let currentSubmittedReportsPage = 1;
 const reportsPerPage = 10;
-
 
 
 /* ============================================================
@@ -125,8 +122,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 function getInitials(name) {
     if (!name) return "--";
 
-    // Handle usernames like "aew_maria" or "mcoord_angeles_city"
-    // Strip common role prefixes, then take initials from remaining words
     const cleaned = String(name)
         .replace(/^(aew|mcoord|admin|user|municipal|provincial|da)[_\s-]+/i, "")
         .replace(/[_\-.]+/g, " ")
@@ -136,12 +131,10 @@ function getInitials(name) {
 
     const parts = cleaned.split(/\s+/).filter(Boolean);
 
-    // Single word → first 2 letters (e.g. "maria" → "MA")
     if (parts.length === 1) {
         return parts[0].substring(0, 2).toUpperCase();
     }
 
-    // Multiple words → first letter of first two words (e.g. "juan dela cruz" → "JD")
     return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
@@ -164,17 +157,14 @@ function setupUserProfile() {
     const roleElement = document.getElementById("userDisplayRole");
     const initialsElement = document.getElementById("userDisplayInitials");
 
-    // Full name (or username fallback)
     if (nameElement && storedName) {
         nameElement.textContent = storedName;
     }
 
-    // Role in uppercase
     if (roleElement && storedRole) {
         roleElement.textContent = formatRole(storedRole);
     }
 
-    // Initials — prefer full_name, fallback to username
     if (initialsElement) {
         initialsElement.textContent = getInitials(storedName || storedRole);
     }
@@ -683,11 +673,6 @@ function initFarmerSubviews() {
     const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
     const backManBtn = document.getElementById("backFromManageFarmerBtn");
 
-    
-
-    // ============================================================
-    // ADD FARMER BUTTON
-    // ============================================================
     if (addBtn) {
         addBtn.addEventListener("click", function() {
             console.log("Add Farmer button clicked");
@@ -699,9 +684,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // CANCEL REGISTER BUTTON
-    // ============================================================
     if (cancelRegBtn) {
         cancelRegBtn.addEventListener("click", function() {
             console.log("Cancel Register button clicked");
@@ -712,9 +694,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // BACK FROM MANAGE
-    // ============================================================
     if (backManBtn) {
         backManBtn.addEventListener("click", function() {
             if (manSubview) manSubview.classList.add("hidden-element");
@@ -724,9 +703,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // REGISTER FARMER
-    // ============================================================
     const regForm = document.getElementById("registerFarmerForm");
     if (regForm) {
         console.log("Register Farmer Form found");
@@ -736,9 +712,6 @@ function initFarmerSubviews() {
             event.stopPropagation();
             console.log("Form submitted!");
 
-            // ========================================================
-            // GET FORM VALUES
-            // ========================================================
             const rsbsaId = document.getElementById("regFarmerId")?.value?.trim() || "";
             const municipality = document.getElementById("regMunicipality")?.value?.trim() || "";
             const barangay = document.getElementById("regBarangay")?.value?.trim() || "";
@@ -751,17 +724,11 @@ function initFarmerSubviews() {
             const phone = document.getElementById("regPhone")?.value?.trim() || "";
             const email = document.getElementById("regEmail")?.value?.trim() || "";
 
-            // ========================================================
-            // BASIC VALIDATION
-            // ========================================================
             if (!rsbsaId || !municipality || !barangay || !firstName || !lastName || !sex || !birthdate || !phone || !email) {
                 alert("Please complete all required fields.");
                 return;
             }
 
-            // ========================================================
-            // CREATE FARMER DATA
-            // ========================================================
             const farmerData = {
                 rsbsa_id: rsbsaId,
                 first_name: firstName,
@@ -779,14 +746,8 @@ function initFarmerSubviews() {
 
             console.log("Farmer data:", farmerData);
 
-            // ========================================================
-            // STORE PENDING FARMER
-            // ========================================================
             window._pendingFarmer = farmerData;
 
-            // ========================================================
-            // SHOW CONFIRMATION MODAL
-            // ========================================================
             const confirmText = document.getElementById("confirmFarmerText");
             if (confirmText) {
                 confirmText.textContent = "Register " + firstName + " " + lastName + " from " + barangay + ", " + municipality + "?";
@@ -807,157 +768,63 @@ function initFarmerSubviews() {
     }
 
 
-    // ============================================================
-    // CONFIRM SAVE FARMER
-    // ============================================================
-    const confirmSaveBtn = document.getElementById(
-        "confirmSaveFarmerBtn"
-    );
+    const confirmSaveBtn = document.getElementById("confirmSaveFarmerBtn");
     if (confirmSaveBtn) {
-        confirmSaveBtn.addEventListener(
-            "click",
-            async function() {
-                const farmerData = window._pendingFarmer;
-                // ====================================================
-                // CHECK DATA
-                // ====================================================
-                if (!farmerData) {
-                    alert(
-                        "No farmer data to save."
-                    );
-                    return;
-                }
-                console.log(
-                    "Saving farmer:",
-                    farmerData
-                );
-                // Disable button while saving
-                this.disabled = true;
-                this.textContent = "Saving...";
-                try {
-                    // ================================================
-                    // GET AUTH TOKEN
-                    // ================================================
-                    const token = getAuthToken();
-                    console.log(
-                        "Authentication token:",
-                        token ? "Present" : "Missing"
-                    );
-                    // ================================================
-                    // SEND POST REQUEST
-                    // ================================================
-                    const response = await fetch(
-                        FARMERS_ENDPOINT,
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": token
-                                    ? `Bearer ${token}`
-                                    : ""
-                            },
-                            body: JSON.stringify(
-                                farmerData
-                            )
-                        }
-                    );
-                    console.log(
-                        "POST response status:",
-                        response.status
-                    );
-                    // ================================================
-                    // HANDLE ERROR
-                    // ================================================
-                    if (!response.ok) {
-                        let errorData = null;
-                        try {
-                            errorData =
-                                await response.json();
-                        } catch (e) {
-                            console.error(
-                                "Could not read error response."
-                            );
-                        }
-                        let errorMessage =
-                            "Failed to add farmer.";
-                        if (
-                            errorData &&
-                            errorData.detail
-                        ) {
-                            errorMessage =
-                                typeof errorData.detail === "string"
-                                    ? errorData.detail
-                                    : JSON.stringify(
-                                        errorData.detail
-                                    );
-                        }
-                        throw new Error(
-                            errorMessage
-                        );
-                    }
-                    // ================================================
-                    // SUCCESS
-                    // ================================================
-                    const result =
-                        await response.json();
-                    console.log(
-                        "Farmer created successfully:",
-                        result
-                    );
-                    // Close confirmation modal
-                    document
-                        .getElementById(
-                            "confirmFarmerModal"
-                        )
-                        ?.classList.remove("show");
-                    // Refresh farmer table
-                    await fetchFarmers();
-                    // Show success modal
-                    document
-                        .getElementById(
-                            "farmerAddedModal"
-                        )
-                        ?.classList.add("show");
-                    // Reset form
-                    const form =
-                        document.getElementById(
-                            "registerFarmerForm"
-                        );
-                    if (form) {
-                        form.reset();
-                    }
-                    // Clear pending farmer
-                    window._pendingFarmer = null;
-                } catch (error) {
-                    console.error(
-                        "Error adding farmer:",
-                        error
-                    );
-                    document
-                        .getElementById(
-                            "confirmFarmerModal"
-                        )
-                        ?.classList.remove("show");
-                    alert(
-                        "Failed to add farmer.\n\n" +
-                        (error.message ||
-                            "Check FastAPI server.")
-                    );
-                } finally {
-                    // Restore button
-                    this.disabled = false;
-                    this.textContent =
-                        "Confirm & Save";
-                }
+        confirmSaveBtn.addEventListener("click", async function() {
+            const farmerData = window._pendingFarmer;
+            if (!farmerData) {
+                alert("No farmer data to save.");
+                return;
             }
-        );
+            console.log("Saving farmer:", farmerData);
+            this.disabled = true;
+            this.textContent = "Saving...";
+            try {
+                const token = getAuthToken();
+                console.log("Authentication token:", token ? "Present" : "Missing");
+                const response = await fetch(FARMERS_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token ? `Bearer ${token}` : ""
+                    },
+                    body: JSON.stringify(farmerData)
+                });
+                console.log("POST response status:", response.status);
+                if (!response.ok) {
+                    let errorData = null;
+                    try { errorData = await response.json(); } catch (e) {
+                        console.error("Could not read error response.");
+                    }
+                    let errorMessage = "Failed to add farmer.";
+                    if (errorData && errorData.detail) {
+                        errorMessage = typeof errorData.detail === "string"
+                            ? errorData.detail
+                            : JSON.stringify(errorData.detail);
+                    }
+                    throw new Error(errorMessage);
+                }
+                const result = await response.json();
+                console.log("Farmer created successfully:", result);
+                document.getElementById("confirmFarmerModal")?.classList.remove("show");
+                await fetchFarmers();
+                document.getElementById("farmerAddedModal")?.classList.add("show");
+                const form = document.getElementById("registerFarmerForm");
+                if (form) form.reset();
+                window._pendingFarmer = null;
+            } catch (error) {
+                console.error("Error adding farmer:", error);
+                document.getElementById("confirmFarmerModal")?.classList.remove("show");
+                alert("Failed to add farmer.\n\n" + (error.message || "Check FastAPI server."));
+            } finally {
+                this.disabled = false;
+                this.textContent = "Confirm & Save";
+            }
+        });
     } else {
-        console.error(
-            "ERROR: confirmSaveFarmerBtn was not found."
-        );
+        console.error("ERROR: confirmSaveFarmerBtn was not found.");
     }
 
-    // CLOSE FARMER ADDED MODAL
     const closeFarmerAddedBtn = document.getElementById("closeFarmerAddedBtn");
     if (closeFarmerAddedBtn) {
         closeFarmerAddedBtn.addEventListener("click", function() {
@@ -967,7 +834,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // REVIEW FARMER BUTTON
     const reviewFarmerBtn = document.getElementById("reviewFarmerBtn");
     if (reviewFarmerBtn) {
         reviewFarmerBtn.addEventListener("click", function() {
@@ -975,9 +841,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // EDIT / SAVE FARMER
-    // ============================================================
     const toggleEditBtn = document.getElementById("toggleEditFarmerBtn");
     if (toggleEditBtn) {
         toggleEditBtn.addEventListener("click", async function() {
@@ -1055,9 +918,6 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // DELETE FARMER
-    // ============================================================
     const deleteBtn = document.getElementById("deleteFarmerBtn");
     if (deleteBtn) {
         deleteBtn.addEventListener("click", function() {
@@ -1069,15 +929,11 @@ function initFarmerSubviews() {
         });
     }
 
-    // ============================================================
-    // CONFIRM DELETE
-    // ============================================================
     const confirmDeleteBtn = document.getElementById("confirmDeleteFarmerBtn");
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener("click", async function() {
             if (!currentActiveFarmer) return;
 
-            // Disable button to prevent double-click
             this.disabled = true;
             this.textContent = "Deleting...";
 
@@ -1122,9 +978,6 @@ function initFarmerSubviews() {
     }
 
 
-    // ============================================================
-    // CLOSE DELETE ERROR MODAL
-    // ============================================================
     document.getElementById("closeDeleteErrorBtn")?.addEventListener("click", function() {
         document.getElementById("deleteErrorModal")?.classList.remove("show");
     });
@@ -1135,9 +988,6 @@ function initFarmerSubviews() {
         }
     });
 
-    // ============================================================
-    // CANCEL DELETE
-    // ============================================================
     document.getElementById("cancelDeleteFarmerBtn")?.addEventListener("click", function() {
         document.getElementById("deleteFarmerModal")?.classList.remove("show");
     });
@@ -1148,9 +998,6 @@ function initFarmerSubviews() {
         }
     });
 
-    // ============================================================
-    // PAGINATION
-    // ============================================================
     document.getElementById("prevPageBtn")?.addEventListener("click", function() {
         if (currentFarmersPage > 1) {
             currentFarmersPage--;
@@ -1253,10 +1100,6 @@ function openManageFarmer(farmer) {
    PLANTING INTENT
 ============================================================ */
 
-/* ============================================================
-   FINALIZED INTENTS FILTER PILLS
-============================================================ */
-
 function initFinalizedIntentsFilter() {
     const pills = document.querySelectorAll("#finalizedIntentsFilterPills .filter-pill");
     if (!pills.length) {
@@ -1266,11 +1109,9 @@ function initFinalizedIntentsFilter() {
 
     pills.forEach(pill => {
         pill.addEventListener("click", () => {
-            // Update active state
             pills.forEach(p => p.classList.remove("active"));
             pill.classList.add("active");
 
-            // Update filter + re-render
             currentFinalizedIntentsFilter = pill.dataset.filter || "all";
             renderPlantingIntentsTable();
         });
@@ -1288,7 +1129,6 @@ function initPlantingIntent() {
 
     initPlantingIntentTabs();
 
-    // ADD BUTTON
     document.getElementById("addPlantIntentBtn")?.addEventListener("click", function() {
         const form = document.getElementById("submitPlantIntentForm");
         if (form) form.reset();
@@ -1296,7 +1136,6 @@ function initPlantingIntent() {
         if (formSubview) formSubview.classList.remove("hidden-element");
     });
 
-    // CANCEL BUTTON
     document.getElementById("cancelPlantIntentBtn")?.addEventListener("click", function() {
         const form = document.getElementById("submitPlantIntentForm");
         if (form) form.reset();
@@ -1304,7 +1143,6 @@ function initPlantingIntent() {
         if (list) list.classList.remove("hidden-element");
     });
 
-    // BACK FROM DETAILS
     document.getElementById("backFromPlantingIntentDetailsBtn")?.addEventListener("click", function() {
         window.isEditingPlantingIntent = false;
 
@@ -1337,19 +1175,24 @@ function initPlantingIntent() {
         fetchPlantingIntents();
     });
 
-    // SUBMIT PLANTING INTENT FORM
     document.getElementById("submitPlantIntentForm")?.addEventListener("submit", async function(event) {
         event.preventDefault();
         await submitPlantingIntent();
     });
 
-    // CLOSE SUCCESS MODAL
-    document.getElementById("closePlantIntentSubmittedBtn")?.addEventListener("click", function() {
+    document.getElementById("closePlantIntentSubmittedBtn")?.addEventListener("click", async function() {
         if (modal) modal.classList.remove("show");
         if (formSubview) formSubview.classList.add("hidden-element");
         if (list) list.classList.remove("hidden-element");
-        fetchPlantingIntents();
+        
+        const draftTab = document.querySelector('.sub-tab-btn[data-tab="draft"]');
+        if (draftTab) {
+            draftTab.click();
+        }
+        
+        await fetchPlantingIntents();
     });
+
 }
 
 // ============================================================
@@ -1369,14 +1212,11 @@ async function submitPlantingIntentStatus(intent) {
         return;
     }
 
-    if (!confirm(
-        "Are you sure you want to submit this planting intent?"
-    )) {
+    if (!confirm("Are you sure you want to submit this planting intent?")) {
         return;
     }
 
-    const submitBtn =
-        document.getElementById("submitPlantingIntentBtn");
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
 
     try {
         if (submitBtn) {
@@ -1384,24 +1224,17 @@ async function submitPlantingIntentStatus(intent) {
             submitBtn.textContent = "Submitting...";
         }
 
-        const url =
-            PLANTING_INTENTS_ENDPOINT +
-            intentId +
-            "/submit";
+        const url = PLANTING_INTENTS_ENDPOINT + intentId + "/submit";
 
         console.log("Submitting planting intent:", url);
 
-        const result = await apiRequest(url, {
-            method: "POST"
-        });
+        const result = await apiRequest(url, { method: "POST" });
 
         console.log("Submit response:", result);
 
-        // Update current intent
         intent.status = "SUBMITTED";
         intent.updated_at = new Date().toISOString();
 
-        // Update main data array
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
             return String(item.planting_intent_id) === String(intentId);
         });
@@ -1411,16 +1244,12 @@ async function submitPlantingIntentStatus(intent) {
             PLANTING_INTENTS_DATA[index].updated_at = intent.updated_at;
         }
 
-        // Reset filtered data
         filteredPlantingIntents = null;
 
-        // Refresh planting intent tables
         renderPlantingIntentsTable();
 
-        // Keep updated intent selected
         window.currentSelectedPlantingIntent = intent;
 
-        // Refresh details view
         openPlantingIntentDetails(intent);
 
         await loadReports();
@@ -1429,10 +1258,7 @@ async function submitPlantingIntentStatus(intent) {
     } catch (error) {
         console.error("Submit planting intent error:", error);
 
-        alert(
-            "Failed to submit planting intent.\n\n" +
-            (error.message || "Please try again.")
-        );
+        alert("Failed to submit planting intent.\n\n" + (error.message || "Please try again."));
 
     } finally {
         if (submitBtn) {
@@ -1458,47 +1284,30 @@ async function deletePlantingIntent(intent) {
         return;
     }
 
-    if (!confirm(
-        `Are you sure you want to permanently delete this planting intent for "${intent.commodity}"?\n\nThis action cannot be undone.`
-    )) {
+    if (!confirm(`Are you sure you want to permanently delete this planting intent for "${intent.commodity}"?\n\nThis action cannot be undone.`)) {
         return;
     }
 
     try {
-        const url =
-            PLANTING_INTENTS_ENDPOINT +
-            intent.planting_intent_id;
+        const url = PLANTING_INTENTS_ENDPOINT + intent.planting_intent_id;
 
         console.log("Deleting planting intent:", url);
 
-        await apiRequest(url, {
-            method: "DELETE"
-        });
+        await apiRequest(url, { method: "DELETE" });
 
-        // Remove locally
-        PLANTING_INTENTS_DATA =
-            PLANTING_INTENTS_DATA.filter(function(item) {
-                return String(item.planting_intent_id) !==
-                       String(intent.planting_intent_id);
-            });
+        PLANTING_INTENTS_DATA = PLANTING_INTENTS_DATA.filter(function(item) {
+            return String(item.planting_intent_id) !== String(intent.planting_intent_id);
+        });
 
         filteredPlantingIntents = null;
 
         renderPlantingIntentsTable();
 
-        const list =
-            document.getElementById("plantingIntentListSubview");
+        const list = document.getElementById("plantingIntentListSubview");
+        const details = document.getElementById("plantingIntentDetailsSubview");
 
-        const details =
-            document.getElementById("plantingIntentDetailsSubview");
-
-        if (list) {
-            list.classList.remove("hidden-element");
-        }
-
-        if (details) {
-            details.classList.add("hidden-element");
-        }
+        if (list) list.classList.remove("hidden-element");
+        if (details) details.classList.add("hidden-element");
 
         window.currentSelectedPlantingIntent = null;
 
@@ -1507,10 +1316,7 @@ async function deletePlantingIntent(intent) {
     } catch (error) {
         console.error("Delete planting intent error:", error);
 
-        alert(
-            "Failed to delete planting intent.\n\n" +
-            (error.message || "Please try again.")
-        );
+        alert("Failed to delete planting intent.\n\n" + (error.message || "Please try again."));
     }
 }
 
@@ -1544,31 +1350,22 @@ async function pullPlantingIntent(intent) {
         return;
     }
 
-    if (!confirm(
-        "Are you sure you want to revert this planting intent to DRAFT?"
-    )) {
+    if (!confirm("Are you sure you want to revert this planting intent to DRAFT?")) {
         return;
     }
 
     try {
-        const url =
-            PLANTING_INTENTS_ENDPOINT +
-            intentId +
-            "/pull";
+        const url = PLANTING_INTENTS_ENDPOINT + intentId + "/pull";
 
         console.log("Reverting planting intent to Draft:", url);
 
-        const result = await apiRequest(url, {
-            method: "POST"
-        });
+        const result = await apiRequest(url, { method: "POST" });
 
         console.log("Pull response:", result);
 
-        // Update local object
         intent.status = "DRAFT";
         intent.updated_at = new Date().toISOString();
 
-        // Update main data array
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
             return String(item.planting_intent_id) === String(intentId);
         });
@@ -1578,16 +1375,12 @@ async function pullPlantingIntent(intent) {
             PLANTING_INTENTS_DATA[index].updated_at = intent.updated_at;
         }
 
-        // Clear filtered data so the table rebuilds from the main data
         filteredPlantingIntents = null;
 
-        // Refresh planting intent table
         renderPlantingIntentsTable();
 
-        // Update current details
         window.currentSelectedPlantingIntent = intent;
 
-        // Re-open details so buttons reflect DRAFT status
         openPlantingIntentDetails(intent);
 
         alert("Planting intent reverted to DRAFT successfully.");
@@ -1595,10 +1388,7 @@ async function pullPlantingIntent(intent) {
     } catch (error) {
         console.error("Pull planting intent error:", error);
 
-        alert(
-            "Failed to revert planting intent to DRAFT.\n\n" +
-            (error.message || "Please try again.")
-        );
+        alert("Failed to revert planting intent to DRAFT.\n\n" + (error.message || "Please try again."));
     }
 }
 
@@ -1613,7 +1403,6 @@ function initPlantingIntentTabs() {
 
     if (!tabButtons.length) return;
 
-    // Set initial state
     if (draftContainer) draftContainer.style.display = 'block';
     if (submittedContainer) submittedContainer.style.display = 'none';
 
@@ -1621,7 +1410,6 @@ function initPlantingIntentTabs() {
         button.addEventListener('click', function() {
             const tab = this.dataset.tab;
 
-            // Update active tab
             tabButtons.forEach(function(btn) {
                 btn.classList.remove('active');
                 btn.style.borderBottom = 'none';
@@ -1631,7 +1419,6 @@ function initPlantingIntentTabs() {
             this.style.borderBottom = '3px solid var(--green)';
             this.style.color = 'var(--green)';
 
-            // Show/hide containers
             if (tab === 'draft') {
                 if (draftContainer) draftContainer.style.display = 'block';
                 if (submittedContainer) submittedContainer.style.display = 'none';
@@ -1642,8 +1429,6 @@ function initPlantingIntentTabs() {
         });
     });
 }
-
-
 
 
 /* ============================================================
@@ -1662,6 +1447,9 @@ function normalizePlantingIntent(intent) {
         municipality: intent.municipality || "",     
         planting_date: intent.planting_date || "",
         harvest_date: intent.harvest_date || intent.expected_harvest_date || "",
+        actual_planting_date: intent.actual_planting_date || null,  
+        actual_harvest_date: intent.actual_harvest_date || null,   
+        actual_harvest_volume: intent.actual_harvest_volume || null,
         remarks: intent.remarks || "",
         status: intent.status || intent.report_status || "Pending",
         finalized_status: intent.finalized_status || "NOT PLANTED",
@@ -1686,7 +1474,6 @@ function initializePlantingIntentSearch() {
         const keyword = searchInput.value.toLowerCase().trim();
 
         if (!keyword) {
-            // ✅ Reset to show all data
             filteredPlantingIntents = null;
             currentDraftIntentsPage = 1;
             currentSubmittedIntentsPage = 1;
@@ -1720,10 +1507,8 @@ function initializePlantingIntentSearch() {
     }
 
     searchInput.addEventListener("input", performSearch);
-    
     searchInput.addEventListener("search", performSearch);
 }
-
 
 
 /* ============================================================
@@ -1797,7 +1582,6 @@ async function fetchPlantingIntents() {
 }
 
 
-
 // ============================================================
 // RENDER PLANTING INTENTS TABLE
 // ============================================================
@@ -1811,23 +1595,20 @@ function renderPlantingIntentsTable() {
         return;
     }
 
-    // Clear tables
     draftTbody.innerHTML = '';
     submittedTbody.innerHTML = '';
 
-    const dataSource = (filteredPlantingIntents !== null && filteredPlantingIntents.length >= 0) 
+    const dataSource = (filteredPlantingIntents !== null) 
         ? filteredPlantingIntents 
         : PLANTING_INTENTS_DATA;
 
     console.log("Rendering with data source:", dataSource.length, "intents");
 
-    // Filter draft intents
     const draftIntents = dataSource.filter(function(intent) {
         const status = (intent.status || 'Pending').toLowerCase();
         return status === 'draft' || status === 'pending';
     });
 
-    // Filter submitted intents (status = SUBMITTED)
     let submittedIntents = dataSource.filter(function(intent) {
         const status = (intent.status || '').toLowerCase();
         return status === 'submitted' ||
@@ -1839,7 +1620,6 @@ function renderPlantingIntentsTable() {
             status === 'final_approved';
     });
 
-    // ✅ Apply harvest status filter
     if (currentFinalizedIntentsFilter !== "all") {
         submittedIntents = submittedIntents.filter(function(intent) {
             const hs = (intent.finalized_status || "NOT PLANTED").toUpperCase();
@@ -1847,19 +1627,15 @@ function renderPlantingIntentsTable() {
         });
     }
 
-    // Update counters
     const draftCount = document.getElementById('draftCount');
     const submittedCount = document.getElementById('submittedCount');
     if (draftCount) draftCount.textContent = draftIntents.length;
     if (submittedCount) submittedCount.textContent = submittedIntents.length;
 
-    // ============================================================
-    // RENDER DRAFT INTENTS
-    // ============================================================
     if (draftIntents.length === 0) {
         draftTbody.innerHTML = `
             <tr>
-                <td colspan="8" style="padding:40px; text-align:center; color:#999;">
+                <td colspan="7" style="padding:40px; text-align:center; color:#999;">
                     ${filteredPlantingIntents !== null ? 'No Draft Intents match your search.' : 'No Draft Intents found.'}
                     ${filteredPlantingIntents !== null ? '<br><small>Try adjusting your search terms.</small>' : '<br>Click "Add Plant Intent" to create your first planting plan.'}
                 </td>
@@ -1875,13 +1651,10 @@ function renderPlantingIntentsTable() {
         });
     }
 
-    // ============================================================
-    // RENDER SUBMITTED INTENTS
-    // ============================================================
     if (submittedIntents.length === 0) {
         submittedTbody.innerHTML = `
             <tr>
-                <td colspan="8" style="padding:40px; text-align:center; color:#999;">
+                <td colspan="11" style="padding:40px; text-align:center; color:#999;">
                     ${filteredPlantingIntents !== null ? 'No Submitted Intents match your search.' : 'No Submitted Intents found.'}
                     ${filteredPlantingIntents !== null ? '<br><small>Try adjusting your search terms.</small>' : '<br>Submit a draft intent to see it here.'}
                 </td>
@@ -1897,31 +1670,16 @@ function renderPlantingIntentsTable() {
         });
     }
 
-    // ============================================================
-    // RENDER PAGINATION
-    // ============================================================
     renderPagination(draftIntents.length, "draft");
     renderPagination(submittedIntents.length, "submitted");
 }
 
 
-
 // ============================================================
-// SIMPLE PAGINATION - ayaw gumana letche
+// PAGINATION
 // ============================================================
 
 function renderPagination(totalCount, type) {
-    // If no items or less than per page, remove pagination and return
-    if (totalCount <= plantingIntentsPerPage) {
-        const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
-        const container = document.getElementById(containerId);
-        if (container) {
-            const existing = container.querySelector(".planting-intent-pagination");
-            if (existing) existing.remove();
-        }
-        return;
-    }
-
     const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1929,11 +1687,13 @@ function renderPagination(totalCount, type) {
     const card = container.querySelector(".card");
     if (!card) return;
 
-    // Remove existing pagination
     const existing = card.querySelector(".planting-intent-pagination");
     if (existing) existing.remove();
 
-    // Get current page
+    if (totalCount <= plantingIntentsPerPage) {
+        return;
+    }
+
     let currentPage = type === "draft" ? currentDraftIntentsPage : currentSubmittedIntentsPage;
     const totalPages = Math.ceil(totalCount / plantingIntentsPerPage);
     
@@ -1960,7 +1720,6 @@ function renderPagination(totalCount, type) {
                 </button>
     `;
 
-    // Generate page buttons (show max 5)
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, startPage + 4);
     
@@ -1996,7 +1755,6 @@ function renderPagination(totalCount, type) {
 
     card.insertAdjacentHTML('beforeend', html);
 
-    // ATTACH EVENT LISTENERS
     const paginationDiv = card.querySelector(".planting-intent-pagination");
     if (!paginationDiv) return;
 
@@ -2037,6 +1795,27 @@ function renderPagination(totalCount, type) {
     }
 }
 
+
+/* ============================================================
+   STATUS TRANSITION RULES
+============================================================ */
+
+function getAllowedStatusTransitions(currentStatus) {
+    const current = (currentStatus || "NOT PLANTED").toUpperCase();
+
+    switch (current) {
+        case "NOT PLANTED":
+            return ["PLANTED", "MEDIATING"];
+        case "PLANTED":
+            return ["HARVESTED", "MEDIATING"];
+        case "HARVESTED":
+            return [];
+        case "MEDIATING":
+            return ["NOT PLANTED", "PLANTED", "HARVESTED"];
+        default:
+            return ["NOT PLANTED", "PLANTED", "HARVESTED", "MEDIATING"];
+    }
+}
 
 
 /* ============================================================
@@ -2080,33 +1859,81 @@ function createPlantingIntentRow(intent, type) {
             bgColor = '#2980B9';
         }
 
+        const allowedTransitions = getAllowedStatusTransitions(harvestStatus);
+        const isOptionAllowed = (status) => allowedTransitions.includes(status);
+
         statusCell = `
             <div class="status-dropdown-wrapper" data-intent-id="${intentId}" style="position:relative; display:inline-block;">
                 <span class="status-pill clickable-pill" 
-                      style="cursor:pointer; display:inline-block; padding:4px 16px; border-radius:999px; font-size:11.5px; font-weight:700; color:#FFFFFF; text-shadow:0 1px 1px rgba(0,0,0,0.2); text-align:center; white-space:nowrap; letter-spacing:0.02em; user-select:none; background-color:${bgColor}; transition:all 0.2s ease;">
+                    data-current-status="${harvestStatus}"
+                    style="cursor:pointer; display:inline-block; padding:4px 16px; border-radius:999px; font-size:11.5px; font-weight:700; color:#FFFFFF; text-shadow:0 1px 1px rgba(0,0,0,0.2); text-align:center; white-space:nowrap; letter-spacing:0.02em; user-select:none; background-color:${bgColor}; transition:all 0.2s ease;">
                     ${escapeHtml(statusText)}
                     <span style="font-size:8px; margin-left:6px;">▼</span>
                 </span>
-                <div class="status-dropdown-menu" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; background:#FFFFFF; border:1.5px solid #DFD8C6; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:120px; z-index:1000; overflow:hidden;">
-                    <div class="status-option" data-status="NOT PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Not Planted</div>
-                    <div class="status-option" data-status="PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Planted</div>
-                    <div class="status-option" data-status="HARVESTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Harvested</div>
-                    <div class="status-option" data-status="MEDIATING" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333;">Mediating</div>
+                <div class="status-dropdown-menu" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; background:#FFFFFF; border:1.5px solid #DFD8C6; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:140px; z-index:1000; overflow:hidden;">
+                    <div class="status-option" 
+                        data-status="NOT PLANTED" 
+                        data-allowed="${isOptionAllowed('NOT PLANTED')}"
+                        title="${isOptionAllowed('NOT PLANTED') ? 'Change status to Not Planted' : 'Hindi available — check current status'}"
+                        style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('NOT PLANTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('NOT PLANTED') ? 'pointer' : 'not-allowed'}; background:${harvestStatus === 'NOT PLANTED' ? '#F0F0F0' : 'transparent'};">
+                        Not Planted ${harvestStatus === 'NOT PLANTED' ? '(current)' : ''}
+                    </div>
+                    <div class="status-option" 
+                        data-status="PLANTED" 
+                        data-allowed="${isOptionAllowed('PLANTED')}"
+                        title="${isOptionAllowed('PLANTED') ? 'Change status to Planted' : 'Hindi available — check current status'}"
+                        style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('PLANTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('PLANTED') ? 'pointer' : 'not-allowed'}; background:${harvestStatus === 'PLANTED' ? '#F0F0F0' : 'transparent'};">
+                        Planted ${harvestStatus === 'PLANTED' ? '(current)' : ''}
+                    </div>
+                    <div class="status-option" 
+                        data-status="HARVESTED" 
+                        data-allowed="${isOptionAllowed('HARVESTED')}"
+                        title="${isOptionAllowed('HARVESTED') ? 'Change status to Harvested' : 'Hindi available — check current status'}"
+                        style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('HARVESTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('HARVESTED') ? 'pointer' : 'not-allowed'}; background:${harvestStatus === 'HARVESTED' ? '#F0F0F0' : 'transparent'};">
+                        Harvested ${harvestStatus === 'HARVESTED' ? '(current)' : ''}
+                    </div>
+                    <div class="status-option" 
+                        data-status="MEDIATING" 
+                        data-allowed="${isOptionAllowed('MEDIATING')}"
+                        title="${isOptionAllowed('MEDIATING') ? 'Change status to Mediating' : 'Hindi available — check current status'}"
+                        style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('MEDIATING') ? '#333' : '#BBB'}; cursor:${isOptionAllowed('MEDIATING') ? 'pointer' : 'not-allowed'}; background:${harvestStatus === 'MEDIATING' ? '#F0F0F0' : 'transparent'};">
+                        Mediating ${harvestStatus === 'MEDIATING' ? '(current)' : ''}
+                    </div>
                 </div>
             </div>
         `;
     }
 
-    tr.innerHTML = `
-        <td>#${escapeHtml(String(intentId))}</td>
-        <td>${escapeHtml(farmerName)}</td>
-        <td>${escapeHtml(commodity)}</td>
-        <td>${escapeHtml(volume)}</td>
-        <td>${escapeHtml(location)}</td>
-        <td>${escapeHtml(plantingDate)}</td>
-        <td>${escapeHtml(harvestDate)}</td>
-        <td class="center-col">${statusCell}</td>
-    `;
+    if (type === 'draft') {
+        tr.innerHTML = `
+            <td>#${escapeHtml(String(intentId))}</td>
+            <td>${escapeHtml(farmerName)}</td>
+            <td>${escapeHtml(commodity)}</td>
+            <td>${escapeHtml(volume)}</td>
+            <td>${escapeHtml(location)}</td>
+            <td>${escapeHtml(plantingDate)}</td>
+            <td>${escapeHtml(harvestDate)}</td>
+        `;
+    } else {
+        const actualHarvestVol = Number(intent.actual_harvest_volume) || 0;
+        const actualVolCell = actualHarvestVol > 0
+            ? `<span style="color: #2E7D32; font-weight: 700;">${actualHarvestVol.toLocaleString("en-US")} kg</span>`
+            : `<span style="color: #BBB; font-style: italic;">—</span>`;
+
+        tr.innerHTML = `
+            <td>#${escapeHtml(String(intentId))}</td>
+            <td>${escapeHtml(farmerName)}</td>
+            <td>${escapeHtml(commodity)}</td>
+            <td>${escapeHtml(volume)}</td>
+            <td>${escapeHtml(location)}</td>
+            <td>${escapeHtml(plantingDate)}</td>
+            <td>${escapeHtml(formatPlantingDate(intent.actual_planting_date) || "—")}</td>
+            <td>${escapeHtml(harvestDate)}</td>
+            <td>${escapeHtml(formatPlantingDate(intent.actual_harvest_date) || "—")}</td>
+            <td class="center-col">${actualVolCell}</td>
+            <td class="center-col">${statusCell}</td>
+        `;
+    }
 
     tr.addEventListener('click', function(e) {
         if (e.target.closest('.status-dropdown-wrapper')) return;
@@ -2114,7 +1941,6 @@ function createPlantingIntentRow(intent, type) {
     });
 
     if (type !== 'draft') {
-        const wrapper = tr.querySelector('.status-dropdown-wrapper');
         const pill = tr.querySelector('.clickable-pill');
         const menu = tr.querySelector('.status-dropdown-menu');
 
@@ -2123,7 +1949,6 @@ function createPlantingIntentRow(intent, type) {
                 e.stopPropagation();
                 e.preventDefault();
 
-                // Close other menus
                 document.querySelectorAll('.status-dropdown-menu').forEach((m) => {
                     if (m !== menu) m.style.display = 'none';
                 });
@@ -2135,18 +1960,39 @@ function createPlantingIntentRow(intent, type) {
         tr.querySelectorAll('.status-option').forEach((option) => {
             option.addEventListener('click', (e) => {
                 e.stopPropagation();
+                
+                const isAllowed = option.dataset.allowed === "true";
+                if (!isAllowed) {
+                    const newStatus = option.dataset.status;
+                    const currentStatus = (pill?.dataset.currentStatus || intent.finalized_status || "NOT PLANTED").toUpperCase();
+                    
+                    let reason = "";
+                    if (currentStatus === "NOT PLANTED" && newStatus === "HARVESTED") {
+                        reason = "Hindi pwedeng gawing HARVESTED ang isang intent na hindi pa PLANTED.\n\nMarkahan muna ito bilang PLANTED.";
+                    } else if (currentStatus === "HARVESTED") {
+                        reason = "Ang HARVESTED status ay FINAL at hindi na mababago.";
+                    } else if (currentStatus === "PLANTED" && newStatus === "NOT PLANTED") {
+                        reason = "Hindi na pwedeng ibalik sa NOT PLANTED ang isang intent na PLANTED na.\n\nUse MEDIATING kung may problema.";
+                    } else {
+                        reason = `Hindi pwedeng i-transition mula ${currentStatus} papuntang ${newStatus}.`;
+                    }
+                    
+                    alert("⚠️ Invalid Status Change\n\n" + reason);
+                    if (menu) menu.style.display = 'none';
+                    return;
+                }
+                
                 const newStatus = option.dataset.status;
-                if (pill) updateStatusPillVisual(pill, newStatus);
                 if (menu) menu.style.display = 'none';
-                updateFinalizedIntentStatus(intentId, newStatus);
+
+                const currentStatus = (pill?.dataset.currentStatus || intent.finalized_status || "NOT PLANTED").toUpperCase();
+                handleFinalizedStatusChange(intent, currentStatus, newStatus, pill);
             });
         });
     }
 
     return tr;
 }
-
-
 
 
 /* ============================================================
@@ -2156,133 +2002,299 @@ function createPlantingIntentRow(intent, type) {
 function openPlantingIntentDetails(intent) {
     console.log("Opening details for:", intent);
 
+    if (!intent) {
+        console.warn("openPlantingIntentDetails called with null intent.");
+        return;
+    }
+
     const list = document.getElementById("plantingIntentListSubview");
     const details = document.getElementById("plantingIntentDetailsSubview");
 
     if (!details) {
-        console.warn("plantingIntentDetailsSubview not found.");
+        console.error("❌ plantingIntentDetailsSubview NOT FOUND in DOM!");
+        alert("Details view not found. Please refresh the page.");
         return;
     }
 
-    window.currentSelectedPlantingIntent = intent;
+    try {
+        if (list) list.classList.add("hidden-element");
+        details.classList.remove("hidden-element");
 
-    if (list) list.classList.add("hidden-element");
-    details.classList.remove("hidden-element");
+        console.log("✅ View switched. Details hidden?",
+                    details.classList.contains("hidden-element"));
 
-    // Populate details
-    setValue("detailPlantingIntentId", intent.planting_intent_id || "");
-    setValue("detailFarmerName", intent.farmer_name || "");
-    setValue("detailFarmerId", intent.farmer_id || "");
-    setValue("detailCommodity", intent.commodity || "");
-    setValue("detailVolume", formatPlantingVolume(intent.volume));
-    setValue("detailLocation", intent.location || "");
-    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
-    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
-    setValue("detailRemarks", intent.remarks || "");
+        window.currentSelectedPlantingIntent = intent;
 
-    // Revision info
-    const revisionInfo = document.getElementById("detailRevisionInfo");
-    if (revisionInfo) {
-        if (intent.revision_count !== undefined && intent.revision_count > 0) {
-            revisionInfo.textContent = "Revision #" + intent.revision_count + " | Last updated: " + formatPlantingDate(intent.updated_at || intent.created_at);
-            revisionInfo.style.display = "block";
-        } else {
-            revisionInfo.style.display = "none";
+        setValue("detailPlantingIntentId", intent.planting_intent_id || "");
+        setValue("detailFarmerName", intent.farmer_name || "");
+        setValue("detailFarmerId", intent.farmer_id || "");
+
+        const commoditySelect = document.getElementById("detailCommodity");
+        if (commoditySelect) {
+            commoditySelect.value = intent.commodity || "";
         }
-    }
 
-    // Reset Edit Mode
-    window.isEditingPlantingIntent = false;
-
-    const detailInputs = details.querySelectorAll("input, textarea");
-    detailInputs.forEach(function(input) {
-        input.readOnly = true;
-        input.classList.add("input-readonly");
-        input.classList.remove("input-editable-active");
-    });
-
-    // Get button references
-    const editBtn = document.getElementById("editPlantingIntentBtn");
-    const submitBtn = document.getElementById("submitPlantingIntentBtn");
-    const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
-    const deleteBtn = document.getElementById("deletePlantingIntentBtn");
-
-    if (backBtn) backBtn.style.display = "inline-flex";
-
-    // ✅ Check status
-    const status = (intent.status || "DRAFT").toUpperCase();
-    const isDraft = status === "DRAFT";
-    const isSubmitted = status === "SUBMITTED";
-
-    console.log("Status:", status, "| Draft:", isDraft, "| Submitted:", isSubmitted);
-
-    if (isDraft) {
-        // ✅ DRAFT - Show Edit, Delete, and Submit buttons
-        if (editBtn) {
-            editBtn.style.display = "inline-flex";
-            editBtn.textContent = "Edit Details";
-            editBtn.style.background = "#D97706";
-            editBtn.style.cursor = "pointer";
-            editBtn.disabled = false;
-            editBtn.onclick = function() {
-                togglePlantingIntentEditMode();
-            };
+        const volumeInput = document.getElementById("detailVolume");
+        if (volumeInput) {
+            const numericVolume = Number(
+                String(intent.volume || "")
+                    .replace(/,/g, "")
+                    .replace(/kg/gi, "")
+                    .trim()
+            );
+            volumeInput.value = isNaN(numericVolume) ? "" : numericVolume;
         }
-        
-        if (deleteBtn) {
-            deleteBtn.style.display = "inline-flex";
-            deleteBtn.textContent = "Delete";
-            deleteBtn.style.background = "#C0392B";
-            deleteBtn.style.cursor = "pointer";
-            deleteBtn.disabled = false;
-            deleteBtn.onclick = function() {
-                deletePlantingIntent(intent);
-            };
-        }
-        
-        if (submitBtn) {
-            submitBtn.textContent = "Finalize";
-            submitBtn.style.display = "inline-flex";
-            submitBtn.style.background = "#2E7D32";
-            submitBtn.style.color = "#fff";
-            submitBtn.disabled = false;
-            submitBtn.title = "Submit this intent (status will change to SUBMITTED)";
-            submitBtn.onclick = function() {
-                submitPlantingIntentStatus(intent);
-            };
-        }
-        
-    } else if (isSubmitted) {
-        if (editBtn) { editBtn.style.display = "none"; }
-        if (deleteBtn) { deleteBtn.style.display = "none"; }
 
-        const finalizedStatus = (intent.finalized_status || "NOT PLANTED").toUpperCase();
-        const canRevert = finalizedStatus === "NOT PLANTED";
+        setValue("detailLocation", intent.location || "");
 
-        if (submitBtn) {
-            if (canRevert) {
-                submitBtn.textContent = "Return to Draft";
-                submitBtn.disabled = false;
-                submitBtn.onclick = function() {
-                    pullPlantingIntent(intent);
-                };
-            } else {
-                submitBtn.textContent = "Already " + finalizedStatus.replace("_", " ");
-                submitBtn.disabled = true;
-                submitBtn.style.background = "#6c757d";
-                submitBtn.title = `Cannot revert to DRAFT — finalized status is "${finalizedStatus}".`;
-                submitBtn.onclick = null;
+        const plantingDateInput = document.getElementById("detailPlantingDate");
+        if (plantingDateInput) {
+            plantingDateInput.value = toDateInputValue(intent.planting_date);
+        }
+
+        const harvestDateInput = document.getElementById("detailHarvestDate");
+        if (harvestDateInput) {
+            harvestDateInput.value = toDateInputValue(intent.harvest_date);
+        }
+
+        const actualPlantingInput = document.getElementById("detailActualPlantingDate");
+        if (actualPlantingInput) {
+            actualPlantingInput.value = toDateInputValue(intent.actual_planting_date);
+        }
+
+        const actualHarvestInput = document.getElementById("detailActualHarvestDate");
+        if (actualHarvestInput) {
+            actualHarvestInput.value = toDateInputValue(intent.actual_harvest_date);
+        }
+
+        // ✅ NEW: Populate actual harvest volume
+        const actualHarvestVolumeInput = document.getElementById("detailActualHarvestVolume");
+        const actualHarvestVolumeHint = document.getElementById("detailActualHarvestVolumeHint");
+
+        if (actualHarvestVolumeInput) {
+            const vol = Number(intent.actual_harvest_volume);
+            actualHarvestVolumeInput.value = (vol > 0) ? vol : "";
+
+            const plannedVol = Number(intent.volume) || 0;
+            if (actualHarvestVolumeHint) {
+                if (vol > 0 && plannedVol > 0) {
+                    const variancePct = Math.round(((vol - plannedVol) / plannedVol) * 100);
+                    if (variancePct === 0) {
+                        actualHarvestVolumeHint.textContent = "✓ Same as planned volume";
+                        actualHarvestVolumeHint.style.color = "#2E7D32";
+                    } else if (variancePct > 0) {
+                        actualHarvestVolumeHint.textContent = `↑ ${variancePct}% higher than planned (${plannedVol.toLocaleString()} kg)`;
+                        actualHarvestVolumeHint.style.color = "#2E7D32";
+                    } else {
+                        actualHarvestVolumeHint.textContent = `↓ ${Math.abs(variancePct)}% lower than planned (${plannedVol.toLocaleString()} kg)`;
+                        actualHarvestVolumeHint.style.color = "#C0392B";
+                    }
+                } else if (vol > 0) {
+                    actualHarvestVolumeHint.textContent = "";
+                } else {
+                    actualHarvestVolumeHint.textContent = "Not yet harvested";
+                    actualHarvestVolumeHint.style.color = "#BBB";
+                    actualHarvestVolumeHint.style.fontStyle = "italic";
+                }
             }
         }
-    }
 
-    // Status-specific button state is already handled above.
+        setValue("detailRemarks", intent.remarks || "");
+
+        const revisionInfo = document.getElementById("detailRevisionInfo");
+        if (revisionInfo) {
+            if (intent.revision_count !== undefined && intent.revision_count > 0) {
+                revisionInfo.textContent =
+                    "Revision #" + intent.revision_count +
+                    " | Last updated: " +
+                    formatPlantingDate(intent.updated_at || intent.created_at);
+                revisionInfo.style.display = "block";
+            } else {
+                revisionInfo.style.display = "none";
+            }
+        }
+
+        // ✅ NEW: Render validation timeline
+        const historyWrapper = document.getElementById("validationHistoryWrapper");
+        const historyContainer = document.getElementById("validationTimelineContainer");
+        if (historyContainer) {
+            historyContainer.innerHTML = `
+                <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                    Loading history...
+                </div>
+            `;
+        }
+        if (historyWrapper) historyWrapper.style.display = "none";
+
+        window.isEditingPlantingIntent = false;
+        resetPlantingIntentDetailFields();
+
+        const editBtn = document.getElementById("editPlantingIntentBtn");
+        const submitBtn = document.getElementById("submitPlantingIntentBtn");
+        const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+        const deleteBtn = document.getElementById("deletePlantingIntentBtn");
+
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const status = (intent.status || "DRAFT").toUpperCase();
+        const isDraft = status === "DRAFT";
+        const isSubmitted = status === "SUBMITTED";
+
+        console.log("Status:", status, "| Draft:", isDraft, "| Submitted:", isSubmitted);
+
+        if (isDraft) {
+            if (editBtn) {
+                editBtn.style.display = "inline-flex";
+                editBtn.textContent = "Edit Details";
+                editBtn.style.background = "#D97706";
+                editBtn.style.cursor = "pointer";
+                editBtn.disabled = false;
+                editBtn.onclick = function() {
+                    togglePlantingIntentEditMode();
+                };
+            }
+
+            if (deleteBtn) {
+                deleteBtn.style.display = "inline-flex";
+                deleteBtn.textContent = "Delete";
+                deleteBtn.style.background = "#C0392B";
+                deleteBtn.style.cursor = "pointer";
+                deleteBtn.disabled = false;
+                deleteBtn.onclick = function() {
+                    deletePlantingIntent(intent);
+                };
+            }
+
+            if (submitBtn) {
+                submitBtn.textContent = "Finalize";
+                submitBtn.style.display = "inline-flex";
+                submitBtn.style.background = "#2E7D32";
+                submitBtn.style.color = "#fff";
+                submitBtn.disabled = false;
+                submitBtn.onclick = function() {
+                    submitPlantingIntentStatus(intent);
+                };
+            }
+
+        } else if (isSubmitted) {
+            if (editBtn) editBtn.style.display = "none";
+            if (deleteBtn) deleteBtn.style.display = "none";
+
+            const finalizedStatus = (intent.finalized_status || "NOT PLANTED").toUpperCase();
+            const canRevert = finalizedStatus === "NOT PLANTED";
+
+            if (submitBtn) {
+                if (canRevert) {
+                    submitBtn.textContent = "Return to Draft";
+                    submitBtn.disabled = false;
+                    submitBtn.style.display = "inline-flex";
+                    submitBtn.style.background = "#D97706";
+                    submitBtn.onclick = function() {
+                        pullPlantingIntent(intent);
+                    };
+                } else {
+                    const statusLabel = finalizedStatus
+                        .toLowerCase()
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+
+                    submitBtn.textContent = "Already " + statusLabel;
+                    submitBtn.disabled = true;
+                    submitBtn.style.display = "inline-flex";
+                    submitBtn.style.background = "#6c757d";
+                    submitBtn.title = `Cannot revert to DRAFT — finalized status is "${finalizedStatus}".`;
+                    submitBtn.onclick = null;
+                }
+            }
+        }
+
+        const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+        if (cancelBtn) cancelBtn.remove();
+
+        console.log("✅ Details view populated successfully.");
+
+        (async () => {
+            try {
+                // Try to find the report that includes this intent
+                let reportId = intent.report_id || intent.reportId || null;
+
+                // If not set, try to look it up (only if intent is in a report)
+                if (!reportId && intent.is_in_report) {
+                    reportId = await findReportIdForIntent(intent.planting_intent_id);
+                }
+
+                // If still no report ID → hide timeline
+                if (!reportId) {
+                    if (historyWrapper) historyWrapper.style.display = "none";
+                    if (historyContainer) historyContainer.innerHTML = "";
+                    return;
+                }
+
+                const fullReport = await apiRequest(
+                    `${API_BASE_URL}/api/raw-plant-reports/${reportId}`,
+                    { method: "GET" }
+                );
+
+                const history = fullReport.validation_history || [];
+
+                if (history.length === 0) {
+                    // No history → hide the whole wrapper
+                    if (historyWrapper) historyWrapper.style.display = "none";
+                    if (historyContainer) historyContainer.innerHTML = "";
+                    return;
+                }
+
+                renderValidationTimeline(
+                    history,
+                    "validationTimelineContainer",
+                    "validationHistoryWrapper"
+                );
+
+            } catch (historyErr) {
+                console.warn("Could not load validation history:", historyErr);
+                if (historyWrapper) historyWrapper.style.display = "none";
+                if (historyContainer) historyContainer.innerHTML = "";
+            }
+        })();
+
+    } catch (err) {
+        console.error("❌ Error populating details view:", err);
+        console.error("Stack:", err.stack);
+        alert("Error opening details: " + err.message);
+    }
 }
 
-    // Remove Cancel button if exists
-    var cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
-    if (cancelBtn) cancelBtn.remove();
 
+/* ============================================================
+   🔍 FIND REPORT ID FOR INTENT
+   Looks up which report contains this intent
+============================================================ */
+
+async function findReportIdForIntent(intentId) {
+    if (!intentId) return null;
+
+    try {
+        // Query the report submissions endpoint that returns report<intent> mapping
+        const reports = await apiRequest(
+            `${API_BASE_URL}/api/raw-plant-reports/`,
+            { method: "GET" }
+        );
+
+        if (!Array.isArray(reports)) return null;
+
+        // Each report has "intent_ids" array
+        const match = reports.find(r =>
+            Array.isArray(r.intent_ids) &&
+            r.intent_ids.some(id => String(id) === String(intentId))
+        );
+
+        return match ? match.report_id : null;
+
+    } catch (err) {
+        console.warn("findReportIdForIntent failed:", err);
+        return null;
+    }
+}
 
 // ============================================================
 // TOGGLE PLANTING INTENT EDIT MODE
@@ -2301,24 +2313,27 @@ function togglePlantingIntentEditMode() {
     const editBtn = document.getElementById("editPlantingIntentBtn");
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
     const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
-    const detailInputs = details.querySelectorAll("input, textarea");
+    const deleteBtn = document.getElementById("deletePlantingIntentBtn");
 
     const existingCancel = document.getElementById("cancelEditPlantingIntentBtn");
     if (existingCancel) existingCancel.remove();
 
     if (!window.isEditingPlantingIntent) {
-        // ============================================================
-        // ENTER EDIT MODE
-        // ============================================================
         window.isEditingPlantingIntent = true;
 
-        // Enable all editable inputs
-        detailInputs.forEach(function(input) {
+        details.querySelectorAll("input[type='text'], input[type='number'], textarea").forEach(function(input) {
             const id = input.id;
-            // Keep these fields read-only
-            if (id === "detailPlantingIntentId" || id === "detailFarmerId" || id === "detailFarmerName") {
+
+            if (
+                id === "detailPlantingIntentId" ||
+                id === "detailFarmerId" ||
+                id === "detailFarmerName" ||
+                id === "detailLocation" ||
+                id === "detailActualHarvestVolume"
+            ) {
                 return;
             }
+
             input.readOnly = false;
             input.classList.remove("input-readonly");
             input.classList.add("input-editable-active");
@@ -2326,22 +2341,47 @@ function togglePlantingIntentEditMode() {
             input.style.background = "#FFFDF7";
         });
 
-        // Update button states
+        const currentStatus = (intent.status || "DRAFT").toUpperCase();
+        const isDraft = currentStatus === "DRAFT";
+
+        details.querySelectorAll("input[type='date']").forEach(function(input) {
+            if (isDraft && (input.id === "detailActualPlantingDate" || input.id === "detailActualHarvestDate")) {
+                input.disabled = true;
+                input.classList.add("input-readonly");
+                input.classList.remove("input-editable-active");
+                input.style.border = "";
+                input.style.background = "#ECE6D8";
+                input.title = "Actual dates are recorded automatically when status changes to PLANTED or HARVESTED.";
+                return;
+            }
+
+            input.disabled = false;
+            input.classList.remove("input-readonly");
+            input.classList.add("input-editable-active");
+            input.style.border = "1.5px solid #D97706";
+            input.style.background = "#FFFDF7";
+        });
+
+
+        const commoditySelect = document.getElementById("detailCommodity");
+        if (commoditySelect) {
+            commoditySelect.disabled = false;
+            commoditySelect.style.border = "1.5px solid #D97706";
+            commoditySelect.style.background = "#FFFDF7";
+            commoditySelect.style.color = "var(--ink)";
+            commoditySelect.style.cursor = "pointer";
+        }
+
         if (editBtn) {
             editBtn.textContent = "Save Changes";
             editBtn.style.background = "#2E7D32";
             editBtn.style.display = "inline-flex";
         }
 
-        if (submitBtn) {
-            submitBtn.style.display = "none";
-        }
+        if (submitBtn) submitBtn.style.display = "none";
+        if (backBtn) backBtn.style.display = "none";
+        if (deleteBtn) deleteBtn.style.display = "none";
 
-        if (backBtn) {
-            backBtn.style.display = "none";
-        }
-
-        // Create Cancel button
         const cancelBtn = document.createElement("button");
         cancelBtn.id = "cancelEditPlantingIntentBtn";
         cancelBtn.className = "btn-outline-report";
@@ -2356,12 +2396,8 @@ function togglePlantingIntentEditMode() {
         console.log("Entered edit mode.");
 
     } else {
-        // ============================================================
-        // EXIT EDIT MODE - Save Changes
-        // ============================================================
         const confirmSave = confirm("Are you sure you want to save these changes?");
         if (!confirmSave) {
-            // If user cancels, just exit without saving
             cancelPlantingIntentEdit();
             return;
         }
@@ -2388,30 +2424,38 @@ function cancelPlantingIntentEdit() {
         return;
     }
 
-    // Restore original values
     setValue("detailPlantingIntentId", intent.planting_intent_id || "");
     setValue("detailFarmerName", intent.farmer_name || "");
     setValue("detailFarmerId", intent.farmer_id || "");
-    setValue("detailCommodity", intent.commodity || "");
-    setValue("detailVolume", formatPlantingVolume(intent.volume));
+
+    const commoditySelect = document.getElementById("detailCommodity");
+    if (commoditySelect) {
+        commoditySelect.value = intent.commodity || "";
+    }
+
+    const volumeInputCancel = document.getElementById("detailVolume");
+    if (volumeInputCancel) {
+        const numericVolumeCancel = Number(String(intent.volume || "").replace(/,/g, "").replace(/kg/gi, "").trim());
+        volumeInputCancel.value = isNaN(numericVolumeCancel) ? "" : numericVolumeCancel;
+    }
     setValue("detailLocation", intent.location || "");
-    setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
-    setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+
+    const plantingDateInput = document.getElementById("detailPlantingDate");
+    if (plantingDateInput) {
+        plantingDateInput.value = toDateInputValue(intent.planting_date);
+    }
+
+    const harvestDateInput = document.getElementById("detailHarvestDate");
+    if (harvestDateInput) {
+        harvestDateInput.value = toDateInputValue(intent.harvest_date);
+    }
+
     setValue("detailRemarks", intent.remarks || "");
 
-    // Reset input styles
-    const detailInputs = details.querySelectorAll("input, textarea");
-    detailInputs.forEach(function(input) {
-        input.readOnly = true;
-        input.classList.add("input-readonly");
-        input.classList.remove("input-editable-active");
-        input.style.border = "";
-        input.style.background = "";
-    });
+    resetPlantingIntentDetailFields();
 
     window.isEditingPlantingIntent = false;
 
-    // Restore buttons
     const editBtn = document.getElementById("editPlantingIntentBtn");
     if (editBtn) {
         editBtn.textContent = "Edit Details";
@@ -2422,7 +2466,6 @@ function cancelPlantingIntentEdit() {
     const submitBtn = document.getElementById("submitPlantingIntentBtn");
     if (submitBtn) {
         submitBtn.style.display = "inline-flex";
-        // Check if it should show Submit or Pull
         const status = (intent.status || "DRAFT").toUpperCase();
         if (status === "SUBMITTED") {
             submitBtn.textContent = "Return to Draft";
@@ -2436,6 +2479,16 @@ function cancelPlantingIntentEdit() {
 
     const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
     if (backBtn) backBtn.style.display = "inline-flex";
+
+    const deleteBtn = document.getElementById("deletePlantingIntentBtn");
+    if (deleteBtn) {
+        const status = (intent.status || "DRAFT").toUpperCase();
+        if (status === "DRAFT") {
+            deleteBtn.style.display = "inline-flex";
+        } else {
+            deleteBtn.style.display = "none";
+        }
+    }
 
     const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
     if (cancelBtn) cancelBtn.remove();
@@ -2454,34 +2507,18 @@ async function savePlantingIntentChanges() {
         return;
     }
 
-    function convertToAPIDate(dateString) {
-        if (!dateString) return "";
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
-        const dateParts = dateString.split('/');
-        if (dateParts.length === 3) {
-            let month = dateParts[0].trim().padStart(2, '0');
-            let day = dateParts[1].trim().padStart(2, '0');
-            let year = dateParts[2].trim();
-            return year + "-" + month + "-" + day;
-        }
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-        }
-        return dateString;
-    }
+    const commoditySelect = document.getElementById("detailCommodity");
+    const rawCommodity = commoditySelect ? commoditySelect.value : intent.commodity;
 
-    // Get current values from the form
-    const rawCommodity = document.getElementById("detailCommodity")?.value || intent.commodity;
     const rawVolume = document.getElementById("detailVolume")?.value || intent.volume;
-    const rawLocation = document.getElementById("detailLocation")?.value || intent.location;
-    const rawPlantingDate = document.getElementById("detailPlantingDate")?.value || intent.planting_date;
-    const rawHarvestDate = document.getElementById("detailHarvestDate")?.value || intent.harvest_date;
-    const rawRemarks = document.getElementById("detailRemarks")?.value || intent.remarks;
 
-    // Validate required fields
+    const rawPlantingDate = document.getElementById("detailPlantingDate")?.value || "";
+    const rawHarvestDate = document.getElementById("detailHarvestDate")?.value || "";
+
+    const rawRemarks = document.getElementById("detailRemarks")?.value || "";
+
     if (!rawCommodity || !rawCommodity.trim()) {
-        alert("Please enter Commodity.");
+        alert("Please select a Commodity.");
         document.getElementById("detailCommodity")?.focus();
         return;
     }
@@ -2493,17 +2530,14 @@ async function savePlantingIntentChanges() {
         return;
     }
 
-    const plantingDate = convertToAPIDate(rawPlantingDate);
-    const harvestDate = convertToAPIDate(rawHarvestDate);
-
-    if (!plantingDate) {
-        alert("Please enter a valid Planting Date.");
+    if (!rawPlantingDate) {
+        alert("Please select a Planting Date.");
         document.getElementById("detailPlantingDate")?.focus();
         return;
     }
 
-    if (!harvestDate) {
-        alert("Please enter a valid Harvest Date.");
+    if (!rawHarvestDate) {
+        alert("Please select a Harvest Date.");
         document.getElementById("detailHarvestDate")?.focus();
         return;
     }
@@ -2511,9 +2545,8 @@ async function savePlantingIntentChanges() {
     const payload = {
         commodity: rawCommodity.trim(),
         volume: Number(volumeValue),
-        location: rawLocation || "",
-        planting_date: plantingDate,
-        harvest_date: harvestDate,
+        planting_date: rawPlantingDate,
+        harvest_date: rawHarvestDate,
         remarks: rawRemarks || ""
     };
 
@@ -2523,21 +2556,32 @@ async function savePlantingIntentChanges() {
         const url = PLANTING_INTENTS_ENDPOINT + intent.planting_intent_id;
         const token = getAuthToken();
 
+        if (!intent.planting_intent_id) {
+            alert("Cannot save: Planting Intent ID is missing.");
+            return;
+        }
+
         const response = await fetch(url, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": token ? "Bearer " + token : ""
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
             },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
             let errorData = null;
-            try { errorData = await response.json(); } catch(e) {}
-            let errorMessage = "Failed to update planting intent.";
+            const text = await response.text();
+            try { errorData = JSON.parse(text); } catch (e) {}
+            
+            let errorMessage = `HTTP ${response.status}`;
             if (errorData && errorData.detail) {
-                errorMessage = typeof errorData.detail === "string" ? errorData.detail : JSON.stringify(errorData.detail);
+                errorMessage = typeof errorData.detail === "string"
+                    ? errorData.detail
+                    : JSON.stringify(errorData.detail);
+            } else if (text) {
+                errorMessage = text.substring(0, 200);
             }
             throw new Error(errorMessage);
         }
@@ -2545,48 +2589,31 @@ async function savePlantingIntentChanges() {
         const result = await response.json();
         console.log("Update successful:", result);
 
-        // Update local data
         intent.commodity = payload.commodity;
         intent.volume = payload.volume;
-        intent.location = payload.location;
         intent.planting_date = payload.planting_date;
         intent.harvest_date = payload.harvest_date;
         intent.remarks = payload.remarks;
         intent.updated_at = new Date().toISOString();
 
-        // Update the data in the main array
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
-            return item.planting_intent_id === intent.planting_intent_id;
+            return String(item.planting_intent_id) === String(intent.planting_intent_id);
         });
         if (index !== -1) {
             PLANTING_INTENTS_DATA[index] = intent;
         }
 
-        // Refresh the table
         renderPlantingIntentsTable();
 
-        // Exit edit mode
         window.isEditingPlantingIntent = false;
+        resetPlantingIntentDetailFields();
 
-        // Reset input styles
-        const details = document.getElementById("plantingIntentDetailsSubview");
-        if (details) {
-            const inputs = details.querySelectorAll("input, textarea");
-            inputs.forEach(function(input) {
-                input.readOnly = true;
-                input.classList.add("input-readonly");
-                input.classList.remove("input-editable-active");
-                input.style.border = "";
-                input.style.background = "";
-            });
-        }
-
-        // Restore buttons
         const editBtn = document.getElementById("editPlantingIntentBtn");
         if (editBtn) {
             editBtn.textContent = "Edit Details";
             editBtn.style.background = "#D97706";
             editBtn.style.display = "inline-flex";
+            editBtn.disabled = false;
         }
 
         const submitBtn = document.getElementById("submitPlantingIntentBtn");
@@ -2606,27 +2633,95 @@ async function savePlantingIntentChanges() {
         const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
         if (backBtn) backBtn.style.display = "inline-flex";
 
+        const deleteBtn = document.getElementById("deletePlantingIntentBtn");
+        if (deleteBtn) {
+            const status = (intent.status || "DRAFT").toUpperCase();
+            deleteBtn.style.display = status === "DRAFT" ? "inline-flex" : "none";
+        }
+
         const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
         if (cancelBtn) cancelBtn.remove();
 
-        // Update the details view with new values
-        setValue("detailPlantingIntentId", intent.planting_intent_id || "");
-        setValue("detailFarmerName", intent.farmer_name || "");
-        setValue("detailFarmerId", intent.farmer_id || "");
-        setValue("detailCommodity", intent.commodity || "");
-        setValue("detailVolume", formatPlantingVolume(intent.volume));
-        setValue("detailLocation", intent.location || "");
-        setValue("detailPlantingDate", formatPlantingDate(intent.planting_date));
-        setValue("detailHarvestDate", formatPlantingDate(intent.harvest_date));
+        if (commoditySelect) commoditySelect.value = intent.commodity || "";
+
+        const volumeInputAfterSave = document.getElementById("detailVolume");
+        if (volumeInputAfterSave) {
+            const numericVolumeAfterSave = Number(
+                String(intent.volume || "").replace(/,/g, "").replace(/kg/gi, "").trim()
+            );
+            volumeInputAfterSave.value = isNaN(numericVolumeAfterSave) ? "" : numericVolumeAfterSave;
+        }
+
+        const plantingDateInputAfter = document.getElementById("detailPlantingDate");
+        if (plantingDateInputAfter) {
+            plantingDateInputAfter.value = toDateInputValue(intent.planting_date);
+        }
+
+        const harvestDateInputAfter = document.getElementById("detailHarvestDate");
+        if (harvestDateInputAfter) {
+            harvestDateInputAfter.value = toDateInputValue(intent.harvest_date);
+        }
+
         setValue("detailRemarks", intent.remarks || "");
 
         alert("Planting Intent updated successfully!");
 
+        const listView = document.getElementById("plantingIntentListSubview");
+        const detailsView = document.getElementById("plantingIntentDetailsSubview");
+
+        if (detailsView) detailsView.classList.add("hidden-element");
+        if (listView) listView.classList.remove("hidden-element");
+
+        window.currentSelectedPlantingIntent = null;
+
+        await fetchPlantingIntents();
+
     } catch (error) {
         console.error("Save error:", error);
-        alert("Failed to update planting intent.\n\n" + error.message);
+
+        window.isEditingPlantingIntent = false;
+        resetPlantingIntentDetailFields();
+
+        const editBtn = document.getElementById("editPlantingIntentBtn");
+        if (editBtn) {
+            editBtn.textContent = "Edit Details";
+            editBtn.style.background = "#D97706";
+            editBtn.style.display = "inline-flex";
+            editBtn.disabled = false;
+        }
+
+        const submitBtn = document.getElementById("submitPlantingIntentBtn");
+        if (submitBtn) {
+            submitBtn.style.display = "inline-flex";
+            const status = (intent.status || "DRAFT").toUpperCase();
+            if (status === "SUBMITTED") {
+                submitBtn.textContent = "Return to Draft";
+                submitBtn.style.background = "#D97706";
+            } else {
+                submitBtn.textContent = "Finalize";
+                submitBtn.style.background = "#2E7D32";
+            }
+            submitBtn.disabled = false;
+        }
+
+        const backBtn = document.getElementById("backFromPlantingIntentDetailsBtn");
+        if (backBtn) backBtn.style.display = "inline-flex";
+
+        const deleteBtn = document.getElementById("deletePlantingIntentBtn");
+        if (deleteBtn) {
+            const status = (intent.status || "DRAFT").toUpperCase();
+            deleteBtn.style.display = status === "DRAFT" ? "inline-flex" : "none";
+        }
+
+        const cancelBtn = document.getElementById("cancelEditPlantingIntentBtn");
+        if (cancelBtn) cancelBtn.remove();
+
+        alert("Failed to update planting intent.\n\n" + 
+              (error.message || error.name || "Unknown error. Check the Console for details."));
     }
 }
+
+
 
 /* ============================================================
    SUBMIT PLANTING INTENT (NEW INTENT)
@@ -2704,7 +2799,16 @@ async function submitPlantingIntent() {
 
         console.log("Planting intent created:", createdIntent);
 
+        const newIntentId = createdIntent?.planting_intent_id 
+            || createdIntent?.data?.planting_intent_id 
+            || null;
+
         await fetchPlantingIntents();
+        renderPlantingIntentsTable();
+
+        if (typeof populateReportIntentSelect === "function") {
+            populateReportIntentSelect();
+        }
 
         const modal = document.getElementById("plantIntentSubmittedModal");
         if (modal) modal.classList.add("show");
@@ -2716,161 +2820,6 @@ async function submitPlantingIntent() {
     }
 }
 
-// ============================================================
-// PLANTING INTENT PAGINATION
-// ============================================================
-
-function renderPlantingIntentPagination(totalCount, type) {
-    console.log("=== PAGINATION ===");
-    console.log("type:", type, "totalCount:", totalCount);
-    
-    // Get the container for the specific tab
-    const containerId = type === "draft" ? "draftIntentsContainer" : "submittedIntentsContainer";
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.warn("Container not found:", containerId);
-        return;
-    }
-
-    // Find the card inside the container
-    const card = container.querySelector(".card");
-    if (!card) {
-        console.warn("Card not found inside container:", containerId);
-        return;
-    }
-
-    // Remove existing pagination
-    let paginationDiv = card.querySelector(".planting-intent-pagination");
-    if (paginationDiv) {
-        paginationDiv.remove();
-        paginationDiv = null;
-    }
-
-    // If no items or less than per page, hide pagination
-    if (totalCount <= plantingIntentsPerPage) {
-        console.log("No pagination needed (totalCount <= perPage)");
-        return;
-    }
-
-    // Get current page for this tab
-    const currentPage = type === "draft" ? currentDraftIntentsPage : currentSubmittedIntentsPage;
-    const totalPages = Math.ceil(totalCount / plantingIntentsPerPage);
-
-    // Make sure current page is valid
-    let validPage = Math.min(Math.max(1, currentPage), totalPages);
-    if (type === "draft") {
-        currentDraftIntentsPage = validPage;
-    } else {
-        currentSubmittedIntentsPage = validPage;
-    }
-
-    const startIndex = (validPage - 1) * plantingIntentsPerPage + 1;
-    const endIndex = Math.min(validPage * plantingIntentsPerPage, totalCount);
-
-    // Create pagination div
-    paginationDiv = document.createElement("div");
-    paginationDiv.className = "pagination-container planting-intent-pagination";
-    paginationDiv.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 8px;";
-
-    // Build pagination HTML
-    let html = `
-        <span class="pagination-info" style="font-size: 12.5px; color: var(--muted);">
-            Showing ${startIndex}-${endIndex} of ${totalCount} planting intents
-        </span>
-        <div class="pagination-controls" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <button class="btn-page prev-page-btn" type="button" ${validPage <= 1 ? 'disabled' : ''}>
-                &laquo; Prev
-            </button>
-            <div class="page-numbers-wrap" style="display: flex; gap: 4px;">
-    `;
-
-    // Show page numbers (max 5)
-    let startPage = Math.max(1, validPage - 2);
-    let endPage = Math.min(totalPages, startPage + 4);
-    
-    if (endPage - startPage < 4) {
-        startPage = Math.max(1, endPage - 4);
-    }
-
-    // Add first page if not in range
-    if (startPage > 1) {
-        html += `<button class="btn-page page-btn" data-page="1">1</button>`;
-        if (startPage > 2) {
-            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="btn-page page-btn ${i === validPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-    }
-
-    // Add last page if not in range
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            html += `<span style="padding: 0 4px; color: #777;">...</span>`;
-        }
-        html += `<button class="btn-page page-btn" data-page="${totalPages}">${totalPages}</button>`;
-    }
-
-    html += `
-            </div>
-            <button class="btn-page next-page-btn" type="button" ${validPage >= totalPages ? 'disabled' : ''}>
-                Next &raquo;
-            </button>
-        </div>
-    `;
-
-    paginationDiv.innerHTML = html;
-
-    // Append to card
-    card.appendChild(paginationDiv);
-
-    // ============================================================
-    // ATTACH EVENT LISTENERS
-    // ============================================================
-
-    // Page number buttons
-    paginationDiv.querySelectorAll(".page-btn").forEach(function(btn) {
-        btn.addEventListener("click", function() {
-            const page = parseInt(this.dataset.page);
-            if (type === "draft") {
-                currentDraftIntentsPage = page;
-            } else {
-                currentSubmittedIntentsPage = page;
-            }
-            renderPlantingIntentsTable();
-        });
-    });
-
-    // Prev button
-    const prevBtn = paginationDiv.querySelector(".prev-page-btn");
-    if (prevBtn) {
-        prevBtn.addEventListener("click", function() {
-            if (type === "draft") {
-                if (currentDraftIntentsPage > 1) currentDraftIntentsPage--;
-            } else {
-                if (currentSubmittedIntentsPage > 1) currentSubmittedIntentsPage--;
-            }
-            renderPlantingIntentsTable();
-        });
-    }
-
-    // Next button
-    const nextBtn = paginationDiv.querySelector(".next-page-btn");
-    if (nextBtn) {
-        nextBtn.addEventListener("click", function() {
-            const total = type === "draft" 
-                ? draftIntents.length
-                : submittedIntents.length;
-            if (type === "draft") {
-                if (currentDraftIntentsPage < totalPages) currentDraftIntentsPage++;
-            } else {
-                if (currentSubmittedIntentsPage < totalPages) currentSubmittedIntentsPage++;
-            }
-            renderPlantingIntentsTable();
-        });
-    }
-}
 
 /* ============================================================
    CONFIRMATION MODAL HELPER
@@ -2884,7 +2833,6 @@ function showConfirmModal(title, message, onConfirm) {
     const proceedBtn = document.getElementById("proceedConfirmReportBtn");
     
     if (!modal) {
-        // Fallback sa native confirm
         if (confirm(message)) onConfirm();
         return;
     }
@@ -2893,7 +2841,6 @@ function showConfirmModal(title, message, onConfirm) {
     textEl.innerHTML = message;
     modal.classList.add("show");
     
-    // Remove old listeners
     const newProceedBtn = proceedBtn.cloneNode(true);
     proceedBtn.parentNode.replaceChild(newProceedBtn, proceedBtn);
     
@@ -2928,7 +2875,6 @@ function initReporting() {
     const fileInput = document.getElementById("reportFileInput");
     const fileNameInput = document.getElementById("reportDocFilename");
 
-    // Filter event listener
     const filterSelect = document.getElementById("individualReportFilter");
     if (filterSelect) {
         filterSelect.addEventListener("change", function() {
@@ -2938,7 +2884,6 @@ function initReporting() {
         });
     }
 
-    // Initialize report filter
     if (createReportBtn) {
         createReportBtn.addEventListener("click", async function () {
             console.log("Refreshing planting intents before opening report form...");
@@ -2949,39 +2894,32 @@ function initReporting() {
         });
     }
 
-    /* -----------------------------------------
-       CANCEL NEW REPORT
-    ----------------------------------------- */
     if (cancelReportBtn) {
-    cancelReportBtn.addEventListener("click", function () {
-        const title = document.getElementById("reportTitleInput")?.value?.trim() || "";
-        const notes = document.getElementById("reportNotesInput")?.value?.trim() || "";
-        const intents = window.selectedReportIntents || [];
+        cancelReportBtn.addEventListener("click", function () {
+            const title = document.getElementById("reportTitleInput")?.value?.trim() || "";
+            const notes = document.getElementById("reportNotesInput")?.value?.trim() || "";
+            const intents = window.selectedReportIntents || [];
 
-        if (title || notes || intents.length > 0) {
-            const confirmMessage = 
-                "Are you sure you want to cancel?\n\n" +
-                "All unsaved changes will be lost:\n" +
-                `• Title: ${title || "(empty)"}\n` +
-                `• Intents: ${intents.length}\n` +
-                `• Notes: ${notes ? "Yes" : "(empty)"}\n\n` +
-                "This action cannot be undone.";
+            if (title || notes || intents.length > 0) {
+                const confirmMessage = 
+                    "Are you sure you want to cancel?\n\n" +
+                    "All unsaved changes will be lost:\n" +
+                    `• Title: ${title || "(empty)"}\n` +
+                    `• Intents: ${intents.length}\n` +
+                    `• Notes: ${notes ? "Yes" : "(empty)"}\n\n` +
+                    "This action cannot be undone.";
 
-            if (!confirm(confirmMessage)) {
-                return;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
             }
-        }
 
-        console.log("Cancelling report edit...");
-        window.currentEditingReportId = null;        
-        closeSubmitReportSubview();
-    });
-}
+            console.log("Cancelling report edit...");
+            window.currentEditingReportId = null;        
+            closeSubmitReportSubview();
+        });
+    }
 
-
-    /* -----------------------------------------
-       SUBMIT REPORT
-    ----------------------------------------- */
     if (submitFinalBtn) {
         submitFinalBtn.addEventListener("click", function () {
             const title = document.getElementById("reportTitleInput")?.value?.trim() || "";
@@ -3001,23 +2939,16 @@ function initReporting() {
                 }
             }
             
-            saveReport("SUBMITTED_MUNICIPAL_PENDING");;
+            saveReport("SUBMITTED_MUNICIPAL_PENDING");
         });
     }
 
-
-    /* -----------------------------------------
-       BACK FROM DETAILS
-    ----------------------------------------- */
     if (backDetailsBtn) {
         backDetailsBtn.addEventListener("click", function () {
             closeReportDetailsSubview();
         });
     }
 
-    /* -----------------------------------------
-       EDIT REPORT
-    ----------------------------------------- */
     if (editReportBtn) {
         editReportBtn.addEventListener("click", function () {
             const reportId = this.dataset.reportId;
@@ -3048,10 +2979,6 @@ function initReporting() {
         });
     }
 
-    /* -----------------------------------------
-       FILE SELECT
-    ----------------------------------------- */
-    
     if (selectFileBtn && fileInput) {
         selectFileBtn.addEventListener("click", function () {
             fileInput.click();
@@ -3081,48 +3008,78 @@ function initReporting() {
                 }
             }
         });
+
+        document.addEventListener("click", function(e) {
+            if (e.target && e.target.id === "reportSummaryToggle") {
+                const body = document.getElementById("reportSummaryBody");
+                const toggle = e.target;
+                if (!body) return;
+                
+                const isHidden = body.style.display === "none";
+                body.style.display = isHidden ? "block" : "none";
+                toggle.textContent = isHidden ? "Hide ▲" : "Show ▼";
+            }
+        });
     }
-}
 
-// resubmit report
-
-const resubmitBtn = document.getElementById("resubmitReportBtn");
-if (resubmitBtn) {
-    resubmitBtn.addEventListener("click", async function () {
-        const reportId = this.dataset.reportId;
-        if (!reportId) return;
-        
-        if (!confirm("Are you sure you want to resubmit this report to Municipal?")) {
-            return;
-        }
-        
-        this.disabled = true;
-        this.textContent = "Resubmitting...";
-        
-        try {
-            await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${reportId}/status`, {
-                method: "PATCH",
-                body: JSON.stringify({
-                    status: "SUBMITTED_MUNICIPAL_PENDING"
-                })
-            });
+    const resubmitBtn = document.getElementById("resubmitReportBtn");
+    if (resubmitBtn) {
+        resubmitBtn.addEventListener("click", async function () {
+            const reportId = this.dataset.reportId;
+            if (!reportId) return;
             
-            alert("Report resubmitted to Municipal successfully.");
+            if (!confirm("Are you sure you want to resubmit this report to Municipal?")) {
+                return;
+            }
             
-            // ✅ Refresh reports list
-            await loadReports();
+            this.disabled = true;
+            this.textContent = "Resubmitting...";
             
-            // ✅ Back to reports list
-            closeReportDetailsSubview();
-            
-        } catch (error) {
-            console.error("Resubmit error:", error);
-            alert("Failed to resubmit report.\n\n" + error.message);
-        } finally {
-            this.disabled = false;
-            this.textContent = "Resubmit";
-        }
-    });
+            try {
+                await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${reportId}/status`, {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                        status: "SUBMITTED_MUNICIPAL_PENDING"
+                    })
+                });
+                
+                // ✅ 1. Close the details view FIRST (para hindi na ma-view yung stale data)
+                closeReportDetailsSubview();
+                
+                // ✅ 2. Refresh the data + re-render the reports tables
+                await fetchPlantingIntents();
+                await loadReports();
+                
+                // ✅ 3. Clear selection state
+                window.currentSelectedReport = null;
+                window.currentEditingReportId = null;
+                
+                // ✅ 4. Make sure we're on the Reports main view
+                const mainView = document.getElementById("reportsMainSubview");
+                const detailsView = document.getElementById("reportDetailsSubview");
+                const submitView = document.getElementById("submitReportSubview");
+                
+                if (detailsView) detailsView.classList.add("hidden-element");
+                if (submitView) submitView.classList.add("hidden-element");
+                if (mainView) mainView.classList.remove("hidden-element");
+                
+                // ✅ 5. Scroll to top para malinaw na nasa list na tayo
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                
+                // ✅ 6. Show success message AFTER the view has switched
+                setTimeout(() => {
+                    alert("Report resubmitted to Municipal successfully.");
+                }, 100);
+                
+            } catch (error) {
+                console.error("Resubmit error:", error);
+                alert("Failed to resubmit report.\n\n" + error.message);
+                // Don't disable the button on error — let user retry
+                this.disabled = false;
+                this.textContent = "Resubmit";
+            }
+        });
+    }
 }
 
 
@@ -3130,7 +3087,6 @@ function renderFinalizedIntents(intents) {
     const tbody = document.getElementById('individualReportsTableBody');
     if (!tbody) return;
 
-    // Apply filter
     let filteredIntents = intents;
     if (individualFilterStatus !== 'all') {
         filteredIntents = intents.filter(function(intent) {
@@ -3179,6 +3135,9 @@ function renderFinalizedIntents(intents) {
             locationStr = intent.municipality;
         }
 
+        const allowedTransitions = getAllowedStatusTransitions(statusUpper);
+        const isOptionAllowed = (s) => allowedTransitions.includes(s);
+
         return `
             <tr class="clickable-row" data-intent-id="${intent.planting_intent_id}">
                 <td style="padding:12px 14px; text-align:center; font-weight:600;">#${intent.planting_intent_id}</td>
@@ -3191,15 +3150,40 @@ function renderFinalizedIntents(intents) {
                 <td style="padding:12px 14px; text-align:center;">
                     <div class="status-dropdown-wrapper" data-intent-id="${intent.planting_intent_id}" style="position:relative; display:inline-block;">
                         <span class="status-pill clickable-pill" 
+                              data-current-status="${statusUpper}"
                               style="cursor:pointer; display:inline-block; padding:4px 16px; border-radius:999px; font-size:11.5px; font-weight:700; color:#FFFFFF; text-shadow:0 1px 1px rgba(0,0,0,0.2); text-align:center; white-space:nowrap; letter-spacing:0.02em; user-select:none; background-color:${bgColor}; transition:all 0.2s ease;">
                             ${escapeHtml(displayText)}
                             <span style="font-size:8px; margin-left:6px;">▼</span>
                         </span>
-                        <div class="status-dropdown-menu" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; background:#FFFFFF; border:1.5px solid #DFD8C6; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:120px; z-index:1000; overflow:hidden;">
-                            <div class="status-option" data-status="NOT PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Not Planted</div>
-                            <div class="status-option" data-status="PLANTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Planted</div>
-                            <div class="status-option" data-status="HARVESTED" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333; border-bottom:1px solid #f0f0f0;">Harvested</div>
-                            <div class="status-option" data-status="MEDIATING" style="padding:8px 16px; cursor:pointer; font-size:12px; color:#333;">Mediating</div>
+                        <div class="status-dropdown-menu" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; background:#FFFFFF; border:1.5px solid #DFD8C6; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:140px; z-index:1000; overflow:hidden;">
+                            <div class="status-option" 
+                                 data-status="NOT PLANTED"
+                                 data-allowed="${isOptionAllowed('NOT PLANTED')}"
+                                 title="${isOptionAllowed('NOT PLANTED') ? 'Change status to Not Planted' : 'Hindi available — check current status'}"
+                                 style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('NOT PLANTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('NOT PLANTED') ? 'pointer' : 'not-allowed'}; background:${statusUpper === 'NOT PLANTED' ? '#F0F0F0' : 'transparent'};">
+                                Not Planted ${statusUpper === 'NOT PLANTED' ? '(current)' : ''}
+                            </div>
+                            <div class="status-option" 
+                                 data-status="PLANTED"
+                                 data-allowed="${isOptionAllowed('PLANTED')}"
+                                 title="${isOptionAllowed('PLANTED') ? 'Change status to Planted' : 'Hindi available — check current status'}"
+                                 style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('PLANTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('PLANTED') ? 'pointer' : 'not-allowed'}; background:${statusUpper === 'PLANTED' ? '#F0F0F0' : 'transparent'};">
+                                Planted ${statusUpper === 'PLANTED' ? '(current)' : ''}
+                            </div>
+                            <div class="status-option" 
+                                 data-status="HARVESTED"
+                                 data-allowed="${isOptionAllowed('HARVESTED')}"
+                                 title="${isOptionAllowed('HARVESTED') ? 'Change status to Harvested' : 'Hindi available — check current status'}"
+                                 style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('HARVESTED') ? '#333' : '#BBB'}; border-bottom:1px solid #f0f0f0; cursor:${isOptionAllowed('HARVESTED') ? 'pointer' : 'not-allowed'}; background:${statusUpper === 'HARVESTED' ? '#F0F0F0' : 'transparent'};">
+                                Harvested ${statusUpper === 'HARVESTED' ? '(current)' : ''}
+                            </div>
+                            <div class="status-option" 
+                                 data-status="MEDIATING"
+                                 data-allowed="${isOptionAllowed('MEDIATING')}"
+                                 title="${isOptionAllowed('MEDIATING') ? 'Change status to Mediating' : 'Hindi available — check current status'}"
+                                 style="padding:8px 16px; font-size:12px; color:${isOptionAllowed('MEDIATING') ? '#333' : '#BBB'}; cursor:${isOptionAllowed('MEDIATING') ? 'pointer' : 'not-allowed'}; background:${statusUpper === 'MEDIATING' ? '#F0F0F0' : 'transparent'};">
+                                Mediating ${statusUpper === 'MEDIATING' ? '(current)' : ''}
+                            </div>
                         </div>
                     </div>
                 </td>
@@ -3207,7 +3191,6 @@ function renderFinalizedIntents(intents) {
         `;
     }).join('');
 
-    // ATTACH DROPDOWN EVENT LISTENERS
     const wrappers = tbody.querySelectorAll('.status-dropdown-wrapper');
     
     wrappers.forEach(function(wrapper) {
@@ -3235,11 +3218,30 @@ function renderFinalizedIntents(intents) {
     options.forEach(function(option) {
         option.addEventListener('click', function(e) {
             e.stopPropagation();
+            
             const newStatus = this.dataset.status;
             const menu = this.closest('.status-dropdown-menu');
             const wrapper = menu.closest('.status-dropdown-wrapper');
             const intentId = wrapper.dataset.intentId;
             const pill = wrapper.querySelector('.clickable-pill');
+            
+            const currentStatus = (pill?.dataset.currentStatus || "NOT PLANTED").toUpperCase();
+            const allowed = getAllowedStatusTransitions(currentStatus);
+            
+            if (!allowed.includes(newStatus)) {
+                let reason = "";
+                if (currentStatus === "NOT PLANTED" && newStatus === "HARVESTED") {
+                    reason = "Hindi pwedeng gawing HARVESTED ang isang intent na hindi pa PLANTED.";
+                } else if (currentStatus === "HARVESTED") {
+                    reason = "Ang HARVESTED status ay FINAL at hindi na mababago.";
+                } else {
+                    reason = `Hindi pwedeng i-transition mula ${currentStatus} papuntang ${newStatus}.`;
+                }
+                
+                alert("⚠️ Invalid Status Change\n\n" + reason);
+                menu.style.display = 'none';
+                return;
+            }
             
             updateStatusPillVisual(pill, newStatus);
             menu.style.display = 'none';
@@ -3259,74 +3261,68 @@ function renderFinalizedIntents(intents) {
 
 // UPDATE FINALIZED INTENT
 
-async function updateFinalizedIntentStatus(intentId, newStatus) {
+async function updateFinalizedIntentStatus(intentId, newStatus, extraPayload = {}) {
     try {
-        console.log(`Updating intent ${intentId} to ${newStatus}`);
-        
         const url = `${PLANTING_INTENTS_ENDPOINT}${intentId}/finalized-status`;
         const token = getAuthToken();
-        
+
+        const body = {
+            finalized_status: newStatus,
+            ...extraPayload
+        };
+
         const response = await fetch(url, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": token ? `Bearer ${token}` : ""
             },
-            body: JSON.stringify({
-                finalized_status: newStatus
-            })
+            body: JSON.stringify(body)
         });
-        
+
         if (!response.ok) {
-            let errorData = null;
-            try { errorData = await response.json(); } catch(e) {}
-            const errorMsg = errorData?.detail || `HTTP ${response.status}`;
-            throw new Error(errorMsg);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData?.detail || `HTTP ${response.status}`);
         }
-        
+
         const result = await response.json();
-        console.log("Status saved to DB:", result);
-        
-        // Update local data
-        const intent = PLANTING_INTENTS_DATA.find(function(i) {
+
+        const intent = PLANTING_INTENTS_DATA.find(function (i) {
             return String(i.planting_intent_id) === String(intentId);
         });
-        
+
         if (intent) {
             intent.finalized_status = newStatus;
+            if (extraPayload.actual_planting_date) {
+                intent.actual_planting_date = extraPayload.actual_planting_date;
+            }
+            if (extraPayload.actual_harvest_date) {
+                intent.actual_harvest_date = extraPayload.actual_harvest_date;
+            }
+            if (extraPayload.actual_harvest_volume) {
+                intent.actual_harvest_volume = extraPayload.actual_harvest_volume;
+            }
             intent.updated_at = new Date().toISOString();
         }
-        
-        // Update in allIndividualReports
-        const reportIntent = allIndividualReports.find(function(r) {
+
+        const reportIntent = allIndividualReports.find(function (r) {
             return String(r.planting_intent_id) === String(intentId);
         });
         if (reportIntent) {
             reportIntent.finalized_status = newStatus;
-        }
-        
-        // ✅ IMPORTANT: Update selected intents if active
-        if (window.selectedReportIntents) {
-            const selectedIntent = window.selectedReportIntents.find(function(i) {
-                return String(i.planting_intent_id) === String(intentId);
-            });
-            if (selectedIntent) {
-                selectedIntent.finalized_status = newStatus;
-                renderSelectedReportIntents();
+            if (extraPayload.actual_harvest_volume) {
+                reportIntent.actual_harvest_volume = extraPayload.actual_harvest_volume;
             }
         }
-        
-        renderFinalizedIntents(allIndividualReports);
-        
+
+        renderPlantingIntentsTable();
+
     } catch (error) {
         console.error("Failed to update status:", error);
         alert("Failed to update status.\n\n" + error.message);
-        renderFinalizedIntents(allIndividualReports);
+        renderPlantingIntentsTable();
     }
 }
-
-
-
 
 
 // ============================================================
@@ -3335,11 +3331,10 @@ async function updateFinalizedIntentStatus(intentId, newStatus) {
 
 async function createReportFromIntents(intentIds, notes, attachments) {
     try {
-        // Create the report first
         const reportData = {
             planting_intent_ids: intentIds,
             notes: notes,
-            status: "NOT PLANTED" // Default status for individual reports
+            status: "NOT PLANTED"
         };
         
         const response = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/from-intents`, {
@@ -3357,16 +3352,13 @@ async function createReportFromIntents(intentIds, notes, attachments) {
 
 
 // ============================================================
-// REPORTS - LOAD REPORTS (AUTO-SHOW SUBMITTED INTENTS)
+// REPORTS - LOAD REPORTS
 // ============================================================
 
 async function loadReports() {
     try {
         console.log("=== LOAD REPORTS DEBUG ===");
         
-        // ============================================================
-        // 1. FETCH PLANTING INTENTS (for Finalized Intents section)
-        // ============================================================
         if (!PLANTING_INTENTS_DATA || PLANTING_INTENTS_DATA.length === 0) {
             await fetchPlantingIntents();
         }
@@ -3390,6 +3382,9 @@ async function loadReports() {
                 volume: intent.volume || 0,
                 planting_date: intent.planting_date || null,
                 harvest_date: intent.harvest_date || null,
+                actual_planting_date: intent.actual_planting_date || null,
+                actual_harvest_date: intent.actual_harvest_date || null,
+                actual_harvest_volume: intent.actual_harvest_volume || null,
                 submitted_at: intent.updated_at || intent.created_at,
                 finalized_status: intent.finalized_status || 'NOT PLANTED',
                 status: intent.status,
@@ -3397,16 +3392,10 @@ async function loadReports() {
                 barangay: intent.barangay || null,
                 municipality: intent.municipality || null,
             };
-        })
+        });
 
-
-
-        
         console.log("Finalized intents found:", finalizedIntents.length);
         
-        // ============================================================
-        // 2. FETCH SUBMITTED REPORTS (from separate endpoint)
-        // ============================================================
         let submittedReports = [];
         try {
             const reportsResponse = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/`, {
@@ -3427,7 +3416,7 @@ async function loadReports() {
                     report_id: r.report_id,
                     title: r.title || `${r.commodity} - ${r.farmer_names || 'Unknown'}`,
                     submitted_at: r.created_at || r.submitted_at,
-                    approved_at: r.approved_at || r.updated_at,  // ✅ IDAGDAG
+                    approved_at: r.approved_at || r.updated_at,
                     status: r.status,
                     commodity: r.commodity,
                     municipality: r.municipality,
@@ -3441,9 +3430,6 @@ async function loadReports() {
             console.warn("Could not fetch reports:", err);
         }
         
-        // ============================================================
-        // 3. SORT BY DATE (NEWEST FIRST)
-        // ============================================================
         finalizedIntents.sort(function(a, b) {
             return new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0);
         });
@@ -3452,9 +3438,6 @@ async function loadReports() {
             return new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0);
         });
         
-        // ============================================================
-        // 4. STORE AND RENDER
-        // ============================================================
         allIndividualReports = finalizedIntents;
         
         renderSubmittedReports(submittedReports);
@@ -3465,7 +3448,6 @@ async function loadReports() {
         console.error("Failed to load reports:", error);
     }
 }
-
 
 
 /* ============================================================
@@ -3483,48 +3465,16 @@ function openReportDetails(report) {
     if (submitView) submitView.classList.add("hidden-element");
     detailsView.classList.remove("hidden-element");
 
-    // ============================================================
-    // REVISION REMARKS BOX
-    // ============================================================
-    const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-    const remarksContent = document.getElementById("detailRevisionRemarks");
-
-    if (remarksWrapper && remarksContent) {
-        const rawRemarks = report.revision_remarks || report.remarks || "";
-
-        if (rawRemarks && rawRemarks.trim()) {
-            const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-            if (match) {
-                const header = match[1];
-                const message = match[2];
-
-                remarksContent.innerHTML = `
-                    <div style="
-                        display: inline-block;
-                        font-size: 11px;
-                        font-weight: 700;
-                        color: #C0392B;
-                        background: #FFFFFF;
-                        padding: 3px 10px;
-                        border-radius: 4px;
-                        letter-spacing: 0.02em;
-                        margin-bottom: 10px;
-                    ">
-                        ${escapeHtml(header)}
-                    </div>
-                    <div style="color: #333; line-height: 1.6;">
-                        ${escapeHtml(message)}
-                    </div>
-                `;
-            } else {
-                remarksContent.textContent = rawRemarks;
-            }
-
-            remarksWrapper.style.display = "block";
-        } else {
-            remarksWrapper.style.display = "none";
-        }
+    // Reset timeline
+    const historyWrapper = document.getElementById("reportValidationHistoryWrapper");
+    const historyContainer = document.getElementById("reportValidationTimelineContainer");
+    if (historyWrapper) historyWrapper.style.display = "none";
+    if (historyContainer) {
+        historyContainer.innerHTML = `
+            <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                Loading history...
+            </div>
+        `;
     }
 
     window.currentSelectedReport = report;
@@ -3539,9 +3489,6 @@ function openReportDetails(report) {
         municipalityEl.textContent = report.municipality || "—";
     }
 
-    // ============================================================
-    // STATUS DISPLAY
-    // ============================================================
     let statusDisplay = status;
     let statusBgColor = "#6c757d";
 
@@ -3571,7 +3518,16 @@ function openReportDetails(report) {
     setText("reportDetailsTitle", title);
     setText("detailReportId", reportId);
     setText("detailReportDate", formatReportDate(submittedDate));
-    setText("detailReportNotes", report.notes || report.remarks || "—");
+    let notesText = report.notes || "";
+    notesText = String(notesText).replace(/^[-–—.\s]+/, "").trim();
+    setText("detailReportNotes", notesText || "—");
+
+    const subtitleEl = document.getElementById("detailReportTitle");
+    if (subtitleEl) {
+        const reportIdLabel = report.report_id ?? reportId ?? "—";
+        const locationLabel = report.municipality || "—";
+        subtitleEl.textContent = `Report #${reportIdLabel} • ${locationLabel}`;
+    }
 
     const statusEl = document.getElementById("detailReportStatus");
     if (statusEl) {
@@ -3588,41 +3544,6 @@ function openReportDetails(report) {
         `;
     }
 
-    // ============================================================
-    // REVISION FLAG BANNER (kung flagged)
-    // ============================================================
-    const revisionFlagEl = document.getElementById("detailRevisionFlag");
-    if (revisionFlagEl) {
-        const isFlagged = status.includes("FLAGGED");
-
-        if (isFlagged) {
-            revisionFlagEl.style.display = "block";
-            revisionFlagEl.innerHTML = `
-                <div style="
-                    background: #FEE2E2;
-                    border-left: 4px solid #C0392B;
-                    padding: 12px 16px;
-                    border-radius: 6px;
-                    margin-bottom: 16px;
-                ">
-                    <div style="
-                        font-size: 14px;
-                        font-weight: 700;
-                        color: #C0392B;
-                        text-transform: uppercase;
-                        letter-spacing: 0.04em;
-                        margin-bottom: 4px;
-                    ">FLAGGED FOR REVISION</div>
-                    <div style="font-size: 13px; color: #333;">
-                        ${escapeHtml(report.revision_remarks || "No remarks provided. Please review and edit the report.")}
-                    </div>
-                </div>
-            `;
-        } else {
-            revisionFlagEl.style.display = "none";
-        }
-    }
-
     (async () => {
         try {
             const fullReport = await apiRequest(
@@ -3635,54 +3556,40 @@ function openReportDetails(report) {
             renderReportAttachments(fullReport);
             renderIncludedPlantingIntents(fullReport);
 
-            const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-            const remarksContent = document.getElementById("detailRevisionRemarks");
-            
-            if (remarksWrapper && remarksContent) {
-                const rawRemarks = fullReport.revision_remarks || fullReport.remarks || "";
-                
-                if (rawRemarks && rawRemarks.trim()) {
-                    const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-                    
-                    if (match) {
-                        remarksContent.innerHTML = `
-                            <div style="
-                                display: inline-block;
-                                font-size: 11px;
-                                font-weight: 700;
-                                color: #C0392B;
-                                background: #FFFFFF;
-                                padding: 3px 10px;
-                                border-radius: 4px;
-                                letter-spacing: 0.02em;
-                                margin-bottom: 10px;
-                            ">
-                                ${escapeHtml(match[1])}
-                            </div>
-                            <div style="color: #333; line-height: 1.6;">
-                                ${escapeHtml(match[2])}
-                            </div>
-                        `;
-                    } else {
-                        remarksContent.textContent = rawRemarks;
-                    }
-                    
-                    remarksWrapper.style.display = "block";
-                } else {
-                    remarksWrapper.style.display = "none";
-                }
-            }
+            const reportIntents = fullReport.planting_intents
+                || fullReport.intents
+                || fullReport.included_intents
+                || [];
+
+            const municipalSubmitted = (PLANTING_INTENTS_DATA || []).filter(function(i) {
+                const st = String(i.status || "").toUpperCase();
+                const sameMunicipality = !fullReport.municipality
+                    || i.municipality === fullReport.municipality
+                    || !i.municipality;
+                return (st === "SUBMITTED" || st.startsWith("SUBMITTED_")) && sameMunicipality;
+            });
+
+            renderReportSummary(reportIntents, municipalSubmitted, {
+                municipality: fullReport.municipality || report.municipality,
+                submitted_at: fullReport.created_at || fullReport.submitted_at || report.submitted_at,
+                created_at: fullReport.created_at
+            });
+
+            // ✅ Render validation timeline
+            renderValidationTimeline(
+                fullReport.validation_history || [],
+                "reportValidationTimelineContainer",
+                "reportValidationHistoryWrapper"
+            );
+
         } catch (err) {
             console.error("Failed to load full report:", err);
+            // Silent lang — huwag mag-show ng error box
+            if (historyWrapper) historyWrapper.style.display = "none";
+            if (historyContainer) historyContainer.innerHTML = "";
         }
     })();
 
-
-
-
-    // ============================================================
-    // BUTTON STATES — based sa status
-    // ============================================================
     const lockedStatuses = [
         "SUBMITTED_PROVINCIAL_PENDING",
         "SUBMITTED_PROVINCIAL_FLAGGED",
@@ -3703,7 +3610,6 @@ function openReportDetails(report) {
                             status === "SUBMITTED_REGIONAL_FLAGGED";
     const isLocked = lockedStatuses.includes(status);
 
-    // Default: hide both action buttons, show back button
     if (editButton) editButton.style.display = "none";
     if (resubmitButton) resubmitButton.style.display = "none";
     if (backBtn) backBtn.style.display = "inline-flex";
@@ -3741,54 +3647,6 @@ function openReportDetails(report) {
         if (resubmitButton) resubmitButton.style.display = "none";
     }
 }
-
-
-// ============================================================
-// REVISION REMARKS BOX
-// ============================================================
-const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-const remarksContent = document.getElementById("detailRevisionRemarks");
-
-if (remarksWrapper && remarksContent) {
-    const rawRemarks = report.revision_remarks || report.remarks || "";
-
-    if (rawRemarks && rawRemarks.trim()) {
-        // Parse format: "[Role: Name] Message"
-        const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-        if (match) {
-            const header = match[1];
-            const message = match[2];
-
-            remarksContent.innerHTML = `
-                <div style="
-                    display: inline-block;
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #C0392B;
-                    background: #FFFFFF;
-                    padding: 3px 10px;
-                    border-radius: 4px;
-                    letter-spacing: 0.02em;
-                    margin-bottom: 10px;
-                ">
-                    ${escapeHtml(header)}
-                </div>
-                <div style="color: #333; line-height: 1.6;">
-                    ${escapeHtml(message)}
-                </div>
-            `;
-        } else {
-            remarksContent.textContent = rawRemarks;
-        }
-
-        remarksWrapper.style.display = "block";
-    } else {
-        remarksWrapper.style.display = "none";
-    }
-}
-
-
 
 
 /* ============================================================
@@ -3925,13 +3783,8 @@ function renderReportAttachments(report) {
                 </div>
             </div>
         `;
-
-
-        return `<div style="margin-bottom: 6px;">📎 ${escapeHtml(name)}</div>`;
     }).join("");
 }
-
-
 
 
 /* ============================================================
@@ -3942,12 +3795,12 @@ function renderIncludedPlantingIntents(report) {
     const tbody = document.getElementById("detailReportIntentsBody");
     if (!tbody) return;
 
-    const intents = report.planting_intents || report.intents || report.included_intents || [];
+    let intents = report.planting_intents || report.intents || report.included_intents || [];
 
     if (!Array.isArray(intents) || intents.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="padding:20px; text-align:center; color:#999;">
+                <td colspan="9" style="padding:20px; text-align:center; color:#999;">
                     No intents included.
                 </td>
             </tr>
@@ -3955,17 +3808,80 @@ function renderIncludedPlantingIntents(report) {
         return;
     }
 
+    intents = intents.map(function(intent) {
+        const fullIntent = (PLANTING_INTENTS_DATA || []).find(function(i) {
+            return String(i.planting_intent_id) === String(intent.planting_intent_id);
+        });
+
+        if (fullIntent) {
+            return {
+                ...intent,
+                actual_planting_date: intent.actual_planting_date 
+                    || fullIntent.actual_planting_date 
+                    || null,
+                actual_harvest_date: intent.actual_harvest_date 
+                    || fullIntent.actual_harvest_date 
+                    || null,
+                actual_harvest_volume: intent.actual_harvest_volume 
+                    || fullIntent.actual_harvest_volume 
+                    || null,
+                finalized_status: intent.finalized_status 
+                    || fullIntent.finalized_status 
+                    || "NOT PLANTED",
+                finalized_status_at_submission: intent.finalized_status_at_submission 
+                    || fullIntent.finalized_status 
+                    || "NOT PLANTED"
+            };
+        }
+
+        return intent;
+    });
+
     tbody.innerHTML = intents.map(function(intent) {
         const intentId = intent.planting_intent_id || "—";
         const farmer = intent.farmer_name || "N/A";
         const commodity = intent.commodity || "N/A";
-        const volume = intent.volume ?? intent.estimated_volume ?? "N/A";
-        
-        const plantingDate = intent.planting_date ? formatPlantingDate(intent.planting_date) : "—";
-        const harvestDate = intent.harvest_date ? formatPlantingDate(intent.harvest_date) : "—";
-        
-        const finalizedAtSubmission = intent.finalized_status_at_submission || "NOT PLANTED";
-        
+        const plannedVol = Number(intent.volume) || 0;
+        const actualVol = Number(intent.actual_harvest_volume) || 0;
+        const hasActual = actualVol > 0;
+
+        const plannedPlanting = intent.planting_date ? formatPlantingDate(intent.planting_date) : "—";
+        const plannedHarvest = intent.harvest_date ? formatPlantingDate(intent.harvest_date) : "—";
+
+        const actualPlanting = intent.actual_planting_date 
+            ? formatPlantingDate(intent.actual_planting_date) 
+            : null;
+        const actualHarvest = intent.actual_harvest_date 
+            ? formatPlantingDate(intent.actual_harvest_date) 
+            : null;
+
+        function renderActualDate(actual, planned) {
+            if (!actual) {
+                return `<span style="color: #BBB; font-style: italic;">Not yet recorded</span>`;
+            }
+
+            let varianceBadge = "";
+            if (planned) {
+                const plannedDate = new Date(planned);
+                const actualDate = new Date(actual);
+                const diffDays = Math.round((actualDate - plannedDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #2E7D32; margin-left: 6px;">(on time)</span>`;
+                } else if (diffDays > 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #D97706; margin-left: 6px;">(+${diffDays}d)</span>`;
+                } else {
+                    varianceBadge = `<span style="font-size: 10px; color: #2980B9; margin-left: 6px;">(${diffDays}d)</span>`;
+                }
+            }
+
+            return `<span style="color: var(--ink); font-weight: 600;">${actual}</span>${varianceBadge}`;
+        }
+
+        const finalizedAtSubmission = intent.finalized_status_at_submission 
+            || intent.finalized_status 
+            || "NOT PLANTED";
+
         let finalBgColor = "#6c757d";
         let finalDisplay = "Not Planted";
         if (finalizedAtSubmission === "PLANTED") {
@@ -3984,9 +3900,30 @@ function renderIncludedPlantingIntents(report) {
                 <td style="padding:10px 14px; text-align:center; font-weight:600;">#${escapeHtml(String(intentId))}</td>
                 <td style="padding:10px 14px;">${escapeHtml(String(farmer))}</td>
                 <td style="padding:10px 14px;">${escapeHtml(String(commodity))}</td>
-                <td style="padding:10px 14px; text-align:center;">${escapeHtml(String(volume))} kg</td>
-                <td style="padding:10px 14px; text-align:center;">${escapeHtml(String(plantingDate))}</td>
-                <td style="padding:10px 14px; text-align:center;">${escapeHtml(String(harvestDate))}</td>
+                <td style="padding:10px 14px; text-align:center;">
+                    <div style="font-weight: 600;">${plannedVol.toLocaleString("en-US")} kg</div>
+                    ${hasActual ? `
+                        <div style="font-size: 11px; color: #2E7D32; margin-top: 2px;">
+                            ✓ ${actualVol.toLocaleString("en-US")} kg actual
+                        </div>
+                    ` : `
+                        <div style="font-size: 11px; color: #BBB; margin-top: 2px; font-style: italic;">
+                            not harvested
+                        </div>
+                    `}
+                </td>
+                <td style="padding:10px 14px; text-align:center; background: #FAFAFA;">
+                    ${escapeHtml(String(plannedPlanting))}
+                </td>
+                <td style="padding:10px 14px; text-align:center; background: #FFFBF5;">
+                    ${renderActualDate(actualPlanting, intent.planting_date)}
+                </td>
+                <td style="padding:10px 14px; text-align:center; background: #FAFAFA;">
+                    ${escapeHtml(String(plannedHarvest))}
+                </td>
+                <td style="padding:10px 14px; text-align:center; background: #FFFBF5;">
+                    ${renderActualDate(actualHarvest, intent.harvest_date)}
+                </td>
                 <td style="padding:10px 14px; text-align:center;">
                     <span class="status-pill" style="
                         display:inline-block;
@@ -4004,29 +3941,29 @@ function renderIncludedPlantingIntents(report) {
 }
 
 
-
 // ============================================================
 // UPDATE STATUS PILL VISUALLY
 // ============================================================
 
 function updateStatusPillVisual(pill, newStatus) {
+    if (!pill) return;
+
     const statusUpper = newStatus.toUpperCase();
     
-    // Update display text
     let displayText = statusUpper;
     if (statusUpper === 'NOT PLANTED') displayText = 'Not Planted';
     else if (statusUpper === 'PLANTED') displayText = 'Planted';
     else if (statusUpper === 'HARVESTED') displayText = 'Harvested';
     else if (statusUpper === 'MEDIATING') displayText = 'Mediating';
     
-    // Update color
     let bgColor = '#6c757d';
     if (statusUpper === 'PLANTED') bgColor = '#D97706';
     else if (statusUpper === 'HARVESTED') bgColor = '#2E7D32';
     else if (statusUpper === 'MEDIATING') bgColor = '#2980B9';
     
-    pill.textContent = displayText + ' ▼';
+    pill.innerHTML = displayText + ' <span style="font-size:8px; margin-left:6px;">▼</span>';
     pill.style.backgroundColor = bgColor;
+    pill.dataset.currentStatus = statusUpper;
 }
 
 
@@ -4042,34 +3979,9 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// ============================================================
-// UPDATE STATUS PILL VISUALLY
-// ============================================================
-
-function updateStatusPill(pill, newStatus) {
-    const statusUpper = newStatus.toUpperCase();
-    
-    // Update display text
-    let displayText = statusUpper;
-    if (statusUpper === 'NOT PLANTED') displayText = 'Not Planted';
-    else if (statusUpper === 'PLANTED') displayText = 'Planted';
-    else if (statusUpper === 'HARVESTED') displayText = 'Harvested';
-    else if (statusUpper === 'MEDIATING') displayText = 'Mediating';
-    
-    // Update color
-    let bgColor = '#6c757d'; // Default gray
-    if (statusUpper === 'PLANTED') bgColor = '#D97706';
-    else if (statusUpper === 'HARVESTED') bgColor = '#2E7D32';
-    else if (statusUpper === 'MEDIATING') bgColor = '#2980B9';
-    
-    pill.textContent = displayText + ' ▼';
-    pill.style.backgroundColor = bgColor;
-    pill.dataset.currentStatus = statusUpper;
-}
-
 
 // ============================================================
-// OPEN SUBMIT REPORT SUBVIEW (WITH CLOSE PREVENTION)
+// OPEN SUBMIT REPORT SUBVIEW
 // ============================================================
 
 async function openSubmitReportSubview(reportId = null) {
@@ -4100,14 +4012,12 @@ async function openSubmitReportSubview(reportId = null) {
         
         await loadReportForEditing(reportId);
         
-        // Change button text
         const submitBtn = document.getElementById("submitReportFinalBtn");
         if (submitBtn) {
             submitBtn.textContent = "Resubmit to Municipal";
             submitBtn.dataset.mode = "edit";
         }
         
-        // Change header
         const headerTitle = document.querySelector("#submitReportSubview .header-left h1");
         if (headerTitle) headerTitle.textContent = "Edit Report";
         
@@ -4115,7 +4025,6 @@ async function openSubmitReportSubview(reportId = null) {
         if (headerDesc) headerDesc.textContent = "Update the report and resubmit to Municipal.";
         
     } else {
-        // New report mode
         window.currentEditingReportId = null;
         
         const submitBtn = document.getElementById("submitReportFinalBtn");
@@ -4133,28 +4042,19 @@ async function openSubmitReportSubview(reportId = null) {
 }
 
 
-
 // ============================================================
 // CLOSE ALL MODALS
 // ============================================================
 
 async function closeAllModals() {
-    // Close report modals
     const submitView = document.getElementById("submitReportSubview");
     const detailsView = document.getElementById("reportDetailsSubview");
     const mainView = document.getElementById("reportsMainSubview");
     
-    if (submitView) {
-        submitView.classList.add("hidden-element");
-    }
-    if (detailsView) {
-        detailsView.classList.add("hidden-element");
-    }
-    if (mainView) {
-        mainView.classList.remove("hidden-element");
-    }
+    if (submitView) submitView.classList.add("hidden-element");
+    if (detailsView) detailsView.classList.add("hidden-element");
+    if (mainView) mainView.classList.remove("hidden-element");
     
-    // Close farmer modals
     const confirmFarmer = document.getElementById("confirmFarmerModal");
     const farmerAdded = document.getElementById("farmerAddedModal");
     const deleteFarmer = document.getElementById("deleteFarmerModal");
@@ -4165,18 +4065,14 @@ async function closeAllModals() {
     if (deleteFarmer) deleteFarmer.classList.remove("show");
     if (deleteError) deleteError.classList.remove("show");
     
-    // Close planting intent modals
     const plantIntentSubmitted = document.getElementById("plantIntentSubmittedModal");
     if (plantIntentSubmitted) plantIntentSubmitted.classList.remove("show");
     
-    // Close offtake modals
     const offtakeSubmitted = document.getElementById("offtakeSubmittedModal");
     if (offtakeSubmitted) offtakeSubmitted.classList.remove("show");
     
-    // Reset form
     resetReportForm();
     
-    // Clear selected intents
     window.selectedReportIntents = [];
 
     await fetchPlantingIntents();
@@ -4200,7 +4096,7 @@ function closeSubmitReportSubview() {
 
     const editButton = document.getElementById("editReportBtn");
     if (editButton) {
-        editButton.style.display = "";  // Reset sa default
+        editButton.style.display = "";
         editButton.disabled = false;
         editButton.style.opacity = "1";
         editButton.style.cursor = "pointer";
@@ -4228,12 +4124,8 @@ function closeSubmitReportSubview() {
 ============================================================ */
 
 function closeReportDetailsSubview() {
-
-    const mainView =
-        document.getElementById("reportsMainSubview");
-
-    const detailsView =
-        document.getElementById("reportDetailsSubview");
+    const mainView = document.getElementById("reportsMainSubview");
+    const detailsView = document.getElementById("reportDetailsSubview");
 
     if (detailsView) {
         detailsView.classList.add("hidden-element");
@@ -4248,7 +4140,7 @@ function closeReportDetailsSubview() {
 
 
 // ============================================================
-// POPULATE REPORT INTENT SELECT (WITH BARANGAY, COMMODITY, FARMER)
+// POPULATE REPORT INTENT SELECT
 // ============================================================
 
 function populateReportIntentSelect() {
@@ -4263,12 +4155,6 @@ function populateReportIntentSelect() {
         return status === "SUBMITTED";
     });
 
-    availableIntents.sort(function(a, b) {
-        const dateA = new Date(a.updated_at || a.created_at || 0);
-        const dateB = new Date(b.updated_at || b.created_at || 0);
-        return dateB - dateA;
-    });
-
     const selectedIds = (window.selectedReportIntents || []).map(function(intent) {
         return String(intent.planting_intent_id);
     });
@@ -4277,14 +4163,12 @@ function populateReportIntentSelect() {
         return !selectedIds.includes(String(intent.planting_intent_id));
     });
 
-    // ✅ Sort by date (newest first)
     unselectedIntents.sort(function(a, b) {
         const dateA = new Date(a.updated_at || a.created_at || 0);
         const dateB = new Date(b.updated_at || b.created_at || 0);
         return dateB - dateA;
     });
 
-    // ✅ Populate dropdown
     unselectedIntents.forEach(function(intent) {
         const option = document.createElement("option");
         option.value = intent.planting_intent_id;
@@ -4325,7 +4209,6 @@ function resetReportForm() {
         form.reset();
     }
 
-    // Clear report title
     const titleInput = document.getElementById("reportTitleInput");
     if (titleInput) {
         titleInput.value = "";
@@ -4542,10 +4425,6 @@ function renderSelectedReportIntents() {
         `;
     }).join("");
 
-    // ============================================================
-    // ATTACH CLICK LISTENERS TO REMOVE BUTTONS 
-    // ============================================================
-
     tbody.querySelectorAll(".remove-intent-btn").forEach(function (btn) {
         btn.addEventListener("click", function (event) {
             event.preventDefault();
@@ -4557,11 +4436,19 @@ function renderSelectedReportIntents() {
             removeSelectedReportIntent(idx);
         });
     });
+
+    const formSummaryBody = document.getElementById("formSummaryBody");
+    if (formSummaryBody) {
+        const municipalSubmitted = (PLANTING_INTENTS_DATA || []).filter(function(i) {
+            const st = String(i.status || "").toUpperCase();
+            return st === "SUBMITTED" || st.startsWith("SUBMITTED_");
+        });
+    }
 }
 
 
 /* ============================================================
-   RENDER SUBMITTED REPORTS — SPLIT INTO 4 BLOCKS
+   RENDER SUBMITTED REPORTS — SPLIT INTO BLOCKS
 ============================================================ */
 
 function renderSubmittedReports(reports) {
@@ -4572,33 +4459,21 @@ function renderSubmittedReports(reports) {
     (reports || []).forEach(r => {
         const s = String(r.status || "").toUpperCase();
 
-        // ============================================================
-        // PENDING — kakasubmit lang sa upper level
-        // ============================================================
         if (s === "SUBMITTED_MUNICIPAL_PENDING" ||
             s === "SUBMITTED_PROVINCIAL_PENDING" ||
             s === "SUBMITTED_REGIONAL_PENDING") {
             pending.push(r);
         }
-        // ============================================================
-        // FLAGGED — need ng revision (bumalik sa AEW)
-        // ============================================================
         else if (s === "SUBMITTED_MUNICIPAL_FLAGGED" ||
                  s === "SUBMITTED_PROVINCIAL_FLAGGED" ||
                  s === "SUBMITTED_REGIONAL_FLAGGED" ||
                  s === "REVISION_REQUIRED") {
             flagged.push(r);
         }
-        // ============================================================
-        // APPROVED — umangat na sa higher up (final)
-        // ============================================================
         else if (s === "SUBMITTED_REGIONAL_APPROVED" ||
                  s === "FINAL_APPROVED") {
             approved.push(r);
         }
-        // ============================================================
-        // Ignore DRAFT
-        // ============================================================
     });
 
     renderReportBlock("pendingReportsTableBody", "pendingReportsCountBadge", pending, "pending");
@@ -4620,7 +4495,7 @@ function renderReportBlock(tbodyId, badgeId, reports, blockType) {
 
     tbody.innerHTML = "";
 
-        if (reports.length === 0) {
+    if (reports.length === 0) {
         const emptyMessages = {
             draft: "No draft reports.",
             pending: "No pending reports.",
@@ -4640,7 +4515,6 @@ function renderReportBlock(tbodyId, badgeId, reports, blockType) {
     reports.forEach(report => {
         const sl = reportStatusLabelAndClass(report.status);
 
-        // ✅ Row clickable only kung pwede i-edit (draft/flagged) o view
         const tr = document.createElement("tr");
         tr.className = "clickable-row";
         tr.dataset.reportId = report.report_id;
@@ -4657,7 +4531,6 @@ function renderReportBlock(tbodyId, badgeId, reports, blockType) {
         }
 
         const dateValue = formatReportDate(dateField);
-
 
         tr.innerHTML = `
             <td class="center-col" style="font-weight: 600;">
@@ -4690,14 +4563,10 @@ function renderReportBlock(tbodyId, badgeId, reports, blockType) {
 function reportStatusLabelAndClass(status) {
     const s = String(status || "").toUpperCase();
 
-    // Draft
     if (s === "DRAFT") {
         return { text: "Draft", cls: "draft" };
     }
 
-    // ============================================================
-    // PENDING STATUSES
-    // ============================================================
     if (s === "SUBMITTED_MUNICIPAL_PENDING") {
         return { text: "Municipal Pending", cls: "pending" };
     }
@@ -4708,9 +4577,6 @@ function reportStatusLabelAndClass(status) {
         return { text: "Regional Pending", cls: "pending" };
     }
 
-    // ============================================================
-    // FLAGGED STATUSES
-    // ============================================================
     if (s === "SUBMITTED_MUNICIPAL_FLAGGED") {
         return { text: "Municipal Flagged", cls: "flagged" };
     }
@@ -4724,19 +4590,12 @@ function reportStatusLabelAndClass(status) {
         return { text: "Revision Required", cls: "flagged" };
     }
 
-    // ============================================================
-    // APPROVED STATUSES
-    // ============================================================
     if (s === "SUBMITTED_REGIONAL_APPROVED" || s === "FINAL_APPROVED") {
         return { text: "Approved", cls: "approved" };
     }
 
-    // Fallback
     return { text: s || "—", cls: "pending" };
 }
-
-
-
 
 
 /* ============================================================
@@ -4744,7 +4603,6 @@ function reportStatusLabelAndClass(status) {
 ============================================================ */
 
 function removeSelectedReportIntent(index) {
-
     if (
         !window.selectedReportIntents ||
         !window.selectedReportIntents[index]
@@ -4752,10 +4610,7 @@ function removeSelectedReportIntent(index) {
         return;
     }
 
-    window.selectedReportIntents.splice(
-        index,
-        1
-    );
+    window.selectedReportIntents.splice(index, 1);
 
     renderSelectedReportIntents();
 }
@@ -4785,7 +4640,6 @@ async function saveReport(status) {
         return;
     }
 
-    // VALIDATION
     const editingReportId = window.currentEditingReportId;
 
     if (editingReportId) {
@@ -4810,7 +4664,6 @@ async function saveReport(status) {
         }
     }
 
-    // Convert legacy status
     let apiStatus = status;
     if (status === "SUBMITTED") {
         apiStatus = "SUBMITTED_MUNICIPAL_PENDING";
@@ -4833,23 +4686,20 @@ async function saveReport(status) {
         let savedReportId = null;
 
         if (editingReportId) {
-            // ============================================================
-            // EDIT MODE
-            // ============================================================
             console.log("Updating existing report:", editingReportId);
 
             await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${editingReportId}`, {
                 method: "PUT",
                 body: JSON.stringify({
                     title: title,
-                    notes: notes,
                 })
             });
 
             await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${editingReportId}/status`, {
                 method: "PATCH",
                 body: JSON.stringify({
-                    status: "SUBMITTED_MUNICIPAL_PENDING"
+                    status: "SUBMITTED_MUNICIPAL_PENDING",
+                    resubmit_notes: notes || null    // ← ipasa ang notes as resubmit notes
                 })
             });
 
@@ -4857,9 +4707,6 @@ async function saveReport(status) {
             window.currentEditingReportId = null;
 
         } else {
-            // ============================================================
-            // CREATE MODE
-            // ============================================================
             console.log("Creating new report");
 
             const createdReport = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/from-intents`, {
@@ -4872,9 +4719,6 @@ async function saveReport(status) {
                 || null;
         }
 
-        // ============================================================
-        // UPLOAD ATTACHMENTS
-        // ============================================================
         if (savedReportId) {
             const fileInput = document.getElementById("reportFileInput");
             const files = fileInput ? Array.from(fileInput.files || []) : [];
@@ -4911,7 +4755,6 @@ async function saveReport(status) {
             : "Report submitted to Municipal successfully!"
         );
 
-        // Reset file input
         const fileInput = document.getElementById("reportFileInput");
         if (fileInput) fileInput.value = "";
         const fileNameInput = document.getElementById("reportDocFilename");
@@ -4954,7 +4797,6 @@ async function uploadReportAttachment(reportId, file) {
         }
     );
 
-    // Parse response
     let data = null;
     const contentType = response.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
@@ -4975,8 +4817,6 @@ async function uploadReportAttachment(reportId, file) {
 }
 
 
-
-
 //=============================================================
 //  OPEN SUBMITTED REPORTS
 //=============================================================
@@ -4985,13 +4825,11 @@ async function openSubmittedReportDetails(reportId) {
     console.log("Opening submitted report details:", reportId);
     
     try {
-        // ✅ Fetch the full report from backend
         const report = await apiRequest(
             `${API_BASE_URL}/api/raw-plant-reports/${reportId}`,
             { method: "GET" }
         );
         
-        // ✅ Show details view
         openReportDetails(report);
         
     } catch (error) {
@@ -4999,7 +4837,6 @@ async function openSubmittedReportDetails(reportId) {
         alert("Failed to load report details.\n\n" + error.message);
     }
 }
-
 
 
 /* ============================================================
@@ -5024,7 +4861,6 @@ async function loadReportForEditing(reportId) {
 }
 
 
-
 /* ============================================================
    POPULATE REPORT FORM
 ============================================================ */
@@ -5045,7 +4881,6 @@ function populateReportForm(report) {
     const intents = report.planting_intents || report.intents || [];
     
     window.selectedReportIntents = intents.map(function(intent) {
-        // Hanapin sa PLANTING_INTENTS_DATA para kumpleto ang data
         const fullIntent = (PLANTING_INTENTS_DATA || []).find(function(i) {
             return String(i.planting_intent_id) === String(intent.planting_intent_id);
         });
@@ -5054,7 +4889,6 @@ function populateReportForm(report) {
             return fullIntent;
         }
         
-        // Fallback: gamitin ang data mula sa report
         return {
             planting_intent_id: intent.planting_intent_id,
             farmer_name: intent.farmer_name,
@@ -5075,32 +4909,531 @@ function populateReportForm(report) {
 
 
 /* ============================================================
+   REPORT SUMMARY RENDERER
+============================================================ */
+
+function renderReportSummary(selectedIntents, allSubmittedIntents, reportMeta) {
+    const allSubmitted = Array.isArray(allSubmittedIntents) ? allSubmittedIntents : [];
+    const meta = reportMeta || {};
+    const selected = (Array.isArray(selectedIntents) ? selectedIntents : []).map(function(intent) {
+        const fullIntent = (PLANTING_INTENTS_DATA || []).find(function(i) {
+            return String(i.planting_intent_id) === String(intent.planting_intent_id);
+        });
+
+        if (fullIntent) {
+            return {
+                ...intent,
+                barangay: intent.barangay || fullIntent.barangay || null,
+                municipality: intent.municipality || fullIntent.municipality || null,
+                location: intent.location || fullIntent.location || null,
+                farmer_id: intent.farmer_id || fullIntent.farmer_id || null,
+                finalized_status: fullIntent.finalized_status || intent.finalized_status || "NOT PLANTED",
+                actual_planting_date: fullIntent.actual_planting_date || intent.actual_planting_date || null,
+                actual_harvest_date: fullIntent.actual_harvest_date || intent.actual_harvest_date || null,
+                actual_harvest_volume: fullIntent.actual_harvest_volume || intent.actual_harvest_volume || null,
+            };
+        }
+
+        return intent;
+    });
+
+    const selectedCount = selected.length;
+
+    const totalVolume = selected.reduce(function(sum, i) {
+        return sum + (Number(i.volume) || 0);
+    }, 0);
+
+    const uniqueFarmers = new Set(
+        selected
+            .map(function(i) { return i.farmer_id || i.farmer_name; })
+            .filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    const pendingCount = selected.filter(function(i) {
+        return String(i.status || "").toUpperCase() === "SUBMITTED";
+    }).length;
+
+    const harvestedIntents = selected.filter(function(i) {
+        return (i.finalized_status || "").toUpperCase() === "HARVESTED";
+    });
+    const harvestedVolume = harvestedIntents.reduce(function(sum, i) {
+        const actualVol = Number(i.actual_harvest_volume);
+        const plannedVol = Number(i.volume);
+        return sum + (actualVol > 0 ? actualVol : (plannedVol || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0 
+        ? Math.round((harvestedIntents.length / selectedCount) * 100) 
+        : 0;
+
+    const municipalCount = allSubmitted.length;
+    const coverage = municipalCount > 0 
+        ? Math.round((selectedCount / municipalCount) * 100) 
+        : 0;
+
+    let coveragePeriod = "—";
+    if (meta.submitted_at || meta.created_at) {
+        const reportDate = new Date(meta.submitted_at || meta.created_at);
+        const weekStart = new Date(reportDate);
+        weekStart.setDate(reportDate.getDate() - 6);
+        
+        const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        coveragePeriod = `${fmt(weekStart)} – ${fmt(reportDate)}`;
+    }
+    setText("summaryCoveragePeriod", "Coverage: " + coveragePeriod);
+
+    setText("summarySelectedCount", selectedCount + " intent" + (selectedCount !== 1 ? "s" : ""));
+    setText("summarySelectedSubtext", 
+        selectedCount > 0 
+            ? "Included in this report" 
+            : "No intents selected"
+    );
+
+    setText("summaryTotalVolume", 
+        totalVolume > 0 
+            ? totalVolume.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " kg"
+            : "0 kg"
+    );
+    setText("summaryTotalVolumeSubtext", 
+        selectedCount > 0 
+            ? "Across " + selectedCount + " intent" + (selectedCount !== 1 ? "s" : "")
+            : "—"
+    );
+
+    setText("summaryUniqueFarmers", uniqueFarmerCount + " farmer" + (uniqueFarmerCount !== 1 ? "s" : ""));
+    setText("summaryUniqueFarmersSubtext", 
+        uniqueFarmerCount > 0 
+            ? "Beneficiaries in this report"
+            : "No farmers"
+    );
+
+    setText("summaryPendingCount", pendingCount + " intent" + (pendingCount !== 1 ? "s" : ""));
+    setText("summaryPendingSubtext", 
+        pendingCount > 0 
+            ? "Awaiting status update" 
+            : "All intents finalized"
+    );
+
+    const pendingEl = document.getElementById("summaryPendingCount");
+    if (pendingEl) {
+        pendingEl.style.color = pendingCount > 0 ? "#D97706" : "#2E7D32";
+    }
+
+    setText("summaryHarvestedVolume", 
+        harvestedVolume > 0 
+            ? harvestedVolume.toLocaleString("en-US") + " kg" 
+            : "0 kg"
+    );
+    setText("summaryHarvestedVolumeSubtext", 
+        harvestedIntents.length + " intent" + (harvestedIntents.length !== 1 ? "s" : "") + " harvested"
+    );
+
+    setText("summaryHarvestRate", harvestRate + "%");
+    setText("summaryHarvestRateSubtext", 
+        harvestedIntents.length + " of " + selectedCount + " harvested"
+    );
+
+    const harvestRateEl = document.getElementById("summaryHarvestRate");
+    if (harvestRateEl) {
+        harvestRateEl.style.color = 
+            harvestRate === 100 ? "#2E7D32" 
+            : harvestRate > 0 ? "#D97706" 
+            : "#6c757d";
+    }
+
+    const municipalityName = meta.municipality || "Municipality";
+    setText("summaryMunicipalLabel", "🏛️ " + municipalityName + " Total");
+    setText("summaryMunicipalTotal", municipalCount + " intent" + (municipalCount !== 1 ? "s" : ""));
+    setText("summaryMunicipalSubtext", 
+        municipalCount > 0 
+            ? "Submitted sa parehong period"
+            : "Walang ibang submission"
+    );
+
+    setText("summaryCoverage", coverage + "%");
+    setText("summaryCoverageSubtext", 
+        "of " + municipalityName + " submissions"
+    );
+
+    const byCommodity = {};
+    selected.forEach(function(intent) {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) {
+            byCommodity[c] = { count: 0, volume: 0 };
+        }
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    const commodityEl = document.getElementById("summaryByCommodity");
+    if (commodityEl) {
+        const entries = Object.entries(byCommodity);
+        if (entries.length === 0) {
+            commodityEl.innerHTML = '<span style="color: var(--muted); font-style: italic;">No intents selected.</span>';
+        } else {
+            commodityEl.innerHTML = entries
+                .sort(function(a, b) { return b[1].volume - a[1].volume; })
+                .map(function([name, data]) {
+                    return `
+                        <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 6px 0;
+                            border-bottom: 1px dashed var(--border-light);
+                        ">
+                            <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                            <span style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                font-variant-numeric: tabular-nums;
+                            ">
+                                ${data.count} · 
+                                <b style="color: var(--green-dark);">${formatPlantingVolume(data.volume)}</b>
+                            </span>
+                        </div>
+                    `;
+                }).join("");
+        }
+    }
+
+    const byBarangay = {};
+    selected.forEach(function(intent) {
+        let b = intent.barangay;
+        
+        if (!b && intent.location) {
+            const parts = String(intent.location).split(",");
+            b = parts[0].trim();
+        }
+        
+        if (!b) b = intent.municipality || "Unknown";
+        
+        if (!byBarangay[b]) {
+            byBarangay[b] = { count: 0, volume: 0 };
+        }
+        byBarangay[b].count += 1;
+        byBarangay[b].volume += Number(intent.volume) || 0;
+    });
+
+    const barangayEl = document.getElementById("summaryByBarangay");
+    if (barangayEl) {
+        const entries = Object.entries(byBarangay);
+        if (entries.length === 0) {
+            barangayEl.innerHTML = '<span style="color: var(--muted); font-style: italic;">No barangay data.</span>';
+        } else if (entries.length === 1) {
+            barangayEl.innerHTML = `
+                <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                    All intents from <b>${escapeHtml(entries[0][0])}</b>
+                </div>
+            `;
+        } else {
+            barangayEl.innerHTML = entries
+                .sort(function(a, b) { return b[1].volume - a[1].volume; })
+                .map(function([name, data]) {
+                    return `
+                        <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 6px 0;
+                            border-bottom: 1px dashed var(--border-light);
+                        ">
+                            <span style="font-weight: 600;">📍 ${escapeHtml(name)}</span>
+                            <span style="
+                                font-size: 12px;
+                                color: var(--muted);
+                                font-variant-numeric: tabular-nums;
+                            ">
+                                ${data.count} · 
+                                <b style="color: var(--green-dark);">${formatPlantingVolume(data.volume)}</b>
+                            </span>
+                        </div>
+                    `;
+                }).join("");
+        }
+    }
+
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED": { count: 0, volume: 0, label: "Planted", color: "#D97706" },
+        "HARVESTED": { count: 0, volume: 0, label: "Harvested", color: "#2E7D32" },
+        "MEDIATING": { count: 0, volume: 0, label: "Mediating", color: "#2980B9" }
+    };
+
+    selected.forEach(function(intent) {
+        const s = (intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    const statusEl = document.getElementById("summaryByStatus");
+    if (statusEl) {
+        statusEl.innerHTML = Object.values(byStatus).map(function(data) {
+            const isZero = data.count === 0;
+            return `
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 6px 0;
+                    border-bottom: 1px dashed var(--border-light);
+                    opacity: ${isZero ? 0.45 : 1};
+                ">
+                    <span style="font-weight: 600; color: ${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                        <span style="
+                            display: inline-block;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background: ${data.color};
+                            margin-right: 8px;
+                        "></span>
+                        ${data.label}
+                    </span>
+                    <span style="
+                        font-size: 12px;
+                        color: var(--muted);
+                        font-variant-numeric: tabular-nums;
+                    ">
+                        ${data.count} · 
+                        <b style="color: ${isZero ? 'var(--muted)' : data.color};">${formatPlantingVolume(data.volume)}</b>
+                    </span>
+                </div>
+            `;
+        }).join("");
+    }
+
+    // ============================================================
+    // 📊 YIELD PERFORMANCE — Expected vs Actual
+    // ============================================================
+    const yieldEl = document.getElementById("summaryYieldPerformance");
+    if (yieldEl) {
+        const totalActual = harvestedIntents.reduce(function(sum, i) {
+            const v = Number(i.actual_harvest_volume);
+            return sum + (v > 0 ? v : 0);
+        }, 0);
+
+        const totalPlanned = totalVolume;
+        const hasActualData = totalActual > 0;
+
+        if (hasActualData) {
+            const variance = totalPlanned > 0 
+                ? Math.round(((totalActual - totalPlanned) / totalPlanned) * 100) 
+                : 0;
+            
+            let varianceColor = "#2E7D32";
+            let varianceIcon = "↑";
+            let varianceLabel = "surplus";
+            
+            if (variance < 0) {
+                varianceColor = "#C0392B";
+                varianceIcon = "↓";
+                varianceLabel = "shortfall";
+            } else if (variance === 0) {
+                varianceColor = "#6c757d";
+                varianceIcon = "→";
+                varianceLabel = "on target";
+            }
+            
+            yieldEl.innerHTML = `
+                <div style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 10px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid var(--border-light);
+                ">📊 Yield Performance</div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: var(--muted);">Expected (planned):</span>
+                    <b style="color: var(--ink);">${totalPlanned.toLocaleString("en-US")} kg</b>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: var(--muted);">Actual (harvested):</span>
+                    <b style="color: var(--ink);">${totalActual.toLocaleString("en-US")} kg</b>
+                </div>
+
+                <div style="
+                    display: inline-block;
+                    padding: 4px 12px;
+                    background: ${varianceColor}15;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: ${varianceColor};
+                ">
+                    ${varianceIcon} ${Math.abs(variance)}% ${varianceLabel}
+                </div>
+
+                <div style="
+                    margin-top: 8px;
+                    font-size: 11px;
+                    color: var(--muted);
+                    font-style: italic;
+                ">
+                    Based on ${harvestedIntents.length} of ${selectedCount} harvested
+                </div>
+            `;
+        } else {
+            yieldEl.innerHTML = `
+                <div style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 10px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid var(--border-light);
+                ">📊 Yield Performance</div>
+                <span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>
+            `;
+        }
+    }
+
+    // ============================================================
+    // 📅 PLANTING WINDOW — Earliest & Latest
+    // ============================================================
+    const windowEl = document.getElementById("summaryPlantingWindow");
+    if (windowEl) {
+        const plantingDates = selected
+            .map(function(i) { return i.planting_date; })
+            .filter(function(d) { return d; })
+            .map(function(d) { return new Date(d); })
+            .filter(function(d) { return !isNaN(d.getTime()); });
+
+        const harvestDates = selected
+            .map(function(i) { return i.harvest_date; })
+            .filter(function(d) { return d; })
+            .map(function(d) { return new Date(d); })
+            .filter(function(d) { return !isNaN(d.getTime()); });
+
+        if (plantingDates.length > 0) {
+            const earliest = new Date(Math.min.apply(null, plantingDates));
+            const latest = new Date(Math.max.apply(null, plantingDates));
+            const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+            const fmt = (d) => d.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+            });
+
+            let harvestInfo = "";
+            if (harvestDates.length > 0) {
+                const earliestHarvest = new Date(Math.min.apply(null, harvestDates));
+                const latestHarvest = new Date(Math.max.apply(null, harvestDates));
+                const harvestSpan = Math.round((latestHarvest - earliestHarvest) / (1000 * 60 * 60 * 24));
+
+                harvestInfo = `
+                    <div style="
+                        margin-top: 10px;
+                        padding-top: 10px;
+                        border-top: 1px dashed var(--border-light);
+                    ">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                            <b style="color: var(--ink);">${fmt(earliestHarvest)}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="color: var(--muted);">Harvest latest:</span>
+                            <b style="color: var(--ink);">${fmt(latestHarvest)}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--muted);">Harvest span:</span>
+                            <b style="color: var(--ink);">${harvestSpan} day${harvestSpan !== 1 ? "s" : ""}</b>
+                        </div>
+                    </div>
+                `;
+            }
+
+            windowEl.innerHTML = `
+                <div style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 10px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid var(--border-light);
+                ">📅 Planting Window</div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: var(--muted);">🌱 Earliest:</span>
+                    <b style="color: var(--ink);">${fmt(earliest)}</b>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: var(--muted);">Latest:</span>
+                    <b style="color: var(--ink);">${fmt(latest)}</b>
+                </div>
+
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--muted);">Span:</span>
+                    <b style="color: var(--ink);">${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+                </div>
+
+                ${harvestInfo}
+            `;
+        } else {
+            windowEl.innerHTML = `
+                <div style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 10px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid var(--border-light);
+                ">📅 Planting Window</div>
+                <span style="color: var(--muted); font-style: italic;">No planting dates available.</span>
+            `;
+        }
+    }
+
+    // ============================================================
+    // FOOTER META
+    // ============================================================
+    const preparedBy = localStorage.getItem("full_name") 
+        || localStorage.getItem("name") 
+        || localStorage.getItem("username") 
+        || "AEW";
+    setText("summaryPreparedBy", preparedBy);
+
+    const now = new Date();
+    setText("summaryGeneratedAt", now.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    }));
+}
+
+
+/* ============================================================
    ERROR STATES
 ============================================================ */
 
 function renderIndividualReportsError(error) {
-
-    const tbody =
-        document.getElementById(
-            "individualReportsTableBody"
-        );
-
+    const tbody = document.getElementById("individualReportsTableBody");
     if (!tbody) return;
 
     tbody.innerHTML = `
         <tr>
-            <td
-                colspan="4"
-                style="padding:30px; text-align:center; color:#C0392B;"
-            >
+            <td colspan="4" style="padding:30px; text-align:center; color:#C0392B;">
                 Failed to load individual reports.
                 <br>
-                <small>
-                    ${escapeHtml(
-                        error?.message ||
-                        "Please check the server."
-                    )}
-                </small>
+                <small>${escapeHtml(error?.message || "Please check the server.")}</small>
             </td>
         </tr>
     `;
@@ -5108,28 +5441,15 @@ function renderIndividualReportsError(error) {
 
 
 function renderSubmittedReportsError(error) {
-
-    const tbody =
-        document.getElementById(
-            "submittedReportsTableBody"
-        );
-
+    const tbody = document.getElementById("submittedReportsTableBody");
     if (!tbody) return;
 
     tbody.innerHTML = `
         <tr>
-            <td
-                colspan="4"
-                style="padding:30px; text-align:center; color:#C0392B;"
-            >
+            <td colspan="4" style="padding:30px; text-align:center; color:#C0392B;">
                 Failed to load submitted reports.
                 <br>
-                <small>
-                    ${escapeHtml(
-                        error?.message ||
-                        "Please check the server."
-                    )}
-                </small>
+                <small>${escapeHtml(error?.message || "Please check the server.")}</small>
             </td>
         </tr>
     `;
@@ -5141,37 +5461,27 @@ function renderSubmittedReportsError(error) {
 ============================================================ */
 
 function formatReportDate(dateValue) {
+    if (!dateValue) return "—";
 
-    if (!dateValue) {
-        return "—";
-    }
-
-    const date =
-        new Date(dateValue);
+    const date = new Date(dateValue);
 
     if (isNaN(date.getTime())) {
         return String(dateValue);
     }
 
-    return date.toLocaleDateString(
-        "en-US",
-        {
-            month: "numeric",
-            day: "numeric",
-            year: "numeric"
-        }
-    );
+    return date.toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric"
+    });
 }
 
 
 function setText(id, value) {
-
-    const element =
-        document.getElementById(id);
+    const element = document.getElementById(id);
 
     if (element) {
-        element.textContent =
-            value ?? "—";
+        element.textContent = value ?? "—";
     }
 }
 
@@ -5190,10 +5500,549 @@ function formatPlantingVolume(volume) {
     if (volume === null || volume === undefined || volume === "") return "-";
     if (typeof volume === "string" && volume.toLowerCase().includes("kg")) return volume;
     const numericVolume = Number(String(volume).replace(/,/g, ""));
-    if (!isNaN(numericVolume)) return numericVolume.toLocaleString() + "kg";
+    if (!isNaN(numericVolume)) {
+        return numericVolume.toLocaleString() + " kg";
+    }
     return String(volume);
 }
 
+
+function formatDateTimeLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatRoleLabel(role) {
+    if (!role) return "—";
+    return String(role).replace(/_/g, " ").toUpperCase();
+}
+
+function getActionStyle(action) {
+    const a = String(action || "").toUpperCase();
+    if (a === "SUBMITTED")
+        return { icon: "📤", label: "Submitted", color: "#2980B9" };
+    if (a === "RESUBMITTED")
+        return { icon: "🔄", label: "Resubmitted", color: "#2980B9" };
+    if (a === "APPROVED")
+        return { icon: "✓", label: "Approved", color: "#2E7D32" };
+    if (a === "REVISION_REQUIRED")
+        return { icon: "⚠", label: "Revision Required", color: "#C0392B" };
+    if (a === "PULLED")
+        return { icon: "↩", label: "Pulled to Draft", color: "#D97706" };
+    if (a === "STATUS_CHANGED")
+        return { icon: "•", label: "Status Changed", color: "#6c757d" };
+    return { icon: "•", label: a || "Action", color: "#6c757d" };
+}
+
+
+/* ============================================================
+   📜 RENDER VALIDATION TIMELINE (AEW side)
+============================================================ */
+
+function renderValidationTimeline(history, containerId = "validationTimelineContainer", wrapperId = "validationHistoryWrapper") {
+    const container = document.getElementById(containerId);
+    const wrapper = document.getElementById(wrapperId);
+
+    if (!container) return;
+
+    if (!Array.isArray(history) || history.length === 0) {
+        if (wrapper) wrapper.style.display = "none";
+        return;
+    }
+
+    if (wrapper) wrapper.style.display = "block";
+
+    const html = history.map((h, idx) => {
+        const style = getActionStyle(h.action);
+        const isLast = idx === history.length - 1;
+
+        let cleanRemarks = h.remarks || "";
+        cleanRemarks = cleanRemarks.replace(/^\[[^\]]+\]\s*/, "").trim();
+
+        const remarksHtml = cleanRemarks
+            ? `<div class="timeline-remarks">${escapeHtml(cleanRemarks)}</div>`
+            : "";
+
+        const dateHtml = h.created_at
+            ? `<span class="timeline-date">${escapeHtml(formatDateTimeLong(h.created_at))}</span>`
+            : "";
+
+        return `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background:${style.color};">
+                    ${style.icon}
+                </div>
+                ${!isLast ? '<div class="timeline-line"></div>' : ''}
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-action" style="color:${style.color};">
+                            ${escapeHtml(style.label)}
+                        </span>
+                        ${dateHtml}
+                    </div>
+                    <div class="timeline-meta">
+                        <strong>${escapeHtml(h.performed_by_name || "Unknown User")}</strong>
+                        <span class="timeline-role">${escapeHtml(formatRoleLabel(h.role))}</span>
+                    </div>
+                    ${remarksHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.innerHTML = `<div class="validation-timeline">${html}</div>`;
+}
+
+
+/* ============================================================
+   DATE HELPER
+============================================================ */
+
+function toDateInputValue(value) {
+    if (!value) return "";
+
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+    }
+
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+        return value.substring(0, 10);
+    }
+
+    if (typeof value === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) {
+        const [a, b, y] = value.split("/");
+        const first = parseInt(a, 10);
+        const second = parseInt(b, 10);
+
+        let day, month;
+        if (first > 12) {
+            day = first;
+            month = second;
+        } else if (second > 12) {
+            month = first;
+            day = second;
+        } else {
+            day = first;
+            month = second;
+        }
+
+        return `${y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+
+/* ============================================================
+   HANDLE FINALIZED STATUS CHANGE
+============================================================ */
+
+function handleFinalizedStatusChange(intent, currentStatus, newStatus, pillElement) {
+    const newStatusUpper = newStatus.toUpperCase();
+
+    if (newStatusUpper === "PLANTED" && currentStatus !== "PLANTED") {
+        openActualDateModal({
+            title: "Record Actual Planting Date",
+            message: `Mark <b>${escapeHtml(intent.commodity || "this intent")}</b> as <b>PLANTED</b>.<br>Please enter the actual planting date.`,
+            fieldLabel: "Actual Planting Date",
+            fieldId: "modalActualDate",
+            intent: intent,
+            onConfirm: function (dateValue) {
+                if (pillElement) updateStatusPillVisual(pillElement, newStatus);
+                updateFinalizedIntentStatus(intent.planting_intent_id, newStatus, {
+                    actual_planting_date: dateValue
+                });
+                intent.finalized_status = newStatus;
+                intent.actual_planting_date = dateValue;
+            }
+        });
+        return;
+    }
+
+    if (newStatusUpper === "HARVESTED" && currentStatus !== "HARVESTED") {
+        openHarvestModal({
+            intent: intent,
+            onConfirm: function (dateValue, volumeValue) {
+                if (pillElement) updateStatusPillVisual(pillElement, newStatus);
+                updateFinalizedIntentStatus(intent.planting_intent_id, newStatus, {
+                    actual_harvest_date: dateValue,
+                    actual_harvest_volume: volumeValue
+                });
+                intent.finalized_status = newStatus;
+                intent.actual_harvest_date = dateValue;
+                intent.actual_harvest_volume = volumeValue;
+            }
+        });
+        return;
+    }
+
+    if (pillElement) updateStatusPillVisual(pillElement, newStatus);
+    updateFinalizedIntentStatus(intent.planting_intent_id, newStatus, {});
+    intent.finalized_status = newStatus;
+}
+
+
+/* ============================================================
+   HARVEST MODAL
+============================================================ */
+
+function openHarvestModal({ intent, onConfirm }) {
+    const existing = document.getElementById("harvestModal");
+    if (existing) existing.remove();
+
+    const prefillDate = intent.actual_harvest_date 
+        ? toDateInputValue(intent.actual_harvest_date) 
+        : "";
+    const prefillVolume = intent.actual_harvest_volume 
+        ? Number(intent.actual_harvest_volume) 
+        : "";
+
+    const plannedVolume = Number(intent.volume) || 0;
+    const plannedVolumeStr = plannedVolume.toLocaleString("en-US");
+
+    const modalHTML = `
+        <div class="modal-overlay show" id="harvestModal" style="
+            position: fixed; inset: 0; background: rgba(30,35,28,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5000;">
+            <div class="modal-box" style="
+                background: var(--cream); border: 1.5px solid var(--border);
+                border-radius: 12px; padding: 28px 32px; max-width: 480px;
+                width: 90%; box-shadow: 0 14px 35px rgba(0,0,0,0.25);">
+                <h2 style="font-size:20px; font-weight:800; color:var(--green); margin-bottom:12px;">
+                    🌾 Record Harvest
+                </h2>
+                <p style="font-size:14px; color:var(--ink); line-height:1.5; margin-bottom:20px;">
+                    Mark <b>${escapeHtml(intent.commodity || "this intent")}</b> as <b>HARVESTED</b>.
+                    <br>Please provide the actual harvest details.
+                </p>
+
+                <div style="
+                    background: #F6F3EB;
+                    border-left: 3px solid var(--green);
+                    padding: 10px 14px;
+                    border-radius: 0 6px 6px 0;
+                    font-size: 13px;
+                    color: var(--muted);
+                    margin-bottom: 16px;
+                ">
+                    <b style="color: var(--ink);">Planned Volume:</b> ${plannedVolumeStr} kg
+                </div>
+
+                <div style="margin-bottom:16px; text-align: left;">
+                    <label for="harvestActualDate" style="
+                        display:block; font-size:12.5px; font-weight:700;
+                        color:var(--ink); text-transform:uppercase;
+                        letter-spacing:0.02em; margin-bottom:6px;">
+                        Actual Harvest Date <span style="color:#C0392B;">*</span>
+                    </label>
+                    <input type="date" id="harvestActualDate" value="${prefillDate}"
+                           style="
+                               width:100%; padding:10px 14px;
+                               border:1.5px solid var(--border);
+                               border-radius:8px; font-size:13.5px;
+                               background:#fff; color:var(--ink);
+                               outline:none;">
+                </div>
+
+                <div style="margin-bottom:20px; text-align: left;">
+                    <label for="harvestActualVolume" style="
+                        display:block; font-size:12.5px; font-weight:700;
+                        color:var(--ink); text-transform:uppercase;
+                        letter-spacing:0.02em; margin-bottom:6px;">
+                        Actual Harvest Volume (kg) <span style="color:#C0392B;">*</span>
+                    </label>
+                    <input type="number" id="harvestActualVolume" value="${prefillVolume}"
+                           step="0.01" min="0" placeholder="e.g. 4850"
+                           style="
+                               width:100%; padding:10px 14px;
+                               border:1.5px solid var(--border);
+                               border-radius:8px; font-size:13.5px;
+                               background:#fff; color:var(--ink);
+                               outline:none;">
+                    <div id="harvestVolumeHint" style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        margin-top: 4px;
+                    ">Enter the actual weight harvested (not the planned estimate).</div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" id="harvestModalCancel"
+                            class="btn-outline-report" style="
+                                padding:9px 20px; border:1.5px solid var(--border);
+                                background:#fff; border-radius:8px; font-weight:600;
+                                cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="button" id="harvestModalConfirm"
+                            class="btn-primary" style="
+                                padding:9px 20px; background:var(--green);
+                                color:#fff; border:none; border-radius:8px;
+                                font-weight:700; cursor:pointer;">
+                        Confirm Harvest
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+    const modal = document.getElementById("harvestModal");
+    const dateInput = document.getElementById("harvestActualDate");
+    const volumeInput = document.getElementById("harvestActualVolume");
+    const confirmBtn = document.getElementById("harvestModalConfirm");
+    const cancelBtn = document.getElementById("harvestModalCancel");
+
+    setTimeout(() => {
+        if (prefillDate && !prefillVolume) {
+            volumeInput?.focus();
+        } else {
+            dateInput?.focus();
+        }
+    }, 50);
+
+    volumeInput.addEventListener("input", function() {
+        const hint = document.getElementById("harvestVolumeHint");
+        if (!hint) return;
+        const v = Number(this.value);
+        if (isNaN(v) || v <= 0 || plannedVolume <= 0) {
+            hint.textContent = "Enter the actual weight harvested (not the planned estimate).";
+            hint.style.color = "var(--muted)";
+            return;
+        }
+        const variancePct = Math.round(((v - plannedVolume) / plannedVolume) * 100);
+        if (variancePct === 0) {
+            hint.textContent = "✓ Same as planned volume";
+            hint.style.color = "#2E7D32";
+        } else if (variancePct > 0) {
+            hint.textContent = `↑ ${variancePct}% higher than planned (${plannedVolumeStr} kg)`;
+            hint.style.color = "#2E7D32";
+        } else {
+            hint.textContent = `↓ ${Math.abs(variancePct)}% lower than planned (${plannedVolumeStr} kg)`;
+            hint.style.color = "#C0392B";
+        }
+    });
+
+    cancelBtn.addEventListener("click", () => modal.remove());
+
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.remove();
+    });
+
+    const escHandler = (e) => {
+        if (e.key === "Escape") {
+            modal.remove();
+            document.removeEventListener("keydown", escHandler);
+        }
+    };
+    document.addEventListener("keydown", escHandler);
+
+    confirmBtn.addEventListener("click", () => {
+        const dateValue = dateInput.value;
+        const volumeValue = Number(volumeInput.value);
+
+        if (!dateValue) {
+            alert("Please select the actual harvest date.");
+            dateInput.focus();
+            return;
+        }
+        if (!volumeValue || volumeValue <= 0) {
+            alert("Please enter a valid harvest volume (greater than 0).");
+            volumeInput.focus();
+            return;
+        }
+
+        modal.remove();
+        document.removeEventListener("keydown", escHandler);
+        onConfirm(dateValue, volumeValue);
+    });
+
+    volumeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            confirmBtn.click();
+        }
+    });
+}
+
+
+/* ============================================================
+   ACTUAL DATE MODAL
+============================================================ */
+
+function openActualDateModal({ title, message, fieldLabel, fieldId, intent, onConfirm }) {
+    const existing = document.getElementById("actualDateModal");
+    if (existing) existing.remove();
+
+    const today = new Date().toISOString().split("T")[0];
+
+    let prefill = "";
+    if (fieldId === "modalActualDate") {
+        if (title.includes("Planting") && intent.actual_planting_date) {
+            prefill = toDateInputValue(intent.actual_planting_date);
+        } else if (title.includes("Harvest") && intent.actual_harvest_date) {
+            prefill = toDateInputValue(intent.actual_harvest_date);
+        }
+    }
+
+    const modalHTML = `
+        <div class="modal-overlay show" id="actualDateModal" style="
+            position: fixed; inset: 0; background: rgba(30,35,28,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5000;">
+            <div class="modal-box" style="
+                background: var(--cream); border: 1.5px solid var(--border);
+                border-radius: 12px; padding: 28px 32px; max-width: 440px;
+                width: 90%; box-shadow: 0 14px 35px rgba(0,0,0,0.25);">
+                <h2 style="font-size:20px; font-weight:800; color:var(--green); margin-bottom:12px;">
+                    ${escapeHtml(title)}
+                </h2>
+                <p style="font-size:14px; color:var(--ink); line-height:1.5; margin-bottom:20px;">
+                    ${message}
+                </p>
+                <div style="margin-bottom:20px;">
+                    <label for="modalActualDate" style="
+                        display:block; font-size:12.5px; font-weight:700;
+                        color:var(--ink); text-transform:uppercase;
+                        letter-spacing:0.02em; margin-bottom:6px;">
+                        ${escapeHtml(fieldLabel)} <span style="color:#C0392B;">*</span>
+                    </label>
+                    <input type="date" id="modalActualDate" value="${prefill}"
+                           style="
+                               width:100%; padding:10px 14px;
+                               border:1.5px solid var(--border);
+                               border-radius:8px; font-size:13.5px;
+                               background:#fff; color:var(--ink);
+                               outline:none;">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" id="modalActualDateCancel"
+                            class="btn-outline-report" style="
+                                padding:9px 20px; border:1.5px solid var(--border);
+                                background:#fff; border-radius:8px; font-weight:600;
+                                cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="button" id="modalActualDateConfirm"
+                            class="btn-primary" style="
+                                padding:9px 20px; background:var(--green);
+                                color:#fff; border:none; border-radius:8px;
+                                font-weight:700; cursor:pointer;">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+    const modal = document.getElementById("actualDateModal");
+    const input = document.getElementById("modalActualDate");
+    const confirmBtn = document.getElementById("modalActualDateConfirm");
+    const cancelBtn = document.getElementById("modalActualDateCancel");
+
+    setTimeout(() => input?.focus(), 50);
+
+    cancelBtn.addEventListener("click", () => {
+        modal.remove();
+    });
+
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.remove();
+    });
+
+    const escHandler = (e) => {
+        if (e.key === "Escape") {
+            modal.remove();
+            document.removeEventListener("keydown", escHandler);
+        }
+    };
+    document.addEventListener("keydown", escHandler);
+
+    confirmBtn.addEventListener("click", () => {
+        const dateValue = input.value;
+
+        if (!dateValue) {
+            alert("Please select a date.");
+            input.focus();
+            return;
+        }
+
+        modal.remove();
+        document.removeEventListener("keydown", escHandler);
+        onConfirm(dateValue);
+    });
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            confirmBtn.click();
+        }
+    });
+}
+
+
+/* ============================================================
+   RESET PLANTING INTENT DETAIL FIELDS
+============================================================ */
+
+function resetPlantingIntentDetailFields() {
+    const details = document.getElementById("plantingIntentDetailsSubview");
+    if (!details) return;
+
+    details.querySelectorAll("input[type='text'], input[type='number'], textarea").forEach(function(input) {
+        if (input.id === "detailActualHarvestVolume") {
+            input.readOnly = true;
+            input.disabled = true;
+            input.classList.add("input-readonly");
+            input.classList.remove("input-editable-active");
+            input.style.border = "";
+            input.style.background = "";
+            return;
+        }
+
+        input.readOnly = true;
+        input.disabled = false;
+        input.classList.add("input-readonly");
+        input.classList.remove("input-editable-active");
+        input.style.border = "";
+        input.style.background = "";
+    });
+
+    details.querySelectorAll("input[type='date']").forEach(function(input) {
+        input.disabled = true;
+        input.classList.add("input-readonly");
+        input.classList.remove("input-editable-active");
+        input.style.border = "";
+        input.style.background = "";
+    });
+
+    const commoditySelect = document.getElementById("detailCommodity");
+    if (commoditySelect) {
+        commoditySelect.disabled = true;
+        commoditySelect.style.border = "";
+        commoditySelect.style.background = "#ECE6D8";
+        commoditySelect.style.color = "var(--muted)";
+        commoditySelect.style.cursor = "default";
+    }
+}
 
 
 /* ============================================================
@@ -5619,137 +6468,6 @@ function refreshFarmerDropdowns() {
     setupFarmerDropdownAutoFill();
 }
 
-// Override fetchFarmers to include dropdown refresh
-var originalFetchFarmers = fetchFarmers;
-fetchFarmers = async function() {
-    var result = await originalFetchFarmers.call(this);
-    if (allFarmers && allFarmers.length > 0) {
-        refreshFarmerDropdowns();
-    }
-    return result;
-};
-
-// Override submitPlantingIntent to use dropdown values
-var originalSubmitPlantingIntent = submitPlantingIntent;
-submitPlantingIntent = async function() {
-    var form = document.getElementById("submitPlantIntentForm");
-    if (!form) {
-        alert("Planting Intent form not found.");
-        return;
-    }
-
-    var farmerNameSelect = document.getElementById("piFarmerName");
-    var farmerName = farmerNameSelect ? farmerNameSelect.options[farmerNameSelect.selectedIndex]?.text || "" : "";
-    var farmerId = document.getElementById("piFarmerId")?.value || "";
-    var plantingDate = document.getElementById("piPlantDate")?.value || "";
-    var harvestDate = document.getElementById("piHarvestDate")?.value || "";
-    var commodity = document.getElementById("piCommodity")?.value?.trim() || "";
-    var volume = document.getElementById("piVolume")?.value || "";
-    var remarks = document.getElementById("piRemarks")?.value || "";
-
-    if (!farmerName || farmerName === "Select Farmer") {
-        alert("Please select a Farmer.");
-        return;
-    }
-    if (!farmerId) {
-        alert("Farmer ID is required.");
-        return;
-    }
-    if (!plantingDate) {
-        alert("Please select Planting Date.");
-        return;
-    }
-    if (!harvestDate) {
-        alert("Please select Harvest Date.");
-        return;
-    }
-    if (!commodity) {
-        alert("Please enter Commodity.");
-        return;
-    }
-    if (!volume) {
-        alert("Please enter Volume.");
-        return;
-    }
-
-    var parsedFarmerId = Number(farmerId);
-    if (!Number.isInteger(parsedFarmerId)) {
-        alert("Farmer ID must be a valid number.");
-        return;
-    }
-
-    var parsedVolume = Number(volume);
-    if (isNaN(parsedVolume) || parsedVolume <= 0) {
-        alert("Volume must be a valid positive number.");
-        return;
-    }
-
-    var plantingIntentData = {
-        farmer_id: parsedFarmerId,
-        commodity: commodity,
-        volume: parsedVolume,
-        planting_date: plantingDate,
-        harvest_date: harvestDate,
-        remarks: remarks || undefined
-    };
-
-    console.log("Submitting planting intent:", plantingIntentData);
-
-    try {
-        var createdIntent = await apiRequest(PLANTING_INTENTS_ENDPOINT, {
-            method: "POST",
-            body: JSON.stringify(plantingIntentData)
-        });
-
-        console.log("Planting intent created:", createdIntent);
-
-        var newIntentId = createdIntent?.planting_intent_id 
-            || createdIntent?.data?.planting_intent_id 
-            || null;
-
-        console.log("New intent ID:", newIntentId);
-
-        if (newIntentId) {
-            try {
-                await apiRequest(PLANTING_INTENTS_ENDPOINT + newIntentId + "/submit", {
-                    method: "POST"
-                });
-                console.log("✅ Intent auto-finalized (SUBMITTED)");
-            } catch (err) {
-                console.warn("⚠️ Auto-finalize failed:", err);
-            }
-        }
-
-        await fetchPlantingIntents();
-        renderPlantingIntentsTable();  // ⬅️ I-force render
-
-        if (typeof populateReportIntentSelect === "function") {
-            populateReportIntentSelect();
-        }
-
-        var modal = document.getElementById("plantIntentSubmittedModal");
-        if (modal) {
-            var modalText = modal.querySelector("h2, p, .modal-text");
-            if (modalText) {
-                modalText.textContent = "Intent Submitted and Finalized!";
-            }
-            modal.classList.add("show");
-        } else {
-            alert("Planting Intent submitted and finalized successfully!");
-        }
-
-        await fetchPlantingIntents();
-
-        var modal = document.getElementById("plantIntentSubmittedModal");
-        if (modal) modal.classList.add("show");
-
-    } catch (error) {
-        console.error("Create planting intent error:", error);
-        handleAuthError(error);
-        alert("Failed to submit planting intent.\n\n" + (error.message || "Please check the FastAPI server."));
-    }
-};
-
 
 /* ============================================================
    FAIR PRICE MONTH DROPDOWN
@@ -5768,7 +6486,6 @@ function initFairPriceMonthDropdown() {
         return;
     }
 
-    // Toggle dropdown on button click
     monthButton.addEventListener('click', function(e) {
         e.stopPropagation();
         const isOpen = monthDropdown.classList.contains('open');
@@ -5776,7 +6493,6 @@ function initFairPriceMonthDropdown() {
         this.setAttribute('aria-expanded', !isOpen);
     });
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!monthDropdown.contains(e.target)) {
             monthDropdown.classList.remove('open');
@@ -5784,41 +6500,33 @@ function initFairPriceMonthDropdown() {
         }
     });
 
-    // Handle month option selection
     monthOptions.forEach(function(option) {
         option.addEventListener('click', function(e) {
             e.stopPropagation();
             
-            // Update active state
             monthOptions.forEach(function(opt) {
                 opt.classList.remove('active');
             });
             this.classList.add('active');
             
-            // Update button text
             const value = this.getAttribute('data-value');
             const text = this.textContent.trim();
             monthText.textContent = text;
             
-            // Update hidden select
             monthSelect.value = value;
             
-            // Trigger change event on hidden select for any listeners
             const changeEvent = new Event('change', { bubbles: true });
             monthSelect.dispatchEvent(changeEvent);
             
-            // Close dropdown
             monthDropdown.classList.remove('open');
             monthButton.setAttribute('aria-expanded', 'false');
             
-            // Optional: Call a function to update the price display based on month
             if (typeof updateFairPriceDisplay === 'function') {
                 updateFairPriceDisplay(value);
             }
         });
     });
 
-    // Sync hidden select with button text when changed elsewhere
     monthSelect.addEventListener('change', function() {
         const selectedOption = document.querySelector('.month-option[data-value="' + this.value + '"]');
         if (selectedOption) {
@@ -5831,30 +6539,13 @@ function initFairPriceMonthDropdown() {
     });
 }
 
-// Optional: Update price display based on selected month
 function updateFairPriceDisplay(month) {
     console.log('Month selected:', month);
-    // You can add logic here to update the price metrics
-    // based on the selected month (e.g., fetch price data for that month)
-    // For example:
-    // const crop = document.getElementById('fairPriceCropSelect').value;
-    // updatePriceMetrics(crop, month);
 }
+
 
 /* ============================================================
    FORECAST RESULTS
-============================================================ */
-
-/* ============================================================
-   FORECAST RESULTS - UPDATED
-============================================================ */
-
-/* ============================================================
-   FORECAST RESULTS - INIT
-============================================================ */
-
-/* ============================================================
-   FORECAST RESULTS - COMPLETE FIXED
 ============================================================ */
 
 function initForecastResults() {
@@ -5868,7 +6559,6 @@ function initForecastResults() {
     
     console.log("Forecast view found:", forecastView);
     
-    // Check if already visible
     if (forecastView.classList.contains("active-view")) {
         console.log("Fair Prices view is currently active, loading forecasts...");
         setTimeout(function() {
@@ -5877,7 +6567,6 @@ function initForecastResults() {
         }, 300);
     }
     
-    // Listen for when the view becomes active
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -5891,7 +6580,6 @@ function initForecastResults() {
     });
     observer.observe(forecastView, { attributes: true });
     
-    // Also listen for nav clicks
     const forecastNav = document.querySelector('.nav-item[data-view="fair-prices"]');
     if (forecastNav) {
         forecastNav.addEventListener('click', function() {
@@ -5905,7 +6593,6 @@ function initForecastResults() {
         console.warn("Nav item with data-view='fair-prices' not found");
     }
     
-    // Safety check
     setTimeout(function() {
         if (forecastView.classList.contains('active-view')) {
             console.log("Safety check: loading forecasts...");
@@ -5927,7 +6614,6 @@ async function loadForecastResults() {
 
     console.log("Container found, loading forecasts...");
 
-    // Show loading state
     container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
             <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #E5E5E5; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
@@ -5947,7 +6633,6 @@ async function loadForecastResults() {
         FORECASTS_DATA = forecasts;
         renderForecastResults(forecasts);
         
-        // ✅ Initialize chart after rendering
         setTimeout(function() {
             initPriceChart();
         }, 300);
@@ -5968,7 +6653,6 @@ async function loadForecastResults() {
     }
 }
 
-// Update price metrics
 function updatePriceMetrics(forecasts) {
     const lowestPriceEl = document.getElementById("lowestPriceDisplay");
     const highestPriceEl = document.getElementById("highestPriceDisplay");
@@ -5977,7 +6661,6 @@ function updatePriceMetrics(forecasts) {
     
     let allPrices = [];
     forecasts.forEach(function(f) {
-        // ✅ Use forecast_price_low and forecast_price_high
         if (f.forecast_price_low) allPrices.push(Number(f.forecast_price_low));
         if (f.forecast_price_high) allPrices.push(Number(f.forecast_price_high));
     });
@@ -5995,15 +6678,10 @@ function updatePriceMetrics(forecasts) {
     highestPriceEl.innerHTML = `₱${maxPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
 }
 
-// Tawagin ito sa loob ng renderForecastResults() after mag-render ng container
-// Ilagay sa dulo ng renderForecastResults():
-updatePriceMetrics(forecasts);
-
 function groupForecastsByYear(forecasts) {
     const grouped = {};
 
     forecasts.forEach(function(forecast) {
-        // ✅ Use forecast_date from your API
         let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
         if (!dateString) return;
 
@@ -6024,7 +6702,6 @@ function groupForecastsByMonth(forecasts) {
     const grouped = {};
 
     forecasts.forEach(function(forecast) {
-        // ✅ Use forecast_date from your API
         let dateString = forecast.forecast_date || forecast.date || forecast.created_at;
         if (!dateString) return;
 
@@ -6076,7 +6753,6 @@ function toggleForecastMonth(headerElement) {
     }
 }
 
-// Add CSS animation for loading spinner
 const style = document.createElement('style');
 style.textContent = `
     @keyframes spin {
@@ -6085,8 +6761,9 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+
 /* ============================================================
-   RENDER FORECAST RESULTS - COMPLETE
+   RENDER FORECAST RESULTS
 ============================================================ */
 
 function renderForecastResults(forecasts) {
@@ -6109,18 +6786,15 @@ function renderForecastResults(forecasts) {
         return;
     }
 
-    // Group forecasts by year
     const groupedByYear = groupForecastsByYear(forecasts);
 
     let html = '';
 
-    // Sort years descending (newest first)
     const sortedYears = Object.keys(groupedByYear).sort().reverse();
 
     sortedYears.forEach(function(year) {
         const yearData = groupedByYear[year];
         
-        // Group by month within the year
         const groupedByMonth = groupForecastsByMonth(yearData);
 
         html += `
@@ -6153,7 +6827,6 @@ function renderForecastResults(forecasts) {
                 ">
         `;
 
-        // Sort months chronologically (January to December)
         const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const sortedMonths = Object.keys(groupedByMonth).sort(function(a, b) {
             return monthOrder.indexOf(a) - monthOrder.indexOf(b);
@@ -6162,14 +6835,12 @@ function renderForecastResults(forecasts) {
         sortedMonths.forEach(function(month, monthIndex) {
             const monthData = groupedByMonth[month];
             
-            // Sort commodities alphabetically
             const sortedCommodities = monthData.sort(function(a, b) {
                 const commodityA = a.commodity || '';
                 const commodityB = b.commodity || '';
                 return commodityA.localeCompare(commodityB);
             });
 
-            // ✅ Check if this is the first month
             const isFirstMonth = monthIndex === 0;
             const displayStyle = isFirstMonth ? 'block' : 'none';
             const arrowRotation = isFirstMonth ? 'rotate(90deg)' : 'rotate(0deg)';
@@ -6252,16 +6923,13 @@ function renderForecastResults(forecasts) {
 
     container.innerHTML = html;
 
-    // ✅ Auto-expand the first year
     const firstYearContent = container.querySelector('.forecast-year-content');
     if (firstYearContent) {
         firstYearContent.style.maxHeight = firstYearContent.scrollHeight + 'px';
     }
 
-    // Update price metrics
     updatePriceMetrics(forecasts);
 
-    // Add forecast count
     const countDiv = document.createElement('div');
     countDiv.style.cssText = 'margin-top: 12px; padding: 12px 0; font-size: 13px; color: #666; text-align: right; border-top: 1px solid #E5E5E5;';
     countDiv.textContent = `Total: ${forecasts.length} forecast(s) found.`;
@@ -6269,10 +6937,10 @@ function renderForecastResults(forecasts) {
     
     console.log("Forecast rendering complete!");
 }
+
 /* ============================================================
    PRICE TREND CHART
 ============================================================ */
-
 
 function initPriceChart() {
     console.log("🔍 initPriceChart called...");
@@ -6320,7 +6988,6 @@ function renderChart(forecasts, commodityFilter) {
         return;
     }
     
-    // Destroy existing chart
     if (priceChartInstance) {
         console.log('🔄 Destroying existing chart...');
         priceChartInstance.destroy();
@@ -6348,7 +7015,6 @@ function renderChart(forecasts, commodityFilter) {
         return;
     }
     
-    // Group by commodity
     const commodities = {};
     filteredData.forEach(function(f) {
         const commodity = f.commodity || 'Unknown';
@@ -6359,14 +7025,12 @@ function renderChart(forecasts, commodityFilter) {
     });
     console.log('📦 Commodities found:', Object.keys(commodities));
     
-    // Sort by date
     Object.keys(commodities).forEach(function(commodity) {
         commodities[commodity].sort(function(a, b) {
             return new Date(a.forecast_date) - new Date(b.forecast_date);
         });
     });
     
-    // Prepare datasets with professional colors
     const datasets = [];
     const colorPalette = {
         'Tomato': {
@@ -6385,16 +7049,15 @@ function renderChart(forecasts, commodityFilter) {
             gradient: ['rgba(142, 68, 173, 0.3)', 'rgba(142, 68, 173, 0.05)']
         },
         'White Onion': {
-        main: '#1ABC9C',  // Teal/Cyan color
-        light: 'rgba(26, 188, 156, 0.15)',
-        gradient: ['rgba(26, 188, 156, 0.3)', 'rgba(26, 188, 156, 0.05)']
-    },
+            main: '#1ABC9C',
+            light: 'rgba(26, 188, 156, 0.15)',
+            gradient: ['rgba(26, 188, 156, 0.3)', 'rgba(26, 188, 156, 0.05)']
+        },
     };
     
     const defaultColors = ['#E74C3C', '#F39C12', '#2ECC71', '#3498DB', '#9B59B6', '#1ABC9C', '#E67E22', '#2C3E50'];
     let colorIndex = 0;
     
-    // Get all unique dates
     const allDates = [];
     Object.keys(commodities).forEach(function(commodity) {
         commodities[commodity].forEach(function(f) {
@@ -6444,7 +7107,6 @@ function renderChart(forecasts, commodityFilter) {
             }
         });
         
-        // Lower price - solid line with fill
         datasets.push({
             label: commodity + ' (Low)',
             data: lowerPrices,
@@ -6471,7 +7133,6 @@ function renderChart(forecasts, commodityFilter) {
             spanGaps: false
         });
         
-        // Upper price - dashed line
         datasets.push({
             label: commodity + ' (High)',
             data: upperPrices,
@@ -6658,7 +7319,6 @@ function updateChart(commodity) {
         return;
     }
     
-    // Update button styles
     document.querySelectorAll('.fair-price-dashboard-container .btn-outline-report').forEach(function(btn) {
         const btnText = btn.textContent.trim();
         if (btnText === commodity || (commodity === 'all' && btnText === 'All')) {
@@ -6702,7 +7362,6 @@ async function initNotificationBell() {
         }
     });
 
-    // Load once on page load
     await loadAEWNotifications();
 }
 

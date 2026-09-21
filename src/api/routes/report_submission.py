@@ -14,6 +14,10 @@ from src.models.report_validation_history import ReportValidationHistory
 from src.models.planting_intents import PlantingIntent
 from src.models.report_planting_intents import ReportPlantingIntent
 from src.models.users import User
+from datetime import datetime, timedelta
+from src.models.farmers import Farmer
+from src.models.report_planting_intents import ReportPlantingIntent
+from src.models.planting_intents import PlantingIntent
 
 router = APIRouter()
 
@@ -1052,4 +1056,158 @@ def get_report_submission(report_id: int, db: Session = Depends(get_db)):
         "revision_count": submission.revision_count,
         "submitted_at": submission.submitted_at,
         "approved_at": submission.approved_at,
+    }
+
+# ============================================================
+# MUNICIPAL SUMMARY — AGGREGATED VIEW
+# ============================================================
+
+@router.get("/municipal-summary")
+def get_municipal_summary(
+    period_start: str | None = None,
+    period_end: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Aggregate all reports in the municipal coordinator's municipality
+    for the given period (defaults to last 7 days).
+
+    Returns all intents across all reports in the period, shaped
+    the same way as a single report's intents, so the frontend
+    can reuse its summary renderer.
+    """
+    if current_user.role != "Municipal Coordinator":
+        raise HTTPException(403, "Unauthorized.")
+
+    if not current_user.municipality:
+        raise HTTPException(400, "Municipal coordinator has no assigned municipality.")
+
+    # --------------------------------------------------------
+    # PERIOD
+    # --------------------------------------------------------
+    if period_end:
+        try:
+            period_end_dt = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(400, "Invalid period_end format.")
+    else:
+        period_end_dt = datetime.utcnow()
+
+    if period_start:
+        try:
+            period_start_dt = datetime.fromisoformat(period_start.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(400, "Invalid period_start format.")
+    else:
+        period_start_dt = period_end_dt - timedelta(days=7)
+
+    # --------------------------------------------------------
+    # GET ALL SUBMISSIONS IN PERIOD
+    # --------------------------------------------------------
+    submissions = (
+        db.query(ReportSubmission, RawPlantReport)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .filter(
+            RawPlantReport.municipality == current_user.municipality,
+            ReportSubmission.submitted_at >= period_start_dt,
+            ReportSubmission.submitted_at <= period_end_dt,
+            ReportSubmission.status.in_([
+                SUBMITTED_MUNICIPAL_PENDING,
+                SUBMITTED_MUNICIPAL_FLAGGED,
+                SUBMITTED_PROVINCIAL_PENDING,
+                SUBMITTED_PROVINCIAL_FLAGGED,
+                SUBMITTED_REGIONAL_PENDING,
+                SUBMITTED_REGIONAL_FLAGGED,
+                SUBMITTED_REGIONAL_APPROVED,
+            ]),
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .all()
+    )
+
+    report_ids = [s.report_id for s, r in submissions]
+
+    if not report_ids:
+        return {
+            "municipality": current_user.municipality,
+            "period_start": period_start_dt.isoformat(),
+            "period_end": period_end_dt.isoformat(),
+            "report_count": 0,
+            "intents": [],
+        }
+
+    # --------------------------------------------------------
+    # GET ALL INTENTS ACROSS THOSE REPORTS
+    # --------------------------------------------------------
+    links = (
+        db.query(ReportPlantingIntent)
+        .filter(ReportPlantingIntent.report_id.in_(report_ids))
+        .all()
+    )
+
+    intent_ids = [l.planting_intent_id for l in links]
+
+    intents = (
+        db.query(PlantingIntent)
+        .filter(PlantingIntent.planting_intent_id.in_(intent_ids))
+        .all()
+    ) if intent_ids else []
+
+    # --------------------------------------------------------
+    # FARMERS (for barangay grouping)
+    # --------------------------------------------------------
+    farmer_ids = list({i.farmer_id for i in intents if i.farmer_id})
+    farmers = (
+        db.query(Farmer)
+        .filter(Farmer.farmer_id.in_(farmer_ids))
+        .all()
+    ) if farmer_ids else []
+
+    farmer_map = {f.farmer_id: f for f in farmers}
+    intent_map = {i.planting_intent_id: i for i in intents}
+
+    # --------------------------------------------------------
+    # BUILD INTENT PAYLOAD
+    # --------------------------------------------------------
+    intent_payload = []
+    for link in links:
+        pi = intent_map.get(link.planting_intent_id)
+        if not pi:
+            continue
+
+        farmer = farmer_map.get(pi.farmer_id)
+
+        intent_payload.append({
+            "planting_intent_id": pi.planting_intent_id,
+            "farmer_id": pi.farmer_id,
+            "farmer_name": (
+                f"{farmer.first_name} {farmer.last_name}"
+                if farmer else "Unknown"
+            ),
+            "commodity": pi.commodity,
+            "volume": pi.volume,
+            "planting_date": pi.planting_date.isoformat() if pi.planting_date else None,
+            "harvest_date": pi.harvest_date.isoformat() if pi.harvest_date else None,
+            "actual_planting_date": (
+                pi.actual_planting_date.isoformat()
+                if getattr(pi, "actual_planting_date", None) else None
+            ),
+            "actual_harvest_date": (
+                pi.actual_harvest_date.isoformat()
+                if getattr(pi, "actual_harvest_date", None) else None
+            ),
+            "actual_harvest_volume": getattr(pi, "actual_harvest_volume", None),
+            "finalized_status": link.finalized_status_snapshot or "NOT PLANTED",
+            "barangay": farmer.barangay if farmer else None,
+            "municipality": farmer.municipality if farmer else None,
+            "status": link.plant_status_snapshot,
+        })
+
+    return {
+        "municipality": current_user.municipality,
+        "period_start": period_start_dt.isoformat(),
+        "period_end": period_end_dt.isoformat(),
+        "report_count": len(report_ids),
+        "intents": intent_payload,
     }
