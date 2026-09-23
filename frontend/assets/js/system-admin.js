@@ -252,6 +252,10 @@ let currentAuditPage = 1;
 const auditPerPage = 7;
 let cachedAuditLogs = [];
 
+let currentArchivedPage = 1;
+const archivedPerPage = 7;
+let cachedArchivedUsers = [];
+
 
 function renderPagination(totalItems, itemsPerPage, currentPage, onPageChange) {
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -706,6 +710,16 @@ async function loadUsers() {
                     >
                         ${isActive ? 'Deactivate' : 'Reactivate'}
                     </button>
+                    <button
+                            class="btn-archive"
+                            type="button"
+                            data-user-id="${escapeHTML(userId)}"
+                            data-user-name="${escapeHTML(fullName)}"
+                        >
+                            Archive
+                        </button>
+
+                    </div>
 
                 </td>
             `;
@@ -726,6 +740,14 @@ async function loadUsers() {
                         toggleUserStatus(button);
                     }
                 );
+            });
+
+             document
+            .querySelectorAll("#userRows .btn-delete")
+            .forEach(button => {
+                button.addEventListener("click", () => {
+                    deleteUser(button);
+                });
             });
 
     }
@@ -839,6 +861,358 @@ async function toggleUserStatus(button) {
             alert(error.message || "Unable to update user status.");
             button.disabled = false;
             button.textContent = currentStatus ? "Deactivate" : "Reactivate";
+        }
+    });
+}
+
+/* ============================================================
+   ARCHIVE USER
+   PATCH /api/users/{user_id}/archive
+============================================================ */
+
+async function archiveUser(button) {
+
+    const userId = button.dataset.userId;
+    const userName = button.dataset.userName || "this user";
+
+    if (!userId) {
+        alert("User ID is missing.");
+        return;
+    }
+
+    const modal = document.getElementById("confirmArchiveModal");
+    const descEl = document.getElementById("archiveModalDesc");
+    const finalBtn = document.getElementById("finalArchiveBtn");
+    const cancelBtn = document.getElementById("cancelArchiveBtn");
+
+    if (!modal) return;
+
+    if (descEl) {
+        descEl.textContent =
+            `Are you sure you want to archive "${userName}"? They will be moved to the Archived Users list.`;
+    }
+
+    modal.classList.add("show");
+
+    const newFinalBtn = finalBtn.cloneNode(true);
+    finalBtn.parentNode.replaceChild(newFinalBtn, finalBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    document.getElementById("cancelArchiveBtn").addEventListener("click", () => {
+        modal.classList.remove("show");
+    });
+
+    document.getElementById("finalArchiveBtn").addEventListener("click", async () => {
+        modal.classList.remove("show");
+
+        button.disabled = true;
+        button.textContent = "Archiving...";
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/users/${userId}/archive`,
+                {
+                    method: "PATCH",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ is_archived: true })
+                }
+            );
+
+            let data = {};
+            try { data = await response.json(); } catch { data = {}; }
+
+            console.log("PATCH archive:", response.status, data);
+
+            if (response.status === 401) { handleUnauthorized(); return; }
+
+            if (!response.ok) {
+                throw new Error(getErrorMessage(data, "Failed to archive user."));
+            }
+
+            const remainingOnPage =
+                document.querySelectorAll("#userRows tr").length - 1;
+
+            if (remainingOnPage <= 0 && currentUserPage > 1) {
+                currentUserPage--;
+            }
+
+            await loadUsers();
+            await loadArchivedUsers();
+            await loadAuditLogs();
+
+        }
+        catch (error) {
+            console.error("Archive user error:", error);
+            alert(error.message || "Unable to archive user.");
+            button.disabled = false;
+            button.textContent = "Archive";
+        }
+    });
+}
+
+
+/* ============================================================
+   LOAD ARCHIVED USERS
+   GET /api/users/archived
+============================================================ */
+
+async function loadArchivedUsers() {
+
+    const archivedRows = document.getElementById("archivedUserRows");
+    if (!archivedRows) return;
+
+    archivedRows.innerHTML = `
+        <tr>
+            <td colspan="6" style="text-align:center;">
+                Loading archived users...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/users/archived`,
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        let data = {};
+        try { data = await response.json(); } catch { data = {}; }
+
+        console.log("GET archived:", response.status, data);
+
+        if (response.status === 401) { handleUnauthorized(); return; }
+
+        if (response.status === 403) {
+            archivedRows.innerHTML = `
+                <tr><td colspan="6" class="api-error">
+                    ${escapeHTML(getErrorMessage(data, "You do not have permission to view archived users."))}
+                </td></tr>
+            `;
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Failed to load archived users."));
+        }
+
+        let users = [];
+        if (Array.isArray(data)) users = data;
+        else if (Array.isArray(data.users)) users = data.users;
+        else if (Array.isArray(data.data)) users = data.data;
+        else throw new Error("Unexpected response format.");
+
+        cachedArchivedUsers = users;
+
+        if (cachedArchivedUsers.length === 0) {
+            archivedRows.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center;">
+                        No archived users found.
+                    </td>
+                </tr>
+            `;
+            renderPagination(0, archivedPerPage, currentArchivedPage, () => {})
+                .updateUI("archivedPaginationInfo", "archivedPrevPageBtn", "archivedNextPageBtn", "archivedPageNumberBtns");
+            return;
+        }
+
+        const pagination = renderPagination(
+            cachedArchivedUsers.length,
+            archivedPerPage,
+            currentArchivedPage,
+            (newPage) => {
+                currentArchivedPage = newPage;
+                loadArchivedUsers();
+            }
+        );
+
+        archivedRows.innerHTML = "";
+        const paginatedUsers = pagination.paginatedSlice(cachedArchivedUsers);
+
+        paginatedUsers.forEach(user => {
+
+            const row = document.createElement("tr");
+
+            const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
+            const username = user.username || "—";
+            const role = user.role || "—";
+
+            const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
+            const locationText = locationParts.length ? locationParts.join(", ") : "—";
+
+            const archivedAt = formatAuditDate(user.archived_at ?? user.updated_at);
+            const roleStyle = getRoleStyle(role);
+            const userId = user.user_id ?? user.id ?? "";
+
+            row.innerHTML = `
+
+                <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
+
+                <td><span class="username-pill">${escapeHTML(username)}</span></td>
+
+                <td>
+                    <span class="role ${roleStyle.cls}">
+                        ${escapeHTML(roleStyle.label)}
+                    </span>
+                </td>
+
+                <td><span class="location-pill">${escapeHTML(locationText)}</span></td>
+
+                <td>
+                    <span class="status-badge inactive">
+                        ${escapeHTML(archivedAt)}
+                    </span>
+                </td>
+
+                <td>
+                    <button
+                        class="btn-reactivate"
+                        type="button"
+                        data-user-id="${escapeHTML(userId)}"
+                        data-user-name="${escapeHTML(fullName)}"
+                    >
+                        Restore
+                    </button>
+                </td>
+            `;
+
+            archivedRows.appendChild(row);
+        });
+
+        pagination.updateUI("archivedPaginationInfo", "archivedPrevPageBtn", "archivedNextPageBtn", "archivedPageNumberBtns");
+
+                // ✅ FIX: Rebind Next/Prev buttons para sa Archived Users
+        const archPrevBtn = document.getElementById("archivedPrevPageBtn");
+        const archNextBtn = document.getElementById("archivedNextPageBtn");
+
+        if (archPrevBtn) {
+            const newPrev = archPrevBtn.cloneNode(true);
+            archPrevBtn.parentNode.replaceChild(newPrev, archPrevBtn);
+            newPrev.addEventListener("click", () => {
+                if (currentArchivedPage > 1) {
+                    currentArchivedPage--;
+                    loadArchivedUsers();
+                }
+            });
+        }
+
+        if (archNextBtn) {
+            const newNext = archNextBtn.cloneNode(true);
+            archNextBtn.parentNode.replaceChild(newNext, archNextBtn);
+            newNext.addEventListener("click", () => {
+                const totalPages = Math.ceil(cachedArchivedUsers.length / archivedPerPage) || 1;
+                if (currentArchivedPage < totalPages) {
+                    currentArchivedPage++;
+                    loadArchivedUsers();
+                }
+            });
+        }
+
+        document
+            .querySelectorAll("#archivedUserRows .btn-reactivate")
+            .forEach(button => {
+                button.addEventListener("click", () => restoreUser(button));
+            });
+
+    }
+    catch (error) {
+        console.error("Load archived users error:", error);
+        archivedRows.innerHTML = `
+            <tr><td colspan="6" class="api-error">
+                Failed to load archived users.
+                <br><br>
+                ${escapeHTML(error.message)}
+            </td></tr>
+        `;
+    }
+}
+
+
+/* ============================================================
+   RESTORE ARCHIVED USER
+   PATCH /api/users/{user_id}/archive
+============================================================ */
+
+async function restoreUser(button) {
+
+    const userId = button.dataset.userId;
+    const userName = button.dataset.userName || "this user";
+
+    if (!userId) { alert("User ID is missing."); return; }
+
+    const modal = document.getElementById("confirmRestoreModal");
+    const descEl = document.getElementById("restoreModalDesc");
+    const finalBtn = document.getElementById("finalRestoreBtn");
+    const cancelBtn = document.getElementById("cancelRestoreBtn");
+
+    if (!modal) return;
+
+    if (descEl) {
+        descEl.textContent =
+            `Are you sure you want to restore "${userName}" back to the active users list?`;
+    }
+
+    modal.classList.add("show");
+
+    const newFinalBtn = finalBtn.cloneNode(true);
+    finalBtn.parentNode.replaceChild(newFinalBtn, finalBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    document.getElementById("cancelRestoreBtn").addEventListener("click", () => {
+        modal.classList.remove("show");
+    });
+
+    document.getElementById("finalRestoreBtn").addEventListener("click", async () => {
+        modal.classList.remove("show");
+
+        button.disabled = true;
+        button.textContent = "Restoring...";
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/users/${userId}/archive`,
+                {
+                    method: "PATCH",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ is_archived: false })
+                }
+            );
+
+            let data = {};
+            try { data = await response.json(); } catch { data = {}; }
+
+            console.log("PATCH restore:", response.status, data);
+
+            if (response.status === 401) { handleUnauthorized(); return; }
+
+            if (!response.ok) {
+                throw new Error(getErrorMessage(data, "Failed to restore user."));
+            }
+
+            const remainingOnPage =
+                document.querySelectorAll("#archivedUserRows tr").length - 1;
+
+            if (remainingOnPage <= 0 && currentArchivedPage > 1) {
+                currentArchivedPage--;
+            }
+
+            await loadUsers();
+            await loadArchivedUsers();
+            await loadAuditLogs();
+
+        }
+        catch (error) {
+            console.error("Restore user error:", error);
+            alert(error.message || "Unable to restore user.");
+            button.disabled = false;
+            button.textContent = "Restore";
         }
     });
 }
@@ -1362,6 +1736,32 @@ async function loadAuditLogs() {
         });
 
         pagination.updateUI("auditPaginationInfo", "auditPrevPageBtn", "auditNextPageBtn", "auditPageNumberBtns");
+        // ✅ FIX: Rebind Next/Prev buttons para sa Audit Logs
+        const auditPrevBtn = document.getElementById("auditPrevPageBtn");
+        const auditNextBtn = document.getElementById("auditNextPageBtn");
+
+        if (auditPrevBtn) {
+            const newPrev = auditPrevBtn.cloneNode(true);
+            auditPrevBtn.parentNode.replaceChild(newPrev, auditPrevBtn);
+            newPrev.addEventListener("click", () => {
+                if (currentAuditPage > 1) {
+                    currentAuditPage--;
+                    loadAuditLogs();
+                }
+            });
+        }
+
+        if (auditNextBtn) {
+            const newNext = auditNextBtn.cloneNode(true);
+            auditNextBtn.parentNode.replaceChild(newNext, auditNextBtn);
+            newNext.addEventListener("click", () => {
+                const totalPages = Math.ceil(cachedAuditLogs.length / auditPerPage) || 1;
+                if (currentAuditPage < totalPages) {
+                    currentAuditPage++;
+                    loadAuditLogs();
+                }
+            });
+        }
 
         document
             .querySelectorAll(
@@ -2614,6 +3014,9 @@ document.addEventListener(
         /* ETL RUN LOGS */
 
         loadETLRunLogs();
+         /* ARCHIVED USERS */
+
+        loadArchivedUsers();
 
         /* LOCATION DROPDOWNS (cascading) */
 
@@ -2640,6 +3043,7 @@ document.addEventListener(
         initializeUserSearch();
         initializeAuditSearch();
         initializeETLSearch();
+        
 
 
         // User Pagination Next/Prev bindings

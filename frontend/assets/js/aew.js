@@ -741,6 +741,700 @@ function updateSearchPaginationText(resultCount) {
 }
 
 /* ============================================================
+   FARMER LOCATION DROPDOWNS
+   Municipality → Barangay
+============================================================ */
+
+/* ============================================================
+   FARMER LOCATION DROPDOWNS
+   Municipality → Barangay
+   COMPLETE DATA — all 20 municipalities + Angeles City
+============================================================ */
+
+const BARANGAYS_BY_MUNICIPALITY = {
+    "Angeles City": [
+        "Agapito del Rosario",
+        "Amsic",
+        "Anunas",
+        "Balibago",
+        "Capaya",
+        "Claro M. Recto",
+        "Cuayan",
+        "Cutcut",
+        "Cutud",
+        "Lourdes North West",
+        "Lourdes Sur",
+        "Lourdes Sur East",
+        "Malabanias",
+        "Margot",
+        "Mining",
+        "Pampang",
+        "Pandan",
+        "Pulung Maragul",
+        "Pulungbulu",
+        "Pulung Cacutud",
+        "Salapungan",
+        "San Jose",
+        "San Nicolas",
+        "Santa Teresita",
+        "Santa Trinidad",
+        "Santo Cristo",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Sapalibutad",
+        "Sapangbato",
+        "Tabun",
+        "Virgen Delos Remedios"
+    ],
+
+    "Apalit": [
+        "Balucuc",
+        "Calantipe",
+        "Cansinala",
+        "Capalangan",
+        "Colgante",
+        "Paligui",
+        "Sampaloc",
+        "San Juan",
+        "San Vicente",
+        "Sucad",
+        "Sulipan",
+        "Tabuyuc"
+    ],
+
+    "Arayat": [
+        "Arenas",
+        "Baliti",
+        "Batasan",
+        "Buensuceso",
+        "Candating",
+        "Cupang",
+        "Gatiawin",
+        "Guemasan",
+        "Kaledian",
+        "La Paz",
+        "Lacmit",
+        "Lacquios",
+        "Mangga-Cacutud",
+        "Mapalad",
+        "Matamo",
+        "Panlinlang",
+        "Paralaya",
+        "Plazang Luma",
+        "Poblacion",
+        "San Agustin Norte",
+        "San Agustin Sur",
+        "San Antonio",
+        "San Jose Mesulo",
+        "San Juan Bano",
+        "San Mateo",
+        "San Nicolas",
+        "San Roque Bitas",
+        "Santo Niño Tabuan",
+        "Suclayin",
+        "Telapayong"
+    ],
+
+    "Bacolor": [
+        "Balas",
+        "Cabalantian",
+        "Cabambangan",
+        "Cabetican",
+        "Calibutbut",
+        "Concepcion",
+        "Dolores",
+        "Duat",
+        "Macabacle",
+        "Magliman",
+        "Maliwalu",
+        "Mesalipit",
+        "Parulog",
+        "Potrero",
+        "San Antonio",
+        "San Isidro",
+        "San Vicente",
+        "Santa Barbara",
+        "Santa Ines",
+        "Talba",
+        "Tinajero"
+    ],
+
+    "Candaba": [
+        "Bahay Pare",
+        "Bambang",
+        "Barangca",
+        "Barit",
+        "Buas",
+        "Cuayang Bugtong",
+        "Dalayap",
+        "Dulong Ilog",
+        "Gulap",
+        "Lanang",
+        "Lourdes",
+        "Magumbali",
+        "Mandasig",
+        "Mandili",
+        "Mangga",
+        "Mapaniqui",
+        "Paligui",
+        "Pangclara",
+        "Pansinao",
+        "Paralaya",
+        "Pasig",
+        "Pescadores",
+        "Pulong Gubat",
+        "Pulong Palazan",
+        "Salapungan",
+        "San Agustin",
+        "Santo Rosario",
+        "Tagulod",
+        "Talang",
+        "Tenejero",
+        "Vizal San Pablo",
+        "Vizal Santo Cristo",
+        "Vizal Santo Niño"
+    ],
+
+    "Floridablanca": [
+        "Anon",
+        "Apalit",
+        "Basa Air Base",
+        "Benedicto",
+        "Bodega",
+        "Cabangcalan",
+        "Calantas",
+        "Carmencita",
+        "Consuelo",
+        "Dampe",
+        "Del Carmen",
+        "Fortuna",
+        "Gutad",
+        "Mabical",
+        "Maligaya",
+        "Mawacat",
+        "Nabuclod",
+        "Pabanlag",
+        "Paguiruan",
+        "Palmayo",           // ✅ FIXED (was "Palmyo")
+        "Pandaguirig",
+        "Poblacion",
+        "San Antonio",
+        "San Isidro",
+        "San Jose",
+        "San Nicolas",
+        "San Pedro",
+        "San Ramon",
+        "San Roque",
+        "Santa Monica",
+        "Santo Rosario",
+        "Solib",
+        "Valdez"
+    ],
+
+    "Guagua": [
+        "Ascomo",
+        "Bancal",
+        "Jose Abad Santos",
+        "Lambac",
+        "Magsaysay",
+        "Maquiapo",
+        "Natividad",
+        "Plaza Burgos",
+        "Pulungmasle",
+        "Rizal",
+        "San Agustin",
+        "San Antonio",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Juan Bautista",
+        "San Juan Nepomuceno",
+        "San Matias",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo",
+        "San Pedro",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Filomena",
+        "Santa Ines",
+        "Santa Ursula",
+        "Santo Cristo",
+        "Santo Niño"
+    ],
+
+    "Lubao": [
+        "Balantacan",
+        "Bancal Pugad",
+        "Bancal Sinubli",
+        "Baruya",
+        "Calangain",
+        "Concepcion",
+        "De La Paz",
+        "Del Carmen",
+        "Don Ignacio Dimson",
+        "Lourdes",
+        "Prado Siongco",
+        "Remedios",
+        "San Agustin",
+        "San Antonio",
+        "San Francisco",
+        "San Isidro",
+        "San Jose Apunan",
+        "San Jose Gumi",
+        "San Juan",
+        "San Matias",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo 1st",
+        "San Pablo 2nd",
+        "San Pedro Palcarangan",
+        "San Pedro Saug",
+        "San Roque Arbol",
+        "San Roque Dau",
+        "San Vicente",
+        "Santa Barbara",
+        "Santa Catalina",
+        "Santa Cruz",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santa Monica",
+        "Santa Rita",
+        "Santa Teresa 1st",
+        "Santa Teresa 2nd",
+        "Santiago",
+        "Santo Cristo",
+        "Santo Domingo",
+        "Santo Niño",
+        "Santo Tomas"
+    ],
+
+    "Mabalacat": [
+        "Atlu-Bola",
+        "Bical",
+        "Bundagul",
+        "Cacutud",
+        "Calumpang",
+        "Camachiles",
+        "Dapdap",
+        "Dau",
+        "Dolores",
+        "Duquit",
+        "Lakandula",
+        "Mabiga",
+        "Macapagal Village",
+        "Mamatitang",
+        "Mangalit",
+        "Marcos Village",
+        "Mawaque",
+        "Paralayunan",
+        "Poblacion",
+        "San Francisco",
+        "San Joaquin",
+        "Santa Ines",
+        "Santa Maria",
+        "Santo Rosario",
+        "Sapang Balen",
+        "Sapang Biabas",
+        "Tabun"
+    ],
+
+    "Macabebe": [
+        "Batasan",
+        "Caduang Tete",
+        "Candelaria",
+        "Castuli",
+        "Consuelo",
+        "Dalayap",
+        "Mataguiti",
+        "San Esteban",
+        "San Francisco",
+        "San Gabriel",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Lutgarda",
+        "Santa Maria",
+        "Santa Rita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Saplad David",
+        "Tacasan",
+        "Telacsan"
+    ],
+
+    "Magalang": [
+        "Ayala",
+        "Bucanan",
+        "Camias",
+        "Dolores",
+        "Escaler",
+        "La Paz",
+        "Navaling",
+        "San Agustin",
+        "San Antonio",
+        "San Francisco",      // ✅ FIXED (was "San Franciso")
+        "San Ildefonso",
+        "San Isidro",
+        "San Jose",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo",
+        "San Pedro I",
+        "San Pedro II",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santo Niño",
+        "Santo Rosario",
+        "Turu"
+    ],
+
+    "Masantol": [
+        "Alauli",
+        "Bagang",
+        "Balibago",
+        "Bebe Anac",
+        "Bebe Matua",
+        "Bulacus",
+        "Cambasi",
+        "Malauli",
+        "Nigui",
+        "Palimpe",
+        "Puti",
+        "Sagrada",
+        "San Agustin",
+        "San Isidro Anac",
+        "San Isidro Matua",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Cruz",
+        "Santa Lucia Anac",
+        "Santa Lucia Matua",
+        "Santa Lucia Paguiba",
+        "Santa Lucia Wakas",
+        "Santa Monica",
+        "Santo Niño",
+        "Sapang Kawayan",
+        "Sua"
+    ],
+
+    "Mexico": [
+        "Acli",
+        "Anao",
+        "Balas",
+        "Buenavista",
+        "Camuning",
+        "Cawayan",
+        "Concepcion",
+        "Culubasa",
+        "Divisoria",
+        "Dolores",
+        "Eden",
+        "Gandus",
+        "Lagundi",
+        "Laput",
+        "Laug",
+        "Masamat",
+        "Masangsang",
+        "Nueva Victoria",
+        "Pandacaqui",
+        "Pangatlan",
+        "Panipuan",
+        "Parian",
+        "Sabanilla",
+        "San Antonio",
+        "San Carlos",
+        "San Jose Malino",
+        "San Jose Matulid",
+        "San Juan",
+        "San Lorenzo",
+        "San Miguel",
+        "San Nicolas",
+        "San Pablo",
+        "San Patricio",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Maria",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Sapang Maisac",
+        "Suclaban",
+        "Tangle"
+    ],
+
+    "Minalin": [
+        "Bulac",
+        "Dawe",
+        "Lourdes",
+        "Maniango",
+        "San Francisco 1st",
+        "San Francisco 2nd",
+        "San Isidro",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Catalina",
+        "Santa Maria",
+        "Santa Rita",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Saplad"
+    ],
+
+    "Porac": [
+        "Babo Pangulo",
+        "Babo Sacan",
+        "Balubad",
+        "Calzadang Bayu",
+        "Camias",
+        "Cangatba",
+        "Diaz",
+        "Dolores",
+        "Inararo",
+        "Jalung",
+        "Mancatian",
+        "Manibaug Libutad",
+        "Manibaug Paralaya",
+        "Manibaug Pasig",
+        "Manuali",
+        "Mitla Proper",
+        "Palat",
+        "Pias",
+        "Pio",
+        "Planas",
+        "Poblacion",
+        "Pulong Santol",
+        "Salu",
+        "San Jose Mitla",
+        "Santa Cruz",
+        "Sapang Uwak",
+        "Sepung Bulaun",
+        "Sinura",
+        "Villa Maria"
+    ],
+
+    "San Fernando": [
+        "Alasas",
+        "Baliti",
+        "Bulaon",
+        "Calulut",
+        "Del Carmen",
+        "Del Pilar",
+        "Del Rosario",
+        "Dela Paz Norte",
+        "Dela Paz Sur",
+        "Dolores",
+        "Juliana",
+        "Lara",
+        "Lourdes",
+        "Magliman",
+        "Maimpis",
+        "Malino",
+        "Malpitic",
+        "Pandaras",
+        "Panipuan",
+        "Pulung Bulu",
+        "Quebiauan",
+        "Saguin",
+        "San Agustin",
+        "San Felipe",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Lucia",
+        "Santa Teresita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Sindalan",
+        "Telabastagan"
+    ],
+
+    "San Luis": [
+        "San Agustin",
+        "San Carlos",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Roque",
+        "San Sebastian",
+        "Santa Catalina",
+        "Santa Cruz Pambilog",
+        "Santa Cruz Poblacion",
+        "Santa Lucia",
+        "Santa Monica",
+        "Santa Rita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Santo Tomas"
+    ],
+
+    "San Simon": [
+        "Concepcion",
+        "De La Paz",
+        "San Agustin",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Miguel",
+        "San Nicolas",
+        "San Pablo Libutad",
+        "San Pablo Proper",
+        "San Pedro",
+        "Santa Cruz",
+        "Santa Monica",
+        "Santo Niño"
+    ],
+
+    "Santa Ana": [
+        "San Agustin",
+        "San Bartolome",
+        "San Isidro",
+        "San Joaquin",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Pablo",
+        "San Pedro",
+        "San Roque",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santiago",
+        "Santo Rosario"
+    ],
+
+    "Santa Rita": [
+        "Becuran",
+        "Dila-dila",
+        "San Agustin",
+        "San Basilio",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Matias",
+        "San Vicente",
+        "Santa Monica"
+    ],
+
+    "Santo Tomas": [
+        "Moras de La Paz",
+        "Poblacion",
+        "San Bartolome",
+        "San Matias",
+        "San Vicente",
+        "Santo Rosario",
+        "Sapa"
+    ],
+
+    "Sasmuan": [
+        "Batang 1st",
+        "Batang 2nd",
+        "Mabuanbuan",
+        "Malusac",
+        "Sabitanan",
+        "San Antonio",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pedro",
+        "Santa Lucia",
+        "Santa Monica",
+        "Santo Tomas"
+    ]
+};
+
+function initFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) {
+        console.warn("Farmer location dropdowns not found.");
+        return;
+    }
+
+    // Clear existing municipality options
+    municipalitySelect.innerHTML = `
+        <option value="" disabled selected>Select Municipality</option>
+    `;
+
+    // Populate Municipality dropdown
+    Object.keys(BARANGAYS_BY_MUNICIPALITY).forEach(function(municipality) {
+        const option = document.createElement("option");
+
+        option.value = municipality;
+        option.textContent = municipality;
+
+        municipalitySelect.appendChild(option);
+    });
+
+    // Initial Barangay state
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.disabled = true;
+
+    // Municipality → Barangay
+    municipalitySelect.addEventListener("change", function() {
+        const selectedMunicipality = this.value;
+
+        const barangays =
+            BARANGAYS_BY_MUNICIPALITY[selectedMunicipality] || [];
+
+        // Clear barangay options
+        barangaySelect.innerHTML = `
+            <option value="" disabled selected>
+                Select Barangay
+            </option>
+        `;
+
+        // Add barangays
+        barangays.forEach(function(barangay) {
+            const option = document.createElement("option");
+
+            option.value = barangay;
+            option.textContent = barangay;
+
+            barangaySelect.appendChild(option);
+        });
+
+        // Enable only if barangays exist
+        barangaySelect.disabled = barangays.length === 0;
+    });
+}
+function resetFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) return;
+
+    municipalitySelect.value = "";
+
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.value = "";
+    barangaySelect.disabled = true;
+}
+/* ============================================================
    FARMER SUBVIEWS
 ============================================================ */
 
@@ -748,6 +1442,8 @@ function initFarmerSubviews() {
     const listSubview = document.getElementById("farmersListSubview");
     const regSubview = document.getElementById("registerFarmerSubview");
     const manSubview = document.getElementById("manageFarmerSubview");
+
+     initFarmerLocationDropdowns();
 
     const addBtn = document.getElementById("addFarmerBtn");
     const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
@@ -763,6 +1459,7 @@ function initFarmerSubviews() {
             console.log("Add Farmer button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
+            resetFarmerLocationDropdowns();
             setValue("regFarmerId", "");
             if (listSubview) listSubview.classList.add("hidden-element");
             if (regSubview) regSubview.classList.remove("hidden-element");
@@ -777,6 +1474,7 @@ function initFarmerSubviews() {
             console.log("Cancel Register button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
+            resetFarmerLocationDropdowns();
             if (listSubview) listSubview.classList.remove("hidden-element");
             if (regSubview) regSubview.classList.add("hidden-element");
         });
