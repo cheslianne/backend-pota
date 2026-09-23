@@ -1,5 +1,6 @@
 /* ============================================================
    eSAKA — DA-RFO OFFICER DASHBOARD
+   Aligned with Provincial/Municipal logic
 ============================================================ */
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -13,6 +14,8 @@ const DA_PENDING_ENDPOINT              = `${API_BASE_URL}/api/report-submissions
 const RETURNED_TO_PROVINCIAL_ENDPOINT  = `${API_BASE_URL}/api/report-submissions/returned-to-provincial`;
 const APPROVED_BY_REGIONAL_ENDPOINT    = `${API_BASE_URL}/api/report-submissions/approved-by-regional`;
 const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions/bulk-approve`;
+
+const REGIONAL_SUMMARY_ENDPOINT        = `${API_BASE_URL}/api/report-submissions/regional-summary`;
 
 
 /* ============================================================
@@ -57,7 +60,21 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
         }
 
         if (!response.ok) {
-            const detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            let detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            if (Array.isArray(detail)) {
+                detail = detail
+                    .map(e => {
+                        if (typeof e === "string") return e;
+                        if (e.msg) {
+                            const loc = Array.isArray(e.loc) ? e.loc.join(".") : "";
+                            return loc ? `${loc}: ${e.msg}` : e.msg;
+                        }
+                        return JSON.stringify(e);
+                    })
+                    .join("; ");
+            } else if (typeof detail === "object") {
+                detail = JSON.stringify(detail);
+            }
             throw new Error(detail);
         }
 
@@ -90,6 +107,9 @@ let approvedReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
 
+let currentSummaryPeriod = { start: null, end: null, preset: "this-week" };
+let currentSummaryData = null;
+
 
 /* ============================================================
    PAGE INITIALIZATION
@@ -105,8 +125,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     initReportsSection();
     initSignout();
     initModalListeners();
+    initSummaryPeriodPicker();
     loadUserInformation();
-    loadReports();
+
+    await loadReports();
+
+    const summaryView = document.getElementById("view-summary");
+    if (summaryView && summaryView.classList.contains("active-view")) {
+        loadRegionalSummary();
+    }
 });
 
 
@@ -211,13 +238,6 @@ function initSidebar() {
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") sidebar.classList.remove("open");
     });
-
-    const signoutBtn = sidebar.querySelector(".signout");
-    if (signoutBtn) {
-        signoutBtn.addEventListener("click", function () {
-            sidebar.classList.remove("open");
-        });
-    }
 }
 
 
@@ -246,8 +266,8 @@ function initViewNavigation() {
             }
 
             if (targetViewKey === "buyer-registry") loadBuyerRegistry();
-
             if (targetViewKey === "reports") loadReports();
+            if (targetViewKey === "summary") loadRegionalSummary();
         });
     });
 }
@@ -357,7 +377,7 @@ async function loadMunicipalityMapData(municipalityCoordinates) {
 
 
 /* ============================================================
-   BUYER REGISTRY
+   BUYER REGISTRY (UNCHANGED)
 ============================================================ */
 
 function initBuyerRegistry() {
@@ -370,13 +390,31 @@ function initBuyerRegistry() {
         await viewBuyerAttachment(currentSelectedBuyer);
     });
 
-    document.getElementById("approveBuyerBtn")?.addEventListener("click", () => {
-        if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
+        document.getElementById("approveBuyerBtn")?.addEventListener("click", () => {
+        if (!currentSelectedBuyer) {
+            showSuccessModal({
+                title: "Error",
+                message: "No buyer application selected.",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
         document.getElementById("confirmApproveModal")?.classList.add("show");
     });
 
     document.getElementById("rejectBuyerBtn")?.addEventListener("click", () => {
-        if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
+        if (!currentSelectedBuyer) {
+            showSuccessModal({
+                title: "Error",
+                message: "No buyer application selected.",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
         document.getElementById("confirmRejectModal")?.classList.add("show");
     });
 
@@ -657,7 +695,14 @@ async function approveSelectedBuyer() {
         if (!response.ok) throw new Error(data.detail || data.message || "Unable to approve buyer.");
 
         closeModal("confirmApproveModal");
-        alert("Buyer verified successfully.");
+
+        showSuccessModal({
+            title: "Buyer Verified",
+            message: "The buyer has been successfully added to the verified buyers list.",
+            icon: "✓",
+            iconBg: "#D1FAE5",
+            titleColor: "#2E7D32",
+        });
 
         currentSelectedBuyer = null;
         showBuyerList();
@@ -692,7 +737,14 @@ async function rejectSelectedBuyer() {
         if (!response.ok) throw new Error(data.detail || data.message || "Unable to reject buyer.");
 
         closeModal("confirmRejectModal");
-        alert("Buyer application rejected.");
+
+        showSuccessModal({
+            title: "Buyer Rejected",
+            message: "The buyer application has been rejected.",
+            icon: "⚠",
+            iconBg: "#FEF3C7",
+            titleColor: "#D97706",
+        });
 
         currentSelectedBuyer = null;
         showBuyerList();
@@ -756,8 +808,33 @@ function formatDate(dateString) {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatDateLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function formatDateTimeLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
 function formatKg(value) {
     return `${Number(value || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} kg`;
+}
+
+function formatRole(role) {
+    if (!role) return "—";
+    return String(role).replace(/_/g, " ").toUpperCase();
 }
 
 function statusLabelAndClass(status) {
@@ -775,9 +852,26 @@ function statusLabelAndClass(status) {
     return { text: s || "—", cls: "pending" };
 }
 
+function getActionStyle(action) {
+    const a = String(action || "").toUpperCase();
+    if (a === "SUBMITTED")
+        return { icon: "📤", label: "Submitted", color: "#2980B9" };
+    if (a === "RESUBMITTED")
+        return { icon: "🔄", label: "Resubmitted", color: "#2980B9" };
+    if (a === "APPROVED")
+        return { icon: "✓", label: "Approved", color: "#2E7D32" };
+    if (a === "REVISION_REQUIRED")
+        return { icon: "⚠", label: "Revision Required", color: "#C0392B" };
+    if (a === "PULLED")
+        return { icon: "↩", label: "Pulled to Draft", color: "#D97706" };
+    if (a === "STATUS_CHANGED")
+        return { icon: "•", label: "Status Changed", color: "#6c757d" };
+    return { icon: "•", label: a || "Action", color: "#6c757d" };
+}
+
 
 /* ============================================================
-   ALERT THRESHOLD
+   ALERT THRESHOLD (UNCHANGED)
 ============================================================ */
 
 function initAlertThreshold() {
@@ -834,7 +928,7 @@ function initAlertThreshold() {
 
 
 /* ============================================================
-   ALERTS SECTION
+   ALERTS SECTION (UNCHANGED)
 ============================================================ */
 
 function initAlertsSection() {
@@ -1024,6 +1118,71 @@ function initModalListeners() {
             button.closest(".modal-overlay")?.classList.remove("show");
         });
     });
+
+    document.getElementById("closeReportSubmittedBtn")?.addEventListener("click", function() {
+        this.closest(".modal-overlay")?.classList.remove("show");
+    });
+}
+
+
+/* ============================================================
+   ACTION CONFIRMATION MODAL
+============================================================ */
+
+function showActionConfirm({
+    title = "Confirm Action",
+    message = "Are you sure?",
+    details = null,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    confirmColor = "#5B6B4F",
+    onConfirm,
+    onCancel = null,
+}) {
+    const modal = document.getElementById("actionConfirmModal");
+    const titleEl = document.getElementById("actionConfirmTitle");
+    const messageEl = document.getElementById("actionConfirmMessage");
+    const detailsEl = document.getElementById("actionConfirmDetails");
+    const okBtn = document.getElementById("actionConfirmOkBtn");
+    const cancelBtn = document.getElementById("actionConfirmCancelBtn");
+
+    if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
+        if (window.confirm(message)) onConfirm && onConfirm();
+        return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
+
+    if (details && details.trim()) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = "block";
+    } else {
+        detailsEl.innerHTML = "";
+        detailsEl.style.display = "none";
+    }
+
+    okBtn.textContent = confirmText;
+    okBtn.style.background = confirmColor;
+    cancelBtn.textContent = cancelText;
+
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    newOkBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onConfirm && onConfirm();
+    });
+
+    newCancelBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onCancel && onCancel();
+    });
+
+    modal.classList.add("show");
 }
 
 
@@ -1035,13 +1194,21 @@ function initReportsSection() {
     initReportSearch();
     initBulkActions();
     initReportDetailButtons();
-    loadReports();
+    initReportSummaryToggle();
+}
 
-    const viewReports = document.getElementById("view-reports");
-    const observer = new MutationObserver(() => {
-        if (viewReports?.classList.contains("active-view")) loadReports();
+function initReportSummaryToggle() {
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "reportSummaryToggle") {
+            const body = document.getElementById("reportSummaryBody");
+            const toggle = e.target;
+            if (!body) return;
+
+            const isHidden = body.style.display === "none";
+            body.style.display = isHidden ? "block" : "none";
+            toggle.textContent = isHidden ? "Hide ▲" : "Show ▼";
+        }
     });
-    if (viewReports) observer.observe(viewReports, { attributes: true, attributeFilter: ["class"] });
 }
 
 async function loadReports() {
@@ -1414,6 +1581,8 @@ async function bulkApproveSelected() {
     if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = "Processing..."; }
     if (cancelBtn) cancelBtn.disabled = true;
 
+    const count = selectedReportIds.size;
+
     try {
         const response = await fetch(BULK_APPROVE_ENDPOINT, {
             method: "POST",
@@ -1428,30 +1597,44 @@ async function bulkApproveSelected() {
         if (!response.ok) throw new Error(data.detail || "Bulk approve failed.");
 
         document.getElementById("bulkApproveModal")?.classList.remove("show");
-        alert(`${data.approved_count || 0} report(s) approved.`);
+
+        // ✅ Styled success modal
+        showSuccessModal({
+            title: "Bulk Approval Complete",
+            message: `<strong>${data.approved_count || 0}</strong> report${(data.approved_count || 0) !== 1 ? "s" : ""} approved and finalized.`,
+            icon: "✓",
+            iconBg: "#D1FAE5",
+            titleColor: "#2E7D32",
+            onClose: async () => {
+                await Promise.allSettled([
+                    loadPendingReports(),
+                    loadReturnedToProvincial(),
+                    loadApprovedReports()
+                ]);
+            },
+        });
 
         selectedReportIds.clear();
-
-        await Promise.allSettled([
-            loadPendingReports(),
-            loadReturnedToProvincial(),
-            loadApprovedReports()
-        ]);
 
     } catch (err) {
         console.error("Bulk approve error:", err);
         document.getElementById("bulkApproveModal")?.classList.remove("show");
-        alert(`Error: ${err.message}`);
+
+        showSuccessModal({
+            title: "Bulk Approval Failed",
+            message: escapeHtml(err.message || "Please try again."),
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
     } finally {
         if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Confirm"; }
         if (cancelBtn) cancelBtn.disabled = false;
     }
 }
 
-
 /* ============================================================
-   OPEN REPORT DETAIL
-   (Immutable History + Add-Only New Remark)
+   OPEN REPORT DETAIL (aligned with provincial)
 ============================================================ */
 
 async function openReportDetail(report) {
@@ -1471,6 +1654,20 @@ async function openReportDetail(report) {
         detailView.style.display = "block";
     }
 
+    const summaryWrapper = document.getElementById("reportSummaryCardWrapper");
+    const summaryBody = document.getElementById("reportSummaryBody");
+    const historyContainer = document.getElementById("validationTimelineContainer");
+
+    if (summaryWrapper) summaryWrapper.style.display = "none";
+    if (summaryBody) summaryBody.innerHTML = "";
+    if (historyContainer) {
+        historyContainer.innerHTML = `
+            <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                Loading history...
+            </div>
+        `;
+    }
+
     const titleEl           = document.getElementById("detailReportTitle");
     const subtitleEl        = document.getElementById("detailReportSubtitle");
     const idEl              = document.getElementById("detailReportId");
@@ -1482,7 +1679,6 @@ async function openReportDetail(report) {
     const notesEl           = document.getElementById("detailReportNotes");
     const attachmentsEl     = document.getElementById("detailReportAttachments");
     const intentsBody       = document.getElementById("detailReportIntentsBody");
-    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
     const remarksEl         = document.getElementById("remarksTextarea");
     const flagBtn           = document.getElementById("flagBtn");
     const approveBtn        = document.getElementById("approveBtn");
@@ -1497,21 +1693,6 @@ async function openReportDetail(report) {
     if (yieldEl)        yieldEl.textContent = report.estimated_yield ?? "—";
     if (notesEl)        notesEl.textContent = report.notes || report.narrative || "—";
 
-    // ============================================================
-    // REMARKS HISTORY — READ-ONLY (immutable)
-    // ============================================================
-    if (remarksHistoryEl) {
-        const historyText = report.revision_remarks || "";
-        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
-        remarksHistoryEl.readOnly = true;
-        remarksHistoryEl.style.background = "#F6F3EB";
-        remarksHistoryEl.style.color = "var(--ink)";
-        remarksHistoryEl.style.cursor = "default";
-    }
-
-    // ============================================================
-    // NEW REMARK — always empty, always editable
-    // ============================================================
     if (remarksEl) {
         remarksEl.value = "";
         remarksEl.readOnly = false;
@@ -1534,23 +1715,35 @@ async function openReportDetail(report) {
         statusUpper === "SUBMITTED_REGIONAL_PENDING" ||
         statusUpper === "FOR_DA_RFO_VALIDATION";
 
+    const isReadOnly =
+        statusUpper === "SUBMITTED_REGIONAL_APPROVED" ||
+        statusUpper === "FINAL_APPROVED";
+
     if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+
+    const remarksRow = remarksEl ? remarksEl.closest(".notes-row") : null;
 
     if (isPending) {
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
             flagBtn.textContent = "Flag for Revision";
             flagBtn.disabled = false;
+            flagBtn.classList.remove("active");
         }
         if (approveBtn) {
             approveBtn.style.display = "inline-flex";
-            approveBtn.textContent = "Approve & Finalize";
+            approveBtn.textContent = "Approve Report";
             approveBtn.disabled = false;
+            approveBtn.classList.remove("active");
         }
+        if (remarksRow) remarksRow.style.display = "flex";
     } else {
         if (flagBtn)    flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
+
+        if (remarksRow) remarksRow.style.display = "none";
     }
+
 
     try {
         const full = await fetchJsonWithTimeout(
@@ -1559,40 +1752,69 @@ async function openReportDetail(report) {
             10000
         );
 
-        if (notesEl) notesEl.textContent = full.notes || full.remarks || full.narrative || "—";
+        console.log("Full report:", full);
+
+        if (dateEl) {
+            dateEl.textContent = formatDate(full.submitted_at || full.created_at) || "—";
+        }
+        if (notesEl) {
+            notesEl.textContent = full.notes || full.narrative || full.remarks || "—";
+        }
+        if (encodedByEl) {
+            encodedByEl.textContent = full.encoded_by_name || report.encoded_by_name || "—";
+        }
+        if (yieldEl) {
+            yieldEl.textContent = full.estimated_yield != null ? full.estimated_yield : "—";
+        }
+        if (titleEl) {
+            titleEl.textContent = full.title || `Report #${full.report_id}`;
+        }
+
+        if (statusEl && full.status) {
+            const fullSl = statusLabelAndClass(full.status);
+            statusEl.innerHTML = `<span class="status-pill ${fullSl.cls}">${escapeHtml(fullSl.text)}</span>`;
+        }
 
         renderAttachments(full.attachments || []);
         renderDetailIntents(full.planting_intents || []);
 
+        const intents = Array.isArray(full.planting_intents) ? full.planting_intents : [];
+        if (intents.length > 0) {
+            renderReportSummaryCard(intents, {
+                municipality: full.municipality || report.municipality,
+                submitted_at: full.submitted_at || full.created_at,
+                created_at: full.created_at,
+                report_id: full.report_id,
+                title: full.title,
+            });
+        }
+
+        renderValidationTimeline(full.validation_history || []);
+
     } catch (err) {
         console.error("Fetch full report error:", err);
+
         if (attachmentsEl) {
             attachmentsEl.textContent = "Unable to load attachments.";
             attachmentsEl.style.color = "#C0392B";
         }
+
         if (intentsBody) {
             intentsBody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="padding:20px; text-align:center; color:#C0392B;">
+                    <td colspan="9" style="padding:20px; text-align:center; color:#C0392B;">
                         Failed to load intents: ${escapeHtml(err.message)}
                     </td>
                 </tr>
             `;
         }
-    }
 
-    // Revision remarks box (immutable history)
-    const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-    const remarksContent = document.getElementById("detailRevisionRemarks");
-
-    if (remarksWrapper && remarksContent) {
-        const rawRemarks = report.revision_remarks || "";
-
-        if (rawRemarks && rawRemarks.trim()) {
-            remarksContent.innerHTML = `<div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(rawRemarks)}</div>`;
-            remarksWrapper.style.display = "block";
-        } else {
-            remarksWrapper.style.display = "none";
+        if (historyContainer) {
+            historyContainer.innerHTML = `
+                <div style="color: #C0392B; font-size: 13px;">
+                    Failed to load timeline: ${escapeHtml(err.message)}
+                </div>
+            `;
         }
     }
 
@@ -1601,7 +1823,468 @@ async function openReportDetail(report) {
 
 
 /* ============================================================
-   RENDER HELPERS
+   📜 RENDER VALIDATION TIMELINE
+============================================================ */
+
+function renderValidationTimeline(history) {
+    const container = document.getElementById("validationTimelineContainer");
+    if (!container) return;
+
+    if (!Array.isArray(history) || history.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding: 20px;
+                text-align: center;
+                color: var(--muted);
+                font-size: 13px;
+                font-style: italic;
+                background: #FAF8F5;
+                border: 1px dashed var(--border-light);
+                border-radius: 8px;
+            ">
+                No validation history recorded yet.
+            </div>
+        `;
+        return;
+    }
+
+    const html = history.map((h, idx) => {
+        const style = getActionStyle(h.action);
+        const isLast = idx === history.length - 1;
+
+        let cleanRemarks = h.remarks || "";
+        cleanRemarks = cleanRemarks.replace(/^\[[^\]]+\]\s*/, "").trim();
+
+        const remarksHtml = cleanRemarks
+            ? `<div class="timeline-remarks">${escapeHtml(cleanRemarks)}</div>`
+            : "";
+
+        const dateHtml = h.created_at
+            ? `<span class="timeline-date">${escapeHtml(formatDateTimeLong(h.created_at))}</span>`
+            : "";
+
+        return `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background:${style.color};">
+                    ${style.icon}
+                </div>
+                ${!isLast ? '<div class="timeline-line"></div>' : ''}
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-action" style="color:${style.color};">
+                            ${escapeHtml(style.label)}
+                        </span>
+                        ${dateHtml}
+                    </div>
+                    <div class="timeline-meta">
+                        <strong>${escapeHtml(h.performed_by_name || "Unknown User")}</strong>
+                        <span class="timeline-role">${escapeHtml(formatRole(h.role))}</span>
+                    </div>
+                    ${remarksHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.innerHTML = `<div class="validation-timeline">${html}</div>`;
+}
+
+
+/* ============================================================
+   📊 RENDER REPORT SUMMARY CARD (frozen snapshot)
+============================================================ */
+
+function renderReportSummaryCard(intents, meta) {
+    const wrapper = document.getElementById("reportSummaryCardWrapper");
+    const body = document.getElementById("reportSummaryBody");
+    const coveragePeriodEl = document.getElementById("summaryCoveragePeriod");
+
+    if (!wrapper || !body) return;
+
+    if (!Array.isArray(intents) || intents.length === 0) {
+        wrapper.style.display = "none";
+        return;
+    }
+
+    wrapper.style.display = "block";
+
+    const selected = intents;
+    const selectedCount = selected.length;
+
+    const totalVolume = selected.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
+
+    const uniqueFarmers = new Set(
+        selected.map(i => i.farmer_id || i.farmer_name).filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    const pendingReportIds = new Set();
+    intents.forEach(i => {
+        const s = String(i.report_status || i.status || "").toUpperCase();
+        if (s === "SUBMITTED_REGIONAL_PENDING" || s === "FOR_DA_RFO_VALIDATION") {
+            if (i.report_id != null) pendingReportIds.add(i.report_id);
+        }
+    });
+    const pendingCount = pendingReportIds.size;
+
+
+    const harvestedIntents = selected.filter(i =>
+        (i.finalized_status_at_submission || i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
+
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = selected.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    if (coveragePeriodEl) {
+        const submittedAt = meta?.submitted_at || meta?.created_at;
+        if (submittedAt) {
+            const reportDate = new Date(submittedAt);
+            if (!isNaN(reportDate.getTime())) {
+                const weekStart = new Date(reportDate);
+                weekStart.setDate(reportDate.getDate() - 6);
+                const fmt = d => d.toLocaleDateString("en-US", {
+                    month: "short", day: "numeric", year: "numeric"
+                });
+                coveragePeriodEl.textContent = `Coverage: ${fmt(weekStart)} – ${fmt(reportDate)}`;
+            } else {
+                coveragePeriodEl.textContent = "Coverage: —";
+            }
+        } else {
+            coveragePeriodEl.textContent = "Coverage: —";
+        }
+    }
+
+    const byCommodity = {};
+    selected.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    const byBarangay = {};
+    selected.forEach(intent => {
+        let b = intent.barangay;
+        if (!b && intent.location) b = String(intent.location).split(",")[0].trim();
+        if (!b) b = intent.municipality || "Unknown";
+        if (!byBarangay[b]) byBarangay[b] = { count: 0, volume: 0 };
+        byBarangay[b].count += 1;
+        byBarangay[b].volume += Number(intent.volume) || 0;
+    });
+
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" },
+    };
+
+    selected.forEach(intent => {
+        const s = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    const plantingDates = selected
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = selected
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    let html = "";
+
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Selected Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Included in this report</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Across ${selectedCount} intent${selectedCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in this report</div>
+            </div>
+        </div>
+    `;
+
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Reports</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">${pendingCount}</div>
+                <div class="summary-kpi-subtext">
+                    ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
+                </div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${
+                    harvestRate === 100 ? "#2E7D32"
+                    : harvestRate > 0 ? "#D97706"
+                    : "#6c757d"
+                };">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    html += `<div class="summary-breakdown-grid">`;
+
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-body">
+    `;
+    const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
+    if (commodityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else {
+        commodityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📍 By Barangay</div>
+            <div class="summary-breakdown-body">
+    `;
+    const barangayEntries = Object.entries(byBarangay).sort((a, b) => b[1].volume - a[1].volume);
+    if (barangayEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else if (barangayEntries.length === 1) {
+        html += `
+            <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                All intents from <b>${escapeHtml(barangayEntries[0][0])}</b>
+            </div>
+        `;
+    } else {
+        barangayEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">📍 ${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📋 By Finalized Status</div>
+            <div class="summary-breakdown-body">
+    `;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `
+            <div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};">
+                <span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                    <span style="
+                        display: inline-block;
+                        width: 8px; height: 8px;
+                        border-radius: 50%;
+                        background: ${d.color};
+                        margin-right: 8px;
+                    "></span>
+                    ${d.label}
+                </span>
+                <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                    ${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b>
+                </span>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`;
+
+    html += `<div class="summary-insight-grid">`;
+
+    html += `<div class="summary-insight-card green">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📊 Yield Performance</div>
+    `;
+    if (hasActualData) {
+        let varianceColor = "#2E7D32";
+        let varianceIcon = "↑";
+        let varianceLabel = "surplus";
+        if (variancePct < 0) {
+            varianceColor = "#C0392B";
+            varianceIcon = "↓";
+            varianceLabel = "shortfall";
+        } else if (variancePct === 0) {
+            varianceColor = "#6c757d";
+            varianceIcon = "→";
+            varianceLabel = "on target";
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Expected (planned):</span>
+                <b>${yieldPlanned.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--muted);">Actual (harvested):</span>
+                <b>${yieldActual.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="
+                display: inline-block; padding: 4px 12px;
+                background: ${varianceColor}15; border-radius: 6px;
+                font-size: 13px; font-weight: 700; color: ${varianceColor};
+            ">
+                ${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-style: italic;">
+                Based on ${harvestedIntents.length} of ${selectedCount} harvested
+            </div>
+        `;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="summary-insight-card orange">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📅 Planting Window</div>
+    `;
+
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">🌱 Earliest:</span>
+                <b>${formatDateLong(earliest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Latest:</span>
+                <b>${formatDateLong(latest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--muted);">Span:</span>
+                <b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+            </div>
+        `;
+
+        if (harvestDates.length > 0) {
+            const earliestH = new Date(Math.min.apply(null, harvestDates));
+            const latestH = new Date(Math.max.apply(null, harvestDates));
+            const spanH = Math.round((latestH - earliestH) / (1000 * 60 * 60 * 24));
+
+            html += `
+                <div style="
+                    margin-top: 10px; padding-top: 10px;
+                    border-top: 1px dashed var(--border-light);
+                ">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <b>${formatDateLong(earliestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">Harvest latest:</span>
+                        <b>${formatDateLong(latestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted);">Harvest span:</span>
+                        <b>${spanH} day${spanH !== 1 ? "s" : ""}</b>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`;
+
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "DA-RFO Officer";
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    html += `
+        <div class="summary-footer">
+            <div>
+                <b style="color: var(--ink);">Report:</b> #${escapeHtml(String(meta?.report_id || "—"))} — ${escapeHtml(meta?.title || "—")}
+            </div>
+            <div>
+                <b style="color: var(--ink);">Viewed by:</b> ${escapeHtml(preparedBy)} at ${escapeHtml(generatedAt)}
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = html;
+}
+
+
+/* ============================================================
+   RENDER ATTACHMENTS
 ============================================================ */
 
 function renderAttachments(attachments) {
@@ -1642,12 +2325,17 @@ function renderAttachments(attachments) {
     }).join("");
 }
 
+
+/* ============================================================
+   RENDER DETAIL INTENTS (rich — with Planned vs Actual)
+============================================================ */
+
 function renderDetailIntents(intents) {
     const tbody = document.getElementById("detailReportIntentsBody");
     if (!tbody) return;
 
     if (!Array.isArray(intents) || intents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
         return;
     }
 
@@ -1655,31 +2343,89 @@ function renderDetailIntents(intents) {
         const id = intent.planting_intent_id ?? "—";
         const farmer = intent.farmer_name || "—";
         const commodity = intent.commodity || "—";
-        const volume = intent.volume != null ? `${intent.volume} kg` : "—";
-        const plantingDate = formatDate(intent.planting_date);
-        const harvestDate = formatDate(intent.harvest_date);
 
-        const harvestStatus = (intent.finalized_status_at_submission || "NOT PLANTED").toUpperCase();
+        const plannedVol = Number(intent.volume) || 0;
+        const actualVol = Number(intent.actual_harvest_volume) || 0;
+        const hasActual = actualVol > 0;
 
+        const plannedPlanting = intent.planting_date ? formatDate(intent.planting_date) : "—";
+        const plannedHarvest = intent.harvest_date ? formatDate(intent.harvest_date) : "—";
+
+        const actualPlanting = intent.actual_planting_date
+            ? formatDate(intent.actual_planting_date)
+            : null;
+        const actualHarvest = intent.actual_harvest_date
+            ? formatDate(intent.actual_harvest_date)
+            : null;
+
+        function renderActualDate(actual, planned) {
+            if (!actual) {
+                return `<span style="color: #BBB; font-style: italic;">Not yet recorded</span>`;
+            }
+            let varianceBadge = "";
+            if (planned) {
+                const plannedDate = new Date(planned);
+                const actualDate = new Date(actual);
+                const diffDays = Math.round((actualDate - plannedDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #2E7D32; margin-left: 6px;">(on time)</span>`;
+                } else if (diffDays > 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #D97706; margin-left: 6px;">(+${diffDays}d)</span>`;
+                } else {
+                    varianceBadge = `<span style="font-size: 10px; color: #2980B9; margin-left: 6px;">(${diffDays}d)</span>`;
+                }
+            }
+            return `<span style="color: var(--ink); font-weight: 600;">${actual}</span>${varianceBadge}`;
+        }
+
+        const statusUpper = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
         let statusText = "Not Planted";
         let bgColor = "#6c757d";
-
-        if (harvestStatus === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
-        else if (harvestStatus === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
-        else if (harvestStatus === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
+        if (statusUpper === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
+        else if (statusUpper === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
+        else if (statusUpper === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
 
         return `
             <tr>
-                <td class="center-col"><strong>#${escapeHtml(String(id))}</strong></td>
+                <td class="center-col" style="font-weight: 600;">
+                    #${escapeHtml(String(id))}
+                </td>
                 <td>${escapeHtml(farmer)}</td>
                 <td>${escapeHtml(commodity)}</td>
-                <td class="center-col">${escapeHtml(volume)}</td>
-                <td class="center-col">${escapeHtml(plantingDate)}</td>
-                <td class="center-col">${escapeHtml(harvestDate)}</td>
                 <td class="center-col">
-                    <span class="status-pill" style="background-color:${bgColor};">
-                        ${escapeHtml(statusText)}
-                    </span>
+                    <div style="font-weight: 600;">${plannedVol.toLocaleString("en-US")} kg</div>
+                    ${hasActual ? `
+                        <div style="font-size: 11px; color: #2E7D32; margin-top: 2px;">
+                            ✓ ${actualVol.toLocaleString("en-US")} kg actual
+                        </div>
+                    ` : `
+                        <div style="font-size: 11px; color: #BBB; margin-top: 2px; font-style: italic;">
+                            not harvested
+                        </div>
+                    `}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedPlanting)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualPlanting, intent.planting_date)}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedHarvest)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualHarvest, intent.harvest_date)}
+                </td>
+                <td class="center-col">
+                    <span class="status-pill" style="
+                        display:inline-block;
+                        padding:3px 12px;
+                        border-radius:999px;
+                        font-size:11px;
+                        font-weight:700;
+                        color:#FFFFFF;
+                        background-color:${bgColor};
+                    ">${escapeHtml(statusText)}</span>
                 </td>
             </tr>
         `;
@@ -1727,103 +2473,44 @@ function closeReportDetail() {
 ============================================================ */
 
 function initReportDetailButtons() {
-    function safeAttach(id, handler) {
-        const el = document.getElementById(id);
-        if (!el) return;
-
-        const newEl = el.cloneNode(true);
-        el.parentNode.replaceChild(newEl, el);
-        newEl.addEventListener("click", handler);
+    const backBtn = document.getElementById("backToPendingBtn");
+    if (backBtn) {
+        const newBack = backBtn.cloneNode(true);
+        backBtn.parentNode.replaceChild(newBack, backBtn);
+        newBack.addEventListener("click", closeReportDetail);
     }
-
-    safeAttach("backToPendingBtn", closeReportDetail);
-    safeAttach("flagBtn", flagReport);
-    safeAttach("approveBtn", approveReport);
-}
-
-
-/* ============================================================
-   FLAG REPORT FOR REVISION
-============================================================ */
-
-async function flagReport() {
-    if (!selectedReport) return;
-
-    const validatorId = localStorage.getItem("user_id") ||
-                        localStorage.getItem("userId") ||
-                        localStorage.getItem("id");
-    const accessToken = getAuthToken();
-    const tokenType = localStorage.getItem("token_type") || "bearer";
-
-    if (!validatorId || !accessToken) { alert("Please log in again."); return; }
-
-    const userName = localStorage.getItem("full_name") || localStorage.getItem("username") || "Unknown User";
-    const userRole = localStorage.getItem("role") || "DA-RFO Officer";
-
-    const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
-    if (!remarksInput) { alert("Revision remarks are required."); return; }
-
-    const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
 
     const flagBtn = document.getElementById("flagBtn");
-    const originalText = flagBtn?.textContent;
-
     if (flagBtn) {
-        flagBtn.disabled = true;
-        flagBtn.textContent = "Processing...";
+        const newFlag = flagBtn.cloneNode(true);
+        flagBtn.parentNode.replaceChild(newFlag, flagBtn);
+        newFlag.addEventListener("click", flagReport);
     }
 
-    try {
-        const url =
-            `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
-            `?validator_id=${encodeURIComponent(validatorId)}` +
-            `&validator_role=darfo` +
-            `&remarks=${encodeURIComponent(remarks)}`;
-
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `${tokenType} ${accessToken}`
-            }
-        });
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${res.status}`);
-        }
-
-        if (flagBtn) {
-            flagBtn.classList.add("active");
-            flagBtn.textContent = "Flagged ✓";
-        }
-
-        alert("Report flagged for revision.");
-
-        setTimeout(async () => {
-            closeReportDetail();
-            await loadReports();
-        }, 400);
-
-    } catch (err) {
-        console.error("Flag error:", err);
-        alert(`Error: ${err.message}`);
-        if (flagBtn) {
-            flagBtn.classList.remove("active");
-            flagBtn.textContent = originalText || "Flag for Revision";
-        }
-    } finally {
-        if (flagBtn) flagBtn.disabled = false;
+    const approveBtn = document.getElementById("approveBtn");
+    if (approveBtn) {
+        const newApprove = approveBtn.cloneNode(true);
+        approveBtn.parentNode.replaceChild(newApprove, approveBtn);
+        newApprove.addEventListener("click", approveReport);
     }
 }
 
 
 /* ============================================================
-   APPROVE REPORT
+   FLAG REPORT FOR REVISION (with confirmation modal)
 ============================================================ */
 
-async function approveReport() {
-    if (!selectedReport) return;
+function flagReport() {
+    if (!selectedReport) {
+        showSuccessModal({
+            title: "Error",
+            message: "No report selected.",
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
+        return;
+    }
 
     const validatorId = localStorage.getItem("user_id") ||
                         localStorage.getItem("userId") ||
@@ -1831,69 +2518,808 @@ async function approveReport() {
     const accessToken = getAuthToken();
     const tokenType = localStorage.getItem("token_type") || "bearer";
 
-    if (!validatorId || !accessToken) { alert("Please log in again."); return; }
-
-    const userName = localStorage.getItem("full_name") || localStorage.getItem("username") || "Unknown User";
-    const userRole = localStorage.getItem("role") || "DA-RFO Officer";
-
-    const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
-
-    const remarks = remarksInput
-        ? `[${userRole}: ${userName}] ${remarksInput}`
-        : `Approved by ${userName} (${userRole})`;
-
-    const approveBtn = document.getElementById("approveBtn");
-    const originalText = approveBtn?.textContent;
-
-    if (approveBtn) {
-        approveBtn.disabled = true;
-        approveBtn.textContent = "Processing...";
+    if (!validatorId || !accessToken) {
+        showSuccessModal({
+            title: "Session Expired",
+            message: "Please log in again.",
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
+        return;
     }
 
-    try {
-        const url =
-            `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
-            `?validator_id=${encodeURIComponent(validatorId)}` +
-            `&validator_role=darfo` +
-            `&remarks=${encodeURIComponent(remarks)}`;
+    const remarksEl = document.getElementById("remarksTextarea");
+    const remarksInput = remarksEl?.value?.trim();
 
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `${tokenType} ${accessToken}`
-            }
+    // ============================================================
+    // ✅ Validation — remarks required
+    // ============================================================
+    if (!remarksInput) {
+        showActionConfirm({
+            title: "Remarks Required",
+            message: "Please enter your revision remarks in the text area before flagging this report. <br><br>The Provincial Coordinator needs to know <strong>what to fix.</strong>",
+            confirmText: "OK, I'll Add Remarks",
+            confirmColor: "#D97706",
+            cancelText: "Cancel",
+            onConfirm: () => {
+                remarksEl?.focus();
+                remarksEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+            },
         });
+        return;
+    }
 
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${res.status}`);
+    const remarks = remarksInput;
+
+    // ============================================================
+    // ✅ Build structured details
+    // ============================================================
+    const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+    const municipality = selectedReport.municipality || "—";
+
+    const detailsHtml = `
+        <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+            <span style="font-weight:700;">Report:</span>
+            <span>#${escapeHtml(String(selectedReport.report_id))} — ${escapeHtml(reportTitle)}</span>
+            <span style="font-weight:700;">Municipality:</span>
+            <span>${escapeHtml(municipality)}</span>
+            <span style="font-weight:700;">Your remarks:</span>
+            <span style="font-style:italic; color:#C0392B;">"${escapeHtml(remarks)}"</span>
+        </div>
+    `;
+
+    // ============================================================
+    // ✅ Show styled confirmation
+    // ============================================================
+    showActionConfirm({
+        title: "Flag for Revision?",
+        message: "This report will be returned to the Provincial Coordinator for revision. <br><strong>They will need to forward it again after making changes.</strong>",
+        details: detailsHtml,
+        confirmText: "Flag for Revision",
+        confirmColor: "#C0392B",
+        cancelText: "Cancel",
+        onConfirm: async () => {
+            const flagBtn = document.getElementById("flagBtn");
+            const originalText = flagBtn?.textContent;
+
+            if (flagBtn) {
+                flagBtn.disabled = true;
+                flagBtn.textContent = "Processing...";
+            }
+
+            try {
+                const url =
+                    `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
+                    `?validator_id=${encodeURIComponent(validatorId)}` +
+                    `&validator_role=darfo` +
+                    `&remarks=${encodeURIComponent(remarks)}`;
+
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Authorization": `${tokenType} ${accessToken}`
+                    }
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `HTTP ${res.status}`);
+                }
+
+                if (flagBtn) {
+                    flagBtn.classList.add("active");
+                    flagBtn.textContent = "Flagged ✓";
+                }
+
+                // ✅ Styled success modal
+                showSuccessModal({
+                    title: "Flagged for Revision",
+                    message: "The report has been returned to the Provincial Coordinator for revision. You'll see it again once they resubmit.",
+                    icon: "⚠",
+                    iconBg: "#FEF3C7",
+                    titleColor: "#D97706",
+                    onClose: async () => {
+                        closeReportDetail();
+                        await loadReports();
+                    },
+                });
+
+            } catch (err) {
+                console.error("Flag error:", err);
+                showSuccessModal({
+                    title: "Flag Failed",
+                    message: escapeHtml(err.message || "Please try again."),
+                    icon: "⚠",
+                    iconBg: "#FEE2E2",
+                    titleColor: "#C0392B",
+                });
+                if (flagBtn) {
+                    flagBtn.classList.remove("active");
+                    flagBtn.textContent = originalText || "Flag for Revision";
+                }
+            } finally {
+                if (flagBtn) flagBtn.disabled = false;
+            }
+        },
+    });
+}
+
+
+/* ============================================================
+   APPROVE REPORT (with confirmation modal)
+============================================================ */
+
+function approveReport() {
+    if (!selectedReport) {
+        showSuccessModal({
+            title: "Error",
+            message: "No report selected.",
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
+        return;
+    }
+
+    const validatorId = localStorage.getItem("user_id") ||
+                        localStorage.getItem("userId") ||
+                        localStorage.getItem("id");
+    const accessToken = getAuthToken();
+    const tokenType = localStorage.getItem("token_type") || "bearer";
+
+    if (!validatorId || !accessToken) {
+        showSuccessModal({
+            title: "Session Expired",
+            message: "Please log in again.",
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
+        return;
+    }
+
+    const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
+    const remarks = remarksInput || null;
+
+    const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+    const municipality = selectedReport.municipality || "—";
+    const commodity = selectedReport.commodity || "—";
+
+    const detailsHtml = `
+        <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+            <span style="font-weight:700;">Report:</span>
+            <span>#${escapeHtml(String(selectedReport.report_id))} — ${escapeHtml(reportTitle)}</span>
+            <span style="font-weight:700;">Municipality:</span>
+            <span>${escapeHtml(municipality)}</span>
+            <span style="font-weight:700;">Commodity:</span>
+            <span>${escapeHtml(commodity)}</span>
+            ${remarks ? `
+                <span style="font-weight:700;">Your remarks:</span>
+                <span style="font-style:italic;">"${escapeHtml(remarks)}"</span>
+            ` : ""}
+        </div>
+    `;
+
+    showActionConfirm({
+        title: "Approve & Finalize Report?",
+        message: "This is the final approval. The report will be marked as <strong>APPROVED</strong>. <br><strong>This action cannot be undone.</strong>",
+        details: detailsHtml,
+        confirmText: "Approve & Finalize",
+        confirmColor: "#2E7D32",
+        cancelText: "Cancel",
+        onConfirm: async () => {
+            const approveBtn = document.getElementById("approveBtn");
+            const originalText = approveBtn?.textContent;
+
+            if (approveBtn) {
+                approveBtn.disabled = true;
+                approveBtn.textContent = "Processing...";
+            }
+
+            try {
+                const url =
+                    `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                    `?validator_id=${encodeURIComponent(validatorId)}` +
+                    `&validator_role=darfo` +
+                    (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
+
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Authorization": `${tokenType} ${accessToken}`
+                    }
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `HTTP ${res.status}`);
+                }
+
+                if (approveBtn) {
+                    approveBtn.classList.add("active");
+                    approveBtn.textContent = "Approved ✓";
+                }
+
+                // ✅ Styled success modal
+                showSuccessModal({
+                    title: "Report Approved",
+                    message: "The report has been marked as <strong>APPROVED</strong> and is now the final version.",
+                    icon: "✓",
+                    iconBg: "#D1FAE5",
+                    titleColor: "#2E7D32",
+                    onClose: async () => {
+                        closeReportDetail();
+                        await loadReports();
+                    },
+                });
+
+            } catch (err) {
+                console.error("Approve error:", err);
+                showSuccessModal({
+                    title: "Approval Failed",
+                    message: escapeHtml(err.message || "Please try again."),
+                    icon: "⚠",
+                    iconBg: "#FEE2E2",
+                    titleColor: "#C0392B",
+                });
+                if (approveBtn) {
+                    approveBtn.classList.remove("active");
+                    approveBtn.textContent = originalText || "Approve Report";
+                }
+            } finally {
+                if (approveBtn) approveBtn.disabled = false;
+            }
+        },
+    });
+}
+
+
+/* ============================================================
+   SUMMARY — PERIOD PICKER + LOAD + RENDER
+============================================================ */
+
+function getPeriodPreset(preset) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = now.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(now.getDate() + diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    switch (preset) {
+        case "this-week": return { start: startOfWeek, end: endOfWeek };
+        case "last-week": {
+            const s = new Date(startOfWeek);
+            s.setDate(s.getDate() - 7);
+            const e = new Date(s);
+            e.setDate(s.getDate() + 6);
+            e.setHours(23, 59, 59, 999);
+            return { start: s, end: e };
         }
-
-        if (approveBtn) {
-            approveBtn.classList.add("active");
-            approveBtn.textContent = "Approved ✓";
+        case "this-month": {
+            const s = new Date(now.getFullYear(), now.getMonth(), 1);
+            const e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
         }
-
-        alert("Report approved and finalized.");
-
-        setTimeout(async () => {
-            closeReportDetail();
-            await loadReports();
-        }, 400);
-
-    } catch (err) {
-        console.error("Approve error:", err);
-        alert(`Error: ${err.message}`);
-        if (approveBtn) {
-            approveBtn.classList.remove("active");
-            approveBtn.textContent = originalText || "Approve & Finalize";
+        case "last-30": {
+            const e = new Date(now);
+            e.setHours(23, 59, 59, 999);
+            const s = new Date(now);
+            s.setDate(s.getDate() - 29);
+            s.setHours(0, 0, 0, 0);
+            return { start: s, end: e };
         }
-    } finally {
-        if (approveBtn) approveBtn.disabled = false;
+        case "this-quarter": {
+            const q = Math.floor(now.getMonth() / 3);
+            const s = new Date(now.getFullYear(), q * 3, 1);
+            const e = new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+        case "all-time":
+        default:
+            return { start: null, end: null };
     }
 }
 
+function toDateInputValue(value) {
+    if (!value) return "";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) return value.substring(0, 10);
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function applyPeriodToInputs(period) {
+    const startInput = document.getElementById("summaryPeriodStart");
+    const endInput = document.getElementById("summaryPeriodEnd");
+    if (startInput) startInput.value = period.start ? toDateInputValue(period.start) : "";
+    if (endInput) endInput.value = period.end ? toDateInputValue(period.end) : "";
+}
+
+function initSummaryPeriodPicker() {
+    const pills = document.querySelectorAll(".summary-quick-pills .filter-pill");
+    const applyBtn = document.getElementById("applySummaryPeriodBtn");
+    const printBtn = document.getElementById("printSummaryBtn");
+
+    const initial = getPeriodPreset("this-week");
+    currentSummaryPeriod.start = initial.start;
+    currentSummaryPeriod.end = initial.end;
+    currentSummaryPeriod.preset = "this-week";
+    applyPeriodToInputs(initial);
+
+    pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            const preset = pill.dataset.period;
+            const period = getPeriodPreset(preset);
+
+            currentSummaryPeriod.start = period.start;
+            currentSummaryPeriod.end = period.end;
+            currentSummaryPeriod.preset = preset;
+
+            applyPeriodToInputs(period);
+            loadRegionalSummary();
+        });
+    });
+
+    if (applyBtn) {
+        applyBtn.addEventListener("click", () => {
+            const startInput = document.getElementById("summaryPeriodStart").value;
+            const endInput = document.getElementById("summaryPeriodEnd").value;
+
+            currentSummaryPeriod.start = startInput ? new Date(startInput) : null;
+            currentSummaryPeriod.end = endInput ? new Date(endInput + "T23:59:59") : null;
+            currentSummaryPeriod.preset = "custom";
+
+            pills.forEach(p => p.classList.remove("active"));
+            loadRegionalSummary();
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener("click", () => window.print());
+    }
+}
+
+async function loadRegionalSummary() {
+    const loadingCard = document.getElementById("summaryLoadingCard");
+    const contentCard = document.getElementById("summaryContentCard");
+
+    if (loadingCard) {
+        loadingCard.style.display = "block";
+        loadingCard.innerHTML = `<div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">Loading summary...</div>`;
+    }
+    if (contentCard) contentCard.style.display = "none";
+
+    try {
+        const params = new URLSearchParams();
+        if (currentSummaryPeriod.start) params.append("period_start", currentSummaryPeriod.start.toISOString());
+        if (currentSummaryPeriod.end) params.append("period_end", currentSummaryPeriod.end.toISOString());
+
+        const url = `${REGIONAL_SUMMARY_ENDPOINT}?${params.toString()}`;
+
+        const data = await fetchJsonWithTimeout(
+            url,
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            15000
+        );
+
+        currentSummaryData = data;
+
+        if (loadingCard) loadingCard.style.display = "none";
+        if (contentCard) contentCard.style.display = "block";
+
+        renderRegionalSummary(data);
+
+    } catch (err) {
+        console.error("Load regional summary error:", err);
+        let errorMessage = "Please check the FastAPI server.";
+        if (err?.message) {
+            if (typeof err.message === "string") errorMessage = err.message;
+            else if (typeof err.message === "object") errorMessage = JSON.stringify(err.message);
+        }
+
+        if (loadingCard) {
+            loadingCard.style.display = "block";
+            loadingCard.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    <strong>Failed to load summary.</strong>
+                    <br><small style="color: #999;">${escapeHtml(errorMessage)}</small>
+                    <br><br>
+                    <button onclick="loadRegionalSummary()" style="padding: 8px 20px; background: #2E7D32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        }
+        if (contentCard) contentCard.style.display = "none";
+    }
+}
+
+function renderRegionalSummary(data) {
+    const container = document.getElementById("regionalSummaryContent");
+    if (!container) return;
+
+    const intents = Array.isArray(data.intents) ? data.intents : [];
+    const reportCount = data.report_count || 0;
+    const municipalityCount = data.municipality_count || 0;
+
+    const periodStart = data.period_start ? new Date(data.period_start) : null;
+    const periodEnd = data.period_end ? new Date(data.period_end) : null;
+
+    if (intents.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 60px 40px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;">📊</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                    No reports found for this period
+                </div>
+                <div style="font-size: 13px; line-height: 1.5;">
+                    No Pampanga municipality has submissions between
+                    <b>${periodStart ? formatDateLong(periodStart) : "the beginning"}</b>
+                    and
+                    <b>${periodEnd ? formatDateLong(periodEnd) : "now"}</b>.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const selectedCount = intents.length;
+    const totalVolume = intents.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
+    const uniqueFarmers = new Set(intents.map(i => i.farmer_id || i.farmer_name).filter(Boolean));
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    // ✅ FIX: Use backend-provided pending_report_count (source of truth)
+    //    Backend counts REPORTS awaiting DA-RFO validation, not intents.
+    const pendingCount = Number(data.pending_report_count) || 0;
+
+    const harvestedIntents = intents.filter(i =>
+        (i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
+
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = intents.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    const byCommodity = {};
+    intents.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    const byMunicipality = {};
+    intents.forEach(intent => {
+        const m = intent.municipality || "Unknown";
+        if (!byMunicipality[m]) byMunicipality[m] = { count: 0, volume: 0 };
+        byMunicipality[m].count += 1;
+        byMunicipality[m].volume += Number(intent.volume) || 0;
+    });
+
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" },
+    };
+    intents.forEach(intent => {
+        const s = (intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    const plantingDates = intents
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = intents
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const periodLabel = periodStart && periodEnd
+        ? `${formatDateLong(periodStart)} – ${formatDateLong(periodEnd)}`
+        : "All time";
+
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "DA-RFO Officer";
+
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    let html = "";
+
+    html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1.5px solid var(--border-light); flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="font-size: 14px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.06em;">📊 Regional Summary</div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Pampanga • Coverage: ${escapeHtml(periodLabel)}</div>
+            </div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--green-dark); background: var(--green-light); padding: 5px 12px; border-radius: 999px;">
+                ${reportCount} report${reportCount !== 1 ? "s" : ""} • ${municipalityCount} municipalit${municipalityCount !== 1 ? "ies" : "y"}
+            </div>
+        </div>
+    `;
+
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Total Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Across ${reportCount} report${reportCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Planned estimate</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in period</div>
+            </div>
+        </div>
+    `;
+
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Reports</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">${pendingCount}</div>
+                <div class="summary-kpi-subtext">
+                    ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
+                </div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${harvestRate === 100 ? "#2E7D32" : harvestRate > 0 ? "#D97706" : "#6c757d"};">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    html += `<div class="summary-breakdown-grid">`;
+
+    html += `<div><div class="summary-breakdown-title">🌾 By Commodity</div><div class="summary-breakdown-body">`;
+    Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume).forEach(([name, d]) => {
+        html += `<div class="summary-breakdown-row"><span style="font-weight: 600;">${escapeHtml(name)}</span><span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b></span></div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div><div class="summary-breakdown-title">🏛️ By Municipality</div><div class="summary-breakdown-body">`;
+    Object.entries(byMunicipality).sort((a, b) => b[1].volume - a[1].volume).forEach(([name, d]) => {
+        html += `<div class="summary-breakdown-row"><span style="font-weight: 600;">🏛️ ${escapeHtml(name)}</span><span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b></span></div>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div><div class="summary-breakdown-title">📋 By Finalized Status</div><div class="summary-breakdown-body">`;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `<div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};"><span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${d.color}; margin-right: 8px;"></span>${d.label}</span><span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b></span></div>`;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`;
+
+    html += `<div class="summary-insight-grid">`;
+
+    html += `<div class="summary-insight-card green">
+        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light);">📊 Yield Performance</div>`;
+    if (hasActualData) {
+        let varianceColor = variancePct < 0 ? "#C0392B" : variancePct > 0 ? "#2E7D32" : "#6c757d";
+        let varianceIcon = variancePct < 0 ? "↓" : variancePct > 0 ? "↑" : "→";
+        let varianceLabel = variancePct < 0 ? "shortfall" : variancePct > 0 ? "surplus" : "on target";
+        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: var(--muted);">Expected:</span><b>${yieldPlanned.toLocaleString("en-US")} kg</b></div>`;
+        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span style="color: var(--muted);">Actual:</span><b>${yieldActual.toLocaleString("en-US")} kg</b></div>`;
+        html += `<div style="display: inline-block; padding: 4px 12px; background: ${varianceColor}15; border-radius: 6px; font-size: 13px; font-weight: 700; color: ${varianceColor};">${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}</div>`;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="summary-insight-card orange">
+        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light);">📅 Planting Window</div>`;
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: var(--muted);">🌱 Earliest:</span><b>${formatDateLong(earliest)}</b></div>`;
+        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: var(--muted);">Latest:</span><b>${formatDateLong(latest)}</b></div>`;
+        html += `<div style="display: flex; justify-content: space-between;"><span style="color: var(--muted);">Span:</span><b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b></div>`;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`;
+
+    html += `
+        <div class="summary-footer">
+            <div><b style="color: var(--ink);">Prepared by:</b> ${escapeHtml(preparedBy)}</div>
+            <div><b style="color: var(--ink);">Generated:</b> ${escapeHtml(generatedAt)}</div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+
+/* ============================================================
+   ACTION CONFIRMATION MODAL (universal)
+============================================================ */
+
+function showActionConfirm({
+    title = "Confirm Action",
+    message = "Are you sure?",
+    details = null,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    confirmColor = "#5B6B4F",
+    onConfirm,
+    onCancel = null,
+} = {}) {
+    const modal = document.getElementById("actionConfirmModal");
+    const titleEl = document.getElementById("actionConfirmTitle");
+    const messageEl = document.getElementById("actionConfirmMessage");
+    const detailsEl = document.getElementById("actionConfirmDetails");
+    const okBtn = document.getElementById("actionConfirmOkBtn");
+    const cancelBtn = document.getElementById("actionConfirmCancelBtn");
+
+    // Fallback sa native confirm kung wala ang modal markup
+    if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
+        if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
+            onConfirm && onConfirm();
+        }
+        return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
+
+    if (details && details.trim()) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = "block";
+    } else {
+        detailsEl.innerHTML = "";
+        detailsEl.style.display = "none";
+    }
+
+    okBtn.textContent = confirmText;
+    okBtn.style.background = confirmColor;
+    cancelBtn.textContent = cancelText;
+
+    // Clean clones to prevent listener stacking
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    newOkBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onConfirm && onConfirm();
+    });
+
+    newCancelBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onCancel && onCancel();
+    });
+
+    // Click outside to close (treats as cancel)
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+            onCancel && onCancel();
+        }
+    };
+
+    modal.classList.add("show");
+}
+
+
+/* ============================================================
+   SUCCESS / ERROR MODAL
+   Replaces native alert() for post-action feedback
+============================================================ */
+
+function showSuccessModal({
+    title = "Success",
+    message = "Operation completed successfully.",
+    confirmText = "Done",
+    icon = "✓",
+    iconBg = "var(--green-light)",
+    titleColor = "var(--green-dark)",
+    onClose = null,
+} = {}) {
+    const modal = document.getElementById("reportSubmittedModal");
+    const titleEl = document.getElementById("reportSubmittedTitle");
+    const messageEl = document.getElementById("reportSubmittedMessage");
+    const closeBtn = document.getElementById("closeReportSubmittedBtn");
+    const iconEl = document.getElementById("reportSubmittedIcon");
+
+    if (!modal || !titleEl || !messageEl || !closeBtn) {
+        alert(message.replace(/<[^>]*>/g, ""));
+        onClose && onClose();
+        return;
+    }
+
+    titleEl.textContent = title;
+    titleEl.style.color = titleColor;
+    messageEl.innerHTML = message;
+    closeBtn.textContent = confirmText;
+
+    if (iconEl) {
+        iconEl.textContent = icon;
+        iconEl.style.background = iconBg;
+    }
+
+    // Clean clone to prevent listener stacking
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+    newCloseBtn.addEventListener("click", function () {
+        modal.classList.remove("show");
+        onClose && onClose();
+    });
+
+    // Click outside to close
+    modal.onclick = function (e) {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+            onClose && onClose();
+        }
+    };
+
+    modal.classList.add("show");
+}
 
 /* ============================================================
    END OF da.js
