@@ -1,5 +1,6 @@
 /* ============================================================
    E SAKA — MUNICIPAL COORDINATOR DASHBOARD
+   With Municipal Summary Tab (period-based aggregation)
 ============================================================ */
 
 const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
@@ -16,6 +17,9 @@ const AWAITING_REVISION_ENDPOINT =
 const BULK_APPROVE_ENDPOINT =
     `${API_BASE_URL}/api/report-submissions/bulk-approve`;
 
+const MUNICIPAL_SUMMARY_ENDPOINT =
+    `${API_BASE_URL}/api/report-submissions/municipal-summary`;
+
 
 /* ============================================================
    STATE
@@ -27,6 +31,14 @@ let awaitingRevisionReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
 let currentSentToProvincialFilter = "all";
+
+// Summary state
+let currentSummaryPeriod = {
+    start: null,
+    end: null,
+    preset: "this-week",
+};
+let currentSummaryData = null;
 
 
 /* ============================================================
@@ -205,6 +217,11 @@ function initViewNavigation() {
             if (key === "map" && window.leafletMap) {
                 setTimeout(() => window.leafletMap.invalidateSize(), 50);
             }
+
+            // Lazy-load summary when tab opened
+            if (key === "summary" && !currentSummaryData) {
+                loadMunicipalSummary();
+            }
         });
     });
 }
@@ -308,6 +325,47 @@ function formatDate(dateString) {
     });
 }
 
+function formatDateLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", {
+        month: "long", day: "numeric", year: "numeric"
+    });
+}
+
+function formatDateTimeLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatRole(role) {
+    if (!role) return "—";
+    return String(role).replace(/_/g, " ").toUpperCase();
+}
+
+function getActionStyle(action) {
+    const a = String(action || "").toUpperCase();
+    if (a === "SUBMITTED")
+        return { icon: "📤", label: "Submitted", color: "#2980B9" };
+    if (a === "APPROVED")
+        return { icon: "✓", label: "Approved", color: "#2E7D32" };
+    if (a === "REVISION_REQUIRED")
+        return { icon: "⚠", label: "Revision Required", color: "#C0392B" };
+    if (a === "PULLED")
+        return { icon: "↩", label: "Pulled to Draft", color: "#D97706" };
+    return { icon: "•", label: a || "Action", color: "#6c757d" };
+}
+
+
 function escapeHtml(value) {
     return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -315,6 +373,23 @@ function escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+function formatKg(value) {
+    const n = Number(value) || 0;
+    return n.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " kg";
+}
+
+function toDateInputValue(value) {
+    if (!value) return "";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) return value.substring(0, 10);
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
 }
 
 function statusLabelAndClass(status) {
@@ -853,7 +928,6 @@ async function bulkApproveSelected() {
 
 /* ============================================================
    OPEN REPORT DETAIL
-   (Immutable History + Add-Only New Remark)
 ============================================================ */
 
 async function openReportDetail(report) {
@@ -861,11 +935,10 @@ async function openReportDetail(report) {
 
     selectedReport = report;
 
-    // Hide main Reports header
+    // ---------------- VIEW SWITCHING ----------------
     const mainHeader = document.getElementById("reportsMainHeader");
     if (mainHeader) mainHeader.style.display = "none";
 
-    // Hide list views
     const pendingView = document.getElementById("pendingReportsView");
     const sentView = document.getElementById("sentToProvincialView");
     const awaitingView = document.getElementById("awaitingRevisionView");
@@ -879,83 +952,98 @@ async function openReportDetail(report) {
         detailView.style.display = "block";
     }
 
-    // Get element refs
-    const titleEl           = document.getElementById("detailReportTitle");
-    const subtitleEl        = document.getElementById("detailReportSubtitle");
-    const idEl              = document.getElementById("detailReportId");
-    const municipalityEl    = document.getElementById("detailReportMunicipality");
-    const statusEl          = document.getElementById("detailReportStatus");
-    const dateEl            = document.getElementById("detailReportDate");
-    const encodedByEl       = document.getElementById("detailReportEncodedBy");
-    const yieldEl           = document.getElementById("detailReportYield");
-    const notesEl           = document.getElementById("detailReportNotes");
-    const attachmentsEl     = document.getElementById("detailReportAttachments");
-    const intentsBody       = document.getElementById("detailReportIntentsBody");
-    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
-    const remarksEl         = document.getElementById("remarksTextarea");
-    const flagBtn           = document.getElementById("flagBtn");
-    const approveBtn        = document.getElementById("approveBtn");
-    const backBtn           = document.getElementById("backToPendingBtn");
-    const resubmitBtn       = document.getElementById("resubmitReportBtn");
+    // ---------------- RESET SUB-SECTIONS ----------------
+    const summaryWrapper = document.getElementById("reportSummaryCardWrapper");
+    const summaryBody = document.getElementById("reportSummaryBody");
+    const historyContainer = document.getElementById("validationTimelineContainer");
 
-    // Fill basic info
-    if (titleEl) titleEl.textContent = report.title || `Report #${report.report_id}`;
-    if (subtitleEl) subtitleEl.textContent = `Report #${report.report_id} • ${report.municipality || ""}`;
-    if (idEl) idEl.textContent = report.report_id ?? "—";
-    if (municipalityEl) municipalityEl.textContent = report.municipality || "—";
-    if (dateEl) dateEl.textContent = formatDate(report.submitted_at);
-    if (encodedByEl) encodedByEl.textContent = report.encoded_by_name || "—";
-    if (yieldEl) yieldEl.textContent = report.estimated_yield ?? "—";
-    if (notesEl) notesEl.textContent = report.notes || report.narrative || "—";
-
-    // Status pill
-    const sl = statusLabelAndClass(report.status);
-    if (statusEl) {
-        statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
+    if (summaryWrapper) summaryWrapper.style.display = "none";
+    if (summaryBody) summaryBody.innerHTML = "";
+    if (historyContainer) {
+        historyContainer.innerHTML = `
+            <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                Loading history...
+            </div>
+        `;
     }
 
-    // ============================================================
-    // REMARKS HISTORY — READ-ONLY (immutable)
-    // ============================================================
-    if (remarksHistoryEl) {
-        const historyText = report.revision_remarks || "";
-        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
-        remarksHistoryEl.readOnly = true;
-        remarksHistoryEl.style.background = "#F6F3EB";
-        remarksHistoryEl.style.color = "var(--ink)";
-        remarksHistoryEl.style.cursor = "default";
-    }
+    // ---------------- ELEMENT REFS ----------------
+    const titleEl        = document.getElementById("detailReportTitle");
+    const subtitleEl     = document.getElementById("detailReportSubtitle");
+    const idEl           = document.getElementById("detailReportId");
+    const municipalityEl = document.getElementById("detailReportMunicipality");
+    const statusEl       = document.getElementById("detailReportStatus");
+    const dateEl         = document.getElementById("detailReportDate");
+    const encodedByEl    = document.getElementById("detailReportEncodedBy");
+    const yieldEl        = document.getElementById("detailReportYield");
+    const notesEl        = document.getElementById("detailReportNotes");
+    const attachmentsEl  = document.getElementById("detailReportAttachments");
+    const intentsBody    = document.getElementById("detailReportIntentsBody");
+    const remarksEl      = document.getElementById("remarksTextarea");
+    const flagBtn        = document.getElementById("flagBtn");
+    const approveBtn     = document.getElementById("approveBtn");
+    const backBtn        = document.getElementById("backToPendingBtn");
+    const resubmitBtn    = document.getElementById("resubmitReportBtn");
 
-    // ============================================================
-    // NEW REMARK — always empty, always editable
-    // ============================================================
-    if (remarksEl) {
-        remarksEl.value = "";
-        remarksEl.readOnly = false;
-        remarksEl.disabled = false;
-        remarksEl.style.background = "#FFFFFF";
-        remarksEl.style.color = "var(--ink)";
-        remarksEl.style.cursor = "text";
-        remarksEl.style.borderColor = "var(--border)";
-        remarksEl.style.borderWidth = "1.5px";
-        remarksEl.placeholder = "Type your comment here...";
-    }
-
-    // ============================================================
-    // BUTTON STATES based on status
-    // ============================================================
-
+    // ---------------- STATUS FLAGS ----------------
     const statusUpper = String(report.status || "").toUpperCase();
-
     const isMunicipalPending  = statusUpper === "SUBMITTED_MUNICIPAL_PENDING";
     const isProvincialFlagged = statusUpper === "SUBMITTED_PROVINCIAL_FLAGGED";
     const isRegionalFlagged   = statusUpper === "SUBMITTED_REGIONAL_FLAGGED";
     const isMunicipalFlagged  = statusUpper === "SUBMITTED_MUNICIPAL_FLAGGED";
 
-    // Default: hide optional buttons
+    // ✅ Can this user take action on this report?
+    // Only pending (Municipal awaiting) OR flagged by higher level
+    const canTakeAction = isMunicipalPending || isProvincialFlagged || isRegionalFlagged;
+
+    // ---------------- BASIC INFO (from list data) ----------------
+    if (titleEl) titleEl.textContent = report.title || `Report #${report.report_id}`;
+    if (subtitleEl) subtitleEl.textContent = `Report #${report.report_id} • ${report.municipality || ""}`;
+    if (idEl) idEl.textContent = report.report_id ?? "—";
+    if (municipalityEl) municipalityEl.textContent = report.municipality || "—";
+    if (dateEl) dateEl.textContent = formatDate(report.submitted_at) || "—";
+    if (encodedByEl) encodedByEl.textContent = report.encoded_by_name || "—";
+    if (yieldEl) yieldEl.textContent = report.estimated_yield ?? "—";
+    if (notesEl) notesEl.textContent = report.notes || "—";
+
+    const sl = statusLabelAndClass(report.status);
+    if (statusEl) {
+        statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
+    }
+
+    // ---------------- REMARKS TEXTAREA (conditional) ----------------
+    const remarksRow = remarksEl ? remarksEl.closest(".notes-row") : null;
+
+    if (remarksEl) {
+        remarksEl.value = "";
+        remarksEl.style.borderColor = "var(--border)";
+        remarksEl.style.borderWidth = "1.5px";
+
+        if (canTakeAction) {
+            remarksEl.readOnly = false;
+            remarksEl.disabled = false;
+            remarksEl.style.background = "#FFFFFF";
+            remarksEl.style.color = "var(--ink)";
+            remarksEl.style.cursor = "text";
+            remarksEl.placeholder = "Type your comment here...";
+            if (remarksRow) remarksRow.style.display = "flex";
+        } else {
+            // ✅ Read-only mode — hide the whole row
+            remarksEl.readOnly = true;
+            remarksEl.disabled = true;
+            remarksEl.style.background = "#F6F3EB";
+            remarksEl.style.color = "var(--muted)";
+            remarksEl.style.cursor = "not-allowed";
+            remarksEl.placeholder = "No action available for this status.";
+            if (remarksRow) remarksRow.style.display = "none";
+        }
+    }
+
+    // ---------------- BUTTON VISIBILITY ----------------
     if (resubmitBtn) resubmitBtn.style.display = "none";
 
     if (isMunicipalPending) {
+        // Municipal can approve or flag
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
@@ -967,14 +1055,13 @@ async function openReportDetail(report) {
             approveBtn.textContent = "Approve & Send to Provincial";
             approveBtn.disabled = false;
         }
-
     } else if (isMunicipalFlagged) {
+        // ✅ Municipal already flagged — wait for AEW revision. READ-ONLY.
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
-
     } else if (isProvincialFlagged || isRegionalFlagged) {
-        // Flagged by higher level — show Flag + Resubmit
+        // Flagged by higher level — Municipal can re-flag or resubmit
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
@@ -982,21 +1069,19 @@ async function openReportDetail(report) {
             flagBtn.disabled = false;
         }
         if (approveBtn) approveBtn.style.display = "none";
-
         if (resubmitBtn) {
             resubmitBtn.style.display = "inline-flex";
             resubmitBtn.textContent = "Resubmit to Provincial";
             resubmitBtn.disabled = false;
         }
-
     } else {
-        // Fallback — read-only
+        // Any other status — read-only
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back"; }
         if (flagBtn) flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
     }
 
-    // Fetch full report
+    // ---------------- FETCH FULL REPORT ----------------
     try {
         const full = await fetchJsonWithTimeout(
             `${API_BASE_URL}/api/raw-plant-reports/${report.report_id}`,
@@ -1007,42 +1092,577 @@ async function openReportDetail(report) {
             10000
         );
 
+        console.log("Full report loaded:", full);
+
+        // ============================================================
+        // ✅ Bind proper values from FULL report (not list data)
+        // ============================================================
+        if (dateEl) {
+            dateEl.textContent = formatDate(
+                full.submitted_at || full.created_at
+            ) || "—";
+        }
+
+        if (notesEl) {
+            notesEl.textContent =
+                full.notes
+                || full.narrative
+                || full.remarks
+                || "—";
+        }
+
+        if (encodedByEl) {
+            encodedByEl.textContent =
+                full.encoded_by_name
+                || report.encoded_by_name
+                || "—";
+        }
+
+        if (yieldEl) {
+            yieldEl.textContent =
+                full.estimated_yield != null
+                    ? full.estimated_yield
+                    : "—";
+        }
+
+        if (titleEl) {
+            titleEl.textContent = full.title || `Report #${full.report_id}`;
+        }
+
+        // Re-bind status pill in case full has different status
+        if (statusEl && full.status) {
+            const fullSl = statusLabelAndClass(full.status);
+            statusEl.innerHTML = `<span class="status-pill ${fullSl.cls}">${escapeHtml(fullSl.text)}</span>`;
+        }
+
+        // ---------------- RENDER ATTACHMENTS ----------------
         renderAttachments(full.attachments || []);
+
+        // ---------------- RENDER INTENTS TABLE ----------------
         renderDetailIntents(full.planting_intents || []);
+
+        // ---------------- RENDER SUMMARY CARD ----------------
+        const intents = Array.isArray(full.planting_intents) ? full.planting_intents : [];
+        if (intents.length > 0) {
+            renderReportSummaryCard(intents, {
+                municipality: full.municipality || report.municipality,
+                submitted_at: full.submitted_at || full.created_at,
+                created_at: full.created_at,
+                report_id: full.report_id,
+                title: full.title,
+            });
+        }
+
+        // ---------------- RENDER VALIDATION TIMELINE ----------------
+        renderValidationTimeline(full.validation_history || []);
 
     } catch (err) {
         console.error("Fetch full report error:", err);
+
         if (attachmentsEl) {
             attachmentsEl.textContent = "Unable to load attachments.";
             attachmentsEl.style.color = "#C0392B";
         }
+
         if (intentsBody) {
             intentsBody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="padding:20px; text-align:center; color:#C0392B;">
+                    <td colspan="9" style="padding:20px; text-align:center; color:#C0392B;">
                         Failed to load intents: ${escapeHtml(err.message)}
                     </td>
                 </tr>
             `;
         }
-    }
 
-    // Revision remarks (red box)
-    const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-    const remarksContent = document.getElementById("detailRevisionRemarks");
-
-    if (remarksWrapper && remarksContent) {
-        const rawRemarks = report.revision_remarks || "";
-
-        if (rawRemarks && rawRemarks.trim()) {
-            remarksContent.innerHTML = `<div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(rawRemarks)}</div>`;
-            remarksWrapper.style.display = "block";
-        } else {
-            remarksWrapper.style.display = "none";
+        if (historyContainer) {
+            historyContainer.innerHTML = `
+                <div style="color: #C0392B; font-size: 13px;">
+                    Failed to load timeline: ${escapeHtml(err.message)}
+                </div>
+            `;
         }
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+/* ============================================================
+   📜 RENDER VALIDATION TIMELINE
+============================================================ */
+
+function renderValidationTimeline(history) {
+    const container = document.getElementById("validationTimelineContainer");
+    if (!container) return;
+
+    if (!Array.isArray(history) || history.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding: 20px;
+                text-align: center;
+                color: var(--muted);
+                font-size: 13px;
+                font-style: italic;
+                background: #FAF8F5;
+                border: 1px dashed var(--border-light);
+                border-radius: 8px;
+            ">
+                No validation history recorded yet.
+            </div>
+        `;
+        return;
+    }
+
+    const html = history.map((h, idx) => {
+        const style = getActionStyle(h.action);
+        const isLast = idx === history.length - 1;
+
+        // ✅ Strip old [Role: Name] prefix for backwards compatibility
+        let cleanRemarks = h.remarks || "";
+        cleanRemarks = cleanRemarks.replace(/^\[[^\]]+\]\s*/, "").trim();
+
+        const remarksHtml = cleanRemarks
+            ? `<div class="timeline-remarks">${escapeHtml(cleanRemarks)}</div>`
+            : "";
+
+        const dateHtml = h.created_at
+            ? `<span class="timeline-date">${escapeHtml(formatDateTimeLong(h.created_at))}</span>`
+            : "";
+
+        return `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background:${style.color};">
+                    ${style.icon}
+                </div>
+                ${!isLast ? '<div class="timeline-line"></div>' : ''}
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-action" style="color:${style.color};">
+                            ${escapeHtml(style.label)}
+                        </span>
+                        ${dateHtml}
+                    </div>
+                    <div class="timeline-meta">
+                        <strong>${escapeHtml(h.performed_by_name || "Unknown User")}</strong>
+                        <span class="timeline-role">${escapeHtml(formatRole(h.role))}</span>
+                    </div>
+                    ${remarksHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.innerHTML = `<div class="validation-timeline">${html}</div>`;
+}
+
+
+/* ============================================================
+   📊 RENDER REPORT SUMMARY CARD (AEW-style preview)
+   Adapted from aew.js renderReportSummary() for single report view
+============================================================ */
+
+function renderReportSummaryCard(intents, meta) {
+    const wrapper = document.getElementById("reportSummaryCardWrapper");
+    const body = document.getElementById("reportSummaryBody");
+    const coveragePeriodEl = document.getElementById("summaryCoveragePeriod");
+
+    if (!wrapper || !body) return;
+
+    if (!Array.isArray(intents) || intents.length === 0) {
+        wrapper.style.display = "none";
+        return;
+    }
+
+    wrapper.style.display = "block";
+
+    const selected = intents;
+    const selectedCount = selected.length;
+
+    // -------- AGGREGATE METRICS --------
+    const totalVolume = selected.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
+
+    const uniqueFarmers = new Set(
+        selected.map(i => i.farmer_id || i.farmer_name).filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    const pendingCount = selected.filter(i => {
+        const s = String(i.status || i.plant_status_at_submission || "").toUpperCase();
+        return s === "SUBMITTED" || s === "SUBMITTED_MUNICIPAL_PENDING";
+    }).length;
+
+    const harvestedIntents = selected.filter(i =>
+        (i.finalized_status_at_submission || i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
+
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = selected.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    // -------- COVERAGE PERIOD --------
+    if (coveragePeriodEl) {
+        const submittedAt = meta?.submitted_at || meta?.created_at;
+        if (submittedAt) {
+            const reportDate = new Date(submittedAt);
+            if (!isNaN(reportDate.getTime())) {
+                const weekStart = new Date(reportDate);
+                weekStart.setDate(reportDate.getDate() - 6);
+                const fmt = d => d.toLocaleDateString("en-US", {
+                    month: "short", day: "numeric", year: "numeric"
+                });
+                coveragePeriodEl.textContent =
+                    `Coverage: ${fmt(weekStart)} – ${fmt(reportDate)}`;
+            } else {
+                coveragePeriodEl.textContent = "Coverage: —";
+            }
+        } else {
+            coveragePeriodEl.textContent = "Coverage: —";
+        }
+    }
+
+    // -------- BY COMMODITY --------
+    const byCommodity = {};
+    selected.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    // -------- BY BARANGAY --------
+    const byBarangay = {};
+    selected.forEach(intent => {
+        let b = intent.barangay;
+        if (!b && intent.location) {
+            b = String(intent.location).split(",")[0].trim();
+        }
+        if (!b) b = intent.municipality || "Unknown";
+        if (!byBarangay[b]) byBarangay[b] = { count: 0, volume: 0 };
+        byBarangay[b].count += 1;
+        byBarangay[b].volume += Number(intent.volume) || 0;
+    });
+
+    // -------- BY STATUS --------
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" },
+    };
+
+    selected.forEach(intent => {
+        const s = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    // -------- YIELD PERFORMANCE --------
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    // -------- PLANTING WINDOW --------
+    const plantingDates = selected
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = selected
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    // -------- BUILD HTML --------
+    let html = "";
+
+    // KPI ROW 1
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Selected Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Included in this report</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Across ${selectedCount} intent${selectedCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in this report</div>
+            </div>
+        </div>
+    `;
+
+    // KPI ROW 2
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Validation</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">
+                    ${pendingCount}
+                </div>
+                <div class="summary-kpi-subtext">Awaiting status update</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${
+                    harvestRate === 100 ? "#2E7D32"
+                    : harvestRate > 0 ? "#D97706"
+                    : "#6c757d"
+                };">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    // BREAKDOWN GRID
+    html += `<div class="summary-breakdown-grid">`;
+
+    // By Commodity
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-body">
+    `;
+    const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
+    if (commodityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else {
+        commodityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Barangay
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📍 By Barangay</div>
+            <div class="summary-breakdown-body">
+    `;
+    const barangayEntries = Object.entries(byBarangay).sort((a, b) => b[1].volume - a[1].volume);
+    if (barangayEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else if (barangayEntries.length === 1) {
+        html += `
+            <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                All intents from <b>${escapeHtml(barangayEntries[0][0])}</b>
+            </div>
+        `;
+    } else {
+        barangayEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">📍 ${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Status
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📋 By Finalized Status</div>
+            <div class="summary-breakdown-body">
+    `;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `
+            <div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};">
+                <span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                    <span style="
+                        display: inline-block;
+                        width: 8px; height: 8px;
+                        border-radius: 50%;
+                        background: ${d.color};
+                        margin-right: 8px;
+                    "></span>
+                    ${d.label}
+                </span>
+                <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                    ${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b>
+                </span>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`; // end breakdown grid
+
+    // INSIGHTS
+    html += `<div class="summary-insight-grid">`;
+
+    // Yield Performance
+    html += `<div class="summary-insight-card green">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📊 Yield Performance</div>
+    `;
+    if (hasActualData) {
+        let varianceColor = "#2E7D32";
+        let varianceIcon = "↑";
+        let varianceLabel = "surplus";
+        if (variancePct < 0) {
+            varianceColor = "#C0392B";
+            varianceIcon = "↓";
+            varianceLabel = "shortfall";
+        } else if (variancePct === 0) {
+            varianceColor = "#6c757d";
+            varianceIcon = "→";
+            varianceLabel = "on target";
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Expected (planned):</span>
+                <b>${yieldPlanned.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--muted);">Actual (harvested):</span>
+                <b>${yieldActual.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="
+                display: inline-block; padding: 4px 12px;
+                background: ${varianceColor}15; border-radius: 6px;
+                font-size: 13px; font-weight: 700; color: ${varianceColor};
+            ">
+                ${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-style: italic;">
+                Based on ${harvestedIntents.length} of ${selectedCount} harvested
+            </div>
+        `;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    // Planting Window
+    html += `<div class="summary-insight-card orange">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📅 Planting Window</div>
+    `;
+
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">🌱 Earliest:</span>
+                <b>${formatDateLong(earliest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Latest:</span>
+                <b>${formatDateLong(latest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--muted);">Span:</span>
+                <b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+            </div>
+        `;
+
+        if (harvestDates.length > 0) {
+            const earliestH = new Date(Math.min.apply(null, harvestDates));
+            const latestH = new Date(Math.max.apply(null, harvestDates));
+            const spanH = Math.round((latestH - earliestH) / (1000 * 60 * 60 * 24));
+
+            html += `
+                <div style="
+                    margin-top: 10px; padding-top: 10px;
+                    border-top: 1px dashed var(--border-light);
+                ">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <b>${formatDateLong(earliestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">Harvest latest:</span>
+                        <b>${formatDateLong(latestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted);">Harvest span:</span>
+                        <b>${spanH} day${spanH !== 1 ? "s" : ""}</b>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; // end insights grid
+
+    // FOOTER
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "Municipal Coordinator";
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    html += `
+        <div class="summary-footer">
+            <div>
+                <b style="color: var(--ink);">Report:</b> #${escapeHtml(String(meta?.report_id || "—"))} — ${escapeHtml(meta?.title || "—")}
+            </div>
+            <div>
+                <b style="color: var(--ink);">Viewed by:</b> ${escapeHtml(preparedBy)} at ${escapeHtml(generatedAt)}
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = html;
 }
 
 
@@ -1098,7 +1718,7 @@ function renderDetailIntents(intents) {
     if (!tbody) return;
 
     if (!Array.isArray(intents) || intents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
         return;
     }
 
@@ -1106,31 +1726,91 @@ function renderDetailIntents(intents) {
         const id = intent.planting_intent_id ?? "—";
         const farmer = intent.farmer_name || "—";
         const commodity = intent.commodity || "—";
-        const volume = intent.volume != null ? `${intent.volume} kg` : "—";
-        const plantingDate = formatDate(intent.planting_date);
-        const harvestDate = formatDate(intent.harvest_date);
 
-        const harvestStatus = (intent.finalized_status_at_submission || "NOT PLANTED").toUpperCase();
+        const plannedVol = Number(intent.volume) || 0;
+        const actualVol = Number(intent.actual_harvest_volume) || 0;
+        const hasActual = actualVol > 0;
 
+        const plannedPlanting = intent.planting_date ? formatDate(intent.planting_date) : "—";
+        const plannedHarvest = intent.harvest_date ? formatDate(intent.harvest_date) : "—";
+
+        const actualPlanting = intent.actual_planting_date
+            ? formatDate(intent.actual_planting_date)
+            : null;
+        const actualHarvest = intent.actual_harvest_date
+            ? formatDate(intent.actual_harvest_date)
+            : null;
+
+        // ---- Helper: render actual date with variance badge ----
+        function renderActualDate(actual, planned) {
+            if (!actual) {
+                return `<span style="color: #BBB; font-style: italic;">Not yet recorded</span>`;
+            }
+            let varianceBadge = "";
+            if (planned) {
+                const plannedDate = new Date(planned);
+                const actualDate = new Date(actual);
+                const diffDays = Math.round((actualDate - plannedDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #2E7D32; margin-left: 6px;">(on time)</span>`;
+                } else if (diffDays > 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #D97706; margin-left: 6px;">(+${diffDays}d)</span>`;
+                } else {
+                    varianceBadge = `<span style="font-size: 10px; color: #2980B9; margin-left: 6px;">(${diffDays}d)</span>`;
+                }
+            }
+            return `<span style="color: var(--ink); font-weight: 600;">${actual}</span>${varianceBadge}`;
+        }
+
+        // ---- Helper: render status pill ----
+        const statusUpper = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
         let statusText = "Not Planted";
         let bgColor = "#6c757d";
-
-        if (harvestStatus === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
-        else if (harvestStatus === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
-        else if (harvestStatus === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
+        if (statusUpper === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
+        else if (statusUpper === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
+        else if (statusUpper === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
 
         return `
             <tr>
-                <td class="center-col"><strong>#${escapeHtml(String(id))}</strong></td>
+                <td class="center-col" style="font-weight: 600;">
+                    #${escapeHtml(String(id))}
+                </td>
                 <td>${escapeHtml(farmer)}</td>
                 <td>${escapeHtml(commodity)}</td>
-                <td class="center-col">${escapeHtml(volume)}</td>
-                <td class="center-col">${escapeHtml(plantingDate)}</td>
-                <td class="center-col">${escapeHtml(harvestDate)}</td>
                 <td class="center-col">
-                    <span class="status-pill" style="background-color:${bgColor};">
-                        ${escapeHtml(statusText)}
-                    </span>
+                    <div style="font-weight: 600;">${plannedVol.toLocaleString("en-US")} kg</div>
+                    ${hasActual ? `
+                        <div style="font-size: 11px; color: #2E7D32; margin-top: 2px;">
+                            ✓ ${actualVol.toLocaleString("en-US")} kg actual
+                        </div>
+                    ` : `
+                        <div style="font-size: 11px; color: #BBB; margin-top: 2px; font-style: italic;">
+                            not harvested
+                        </div>
+                    `}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedPlanting)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualPlanting, intent.planting_date)}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedHarvest)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualHarvest, intent.harvest_date)}
+                </td>
+                <td class="center-col">
+                    <span class="status-pill" style="
+                        display:inline-block;
+                        padding:3px 12px;
+                        border-radius:999px;
+                        font-size:11px;
+                        font-weight:700;
+                        color:#FFFFFF;
+                        background-color:${bgColor};
+                    ">${escapeHtml(statusText)}</span>
                 </td>
             </tr>
         `;
@@ -1184,18 +1864,14 @@ function initFlagButton() {
             return;
         }
 
-        const userName = localStorage.getItem("full_name")
-            || localStorage.getItem("username")
-            || "Unknown User";
-        const userRole = localStorage.getItem("role") || "Municipal Coordinator";
-
         const remarksInput = document.getElementById("remarksTextarea").value.trim();
         if (!remarksInput) {
             openModal("Revision remarks are required.");
             return;
         }
 
-        const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
+        // ✅ Just send the raw remarks — backend na ang mag-aattach ng user info
+        const remarks = remarksInput;
 
         flagBtn.disabled = true;
         flagBtn.textContent = "Processing...";
@@ -1263,16 +1939,10 @@ function initApproveButton() {
             return;
         }
 
-        const userName = localStorage.getItem("full_name")
-            || localStorage.getItem("username")
-            || "Unknown User";
-        const userRole = localStorage.getItem("role") || "Municipal Coordinator";
-
         const remarksInput = document.getElementById("remarksTextarea").value.trim();
 
-        const remarks = remarksInput
-            ? `[${userRole}: ${userName}] ${remarksInput}`
-            : `Approved by ${userName} (${userRole})`;
+        // ✅ Send raw remarks or null — no [Role: Name] prefix
+        const remarks = remarksInput || null;
 
         approveBtn.disabled = true;
         approveBtn.textContent = "Processing...";
@@ -1282,7 +1952,7 @@ function initApproveButton() {
                 `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
                 `?validator_id=${validatorId}` +
                 `&validator_role=municipal_coordinator` +
-                `&remarks=${encodeURIComponent(remarks)}`;
+                (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
 
             const res = await fetch(url, {
                 method: "POST",
@@ -1334,14 +2004,8 @@ function initResubmitButton() {
         const remarksEl = document.getElementById("remarksTextarea");
         const remarksInput = remarksEl?.value?.trim() || "";
 
-        const userName = localStorage.getItem("full_name")
-            || localStorage.getItem("username")
-            || "Unknown User";
-        const userRole = localStorage.getItem("role") || "Municipal Coordinator";
-
-        const remarks = remarksInput
-            ? `[${userRole}: ${userName}] ${remarksInput}`
-            : `Resubmitted to Provincial by ${userName} (${userRole})`;
+        // ✅ Send raw remarks or null — no [Role: Name] prefix
+        const remarks = remarksInput || null;
 
         if (!confirm(`Resubmit report #${selectedReport.report_id} to Provincial?`)) {
             return;
@@ -1355,7 +2019,7 @@ function initResubmitButton() {
                 `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
                 `?validator_id=${localStorage.getItem("user_id")}` +
                 `&validator_role=municipal_coordinator` +
-                `&remarks=${encodeURIComponent(remarks)}`;
+                (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
 
             const res = await fetch(url, {
                 method: "POST",
@@ -1402,6 +2066,692 @@ function openModal(message) {
 
 
 /* ============================================================
+   📊 MUNICIPAL SUMMARY — PERIOD PICKER
+============================================================ */
+
+function getPeriodPreset(preset) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = now.getDay(); // 0=Sun
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(now.getDate() + diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    switch (preset) {
+        case "this-week":
+            return { start: startOfWeek, end: endOfWeek };
+
+        case "last-week": {
+            const s = new Date(startOfWeek);
+            s.setDate(s.getDate() - 7);
+            const e = new Date(s);
+            e.setDate(s.getDate() + 6);
+            e.setHours(23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "this-month": {
+            const s = new Date(now.getFullYear(), now.getMonth(), 1);
+            const e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "last-30": {
+            const e = new Date(now);
+            e.setHours(23, 59, 59, 999);
+            const s = new Date(now);
+            s.setDate(s.getDate() - 29);
+            s.setHours(0, 0, 0, 0);
+            return { start: s, end: e };
+        }
+
+        case "this-quarter": {
+            const q = Math.floor(now.getMonth() / 3);
+            const s = new Date(now.getFullYear(), q * 3, 1);
+            const e = new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "all-time":
+        default:
+            return { start: null, end: null };
+    }
+}
+
+function applyPeriodToInputs(period) {
+    const startInput = document.getElementById("summaryPeriodStart");
+    const endInput = document.getElementById("summaryPeriodEnd");
+
+    if (startInput) startInput.value = period.start ? toDateInputValue(period.start) : "";
+    if (endInput) endInput.value = period.end ? toDateInputValue(period.end) : "";
+}
+
+function initSummaryPeriodPicker() {
+    const pills = document.querySelectorAll(".summary-quick-pills .filter-pill");
+    const applyBtn = document.getElementById("applySummaryPeriodBtn");
+    const printBtn = document.getElementById("printSummaryBtn");
+
+    // Set default: this week
+    const initial = getPeriodPreset("this-week");
+    currentSummaryPeriod.start = initial.start;
+    currentSummaryPeriod.end = initial.end;
+    currentSummaryPeriod.preset = "this-week";
+    applyPeriodToInputs(initial);
+
+    pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            const preset = pill.dataset.period;
+            const period = getPeriodPreset(preset);
+
+            currentSummaryPeriod.start = period.start;
+            currentSummaryPeriod.end = period.end;
+            currentSummaryPeriod.preset = preset;
+
+            applyPeriodToInputs(period);
+            loadMunicipalSummary();
+        });
+    });
+
+    if (applyBtn) {
+        applyBtn.addEventListener("click", () => {
+            const startInput = document.getElementById("summaryPeriodStart").value;
+            const endInput = document.getElementById("summaryPeriodEnd").value;
+
+            currentSummaryPeriod.start = startInput ? new Date(startInput) : null;
+            currentSummaryPeriod.end = endInput ? new Date(endInput + "T23:59:59") : null;
+            currentSummaryPeriod.preset = "custom";
+
+            // Deselect preset pills
+            pills.forEach(p => p.classList.remove("active"));
+
+            loadMunicipalSummary();
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener("click", () => {
+            window.print();
+        });
+    }
+}
+
+
+/* ============================================================
+   📊 LOAD MUNICIPAL SUMMARY
+============================================================ */
+
+async function loadMunicipalSummary() {
+    const loadingCard = document.getElementById("summaryLoadingCard");
+    const contentCard = document.getElementById("summaryContentCard");
+
+    if (loadingCard) {
+        loadingCard.style.display = "block";
+        loadingCard.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                Loading summary...
+            </div>
+        `;
+    }
+    if (contentCard) contentCard.style.display = "none";
+
+    try {
+        const params = new URLSearchParams();
+        if (currentSummaryPeriod.start) {
+            params.append("period_start", currentSummaryPeriod.start.toISOString());
+        }
+        if (currentSummaryPeriod.end) {
+            params.append("period_end", currentSummaryPeriod.end.toISOString());
+        }
+
+        const url = `${MUNICIPAL_SUMMARY_ENDPOINT}?${params.toString()}`;
+        console.log("Fetching municipal summary:", url);
+
+        const data = await fetchJsonWithTimeout(
+            url,
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            15000
+        );
+
+        currentSummaryData = data;
+
+        if (loadingCard) loadingCard.style.display = "none";
+        if (contentCard) contentCard.style.display = "block";
+
+        renderMunicipalSummary(data);
+
+    } catch (err) {
+        console.error("Load municipal summary error:", err);
+
+        if (loadingCard) {
+            loadingCard.style.display = "block";
+            loadingCard.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    <strong>Failed to load summary.</strong>
+                    <br><small style="color: #999;">${escapeHtml(err.message || "Please check the FastAPI server.")}</small>
+                    <br><br>
+                    <button onclick="loadMunicipalSummary()" style="padding: 8px 20px; background: #2E7D32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        }
+        if (contentCard) contentCard.style.display = "none";
+    }
+}
+
+
+/* ============================================================
+   📊 RENDER MUNICIPAL SUMMARY
+   (Ported + adapted from AEW's renderReportSummary)
+============================================================ */
+
+function renderMunicipalSummary(data) {
+    const container = document.getElementById("municipalSummaryContent");
+    if (!container) return;
+
+    const intents = Array.isArray(data.intents) ? data.intents : [];
+    const municipality = data.municipality || "Municipality";
+    const reportCount = data.report_count || 0;
+
+    const periodStart = data.period_start ? new Date(data.period_start) : null;
+    const periodEnd = data.period_end ? new Date(data.period_end) : null;
+
+    // ============================================================
+    // EMPTY STATE
+    // ============================================================
+    if (intents.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding: 60px 40px;
+                text-align: center;
+                color: var(--muted);
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;">📊</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                    No reports found for this period
+                </div>
+                <div style="font-size: 13px; line-height: 1.5;">
+                    ${municipality} has no submissions between
+                    <b>${periodStart ? formatDateLong(periodStart) : "the beginning"}</b>
+                    and
+                    <b>${periodEnd ? formatDateLong(periodEnd) : "now"}</b>.
+                </div>
+                <div style="margin-top: 20px; font-size: 12px; color: var(--muted);">
+                    Try adjusting the period above.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // ============================================================
+    // AGGREGATE METRICS
+    // ============================================================
+    const selectedCount = intents.length;
+
+    const totalVolume = intents.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
+
+    const uniqueFarmers = new Set(
+        intents.map(i => i.farmer_id || i.farmer_name).filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    const pendingCount = intents.filter(i => {
+        const s = String(i.status || "").toUpperCase();
+        return s === "SUBMITTED" || s === "SUBMITTED_MUNICIPAL_PENDING";
+    }).length;
+
+    const harvestedIntents = intents.filter(i =>
+        (i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
+
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = intents.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    // ============================================================
+    // BY COMMODITY
+    // ============================================================
+    const byCommodity = {};
+    intents.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0, harvested: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+        if ((intent.finalized_status || "").toUpperCase() === "HARVESTED") {
+            byCommodity[c].harvested += 1;
+        }
+    });
+
+    // ============================================================
+    // BY BARANGAY
+    // ============================================================
+    const byBarangay = {};
+    intents.forEach(intent => {
+        let b = intent.barangay;
+        if (!b && intent.location) {
+            b = String(intent.location).split(",")[0].trim();
+        }
+        if (!b) b = intent.municipality || "Unknown";
+
+        if (!byBarangay[b]) byBarangay[b] = { count: 0, volume: 0 };
+        byBarangay[b].count += 1;
+        byBarangay[b].volume += Number(intent.volume) || 0;
+    });
+
+    // ============================================================
+    // BY STATUS
+    // ============================================================
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" }
+    };
+
+    intents.forEach(intent => {
+        const s = (intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    // ============================================================
+    // YIELD PERFORMANCE
+    // ============================================================
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    // ============================================================
+    // PLANTING WINDOW
+    // ============================================================
+    const plantingDates = intents
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = intents
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    // ============================================================
+    // COVERAGE — reports included this period
+    // ============================================================
+    const coverageText = `${reportCount} report${reportCount !== 1 ? "s" : ""}`;
+
+    // ============================================================
+    // BUILD HTML
+    // ============================================================
+    const periodLabel = periodStart && periodEnd
+        ? `${formatDateLong(periodStart)} – ${formatDateLong(periodEnd)}`
+        : "All time";
+
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "Municipal Coordinator";
+
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    let html = "";
+
+    // ------------------------------------------------------------
+    // HEADER
+    // ------------------------------------------------------------
+    html += `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px solid var(--border-light);
+            flex-wrap: wrap;
+            gap: 12px;
+        ">
+            <div>
+                <div style="
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: var(--green-dark);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                ">📊 Municipal Summary</div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">
+                    ${escapeHtml(municipality)} • Coverage: ${escapeHtml(periodLabel)}
+                </div>
+            </div>
+            <div style="
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--green-dark);
+                background: var(--green-light);
+                padding: 5px 12px;
+                border-radius: 999px;
+            ">
+                ${coverageText} included
+            </div>
+        </div>
+    `;
+
+    // ------------------------------------------------------------
+    // KPI ROW 1
+    // ------------------------------------------------------------
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Total Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Across ${reportCount} report${reportCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Planned estimate</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in period</div>
+            </div>
+        </div>
+    `;
+
+    // ------------------------------------------------------------
+    // KPI ROW 2
+    // ------------------------------------------------------------
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Validation</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">
+                    ${pendingCount}
+                </div>
+                <div class="summary-kpi-subtext">Awaiting status update</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${
+                    harvestRate === 100 ? "#2E7D32"
+                    : harvestRate > 0 ? "#D97706"
+                    : "#6c757d"
+                };">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    // ------------------------------------------------------------
+    // BREAKDOWNS
+    // ------------------------------------------------------------
+    html += `<div class="summary-breakdown-grid">`;
+
+    // By Commodity
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-body">
+    `;
+    const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
+    if (commodityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else {
+        commodityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Barangay
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📍 By Barangay</div>
+            <div class="summary-breakdown-body">
+    `;
+    const barangayEntries = Object.entries(byBarangay).sort((a, b) => b[1].volume - a[1].volume);
+    if (barangayEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else if (barangayEntries.length === 1) {
+        html += `
+            <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                All intents from <b>${escapeHtml(barangayEntries[0][0])}</b>
+            </div>
+        `;
+    } else {
+        barangayEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">📍 ${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Status
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📋 By Finalized Status</div>
+            <div class="summary-breakdown-body">
+    `;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `
+            <div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};">
+                <span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                    <span style="
+                        display: inline-block;
+                        width: 8px; height: 8px;
+                        border-radius: 50%;
+                        background: ${d.color};
+                        margin-right: 8px;
+                    "></span>
+                    ${d.label}
+                </span>
+                <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                    ${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b>
+                </span>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`; // end breakdown grid
+
+    // ------------------------------------------------------------
+    // INSIGHTS — Yield Performance + Planting Window
+    // ------------------------------------------------------------
+    html += `<div class="summary-insight-grid">`;
+
+    // Yield Performance
+    html += `<div class="summary-insight-card green">`;
+    html += `
+        <div style="
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📊 Yield Performance</div>
+    `;
+    if (hasActualData) {
+        let varianceColor = "#2E7D32";
+        let varianceIcon = "↑";
+        let varianceLabel = "surplus";
+        if (variancePct < 0) {
+            varianceColor = "#C0392B";
+            varianceIcon = "↓";
+            varianceLabel = "shortfall";
+        } else if (variancePct === 0) {
+            varianceColor = "#6c757d";
+            varianceIcon = "→";
+            varianceLabel = "on target";
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Expected (planned):</span>
+                <b>${yieldPlanned.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--muted);">Actual (harvested):</span>
+                <b>${yieldActual.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="
+                display: inline-block;
+                padding: 4px 12px;
+                background: ${varianceColor}15;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 700;
+                color: ${varianceColor};
+            ">
+                ${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-style: italic;">
+                Based on ${harvestedIntents.length} of ${selectedCount} harvested
+            </div>
+        `;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    // Planting Window
+    html += `<div class="summary-insight-card orange">`;
+    html += `
+        <div style="
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📅 Planting Window</div>
+    `;
+
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">🌱 Earliest:</span>
+                <b>${formatDateLong(earliest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Latest:</span>
+                <b>${formatDateLong(latest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--muted);">Span:</span>
+                <b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+            </div>
+        `;
+
+        if (harvestDates.length > 0) {
+            const earliestH = new Date(Math.min.apply(null, harvestDates));
+            const latestH = new Date(Math.max.apply(null, harvestDates));
+            const spanH = Math.round((latestH - earliestH) / (1000 * 60 * 60 * 24));
+
+            html += `
+                <div style="
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 1px dashed var(--border-light);
+                ">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <b>${formatDateLong(earliestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">Harvest latest:</span>
+                        <b>${formatDateLong(latestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted);">Harvest span:</span>
+                        <b>${spanH} day${spanH !== 1 ? "s" : ""}</b>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; // end insights grid
+
+    // ------------------------------------------------------------
+    // FOOTER
+    // ------------------------------------------------------------
+    html += `
+        <div class="summary-footer">
+            <div>
+                <b style="color: var(--ink);">Prepared by:</b> ${escapeHtml(preparedBy)}
+            </div>
+            <div>
+                <b style="color: var(--ink);">Generated:</b> ${escapeHtml(generatedAt)}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+
+/* ============================================================
    INITIALIZATION
 ============================================================ */
 
@@ -1419,6 +2769,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initApproveButton();
     initSentToProvincialFilter();
     initResubmitButton();
+    initSummaryPeriodPicker();
 
     const backBtn = document.getElementById("backToPendingBtn");
     if (backBtn) {
@@ -1437,4 +2788,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadAwaitingRevision(),
         loadSentToProvincial()
     ]);
+
+    // Preload summary if currently visible
+    const summaryView = document.getElementById("view-summary");
+    if (summaryView && summaryView.classList.contains("active-view")) {
+        loadMunicipalSummary();
+    }
+
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "reportSummaryToggle") {
+            const body = document.getElementById("reportSummaryBody");
+            const toggle = e.target;
+            if (!body) return;
+
+            const isHidden = body.style.display === "none";
+            body.style.display = isHidden ? "block" : "none";
+            toggle.textContent = isHidden ? "Hide ▲" : "Show ▼";
+        }
+    });
+
 });

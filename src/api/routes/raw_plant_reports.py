@@ -10,6 +10,7 @@ from src.models.raw_plant_reports import RawPlantReport
 from src.models.planting_intents import PlantingIntent
 from src.models.report_planting_intents import ReportPlantingIntent
 from src.models.report_submission import ReportSubmission
+from src.models.report_validation_history import ReportValidationHistory
 from src.models.users import User
 from src.models.farmers import Farmer
 from src.models.report_status import (
@@ -396,55 +397,101 @@ def get_raw_plant_report(
     ):
         pass  # Full access
 
-    
-    # ✅ GET SUBMISSION STATUS (source of truth)
     submission = db.query(ReportSubmission).filter(
         ReportSubmission.report_id == report_id
     ).first()
-    
+
     links = db.query(ReportPlantingIntent).filter(
         ReportPlantingIntent.report_id == report_id
     ).all()
-    
+
     intent_data = []
     for link in links:
         intent = db.query(PlantingIntent).filter(
             PlantingIntent.planting_intent_id == link.planting_intent_id
         ).first()
-        
+
         farmer_name = "Unknown"
+        farmer_barangay = None
+        farmer_municipality = None
+        farmer_id = None
+
         if intent:
             farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
             if farmer:
                 farmer_name = f"{farmer.first_name} {farmer.last_name}"
-        
+                farmer_barangay = farmer.barangay
+                farmer_municipality = farmer.municipality
+            farmer_id = intent.farmer_id
+
         intent_data.append({
             "planting_intent_id": link.planting_intent_id,
+            "farmer_id": farmer_id,
             "farmer_name": farmer_name,
+            "barangay": farmer_barangay,
+            "municipality": farmer_municipality,
             "commodity": intent.commodity if intent else "-",
             "volume": intent.volume if intent else 0,
-            "planting_date": intent.planting_date if intent else None,
-            "harvest_date": intent.harvest_date if intent else None,
-            "finalized_status_at_submission": link.finalized_status_snapshot,
+            "planting_date": intent.planting_date.isoformat() if intent and intent.planting_date else None,
+            "harvest_date": intent.harvest_date.isoformat() if intent and intent.harvest_date else None,
+            "actual_planting_date": (
+                intent.actual_planting_date.isoformat()
+                if intent and getattr(intent, "actual_planting_date", None) else None
+            ),
+            "actual_harvest_date": (
+                intent.actual_harvest_date.isoformat()
+                if intent and getattr(intent, "actual_harvest_date", None) else None
+            ),
+            "actual_harvest_volume": getattr(intent, "actual_harvest_volume", None) if intent else None,
+            "finalized_status_at_submission": link.finalized_status_snapshot or "NOT PLANTED",
+            "plant_status_at_submission": link.plant_status_snapshot,
         })
-    
+
+    history_payload = []
+    if submission:
+        history_records = (
+            db.query(ReportValidationHistory, User)
+            .outerjoin(User, User.user_id == ReportValidationHistory.performed_by)
+            .filter(ReportValidationHistory.submission_id == submission.submission_id)
+            .order_by(ReportValidationHistory.created_at.asc())
+            .all()
+        )
+
+        history_payload = [
+            {
+                "history_id": h.history_id,
+                "action": h.action,
+                "performed_by": h.performed_by,
+                "performed_by_name": (
+                    f"{u.first_name} {u.last_name}".strip()
+                    if u else f"User #{h.performed_by}"
+                ),
+                "role": h.role,
+                "remarks": h.remarks,
+                "created_at": h.created_at.isoformat() if h.created_at else None,
+            }
+            for h, u in history_records
+        ]
+
     return {
         "report_id": report.report_id,
         "title": report.title or f"{report.commodity or 'Crop'} Harvest Report",
         "commodity": report.commodity,
         "municipality": report.municipality,
-        "planting_date": report.planting_date,
+        "planting_date": report.planting_date.isoformat() if report.planting_date else None,
         "estimated_yield": report.estimated_yield,
         "encoded_by": report.encoded_by,
-        "status": submission.status if submission else report.status,           
-        "revision_remarks": submission.revision_remarks if submission else None, 
-        "revision_count": submission.revision_count if submission else 0,        
+        "status": submission.status if submission else report.status,
+        "revision_remarks": submission.revision_remarks if submission else None,
+        "revision_count": submission.revision_count if submission else 0,
         "notes": getattr(report, 'notes', ""),
         "attachments": report.attachments or [],
-        "created_at": report.created_at,
-        "submitted_at": report.created_at,
+        "created_at": report.created_at.isoformat() if report.created_at else None,
+        "submitted_at": report.created_at.isoformat() if report.created_at else None,
         "planting_intents": intent_data,
+        "validation_history": history_payload,
     }
+
 
 
 # ============================================================
@@ -526,11 +573,20 @@ def update_report_status(
 ):
     """
     Update the status of a report's submission.
-    Uses ReportSubmission.status (source of truth) instead of RawPlantReport.status.
+    Uses ReportSubmission.status (source of truth).
+
+    Supports:
+    - Regular status transitions (DRAFT → SUBMITTED_MUNICIPAL_PENDING)
+    - Resubmit with `resubmit_notes` (AEW action after being flagged)
     """
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(400, "Missing 'status' in payload.")
+
+    # ✅ Optional resubmit notes (AEW input)
+    resubmit_notes = payload.get("resubmit_notes")
+    if resubmit_notes:
+        resubmit_notes = str(resubmit_notes).strip() or None
 
     # Validate status value
     try:
@@ -554,16 +610,13 @@ def update_report_status(
 
     old_status = submission.status or ReportStatus.DRAFT.value
 
+    # ✅ Validate transition
     if old_status != new_status:
-        # Validate transition
         if not can_transition(old_status, new_status):
             raise HTTPException(
                 400,
                 f"Cannot transition from '{old_status}' to '{new_status}'."
             )
-
-        submission.status = new_status
-        report.status = new_status
 
         if new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING:
             submittable = (
@@ -579,18 +632,74 @@ def update_report_status(
                     f"Current status: {old_status}"
                 )
 
+    # ✅ Determine if this is a resubmit (AEW action)
+    is_resubmit = (
+        new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING
+        and old_status in (
+            ReportStatus.SUBMITTED_MUNICIPAL_FLAGGED.value,
+            ReportStatus.SUBMITTED_PROVINCIAL_FLAGGED.value,
+            ReportStatus.SUBMITTED_REGIONAL_FLAGGED.value,
+        )
+    )
+
+    # ✅ Determine if this is a fresh submit (from DRAFT)
+    is_fresh_submit = (
+        new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING
+        and old_status == ReportStatus.DRAFT.value
+    )
+
+    # ============================================================
+    # APPLY STATUS CHANGE
+    # ============================================================
     submission.status = new_status
     report.status = new_status
 
     if new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING:
         submission.current_validator_id = report.municipal_coordinator_id
         submission.current_validator_role = "municipal_coordinator"
-        submission.revision_remarks = None
         submission.submitted_at = datetime.utcnow()
 
     elif new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_FLAGGED:
         submission.current_validator_id = None
         submission.current_validator_role = "aew"
+        submission.flagged_at = datetime.utcnow()
+
+    # ============================================================
+    # LOG TO VALIDATION HISTORY (only if status actually changed)
+    # ============================================================
+    if old_status != new_status:
+        if is_fresh_submit:
+            # ✅ Fresh submit from DRAFT
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action="SUBMITTED",
+                performed_by=current_user.user_id,
+                role="aew",
+                remarks=resubmit_notes,   # Optional notes from frontend
+            )
+            db.add(history)
+
+        elif is_resubmit:
+            # ✅ Resubmit after flagged — log resubmit notes to timeline
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action="RESUBMITTED",
+                performed_by=current_user.user_id,
+                role="aew",
+                remarks=resubmit_notes,   # ← AEW's resubmit notes → timeline
+            )
+            db.add(history)
+
+        else:
+            # ✅ Other status transitions (generic)
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action=f"STATUS_CHANGED",
+                performed_by=current_user.user_id,
+                role=current_user.role.lower().replace(" ", "_") if current_user.role else "unknown",
+                remarks=f"Status changed from {old_status} to {new_status}",
+            )
+            db.add(history)
 
     db.commit()
     db.refresh(submission)
