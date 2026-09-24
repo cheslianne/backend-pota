@@ -35,9 +35,15 @@ class UserStatusUpdate(BaseModel):
     is_active: bool
 
 
+class UserArchiveUpdate(BaseModel):
+    is_archived: bool
+
+
 class UserResponse(UserBase):
     user_id: int
     is_active: bool
+    is_archived: bool = False
+    archived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

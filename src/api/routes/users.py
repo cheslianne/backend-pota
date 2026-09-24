@@ -9,8 +9,11 @@ from src.api.schemas.users import (
     UserCreate,
     UserUpdate,
     UserResponse,
-    UserStatusUpdate
+    UserStatusUpdate,
+    UserArchiveUpdate
 )
+
+from datetime import datetime, timezone
 
 from src.core.security import hash_password
 from src.core.rbac import require_role, Role
@@ -180,6 +183,9 @@ def read_users(
 
     users = (
         db.query(User)
+        .filter(
+            User.is_archived.is_(False)
+        )
         .order_by(
             User.user_id.asc()
         )
@@ -218,6 +224,114 @@ def read_users(
     db.commit()
 
     return users
+
+
+# ============================================================
+# GET ARCHIVED USERS
+# ONLY SYSTEM ADMINISTRATOR
+#
+# NOTE: must be registered before "/{user_id}" so the literal
+# "archived" path segment isn't parsed as a user_id.
+# ============================================================
+
+@router.get(
+    "/archived",
+    response_model=list[UserResponse],
+    dependencies=[Depends(require_role(Role.SYSTEM_ADMIN))]
+)
+def read_archived_users(
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(User)
+        .filter(
+            User.is_archived.is_(True)
+        )
+        .order_by(
+            User.archived_at.desc()
+        )
+        .all()
+    )
+
+
+# ============================================================
+# ARCHIVE / RESTORE USER
+# ONLY SYSTEM ADMINISTRATOR
+# ============================================================
+
+@router.patch(
+    "/{user_id}/archive",
+    response_model=UserResponse,
+    dependencies=[Depends(require_role(Role.SYSTEM_ADMIN))]
+)
+def update_user_archive_status(
+    user_id: int,
+    archive_update: UserArchiveUpdate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = (
+        db.query(User)
+        .filter(
+            User.user_id == user_id
+        )
+        .first()
+    )
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if (
+        db_user.role == Role.SYSTEM_ADMIN
+        and archive_update.is_archived is True
+    ):
+        active_admin_count = (
+            db.query(User)
+            .filter(
+                User.role == Role.SYSTEM_ADMIN,
+                User.is_archived.is_(False)
+            )
+            .count()
+        )
+
+        if active_admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot archive the last System Administrator"
+            )
+
+    old_status = db_user.is_archived
+    new_status = archive_update.is_archived
+
+    db_user.is_archived = new_status
+    db_user.archived_at = (
+        datetime.now(timezone.utc) if new_status else None
+    )
+
+    audit_log = AuditLog(
+        user_id=current_user.user_id,
+        action="USER_ARCHIVED" if new_status else "USER_RESTORED",
+        resource_type="User",
+        resource_id=db_user.user_id,
+        old_values={"is_archived": old_status},
+        new_values={"is_archived": new_status},
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent")
+    )
+
+    db.add(audit_log)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
 
 
 # ============================================================
