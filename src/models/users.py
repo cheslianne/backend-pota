@@ -65,6 +65,8 @@ class User(Base):
     # ============================================================
 
     is_active = Column(Boolean, nullable=False, server_default="true")
+    is_archived = Column(Boolean, nullable=False, server_default="false")
+    archived_at = Column(DateTime, nullable=True)
 
     # ============================================================
     # TIMESTAMPS
