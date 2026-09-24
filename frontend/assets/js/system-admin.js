@@ -1748,7 +1748,9 @@ async function manualRunETL() {
 
 async function waitForETLCompletion() {
 
-    const maxAttempts = 60;
+    // 9 steps include PSA network calls + multiple Prophet model fits,
+    // which can take well over 3 minutes on Railway's shared CPU.
+    const maxAttempts = 200;
 
     const interval = 3000;
 
