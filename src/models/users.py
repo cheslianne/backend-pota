@@ -65,6 +65,17 @@ class User(Base):
     # ============================================================
 
     is_active = Column(Boolean, nullable=False, server_default="true")
+    # ============================================================
+
+
+# ============================================================
+# ARCHIVE
+# ============================================================
+
+    is_archived = Column(Boolean, nullable=False, server_default="false", index=True)
+    archived_at = Column(DateTime, nullable=True)
+    archive_remarks = Column(String, nullable=True)        # ✅ BAGO
+    archived_by = Column(Integer, nullable=True)   
 
     # ============================================================
     # TIMESTAMPS

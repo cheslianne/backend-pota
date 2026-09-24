@@ -12,6 +12,7 @@ class Farmer(Base):
     aew_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, index=True)
     rsbsa_id = Column(String(30), unique=True, nullable=False)
     first_name = Column(String(50), nullable=False)
+    middle_name = Column(String, nullable=True)
     last_name = Column(String(50), nullable=False)
     municipality = Column(String(100), nullable=False)
     barangay = Column(String(100), nullable=False)

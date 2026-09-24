@@ -35,14 +35,29 @@ class UserStatusUpdate(BaseModel):
     is_active: bool
 
 
+# ============================================================
+# ARCHIVE
+# ============================================================
+
+class UserArchiveUpdate(BaseModel):
+    is_archived: bool
+    remarks: str | None = None      # ✅ BAGO
+
+
 class UserResponse(UserBase):
     user_id: int
     is_active: bool
+    is_archived: bool          # ← idagdag
+    archived_at: datetime | None = None   # ← idagdag
+    archive_remarks: str | None = None      # ✅ BAGO
+    archived_by: int | None = None
+    archived_by_name: str | None = None
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
 
 
 class ForgotPasswordRequest(BaseModel):

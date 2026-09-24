@@ -1,5 +1,6 @@
 /* ============================================================
    E SAKA — PROVINCIAL COORDINATOR DASHBOARD
+   Aligned with Municipal dashboard logic
 ============================================================ */
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -8,6 +9,7 @@ const PROVINCIAL_PENDING_ENDPOINT      = `${API_BASE_URL}/api/report-submissions
 const SENT_TO_REGIONAL_ENDPOINT        = `${API_BASE_URL}/api/report-submissions/sent-to-regional`;
 const RETURNED_TO_MUNICIPAL_ENDPOINT   = `${API_BASE_URL}/api/report-submissions/returned-to-municipal`;
 const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions/bulk-approve`;
+const PROVINCIAL_SUMMARY_ENDPOINT      = `${API_BASE_URL}/api/report-submissions/provincial-summary`;
 
 
 /* ============================================================
@@ -20,7 +22,14 @@ let returnedToMunicipalReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
 let currentSentToRegionalFilter = "all";
+let currentSummaryPeriod = {
+    start: null,
+    end: null,
+    preset: "this-week",
+};
+let currentSummaryData = null;
 
+// ✅ MAP STATE
 let MUNICIPALITY_MAP_RAW_DATA = [];
 let mapMarkersLayer = null;
 
@@ -73,7 +82,21 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
         }
 
         if (!response.ok) {
-            const detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            let detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            if (Array.isArray(detail)) {
+                detail = detail
+                    .map(e => {
+                        if (typeof e === "string") return e;
+                        if (e.msg) {
+                            const loc = Array.isArray(e.loc) ? e.loc.join(".") : "";
+                            return loc ? `${loc}: ${e.msg}` : e.msg;
+                        }
+                        return JSON.stringify(e);
+                    })
+                    .join("; ");
+            } else if (typeof detail === "object") {
+                detail = JSON.stringify(detail);
+            }
             throw new Error(detail);
         }
 
@@ -201,6 +224,11 @@ function initViewNavigation() {
             if (key === "map" && window.leafletMap) {
                 setTimeout(() => window.leafletMap.invalidateSize(), 50);
             }
+
+            // Lazy-load summary when tab opened
+            if (key === "summary" && !currentSummaryData) {
+                loadProvincialSummary();
+            }
         });
     });
 }
@@ -279,6 +307,7 @@ async function loadMunicipalityMapData() {
     }
 }
 
+// ✅ NEW: Color-coded marker rendering
 function renderFilteredMapMarkers() {
     if (!window.leafletMap) return;
 
@@ -373,6 +402,33 @@ function formatDate(dateString) {
     });
 }
 
+function formatDateLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", {
+        month: "long", day: "numeric", year: "numeric"
+    });
+}
+
+function formatDateTimeLong(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatKg(value) {
+    const n = Number(value) || 0;
+    return n.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " kg";
+}
+
 function escapeHtml(value) {
     return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -380,6 +436,23 @@ function escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+function getActionStyle(action) {
+    const a = String(action || "").toUpperCase();
+    if (a === "SUBMITTED")
+        return { icon: "📤", label: "Submitted", color: "#2980B9" };
+    if (a === "RESUBMITTED")
+        return { icon: "🔄", label: "Resubmitted", color: "#2980B9" };
+    if (a === "APPROVED")
+        return { icon: "✓", label: "Approved", color: "#2E7D32" };
+    if (a === "REVISION_REQUIRED")
+        return { icon: "⚠", label: "Revision Required", color: "#C0392B" };
+    if (a === "PULLED")
+        return { icon: "↩", label: "Pulled to Draft", color: "#D97706" };
+    if (a === "STATUS_CHANGED")
+        return { icon: "•", label: "Status Changed", color: "#6c757d" };
+    return { icon: "•", label: a || "Action", color: "#6c757d" };
 }
 
 function statusLabelAndClass(status) {
@@ -452,7 +525,6 @@ async function loadPendingReports() {
         updateBulkApproveButton();
     }
 }
-
 
 function renderPendingReports() {
     const tbody = document.getElementById("pendingReportsBody");
@@ -582,7 +654,7 @@ function renderReturnedToMunicipal() {
             <td>${escapeHtml(report.title || "—")}</td>
             <td>${escapeHtml(report.commodity || "—")}</td>
             <td>${escapeHtml(report.municipality || "—")}</td>
-            <td class="center-col">${formatDate(report.submitted_at)}</td>
+            <td class="center-col">${formatDate(report.flagged_at || report.submitted_at)}</td>
             <td class="center-col">
                 <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
             </td>
@@ -888,8 +960,17 @@ async function bulkApproveSelected() {
 
         document.getElementById("bulkApproveModal")?.classList.remove("show");
 
+        const approvedCount = result.approved_count || 0;
+
+        // ✅ Styled success modal
         openModal(
-            `${result.approved_count || 0} report${(result.approved_count || 0) > 1 ? "s" : ""} approved and sent to Regional.`
+            `${approvedCount} report${approvedCount !== 1 ? "s" : ""} approved and forwarded to the DA-RFO / Regional Coordinator.`,
+            {
+                title: "Bulk Approval Complete",
+                icon: "✓",
+                iconBg: "#D1FAE5",
+                titleColor: "#2E7D32",
+            }
         );
 
         selectedReportIds.clear();
@@ -903,7 +984,13 @@ async function bulkApproveSelected() {
     } catch (err) {
         console.error("Bulk approve error:", err);
         document.getElementById("bulkApproveModal")?.classList.remove("show");
-        openModal(`Error: ${err.message}`);
+
+        openModal(err.message || "Bulk approval failed.", {
+            title: "Bulk Approval Failed",
+            icon: "⚠",
+            iconBg: "#FEE2E2",
+            titleColor: "#C0392B",
+        });
     } finally {
         if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Confirm"; }
         if (cancelBtn) cancelBtn.disabled = false;
@@ -913,11 +1000,9 @@ async function bulkApproveSelected() {
 
 /* ============================================================
    OPEN REPORT DETAIL
-   (Immutable History + Add-Only New Remark)
 ============================================================ */
 
 async function openReportDetail(report) {
-
     if (!report) return;
     selectedReport = report;
 
@@ -935,7 +1020,22 @@ async function openReportDetail(report) {
         detailView.style.display = "block";
     }
 
-    // Reference elements
+    // Reset sub-sections
+    const summaryWrapper = document.getElementById("reportSummaryCardWrapper");
+    const summaryBody = document.getElementById("reportSummaryBody");
+    const historyContainer = document.getElementById("validationTimelineContainer");
+
+    if (summaryWrapper) summaryWrapper.style.display = "none";
+    if (summaryBody) summaryBody.innerHTML = "";
+    if (historyContainer) {
+        historyContainer.innerHTML = `
+            <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                Loading history...
+            </div>
+        `;
+    }
+
+    // References
     const titleEl           = document.getElementById("detailReportTitle");
     const subtitleEl        = document.getElementById("detailReportSubtitle");
     const idEl              = document.getElementById("detailReportId");
@@ -947,14 +1047,13 @@ async function openReportDetail(report) {
     const notesEl           = document.getElementById("detailReportNotes");
     const attachmentsEl     = document.getElementById("detailReportAttachments");
     const intentsBody       = document.getElementById("detailReportIntentsBody");
-    const remarksHistoryEl  = document.getElementById("remarksHistoryTextarea");
     const remarksEl         = document.getElementById("remarksTextarea");
     const flagBtn           = document.getElementById("flagBtn");
     const approveBtn        = document.getElementById("approveBtn");
     const resubmitBtn       = document.getElementById("resubmitReportBtn");
     const backBtn           = document.getElementById("backToPendingBtn");
 
-    // Populate basic info
+    // Basic info
     if (titleEl)        titleEl.textContent = report.title || `Report #${report.report_id}`;
     if (subtitleEl)     subtitleEl.textContent = `Report #${report.report_id} • ${report.municipality || ""}`;
     if (idEl)           idEl.textContent = report.report_id ?? "—";
@@ -964,26 +1063,13 @@ async function openReportDetail(report) {
     if (yieldEl)        yieldEl.textContent = report.estimated_yield ?? "—";
     if (notesEl)        notesEl.textContent = report.notes || report.narrative || "—";
 
-    // Status pill
     const sl = statusLabelAndClass(report.status);
     if (statusEl) {
         statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
     }
 
     // ============================================================
-    // REMARKS HISTORY — READ-ONLY (immutable, append-style)
-    // ============================================================
-    if (remarksHistoryEl) {
-        const historyText = report.revision_remarks || "";
-        remarksHistoryEl.value = historyText.trim() || "No remarks yet.";
-        remarksHistoryEl.readOnly = true;
-        remarksHistoryEl.style.background = "#F6F3EB";
-        remarksHistoryEl.style.color = "var(--ink)";
-        remarksHistoryEl.style.cursor = "default";
-    }
-
-    // ============================================================
-    // NEW REMARK — always empty, always editable
+    // NEW REMARK — always empty
     // ============================================================
     if (remarksEl) {
         remarksEl.value = "";
@@ -1012,7 +1098,7 @@ async function openReportDetail(report) {
         statusUpper === "SUBMITTED_REGIONAL_APPROVED" ||
         statusUpper === "FINAL_APPROVED";
 
-    // Back button always visible
+    // Back button
     if (backBtn) {
         backBtn.style.display = "inline-flex";
         backBtn.textContent = "Return";
@@ -1021,9 +1107,7 @@ async function openReportDetail(report) {
     // ========================================================
     // BUTTON STATES
     // ========================================================
-
     if (isProvincialPending) {
-        // PENDING — new from Municipal
         if (resubmitBtn) resubmitBtn.style.display = "none";
 
         if (flagBtn) {
@@ -1041,9 +1125,6 @@ async function openReportDetail(report) {
         }
 
     } else if (isRegionalFlagged) {
-        // REGIONAL FLAGGED — DA-RFO sent it back to Provincial
-        // Buttons: Flag (pabalik sa Municipal) + Resubmit (pabalik sa Regional)
-
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
             flagBtn.textContent = "Flag for Revision";
@@ -1051,9 +1132,7 @@ async function openReportDetail(report) {
             flagBtn.classList.remove("active");
         }
 
-        if (approveBtn) {
-            approveBtn.style.display = "none";
-        }
+        if (approveBtn) approveBtn.style.display = "none";
 
         if (resubmitBtn) {
             resubmitBtn.style.display = "inline-flex";
@@ -1063,7 +1142,6 @@ async function openReportDetail(report) {
         }
 
     } else if (isReadOnly) {
-        // READ-ONLY
         if (resubmitBtn) resubmitBtn.style.display = "none";
         if (flagBtn)     flagBtn.style.display = "none";
         if (approveBtn)  approveBtn.style.display = "none";
@@ -1077,7 +1155,6 @@ async function openReportDetail(report) {
         }
 
     } else {
-        // FALLBACK
         if (resubmitBtn) resubmitBtn.style.display = "none";
         if (flagBtn)     flagBtn.style.display = "none";
         if (approveBtn)  approveBtn.style.display = "none";
@@ -1090,20 +1167,54 @@ async function openReportDetail(report) {
         }
     }
 
-    // Fetch full report details
+    // ========================================================
+    // FETCH FULL REPORT
+    // ========================================================
     try {
         const full = await fetchJsonWithTimeout(
             `${API_BASE_URL}/api/raw-plant-reports/${report.report_id}`,
-            { method: "GET", headers: getAuthHeaders(false) },
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
             10000
         );
 
+        console.log("Full report:", full);
+
+        if (dateEl) {
+            dateEl.textContent = formatDate(full.submitted_at || full.created_at) || "—";
+        }
         if (notesEl) {
-            notesEl.textContent = full.notes || full.remarks || full.narrative || "—";
+            notesEl.textContent = full.notes || full.narrative || full.remarks || "—";
+        }
+        if (encodedByEl) {
+            encodedByEl.textContent = full.encoded_by_name || report.encoded_by_name || "—";
+        }
+        if (yieldEl) {
+            yieldEl.textContent = full.estimated_yield != null ? full.estimated_yield : "—";
+        }
+        if (titleEl) {
+            titleEl.textContent = full.title || `Report #${full.report_id}`;
+        }
+
+        if (statusEl && full.status) {
+            const fullSl = statusLabelAndClass(full.status);
+            statusEl.innerHTML = `<span class="status-pill ${fullSl.cls}">${escapeHtml(fullSl.text)}</span>`;
         }
 
         renderAttachments(full.attachments || []);
         renderDetailIntents(full.planting_intents || []);
+
+        const intents = Array.isArray(full.planting_intents) ? full.planting_intents : [];
+        if (intents.length > 0) {
+            renderReportSummaryCard(intents, {
+                municipality: full.municipality || report.municipality,
+                submitted_at: full.submitted_at || full.created_at,
+                created_at: full.created_at,
+                report_id: full.report_id,
+                title: full.title,
+            });
+        }
+
+        renderValidationTimeline(full.validation_history || []);
 
     } catch (err) {
         console.error("Fetch full report error:", err);
@@ -1116,50 +1227,19 @@ async function openReportDetail(report) {
         if (intentsBody) {
             intentsBody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="padding:20px; text-align:center; color:#C0392B;">
+                    <td colspan="9" style="padding:20px; text-align:center; color:#C0392B;">
                         Failed to load intents: ${escapeHtml(err.message)}
                     </td>
                 </tr>
             `;
         }
-    }
 
-    // Revision remarks box
-    const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-    const remarksContent = document.getElementById("detailRevisionRemarks");
-
-    if (remarksWrapper && remarksContent) {
-        const rawRemarks = report.revision_remarks || "";
-
-        if (rawRemarks && rawRemarks.trim()) {
-            const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-            if (match) {
-                remarksContent.innerHTML = `
-                    <div style="
-                        display: inline-block;
-                        font-size: 11px;
-                        font-weight: 700;
-                        color: #C0392B;
-                        background: #FFFFFF;
-                        padding: 3px 10px;
-                        border-radius: 4px;
-                        letter-spacing: 0.02em;
-                        margin-bottom: 10px;
-                    ">
-                        ${escapeHtml(match[1])}
-                    </div>
-                    <div style="color: #333; line-height: 1.6;">
-                        ${escapeHtml(match[2])}
-                    </div>
-                `;
-            } else {
-                remarksContent.textContent = rawRemarks;
-            }
-
-            remarksWrapper.style.display = "block";
-        } else {
-            remarksWrapper.style.display = "none";
+        if (historyContainer) {
+            historyContainer.innerHTML = `
+                <div style="color: #C0392B; font-size: 13px;">
+                    Failed to load timeline: ${escapeHtml(err.message)}
+                </div>
+            `;
         }
     }
 
@@ -1168,92 +1248,472 @@ async function openReportDetail(report) {
 
 
 /* ============================================================
-   RESUBMIT TO REGIONAL
+   📜 RENDER VALIDATION TIMELINE
 ============================================================ */
 
-async function resubmitToRegional(reportId) {
+function renderValidationTimeline(history) {
+    const container = document.getElementById("validationTimelineContainer");
+    if (!container) return;
 
-    if (!reportId) {
-        alert("Report ID is missing.");
+    if (!Array.isArray(history) || history.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding: 20px;
+                text-align: center;
+                color: var(--muted);
+                font-size: 13px;
+                font-style: italic;
+                background: #FAF8F5;
+                border: 1px dashed var(--border-light);
+                border-radius: 8px;
+            ">
+                No validation history recorded yet.
+            </div>
+        `;
         return;
     }
 
-    const remarksEl = document.getElementById("remarksTextarea");
-    const userRemarks = (remarksEl?.value || "").trim();
+    const html = history.map((h, idx) => {
+        const style = getActionStyle(h.action);
+        const isLast = idx === history.length - 1;
 
-    if (!confirm(
-        "Resubmit this report to Regional (DA-RFO)?\n\n" +
-        (userRemarks ? `Your remarks: ${userRemarks}` : "(No remarks provided)")
-    )) {
+        let cleanRemarks = h.remarks || "";
+        cleanRemarks = cleanRemarks.replace(/^\[[^\]]+\]\s*/, "").trim();
+
+        const remarksHtml = cleanRemarks
+            ? `<div class="timeline-remarks">${escapeHtml(cleanRemarks)}</div>`
+            : "";
+
+        const dateHtml = h.created_at
+            ? `<span class="timeline-date">${escapeHtml(formatDateTimeLong(h.created_at))}</span>`
+            : "";
+
+        return `
+            <div class="timeline-item">
+                <div class="timeline-marker" style="background:${style.color};">
+                    ${style.icon}
+                </div>
+                ${!isLast ? '<div class="timeline-line"></div>' : ''}
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-action" style="color:${style.color};">
+                            ${escapeHtml(style.label)}
+                        </span>
+                        ${dateHtml}
+                    </div>
+                    <div class="timeline-meta">
+                        <strong>${escapeHtml(h.performed_by_name || "Unknown User")}</strong>
+                        <span class="timeline-role">${escapeHtml(formatRole(h.role))}</span>
+                    </div>
+                    ${remarksHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.innerHTML = `<div class="validation-timeline">${html}</div>`;
+}
+
+
+/* ============================================================
+   📊 RENDER REPORT SUMMARY CARD
+============================================================ */
+
+function renderReportSummaryCard(intents, meta) {
+    const wrapper = document.getElementById("reportSummaryCardWrapper");
+    const body = document.getElementById("reportSummaryBody");
+    const coveragePeriodEl = document.getElementById("summaryCoveragePeriod");
+
+    if (!wrapper || !body) return;
+
+    if (!Array.isArray(intents) || intents.length === 0) {
+        wrapper.style.display = "none";
         return;
     }
 
-    const validatorId = localStorage.getItem("user_id")
-                     || localStorage.getItem("userId")
-                     || localStorage.getItem("id");
-    const accessToken = getAuthToken();
-    const tokenType = localStorage.getItem("token_type") || "bearer";
+    wrapper.style.display = "block";
 
-    if (!validatorId || !accessToken) {
-        alert("Please log in again.");
-        return;
-    }
+    const selected = intents;
+    const selectedCount = selected.length;
 
-    const userName = localStorage.getItem("full_name")
-                  || localStorage.getItem("username")
-                  || "Unknown";
+    const totalVolume = selected.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
 
-    const remarks = userRemarks
-        ? `[Provincial Coordinator: ${userName}] ${userRemarks}`
-        : `[Provincial Coordinator: ${userName}] Resubmitted after DA-RFO revision.`;
+    const uniqueFarmers = new Set(
+        selected.map(i => i.farmer_id || i.farmer_name).filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
 
-    const resubmitBtn = document.getElementById("resubmitReportBtn");
-    const originalText = resubmitBtn?.textContent;
+    const pendingCount = selected.filter(i => {
+        const s = String(i.status || i.plant_status_at_submission || "").toUpperCase();
+        return s === "SUBMITTED" || s === "SUBMITTED_MUNICIPAL_PENDING";
+    }).length;
 
-    if (resubmitBtn) {
-        resubmitBtn.disabled = true;
-        resubmitBtn.textContent = "Resubmitting...";
-    }
+    const harvestedIntents = selected.filter(i =>
+        (i.finalized_status_at_submission || i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
 
-    try {
-        const url =
-            `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
-            `?validator_id=${encodeURIComponent(validatorId)}` +
-            `&validator_role=provincial_coordinator` +
-            `&remarks=${encodeURIComponent(remarks)}`;
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
 
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `${tokenType} ${accessToken}`
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = selected.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    // COVERAGE PERIOD
+    if (coveragePeriodEl) {
+        const submittedAt = meta?.submitted_at || meta?.created_at;
+        if (submittedAt) {
+            const reportDate = new Date(submittedAt);
+            if (!isNaN(reportDate.getTime())) {
+                const weekStart = new Date(reportDate);
+                weekStart.setDate(reportDate.getDate() - 6);
+                const fmt = d => d.toLocaleDateString("en-US", {
+                    month: "short", day: "numeric", year: "numeric"
+                });
+                coveragePeriodEl.textContent = `Coverage: ${fmt(weekStart)} – ${fmt(reportDate)}`;
+            } else {
+                coveragePeriodEl.textContent = "Coverage: —";
             }
-        });
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${res.status}`);
-        }
-
-        alert("Report resubmitted to Regional successfully.");
-
-        closeReportDetail();
-
-        await Promise.allSettled([
-            loadPendingReports(),
-            loadReturnedToMunicipal(),
-            loadSentToRegional()
-        ]);
-
-    } catch (err) {
-        console.error("Resubmit error:", err);
-        alert(`Error: ${err.message}`);
-    } finally {
-        if (resubmitBtn) {
-            resubmitBtn.disabled = false;
-            resubmitBtn.textContent = originalText || "Resubmit to Regional";
+        } else {
+            coveragePeriodEl.textContent = "Coverage: —";
         }
     }
+
+    // BY COMMODITY
+    const byCommodity = {};
+    selected.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    // BY BARANGAY
+    const byBarangay = {};
+    selected.forEach(intent => {
+        let b = intent.barangay;
+        if (!b && intent.location) b = String(intent.location).split(",")[0].trim();
+        if (!b) b = intent.municipality || "Unknown";
+        if (!byBarangay[b]) byBarangay[b] = { count: 0, volume: 0 };
+        byBarangay[b].count += 1;
+        byBarangay[b].volume += Number(intent.volume) || 0;
+    });
+
+    // BY STATUS
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" },
+    };
+
+    selected.forEach(intent => {
+        const s = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    const plantingDates = selected
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = selected
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    let html = "";
+
+    // KPI ROW 1
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Selected Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Included in this report</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Across ${selectedCount} intent${selectedCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in this report</div>
+            </div>
+        </div>
+    `;
+
+    // KPI ROW 2
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Validation</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">
+                    ${pendingCount}
+                </div>
+                <div class="summary-kpi-subtext">Awaiting status update</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${
+                    harvestRate === 100 ? "#2E7D32"
+                    : harvestRate > 0 ? "#D97706"
+                    : "#6c757d"
+                };">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    // BREAKDOWNS
+    html += `<div class="summary-breakdown-grid">`;
+
+    // By Commodity
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-body">
+    `;
+    const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
+    if (commodityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else {
+        commodityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Barangay
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📍 By Barangay</div>
+            <div class="summary-breakdown-body">
+    `;
+    const barangayEntries = Object.entries(byBarangay).sort((a, b) => b[1].volume - a[1].volume);
+    if (barangayEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else if (barangayEntries.length === 1) {
+        html += `
+            <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                All intents from <b>${escapeHtml(barangayEntries[0][0])}</b>
+            </div>
+        `;
+    } else {
+        barangayEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">📍 ${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Status
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📋 By Finalized Status</div>
+            <div class="summary-breakdown-body">
+    `;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `
+            <div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};">
+                <span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                    <span style="
+                        display: inline-block;
+                        width: 8px; height: 8px;
+                        border-radius: 50%;
+                        background: ${d.color};
+                        margin-right: 8px;
+                    "></span>
+                    ${d.label}
+                </span>
+                <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                    ${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b>
+                </span>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`; // end breakdown grid
+
+    // INSIGHTS
+    html += `<div class="summary-insight-grid">`;
+
+    // Yield Performance
+    html += `<div class="summary-insight-card green">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📊 Yield Performance</div>
+    `;
+    if (hasActualData) {
+        let varianceColor = "#2E7D32";
+        let varianceIcon = "↑";
+        let varianceLabel = "surplus";
+        if (variancePct < 0) {
+            varianceColor = "#C0392B";
+            varianceIcon = "↓";
+            varianceLabel = "shortfall";
+        } else if (variancePct === 0) {
+            varianceColor = "#6c757d";
+            varianceIcon = "→";
+            varianceLabel = "on target";
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Expected (planned):</span>
+                <b>${yieldPlanned.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--muted);">Actual (harvested):</span>
+                <b>${yieldActual.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="
+                display: inline-block; padding: 4px 12px;
+                background: ${varianceColor}15; border-radius: 6px;
+                font-size: 13px; font-weight: 700; color: ${varianceColor};
+            ">
+                ${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-style: italic;">
+                Based on ${harvestedIntents.length} of ${selectedCount} harvested
+            </div>
+        `;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    // Planting Window
+    html += `<div class="summary-insight-card orange">`;
+    html += `
+        <div style="
+            font-size: 11px; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📅 Planting Window</div>
+    `;
+
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">🌱 Earliest:</span>
+                <b>${formatDateLong(earliest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Latest:</span>
+                <b>${formatDateLong(latest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--muted);">Span:</span>
+                <b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+            </div>
+        `;
+
+        if (harvestDates.length > 0) {
+            const earliestH = new Date(Math.min.apply(null, harvestDates));
+            const latestH = new Date(Math.max.apply(null, harvestDates));
+            const spanH = Math.round((latestH - earliestH) / (1000 * 60 * 60 * 24));
+
+            html += `
+                <div style="
+                    margin-top: 10px; padding-top: 10px;
+                    border-top: 1px dashed var(--border-light);
+                ">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <b>${formatDateLong(earliestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">Harvest latest:</span>
+                        <b>${formatDateLong(latestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted);">Harvest span:</span>
+                        <b>${spanH} day${spanH !== 1 ? "s" : ""}</b>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; // end insights
+
+    // FOOTER
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "Provincial Coordinator";
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    html += `
+        <div class="summary-footer">
+            <div>
+                <b style="color: var(--ink);">Report:</b> #${escapeHtml(String(meta?.report_id || "—"))} — ${escapeHtml(meta?.title || "—")}
+            </div>
+            <div>
+                <b style="color: var(--ink);">Viewed by:</b> ${escapeHtml(preparedBy)} at ${escapeHtml(generatedAt)}
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = html;
 }
 
 
@@ -1309,7 +1769,7 @@ function renderDetailIntents(intents) {
     if (!tbody) return;
 
     if (!Array.isArray(intents) || intents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
         return;
     }
 
@@ -1317,31 +1777,89 @@ function renderDetailIntents(intents) {
         const id = intent.planting_intent_id ?? "—";
         const farmer = intent.farmer_name || "—";
         const commodity = intent.commodity || "—";
-        const volume = intent.volume != null ? `${intent.volume} kg` : "—";
-        const plantingDate = formatDate(intent.planting_date);
-        const harvestDate = formatDate(intent.harvest_date);
 
-        const harvestStatus = (intent.finalized_status_at_submission || "NOT PLANTED").toUpperCase();
+        const plannedVol = Number(intent.volume) || 0;
+        const actualVol = Number(intent.actual_harvest_volume) || 0;
+        const hasActual = actualVol > 0;
 
+        const plannedPlanting = intent.planting_date ? formatDate(intent.planting_date) : "—";
+        const plannedHarvest = intent.harvest_date ? formatDate(intent.harvest_date) : "—";
+
+        const actualPlanting = intent.actual_planting_date
+            ? formatDate(intent.actual_planting_date)
+            : null;
+        const actualHarvest = intent.actual_harvest_date
+            ? formatDate(intent.actual_harvest_date)
+            : null;
+
+        function renderActualDate(actual, planned) {
+            if (!actual) {
+                return `<span style="color: #BBB; font-style: italic;">Not yet recorded</span>`;
+            }
+            let varianceBadge = "";
+            if (planned) {
+                const plannedDate = new Date(planned);
+                const actualDate = new Date(actual);
+                const diffDays = Math.round((actualDate - plannedDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #2E7D32; margin-left: 6px;">(on time)</span>`;
+                } else if (diffDays > 0) {
+                    varianceBadge = `<span style="font-size: 10px; color: #D97706; margin-left: 6px;">(+${diffDays}d)</span>`;
+                } else {
+                    varianceBadge = `<span style="font-size: 10px; color: #2980B9; margin-left: 6px;">(${diffDays}d)</span>`;
+                }
+            }
+            return `<span style="color: var(--ink); font-weight: 600;">${actual}</span>${varianceBadge}`;
+        }
+
+        const statusUpper = (intent.finalized_status_at_submission || intent.finalized_status || "NOT PLANTED").toUpperCase();
         let statusText = "Not Planted";
         let bgColor = "#6c757d";
-
-        if (harvestStatus === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
-        else if (harvestStatus === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
-        else if (harvestStatus === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
+        if (statusUpper === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
+        else if (statusUpper === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
+        else if (statusUpper === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
 
         return `
             <tr>
-                <td class="center-col"><strong>#${escapeHtml(String(id))}</strong></td>
+                <td class="center-col" style="font-weight: 600;">
+                    #${escapeHtml(String(id))}
+                </td>
                 <td>${escapeHtml(farmer)}</td>
                 <td>${escapeHtml(commodity)}</td>
-                <td class="center-col">${escapeHtml(volume)}</td>
-                <td class="center-col">${escapeHtml(plantingDate)}</td>
-                <td class="center-col">${escapeHtml(harvestDate)}</td>
                 <td class="center-col">
-                    <span class="status-pill" style="background-color:${bgColor};">
-                        ${escapeHtml(statusText)}
-                    </span>
+                    <div style="font-weight: 600;">${plannedVol.toLocaleString("en-US")} kg</div>
+                    ${hasActual ? `
+                        <div style="font-size: 11px; color: #2E7D32; margin-top: 2px;">
+                            ✓ ${actualVol.toLocaleString("en-US")} kg actual
+                        </div>
+                    ` : `
+                        <div style="font-size: 11px; color: #BBB; margin-top: 2px; font-style: italic;">
+                            not harvested
+                        </div>
+                    `}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedPlanting)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualPlanting, intent.planting_date)}
+                </td>
+                <td class="center-col" style="background: #FAFAFA;">
+                    ${escapeHtml(plannedHarvest)}
+                </td>
+                <td class="center-col" style="background: #FFFBF5;">
+                    ${renderActualDate(actualHarvest, intent.harvest_date)}
+                </td>
+                <td class="center-col">
+                    <span class="status-pill" style="
+                        display:inline-block;
+                        padding:3px 12px;
+                        border-radius:999px;
+                        font-size:11px;
+                        font-weight:700;
+                        color:#FFFFFF;
+                        background-color:${bgColor};
+                    ">${escapeHtml(statusText)}</span>
                 </td>
             </tr>
         `;
@@ -1369,6 +1887,803 @@ function closeReportDetail() {
 
 
 /* ============================================================
+   ACTION CONFIRMATION MODAL
+============================================================ */
+
+function showActionConfirm({
+    title = "Confirm Action",
+    message = "Are you sure?",
+    details = null,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    confirmColor = "#5B6B4F",
+    onConfirm,
+    onCancel = null,
+} = {}) {
+    const modal = document.getElementById("actionConfirmModal");
+    const titleEl = document.getElementById("actionConfirmTitle");
+    const messageEl = document.getElementById("actionConfirmMessage");
+    const detailsEl = document.getElementById("actionConfirmDetails");
+    const okBtn = document.getElementById("actionConfirmOkBtn");
+    const cancelBtn = document.getElementById("actionConfirmCancelBtn");
+
+    // Fallback sa native confirm
+    if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
+        if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
+            onConfirm && onConfirm();
+        }
+        return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
+
+    if (details && details.trim()) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = "block";
+    } else {
+        detailsEl.innerHTML = "";
+        detailsEl.style.display = "none";
+    }
+
+    okBtn.textContent = confirmText;
+    okBtn.style.background = confirmColor;
+    cancelBtn.textContent = cancelText;
+
+    // Clean clone to prevent listener stacking
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    newOkBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onConfirm && onConfirm();
+    });
+
+    newCancelBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onCancel && onCancel();
+    });
+
+    // Click outside to close (treated as cancel)
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+            onCancel && onCancel();
+        }
+    };
+
+    modal.classList.add("show");
+}
+
+
+/* ============================================================
+   📊 PROVINCIAL SUMMARY — PERIOD PICKER
+============================================================ */
+
+function getPeriodPreset(preset) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = now.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(now.getDate() + diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    switch (preset) {
+        case "this-week":
+            return { start: startOfWeek, end: endOfWeek };
+
+        case "last-week": {
+            const s = new Date(startOfWeek);
+            s.setDate(s.getDate() - 7);
+            const e = new Date(s);
+            e.setDate(s.getDate() + 6);
+            e.setHours(23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "this-month": {
+            const s = new Date(now.getFullYear(), now.getMonth(), 1);
+            const e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "last-30": {
+            const e = new Date(now);
+            e.setHours(23, 59, 59, 999);
+            const s = new Date(now);
+            s.setDate(s.getDate() - 29);
+            s.setHours(0, 0, 0, 0);
+            return { start: s, end: e };
+        }
+
+        case "this-quarter": {
+            const q = Math.floor(now.getMonth() / 3);
+            const s = new Date(now.getFullYear(), q * 3, 1);
+            const e = new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59, 999);
+            return { start: s, end: e };
+        }
+
+        case "all-time":
+        default:
+            return { start: null, end: null };
+    }
+}
+
+function toDateInputValue(value) {
+    if (!value) return "";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) return value.substring(0, 10);
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function applyPeriodToInputs(period) {
+    const startInput = document.getElementById("summaryPeriodStart");
+    const endInput = document.getElementById("summaryPeriodEnd");
+
+    if (startInput) startInput.value = period.start ? toDateInputValue(period.start) : "";
+    if (endInput) endInput.value = period.end ? toDateInputValue(period.end) : "";
+}
+
+function initSummaryPeriodPicker() {
+    const pills = document.querySelectorAll(".summary-quick-pills .filter-pill");
+    const applyBtn = document.getElementById("applySummaryPeriodBtn");
+    const printBtn = document.getElementById("printSummaryBtn");
+
+    // Set default: this week
+    const initial = getPeriodPreset("this-week");
+    currentSummaryPeriod.start = initial.start;
+    currentSummaryPeriod.end = initial.end;
+    currentSummaryPeriod.preset = "this-week";
+    applyPeriodToInputs(initial);
+
+    pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            const preset = pill.dataset.period;
+            const period = getPeriodPreset(preset);
+
+            currentSummaryPeriod.start = period.start;
+            currentSummaryPeriod.end = period.end;
+            currentSummaryPeriod.preset = preset;
+
+            applyPeriodToInputs(period);
+            loadProvincialSummary();
+        });
+    });
+
+    if (applyBtn) {
+        applyBtn.addEventListener("click", () => {
+            const startInput = document.getElementById("summaryPeriodStart").value;
+            const endInput = document.getElementById("summaryPeriodEnd").value;
+
+            currentSummaryPeriod.start = startInput ? new Date(startInput) : null;
+            currentSummaryPeriod.end = endInput ? new Date(endInput + "T23:59:59") : null;
+            currentSummaryPeriod.preset = "custom";
+
+            pills.forEach(p => p.classList.remove("active"));
+
+            loadProvincialSummary();
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener("click", () => {
+            window.print();
+        });
+    }
+}
+
+
+/* ============================================================
+   📊 LOAD PROVINCIAL SUMMARY
+============================================================ */
+
+async function loadProvincialSummary() {
+    const loadingCard = document.getElementById("summaryLoadingCard");
+    const contentCard = document.getElementById("summaryContentCard");
+
+    if (loadingCard) {
+        loadingCard.style.display = "block";
+        loadingCard.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+                Loading summary...
+            </div>
+        `;
+    }
+    if (contentCard) contentCard.style.display = "none";
+
+    try {
+        const params = new URLSearchParams();
+        if (currentSummaryPeriod.start) {
+            params.append("period_start", currentSummaryPeriod.start.toISOString());
+        }
+        if (currentSummaryPeriod.end) {
+            params.append("period_end", currentSummaryPeriod.end.toISOString());
+        }
+
+        const url = `${PROVINCIAL_SUMMARY_ENDPOINT}?${params.toString()}`;
+        console.log("Fetching provincial summary:", url);
+
+        const data = await fetchJsonWithTimeout(
+            url,
+            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            15000
+        );
+
+        currentSummaryData = data;
+
+        if (loadingCard) loadingCard.style.display = "none";
+        if (contentCard) contentCard.style.display = "block";
+
+        renderProvincialSummary(data);
+
+    } catch (err) {
+        console.error("Load provincial summary error:", err);
+
+        let errorMessage = "Please check the FastAPI server.";
+        if (err?.message) {
+            if (typeof err.message === "string") {
+                errorMessage = err.message;
+            } else if (typeof err.message === "object") {
+                errorMessage = JSON.stringify(err.message);
+            }
+        }
+
+        if (loadingCard) {
+            loadingCard.style.display = "block";
+            loadingCard.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    <strong>Failed to load summary.</strong>
+                    <br><small style="color: #999;">${escapeHtml(errorMessage)}</small>
+                    <br><br>
+                    <button onclick="loadProvincialSummary()" style="padding: 8px 20px; background: #2E7D32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        }
+        if (contentCard) contentCard.style.display = "none";
+    }
+}
+
+
+/* ============================================================
+   📊 RENDER PROVINCIAL SUMMARY
+   Same as municipal, but By Barangay becomes By Municipality
+============================================================ */
+
+function renderProvincialSummary(data) {
+    const container = document.getElementById("provincialSummaryContent");
+    if (!container) return;
+
+    const intents = Array.isArray(data.intents) ? data.intents : [];
+    const reportCount = data.report_count || 0;
+    const municipalityCount = data.municipality_count || 0;
+
+    const periodStart = data.period_start ? new Date(data.period_start) : null;
+    const periodEnd = data.period_end ? new Date(data.period_end) : null;
+
+    // ============================================================
+    // EMPTY STATE
+    // ============================================================
+    if (intents.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding: 60px 40px;
+                text-align: center;
+                color: var(--muted);
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;">📊</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                    No reports found for this period
+                </div>
+                <div style="font-size: 13px; line-height: 1.5;">
+                    No Pampanga municipality has submissions between
+                    <b>${periodStart ? formatDateLong(periodStart) : "the beginning"}</b>
+                    and
+                    <b>${periodEnd ? formatDateLong(periodEnd) : "now"}</b>.
+                </div>
+                <div style="margin-top: 20px; font-size: 12px; color: var(--muted);">
+                    Try adjusting the period above.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // ============================================================
+    // AGGREGATE METRICS
+    // ============================================================
+    const selectedCount = intents.length;
+
+    const totalVolume = intents.reduce((sum, i) => sum + (Number(i.volume) || 0), 0);
+
+    const uniqueFarmers = new Set(
+        intents.map(i => i.farmer_id || i.farmer_name).filter(Boolean)
+    );
+    const uniqueFarmerCount = uniqueFarmers.size;
+
+    const pendingCount = Number(data.pending_report_count) || 0;
+
+    const harvestedIntents = intents.filter(i =>
+        (i.finalized_status || "").toUpperCase() === "HARVESTED"
+    );
+
+    const harvestedVolume = harvestedIntents.reduce((sum, i) => {
+        const actual = Number(i.actual_harvest_volume);
+        const planned = Number(i.volume);
+        return sum + (actual > 0 ? actual : (planned || 0));
+    }, 0);
+
+    const harvestRate = selectedCount > 0
+        ? Math.round((harvestedIntents.length / selectedCount) * 100)
+        : 0;
+
+    const totalActualHarvest = intents.reduce((sum, i) => {
+        const v = Number(i.actual_harvest_volume);
+        return sum + (v > 0 ? v : 0);
+    }, 0);
+
+    // BY COMMODITY
+    const byCommodity = {};
+    intents.forEach(intent => {
+        const c = intent.commodity || "Unknown";
+        if (!byCommodity[c]) byCommodity[c] = { count: 0, volume: 0 };
+        byCommodity[c].count += 1;
+        byCommodity[c].volume += Number(intent.volume) || 0;
+    });
+
+    // BY MUNICIPALITY (instead of By Barangay)
+    const byMunicipality = {};
+    intents.forEach(intent => {
+        const m = intent.municipality || "Unknown";
+        if (!byMunicipality[m]) byMunicipality[m] = { count: 0, volume: 0 };
+        byMunicipality[m].count += 1;
+        byMunicipality[m].volume += Number(intent.volume) || 0;
+    });
+
+    // BY STATUS
+    const byStatus = {
+        "NOT PLANTED": { count: 0, volume: 0, label: "Not Planted", color: "#6c757d" },
+        "PLANTED":     { count: 0, volume: 0, label: "Planted",     color: "#D97706" },
+        "HARVESTED":   { count: 0, volume: 0, label: "Harvested",   color: "#2E7D32" },
+        "MEDIATING":   { count: 0, volume: 0, label: "Mediating",   color: "#2980B9" },
+    };
+
+    intents.forEach(intent => {
+        const s = (intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (byStatus[s]) {
+            byStatus[s].count += 1;
+            byStatus[s].volume += Number(intent.volume) || 0;
+        }
+    });
+
+    // YIELD
+    const yieldPlanned = totalVolume;
+    const yieldActual = totalActualHarvest;
+    const hasActualData = yieldActual > 0;
+    const variancePct = hasActualData && yieldPlanned > 0
+        ? Math.round(((yieldActual - yieldPlanned) / yieldPlanned) * 100)
+        : 0;
+
+    // PLANTING WINDOW
+    const plantingDates = intents
+        .map(i => i.planting_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    const harvestDates = intents
+        .map(i => i.harvest_date)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()));
+
+    // ============================================================
+    // BUILD HTML
+    // ============================================================
+    const periodLabel = periodStart && periodEnd
+        ? `${formatDateLong(periodStart)} – ${formatDateLong(periodEnd)}`
+        : "All time";
+
+    const preparedBy = localStorage.getItem("full_name")
+        || localStorage.getItem("name")
+        || localStorage.getItem("username")
+        || "Provincial Coordinator";
+
+    const generatedAt = new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit"
+    });
+
+    let html = "";
+
+    // HEADER
+    html += `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px solid var(--border-light);
+            flex-wrap: wrap;
+            gap: 12px;
+        ">
+            <div>
+                <div style="
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: var(--green-dark);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                ">📊 Provincial Summary</div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">
+                    Pampanga • Coverage: ${escapeHtml(periodLabel)}
+                </div>
+            </div>
+            <div style="
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--green-dark);
+                background: var(--green-light);
+                padding: 5px 12px;
+                border-radius: 999px;
+            ">
+                ${reportCount} report${reportCount !== 1 ? "s" : ""} included • ${municipalityCount} municipalit${municipalityCount !== 1 ? "ies" : "y"}
+            </div>
+        </div>
+    `;
+
+    // KPI ROW 1
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">✓ Total Intents</div>
+                <div class="summary-kpi-value">${selectedCount}</div>
+                <div class="summary-kpi-subtext">Across ${reportCount} report${reportCount !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
+                <div class="summary-kpi-subtext">Planned estimate</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-value">${uniqueFarmerCount}</div>
+                <div class="summary-kpi-subtext">Beneficiaries in period</div>
+            </div>
+        </div>
+    `;
+
+    // KPI ROW 2
+    html += `
+        <div class="summary-kpi-grid">
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">⏳ Pending Reports</div>
+                <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">
+                    ${pendingCount}
+                </div>
+                <div class="summary-kpi-subtext">
+                    ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
+                </div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
+                <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
+            </div>
+            <div class="summary-kpi-card">
+                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-value" style="color:${
+                    harvestRate === 100 ? "#2E7D32"
+                    : harvestRate > 0 ? "#D97706"
+                    : "#6c757d"
+                };">${harvestRate}%</div>
+                <div class="summary-kpi-subtext">Completion ratio</div>
+            </div>
+        </div>
+    `;
+
+    // BREAKDOWNS
+    html += `<div class="summary-breakdown-grid">`;
+
+    // By Commodity
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-body">
+    `;
+    const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
+    if (commodityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else {
+        commodityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Municipality
+    html += `
+        <div>
+            <div class="summary-breakdown-title">🏛️ By Municipality</div>
+            <div class="summary-breakdown-body">
+    `;
+    const municipalityEntries = Object.entries(byMunicipality).sort((a, b) => b[1].volume - a[1].volume);
+    if (municipalityEntries.length === 0) {
+        html += `<span style="color: var(--muted); font-style: italic;">No data.</span>`;
+    } else if (municipalityEntries.length === 1) {
+        html += `
+            <div style="color: var(--muted); font-style: italic; font-size: 12px;">
+                All intents from <b>${escapeHtml(municipalityEntries[0][0])}</b>
+            </div>
+        `;
+    } else {
+        municipalityEntries.forEach(([name, d]) => {
+            html += `
+                <div class="summary-breakdown-row">
+                    <span style="font-weight: 600;">🏛️ ${escapeHtml(name)}</span>
+                    <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                        ${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b>
+                    </span>
+                </div>
+            `;
+        });
+    }
+    html += `</div></div>`;
+
+    // By Status
+    html += `
+        <div>
+            <div class="summary-breakdown-title">📋 By Finalized Status</div>
+            <div class="summary-breakdown-body">
+    `;
+    Object.values(byStatus).forEach(d => {
+        const isZero = d.count === 0;
+        html += `
+            <div class="summary-breakdown-row" style="opacity:${isZero ? 0.45 : 1};">
+                <span style="font-weight: 600; color:${isZero ? 'var(--muted)' : 'var(--ink)'};">
+                    <span style="
+                        display: inline-block;
+                        width: 8px; height: 8px;
+                        border-radius: 50%;
+                        background: ${d.color};
+                        margin-right: 8px;
+                    "></span>
+                    ${d.label}
+                </span>
+                <span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">
+                    ${d.count} · <b style="color:${isZero ? 'var(--muted)' : d.color};">${formatKg(d.volume)}</b>
+                </span>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    html += `</div>`; // end breakdown grid
+
+    // INSIGHTS
+    html += `<div class="summary-insight-grid">`;
+
+    // Yield Performance
+    html += `<div class="summary-insight-card green">`;
+    html += `
+        <div style="
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📊 Yield Performance</div>
+    `;
+    if (hasActualData) {
+        let varianceColor = "#2E7D32";
+        let varianceIcon = "↑";
+        let varianceLabel = "surplus";
+        if (variancePct < 0) {
+            varianceColor = "#C0392B";
+            varianceIcon = "↓";
+            varianceLabel = "shortfall";
+        } else if (variancePct === 0) {
+            varianceColor = "#6c757d";
+            varianceIcon = "→";
+            varianceLabel = "on target";
+        }
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Expected (planned):</span>
+                <b>${yieldPlanned.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: var(--muted);">Actual (harvested):</span>
+                <b>${yieldActual.toLocaleString("en-US")} kg</b>
+            </div>
+            <div style="
+                display: inline-block;
+                padding: 4px 12px;
+                background: ${varianceColor}15;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 700;
+                color: ${varianceColor};
+            ">
+                ${varianceIcon} ${Math.abs(variancePct)}% ${varianceLabel}
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-style: italic;">
+                Based on ${harvestedIntents.length} of ${selectedCount} harvested
+            </div>
+        `;
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No actual harvest volume recorded yet.</span>`;
+    }
+    html += `</div>`;
+
+    // Planting Window
+    html += `<div class="summary-insight-card orange">`;
+    html += `
+        <div style="
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+        ">📅 Planting Window</div>
+    `;
+
+    if (plantingDates.length > 0) {
+        const earliest = new Date(Math.min.apply(null, plantingDates));
+        const latest = new Date(Math.max.apply(null, plantingDates));
+        const spanDays = Math.round((latest - earliest) / (1000 * 60 * 60 * 24));
+
+        html += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">🌱 Earliest:</span>
+                <b>${formatDateLong(earliest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Latest:</span>
+                <b>${formatDateLong(latest)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--muted);">Span:</span>
+                <b>${spanDays} day${spanDays !== 1 ? "s" : ""}</b>
+            </div>
+        `;
+
+        if (harvestDates.length > 0) {
+            const earliestH = new Date(Math.min.apply(null, harvestDates));
+            const latestH = new Date(Math.max.apply(null, harvestDates));
+            const spanH = Math.round((latestH - earliestH) / (1000 * 60 * 60 * 24));
+
+            html += `
+                <div style="
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 1px dashed var(--border-light);
+                ">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <b>${formatDateLong(earliestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: var(--muted);">Harvest latest:</span>
+                        <b>${formatDateLong(latestH)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted);">Harvest span:</span>
+                        <b>${spanH} day${spanH !== 1 ? "s" : ""}</b>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span style="color: var(--muted); font-style: italic;">No planting dates available.</span>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`; // end insights
+
+    // FOOTER
+    html += `
+        <div class="summary-footer">
+            <div>
+                <b style="color: var(--ink);">Prepared by:</b> ${escapeHtml(preparedBy)}
+            </div>
+            <div>
+                <b style="color: var(--ink);">Generated:</b> ${escapeHtml(generatedAt)}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+
+/* ============================================================
+   INFO MODAL HELPER
+============================================================ */
+
+function openModal(message, options = {}) {
+    const {
+        title = "Success",
+        icon = "✓",
+        iconBg = "var(--green-light)",
+        titleColor = "var(--green-dark)",
+    } = options;
+
+    const modal = document.getElementById("reportModal");
+    const text = document.getElementById("reportModalText");
+    const titleEl = document.getElementById("reportModalTitle");
+    const iconEl = document.getElementById("reportModalIcon");
+    const closeBtn = document.getElementById("reportModalConfirmBtn");
+
+    // Fallback kung wala ang modal markup
+    if (!modal || !text) {
+        alert(message);
+        return;
+    }
+
+    if (titleEl) {
+        titleEl.textContent = title;
+        titleEl.style.color = titleColor;
+    }
+
+    if (iconEl) {
+        iconEl.textContent = icon;
+        iconEl.style.background = iconBg;
+    }
+
+    text.textContent = message;
+
+    if (closeBtn) {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.addEventListener("click", () => {
+            modal.classList.remove("show");
+        });
+    }
+
+    // Click outside to close
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.classList.remove("show");
+    };
+
+    modal.classList.add("show");
+}
+
+
+
+/* ============================================================
    FLAG FOR REVISION
 ============================================================ */
 
@@ -1376,74 +2691,137 @@ function initFlagButton() {
     const flagBtn = document.getElementById("flagBtn");
     if (!flagBtn) return;
 
-    flagBtn.addEventListener("click", async () => {
-        if (!selectedReport) return;
+    flagBtn.addEventListener("click", () => {
+        if (!selectedReport) {
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
 
         const validatorId = localStorage.getItem("user_id");
         const accessToken = getAuthToken();
         const tokenType = localStorage.getItem("token_type") || "bearer";
 
         if (!validatorId || !accessToken) {
-            openModal("Please log in again.");
-            return;
-        }
-
-        const userName = localStorage.getItem("full_name")
-            || localStorage.getItem("username")
-            || "Unknown User";
-        const userRole = localStorage.getItem("role") || "Provincial Coordinator";
-
-        const remarksInput = document.getElementById("remarksTextarea").value.trim();
-        if (!remarksInput) {
-            openModal("Revision remarks are required.");
-            return;
-        }
-
-        const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
-
-        flagBtn.disabled = true;
-        flagBtn.textContent = "Processing...";
-
-        try {
-            const url =
-                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
-                `?validator_id=${encodeURIComponent(validatorId)}` +
-                `&validator_role=provincial_coordinator` +
-                `&remarks=${encodeURIComponent(remarks)}`;
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `${tokenType} ${accessToken}`
-                }
+            openModal("Please log in again.", {
+                title: "Session Expired",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
             });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `HTTP ${res.status}`);
-            }
-
-            flagBtn.classList.add("active");
-            flagBtn.textContent = "Flagged ✓";
-
-            openModal("Report Flagged for Revision");
-
-            setTimeout(async () => {
-                closeReportDetail();
-                await loadPendingReports();
-                await loadReturnedToMunicipal();
-                await loadSentToRegional();
-            }, 800);
-
-        } catch (err) {
-            console.error("Flag error:", err);
-            openModal(`Error: ${err.message}`);
-            flagBtn.classList.remove("active");
-            flagBtn.textContent = "Flag for Revision";
-        } finally {
-            flagBtn.disabled = false;
+            return;
         }
+
+        const remarksEl = document.getElementById("remarksTextarea");
+        const remarksInput = remarksEl?.value?.trim() || "";
+
+        // ============================================================
+        // ✅ Validation — remarks required
+        // ============================================================
+        if (!remarksInput) {
+            showActionConfirm({
+                title: "Remarks Required",
+                message: "Please enter your revision remarks in the text area before flagging this report. <br><br>The Municipal Coordinator needs to know <strong>what to fix.</strong>",
+                confirmText: "OK, I'll Add Remarks",
+                confirmColor: "#D97706",
+                cancelText: "Cancel",
+                onConfirm: () => {
+                    remarksEl?.focus();
+                    remarksEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+                },
+            });
+            return;
+        }
+
+        const remarks = remarksInput;
+
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
+
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>#${escapeHtml(String(selectedReport.report_id))} — ${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                <span style="font-weight:700;">Your remarks:</span>
+                <span style="font-style:italic; color:#C0392B;">"${escapeHtml(remarks)}"</span>
+            </div>
+        `;
+
+        showActionConfirm({
+            title: "Flag for Revision?",
+            message: "This report will be returned to the Municipal Coordinator for revision. <br><strong>They will need to forward it again after making changes.</strong>",
+            details: detailsHtml,
+            confirmText: "Flag for Revision",
+            confirmColor: "#C0392B",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                flagBtn.disabled = true;
+                flagBtn.textContent = "Processing...";
+
+                try {
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
+                        `?validator_id=${encodeURIComponent(validatorId)}` +
+                        `&validator_role=provincial_coordinator` +
+                        `&remarks=${encodeURIComponent(remarks)}`;
+
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json",
+                            "Authorization": `${tokenType} ${accessToken}`
+                        }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    flagBtn.classList.add("active");
+                    flagBtn.textContent = "Flagged ✓";
+
+                    // ✅ Styled success modal
+                    openModal(
+                        "The report has been returned to the Municipal Coordinator for revision.",
+                        {
+                            title: "Flagged for Revision",
+                            icon: "⚠",
+                            iconBg: "#FEF3C7",
+                            titleColor: "#D97706",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadReturnedToMunicipal();
+                        await loadSentToRegional();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Flag error:", err);
+
+                    openModal(err.message || "Failed to flag report.", {
+                        title: "Flag Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+
+                    flagBtn.classList.remove("active");
+                    flagBtn.textContent = "Flag for Revision";
+                } finally {
+                    flagBtn.disabled = false;
+                }
+            },
+        });
     });
 }
 
@@ -1456,108 +2834,226 @@ function initApproveButton() {
     const approveBtn = document.getElementById("approveBtn");
     if (!approveBtn) return;
 
-    approveBtn.addEventListener("click", async () => {
-        if (!selectedReport) return;
+    approveBtn.addEventListener("click", () => {
+        if (!selectedReport) {
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
 
         const validatorId = localStorage.getItem("user_id");
         const accessToken = getAuthToken();
         const tokenType = localStorage.getItem("token_type") || "bearer";
 
         if (!validatorId || !accessToken) {
-            openModal("Please log in again.");
+            openModal("Please log in again.", {
+                title: "Session Expired",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
             return;
         }
 
-        const userName = localStorage.getItem("full_name")
-            || localStorage.getItem("username")
-            || "Unknown User";
-        const userRole = localStorage.getItem("role") || "Provincial Coordinator";
+        const remarksInput = document.getElementById("remarksTextarea")?.value?.trim();
+        const remarks = remarksInput || null;
 
-        const remarksInput = document.getElementById("remarksTextarea").value.trim();
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
+        const commodity = selectedReport.commodity || "—";
 
-        const remarks = remarksInput
-            ? `[${userRole}: ${userName}] ${remarksInput}`
-            : `Approved by ${userName} (${userRole})`;
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>#${escapeHtml(String(selectedReport.report_id))} — ${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                <span style="font-weight:700;">Commodity:</span>
+                <span>${escapeHtml(commodity)}</span>
+                ${remarks ? `
+                    <span style="font-weight:700;">Your remarks:</span>
+                    <span style="font-style:italic;">"${escapeHtml(remarks)}"</span>
+                ` : ""}
+            </div>
+        `;
 
-        approveBtn.disabled = true;
-        approveBtn.textContent = "Processing...";
+        showActionConfirm({
+            title: "Approve & Send to Regional?",
+            message: "This report will be forwarded to the DA-RFO / Regional Coordinator for validation. <br><strong>This action cannot be undone.</strong>",
+            details: detailsHtml,
+            confirmText: "Approve & Send",
+            confirmColor: "#2E7D32",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                approveBtn.disabled = true;
+                approveBtn.textContent = "Processing...";
 
-        try {
-            const url =
-                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
-                `?validator_id=${validatorId}` +
-                `&validator_role=provincial_coordinator` +
-                `&remarks=${encodeURIComponent(remarks)}`;
+                try {
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                        `?validator_id=${validatorId}` +
+                        `&validator_role=provincial_coordinator` +
+                        (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
 
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `${tokenType} ${accessToken}`
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json",
+                            "Authorization": `${tokenType} ${accessToken}`
+                        }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    approveBtn.classList.add("active");
+                    approveBtn.textContent = "Approved ✓";
+
+                    // ✅ Styled success modal
+                    openModal(
+                        "The report has been successfully forwarded to the DA-RFO / Regional Coordinator for validation.",
+                        {
+                            title: "Approved & Sent",
+                            icon: "✓",
+                            iconBg: "#D1FAE5",
+                            titleColor: "#2E7D32",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadSentToRegional();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Approve error:", err);
+
+                    openModal(err.message || "Failed to approve report.", {
+                        title: "Approval Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+
+                    approveBtn.classList.remove("active");
+                    approveBtn.textContent = "Approve & Send to Regional";
+                } finally {
+                    approveBtn.disabled = false;
                 }
-            });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `HTTP ${res.status}`);
-            }
-
-            approveBtn.classList.add("active");
-            approveBtn.textContent = "Approved ✓";
-
-            openModal("Report Approved and Sent to Regional");
-
-            setTimeout(async () => {
-                closeReportDetail();
-                await loadPendingReports();
-                await loadSentToRegional();
-            }, 800);
-
-        } catch (err) {
-            console.error("Approve error:", err);
-            openModal(`Error: ${err.message}`);
-            approveBtn.classList.remove("active");
-            approveBtn.textContent = "Approve & Send to Regional";
-        } finally {
-            approveBtn.disabled = false;
-        }
+            },
+        });
     });
 }
 
 
 /* ============================================================
-   RESUBMIT BUTTON HANDLER
+   RESUBMIT TO REGIONAL
 ============================================================ */
 
 function initResubmitButton() {
     const resubmitBtn = document.getElementById("resubmitReportBtn");
     if (!resubmitBtn) return;
 
-    resubmitBtn.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
+    resubmitBtn.addEventListener("click", () => {
         if (!selectedReport) {
-            alert("No report selected.");
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
             return;
         }
-        resubmitToRegional(selectedReport.report_id);
+
+        const remarksEl = document.getElementById("remarksTextarea");
+        const remarksInput = remarksEl?.value?.trim() || "";
+        const remarks = remarksInput || null;
+
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
+
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>#${escapeHtml(String(selectedReport.report_id))} — ${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                ${remarks ? `
+                    <span style="font-weight:700;">Your remarks:</span>
+                    <span style="font-style:italic;">"${escapeHtml(remarks)}"</span>
+                ` : ""}
+            </div>
+        `;
+
+        showActionConfirm({
+            title: "Resubmit to Regional?",
+            message: "This report will be resubmitted to the DA-RFO / Regional Coordinator. <br><strong>Make sure all issues have been addressed.</strong>",
+            details: detailsHtml,
+            confirmText: "Yes, Resubmit",
+            confirmColor: "#2E7D32",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                resubmitBtn.disabled = true;
+                resubmitBtn.textContent = "Processing...";
+
+                try {
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                        `?validator_id=${localStorage.getItem("user_id")}` +
+                        `&validator_role=provincial_coordinator` +
+                        (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
+
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: getAuthHeaders()
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    // ✅ Styled success modal
+                    openModal(
+                        "The report has been successfully resubmitted to the DA-RFO / Regional Coordinator.",
+                        {
+                            title: "Resubmitted",
+                            icon: "✓",
+                            iconBg: "#D1FAE5",
+                            titleColor: "#2E7D32",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadReturnedToMunicipal();
+                        await loadSentToRegional();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Resubmit error:", err);
+
+                    openModal(err.message || "Failed to resubmit report.", {
+                        title: "Resubmit Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+
+                    resubmitBtn.disabled = false;
+                    resubmitBtn.textContent = "Resubmit to Regional";
+                }
+            },
+        });
     });
-}
-
-
-/* ============================================================
-   MODAL HELPER
-============================================================ */
-
-function openModal(message) {
-    const modal = document.getElementById("reportModal");
-    const text = document.getElementById("reportModalText");
-
-    if (!modal || !text) return;
-
-    text.textContent = message;
-    modal.classList.add("show");
 }
 
 
@@ -1579,6 +3075,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initFlagButton();
     initApproveButton();
     initResubmitButton();
+    initSummaryPeriodPicker();
 
     const backBtn = document.getElementById("backToPendingBtn");
     if (backBtn) {
@@ -1592,9 +3089,39 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // Summary toggle (collapse/expand)
+    document.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "reportSummaryToggle") {
+            const body = document.getElementById("reportSummaryBody");
+            const toggle = e.target;
+            if (!body) return;
+
+            const isHidden = body.style.display === "none";
+            body.style.display = isHidden ? "block" : "none";
+            toggle.textContent = isHidden ? "Hide ▲" : "Show ▼";
+        }
+    });
+    
     await Promise.allSettled([
         loadPendingReports(),
         loadReturnedToMunicipal(),
         loadSentToRegional()
     ]);
+    
+    // Load summary if the summary view is active
+    const summaryView = document.getElementById("view-summary");
+    if (summaryView && summaryView.classList.contains("active-view")) {
+        loadProvincialSummary();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".modal-overlay").forEach(modal => {
+        modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+                modal.classList.remove("show");
+            }
+        });
+    });
+});
+
 });

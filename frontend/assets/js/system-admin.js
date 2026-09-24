@@ -719,8 +719,7 @@ async function loadUsers() {
                             Archive
                         </button>
 
-                    </div>
-
+                 
                 </td>
             `;
 
@@ -741,14 +740,18 @@ async function loadUsers() {
                     }
                 );
             });
-
-             document
-            .querySelectorAll("#userRows .btn-delete")
+            document
+            .querySelectorAll("#userRows .btn-archive")
             .forEach(button => {
-                button.addEventListener("click", () => {
-                    deleteUser(button);
-                });
+                button.addEventListener(
+                    "click",
+                    () => {
+                        archiveUser(button);
+                    }
+                );
             });
+
+        
 
     }
     catch (error) {
@@ -870,6 +873,11 @@ async function toggleUserStatus(button) {
    PATCH /api/users/{user_id}/archive
 ============================================================ */
 
+/* ============================================================
+   ARCHIVE USER
+   PATCH /api/users/{user_id}/archive
+============================================================ */
+
 async function archiveUser(button) {
 
     const userId = button.dataset.userId;
@@ -884,8 +892,14 @@ async function archiveUser(button) {
     const descEl = document.getElementById("archiveModalDesc");
     const finalBtn = document.getElementById("finalArchiveBtn");
     const cancelBtn = document.getElementById("cancelArchiveBtn");
+    const remarksInput = document.getElementById("archiveRemarks");
+    const remarksError = document.getElementById("archiveRemarksError");
 
     if (!modal) return;
+
+    // ✅ Reset remarks field tuwing mag-o-open
+    if (remarksInput) remarksInput.value = "";
+    if (remarksError) remarksError.style.display = "none";
 
     if (descEl) {
         descEl.textContent =
@@ -905,6 +919,17 @@ async function archiveUser(button) {
     });
 
     document.getElementById("finalArchiveBtn").addEventListener("click", async () => {
+
+        // ✅ REQUIRED REMARKS VALIDATION
+        const remarks = (document.getElementById("archiveRemarks")?.value || "").trim();
+
+        if (!remarks) {
+            const errEl = document.getElementById("archiveRemarksError");
+            if (errEl) errEl.style.display = "block";
+            document.getElementById("archiveRemarks")?.focus();
+            return;   // ← huwag isara yung modal kung walang remarks
+        }
+
         modal.classList.remove("show");
 
         button.disabled = true;
@@ -916,7 +941,10 @@ async function archiveUser(button) {
                 {
                     method: "PATCH",
                     headers: getAuthHeaders(),
-                    body: JSON.stringify({ is_archived: true })
+                    body: JSON.stringify({
+                        is_archived: true,
+                        remarks: remarks        // ✅ NASA LOOB ng body
+                    })
                 }
             );
 
@@ -951,7 +979,6 @@ async function archiveUser(button) {
         }
     });
 }
-
 
 /* ============================================================
    LOAD ARCHIVED USERS
@@ -1034,56 +1061,56 @@ async function loadArchivedUsers() {
         archivedRows.innerHTML = "";
         const paginatedUsers = pagination.paginatedSlice(cachedArchivedUsers);
 
-        paginatedUsers.forEach(user => {
+       paginatedUsers.forEach(user => {
 
-            const row = document.createElement("tr");
+    const row = document.createElement("tr");   // ← UNAHIN ito
 
-            const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
-            const username = user.username || "—";
-            const role = user.role || "—";
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
+    const username = user.username || "—";
+    const role = user.role || "—";
 
-            const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
-            const locationText = locationParts.length ? locationParts.join(", ") : "—";
+    const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
+    const locationText = locationParts.length ? locationParts.join(", ") : "—";
 
-            const archivedAt = formatAuditDate(user.archived_at ?? user.updated_at);
-            const roleStyle = getRoleStyle(role);
-            const userId = user.user_id ?? user.id ?? "";
+    const archivedAt = formatAuditDate(user.archived_at ?? user.updated_at);
+    const roleStyle = getRoleStyle(role);
+    const userId = user.user_id ?? user.id ?? "";
 
-            row.innerHTML = `
+    row.innerHTML = `
+        <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
+        
+        <td>
+            <span class="role ${roleStyle.cls}">
+                ${escapeHTML(roleStyle.label)}
+            </span>
+        </td>
+        
+        <td>
+            <span class="status-badge inactive">
+                ${escapeHTML(archivedAt)}
+            </span>
+        </td>
+        <td>
+            <button
+                class="btn-reactivate"
+                type="button"
+                data-user-id="${escapeHTML(userId)}"
+                data-user-name="${escapeHTML(fullName)}"
+            >
+                Restore
+            </button>
+        </td>
+    `;
 
-                <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
+    // ✅ Click listener DITO — pagkatapos ma-create yung row
+    row.style.cursor = "pointer";
+    row.addEventListener("click", (event) => {
+        if (event.target.closest(".btn-reactivate")) return;
+        openArchiveDetails(user);
+    });
 
-                <td><span class="username-pill">${escapeHTML(username)}</span></td>
-
-                <td>
-                    <span class="role ${roleStyle.cls}">
-                        ${escapeHTML(roleStyle.label)}
-                    </span>
-                </td>
-
-                <td><span class="location-pill">${escapeHTML(locationText)}</span></td>
-
-                <td>
-                    <span class="status-badge inactive">
-                        ${escapeHTML(archivedAt)}
-                    </span>
-                </td>
-
-                <td>
-                    <button
-                        class="btn-reactivate"
-                        type="button"
-                        data-user-id="${escapeHTML(userId)}"
-                        data-user-name="${escapeHTML(fullName)}"
-                    >
-                        Restore
-                    </button>
-                </td>
-            `;
-
-            archivedRows.appendChild(row);
-        });
-
+    archivedRows.appendChild(row);
+});
         pagination.updateUI("archivedPaginationInfo", "archivedPrevPageBtn", "archivedNextPageBtn", "archivedPageNumberBtns");
 
                 // ✅ FIX: Rebind Next/Prev buttons para sa Archived Users
@@ -1119,6 +1146,7 @@ async function loadArchivedUsers() {
                 button.addEventListener("click", () => restoreUser(button));
             });
 
+       
     }
     catch (error) {
         console.error("Load archived users error:", error);
@@ -1217,7 +1245,58 @@ async function restoreUser(button) {
     });
 }
 
+/* ============================================================
+   ARCHIVE DETAILS MODAL
+============================================================ */
 
+/* ============================================================
+   ARCHIVE DETAILS FULL PAGE
+============================================================ */
+
+let currentArchiveUser = null;
+
+function openArchiveDetails(user) {
+
+    const view = document.getElementById("view-archive-details");
+    if (!view) return;
+
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
+    const username = user.username || "—";
+    const role = user.role || "—";
+    const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
+    const locationText = locationParts.length ? locationParts.join(", ") : "—";
+    const archivedAt = formatAuditDate(user.archived_at ?? user.updated_at);
+    const archivedBy = user.archived_by_name || "—";
+    const remarks = user.archive_remarks || user.remarks || "No remarks provided.";
+
+    // Initials para sa avatar
+    const initials = (
+        (user.first_name?.[0] || "") + (user.last_name?.[0] || "")
+    ).toUpperCase() || "?";
+
+    // Fill in the data
+    document.getElementById("archiveDetailInitials").textContent = initials;
+    document.getElementById("archiveDetailName").textContent = fullName;
+    document.getElementById("archiveDetailUsername").textContent = `@${username}`;
+    document.getElementById("archiveDetailRole").textContent = role;
+    document.getElementById("archiveDetailLocation").textContent = locationText;
+    document.getElementById("archiveDetailArchivedAt").textContent = archivedAt;
+    document.getElementById("archiveDetailArchivedBy").textContent = archivedBy;
+    document.getElementById("archiveDetailRemarks").textContent = remarks;
+
+    // Store for restore action
+    currentArchiveUser = user;
+
+    // Switch view
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
+    view.classList.add("active-view");
+
+    // Clear active state sa sidebar (walang active nav item)
+    document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
 /* ============================================================
    CREATE ACCOUNT
    POST /api/users/users
@@ -1331,6 +1410,43 @@ async function createAccount(event) {
 
         return;
     }
+        // ✅ PASSWORD VALIDATION
+    const passwordRules = [
+        
+        {
+            test: (p) => p.length <= 32,
+            msg: "maximum of 32 characters"
+        },
+        {
+            test: (p) => /[A-Z]/.test(p),
+            msg: "at least 1 uppercase letter (A-Z)"
+        },
+        {
+            test: (p) => /[a-z]/.test(p),
+            msg: "at least 1 lowercase letter (a-z)"
+        },
+        {
+            test: (p) => /[0-9]/.test(p),
+            msg: "at least 1 number (0-9)"
+        },
+        {
+            test: (p) => /[!@#$%^&*(),.?":{}|<>_\-\[\]\/\\;'`~+=]/.test(p),
+            msg: "at least 1 special character (!@#$%^&* etc.)"
+        }
+    ];
+
+    const failedRules = passwordRules
+        .filter(rule => !rule.test(password))
+        .map(rule => rule.msg);
+
+    if (failedRules.length > 0) {
+        alert(
+            "Password must contain:\n\n• " +
+            failedRules.join("\n• ")
+        );
+        return;
+    }
+
     if (password !== confirmPassword) {
 
         alert(
@@ -1531,7 +1647,7 @@ async function loadAuditLogs() {
     auditLogRows.innerHTML = `
         <tr>
             <td
-                colspan="7"
+                colspan="5"
                 style="text-align:center;"
             >
                 Loading audit logs...
@@ -1576,7 +1692,7 @@ async function loadAuditLogs() {
             auditLogRows.innerHTML = `
                 <tr>
                     <td
-                        colspan="7"
+                        colspan="5"
                         class="api-error"
                     >
                         ${escapeHTML(
@@ -1633,7 +1749,7 @@ async function loadAuditLogs() {
             auditLogRows.innerHTML = `
                 <tr>
                     <td
-                        colspan="7"
+                        colspan="5"
                         style="text-align:center;"
                     >
                         No audit logs found.
@@ -1667,9 +1783,18 @@ async function loadAuditLogs() {
                 log.id ??
                 "—";
 
-            const userId =
-                log.user_id ??
-                "—";
+            // Build full name safely
+let userName = log.user_name;
+
+if (!userName && log.user) {
+    const fn = log.user.first_name || "";
+    const ln = log.user.last_name || "";
+    userName = `${fn} ${ln}`.trim() || null;
+}
+
+if (!userName) {
+    userName = `User #${log.user_id ?? "—"}`;
+}
 
             const action =
                 log.action ??
@@ -1698,7 +1823,7 @@ async function loadAuditLogs() {
                 </td>
 
                 <td>
-                    ${escapeHTML(userId)}
+                    ${escapeHTML(userName)} 
                 </td>
 
                 <td>
@@ -1707,13 +1832,7 @@ async function loadAuditLogs() {
                     </span>
                 </td>
 
-                <td>
-                    ${escapeHTML(resourceType)}
-                </td>
-
-                <td>
-                    ${escapeHTML(resourceId)}
-                </td>
+                
 
                 <td>
                     ${escapeHTML(createdAt)}
@@ -1793,7 +1912,7 @@ async function loadAuditLogs() {
         auditLogRows.innerHTML = `
             <tr>
                 <td
-                    colspan="7"
+                    colspan="5"
                     class="api-error"
                 >
 
@@ -1810,500 +1929,6 @@ async function loadAuditLogs() {
 }
 
 
-/* ============================================================
-   ETL RUN LOGS
-   GET /api/etl-run-log/
-============================================================ */
-
-async function loadETLRunLogs() {
-
-    const etlRows =
-        document.getElementById("etlRows");
-
-    if (!etlRows) {
-        console.warn(
-            "ETL run log table body #etlRows not found."
-        );
-        return;
-    }
-
-    etlRows.innerHTML = `
-        <tr>
-            <td
-                colspan="3"
-                style="text-align:center;"
-            >
-                Loading ETL logs...
-            </td>
-        </tr>
-    `;
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_BASE_URL}/api/etl-run-log/`,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders()
-                }
-            );
-
-        let data = {};
-
-        try {
-            data = await response.json();
-        }
-        catch {
-            data = {};
-        }
-
-        console.log(
-            "GET /api/etl-run-log/:",
-            response.status,
-            data
-        );
-
-        /* AUTH FAILURE */
-
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-
-        /* FORBIDDEN */
-
-        if (response.status === 403) {
-
-            etlRows.innerHTML = `
-                <tr>
-                    <td
-                        colspan="3"
-                        class="api-error"
-                    >
-                        ${escapeHTML(
-                            getErrorMessage(
-                                data,
-                                "You do not have permission to view ETL logs."
-                            )
-                        )}
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        /* OTHER API ERRORS */
-
-        if (!response.ok) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "Failed to load ETL run logs."
-                )
-            );
-        }
-
-        /* RESPONSE FORMAT */
-
-        let logs = [];
-
-        if (Array.isArray(data)) {
-
-            logs = data;
-
-        }
-        else if (Array.isArray(data.logs)) {
-
-            logs = data.logs;
-
-        }
-        else if (Array.isArray(data.data)) {
-
-            logs = data.data;
-
-        }
-        else {
-
-            throw new Error(
-                "Unexpected ETL log response format."
-            );
-        }
-
-        /* NO LOGS */
-
-        if (logs.length === 0) {
-
-            etlRows.innerHTML = `
-                <tr>
-                    <td
-                        colspan="3"
-                        style="text-align:center;"
-                    >
-                        No ETL logs available.
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        /* RENDER LOGS */
-
-        etlRows.innerHTML = "";
-
-        logs.forEach(log => {
-
-            const row =
-                document.createElement("tr");
-
-            const runDateTime =
-                formatAuditDate(
-                    log.run_date_time
-                );
-
-            const dataSource =
-                log.data_source || "—";
-
-            const status =
-                log.status || "—";
-
-            const statusClass =
-                status.toLowerCase() === "success"
-                    ? "active"
-                    : status.toLowerCase() === "failed"
-                        ? "inactive"
-                        : "";
-
-            row.innerHTML = `
-
-                <td>
-                    ${escapeHTML(runDateTime)}
-                </td>
-
-                <td>
-                    ${escapeHTML(dataSource)}
-                </td>
-
-                <td>
-                    <span
-                        class="status-pill ${statusClass}"
-                    >
-                        ${escapeHTML(status)}
-                    </span>
-                </td>
-
-            `;
-
-            etlRows.appendChild(row);
-
-        });
-
-    }
-    catch (error) {
-
-        console.error(
-            "Load ETL run logs error:",
-            error
-        );
-
-        etlRows.innerHTML = `
-            <tr>
-                <td
-                    colspan="3"
-                    class="api-error"
-                >
-
-                    Failed to load ETL logs.
-
-                    <br><br>
-
-                    ${escapeHTML(error.message)}
-
-                </td>
-            </tr>
-        `;
-    }
-}
-
-
-/* ============================================================
-   MANUAL ETL RUN
-   POST /api/etl-run-log/manual-run
-============================================================ */
-
-async function manualRunETL() {
-
-    const manualRunBtn =
-        document.getElementById("manualRunBtn");
-
-    if (!manualRunBtn) {
-        console.warn(
-            "Manual ETL button #manualRunBtn not found."
-        );
-        return;
-    }
-
-    const confirmed =
-        confirm(
-            "Are you sure you want to run the ETL pipeline manually?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-    manualRunBtn.disabled = true;
-    manualRunBtn.textContent = "Running ETL...";
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_BASE_URL}/api/etl-run-log/manual-run`,
-                {
-                    method: "POST",
-                    headers: getAuthHeaders()
-                }
-            );
-
-        let data = {};
-
-        try {
-            data = await response.json();
-        }
-        catch {
-            data = {};
-        }
-
-        console.log(
-            "POST /api/etl-run-log/manual-run:",
-            response.status,
-            data
-        );
-
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-
-        if (response.status === 403) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "You do not have permission to run the ETL pipeline."
-                )
-            );
-        }
-
-        if (!response.ok) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "Failed to start ETL pipeline."
-                )
-            );
-        }
-
-        /*
-         * ETL has started in the background.
-         * Do NOT show completion alert yet.
-         */
-        console.log(
-            "ETL pipeline started. Waiting for completion..."
-        );
-
-        /*
-         * Wait until the ETL logs show that
-         * all 7 steps have finished.
-         */
-        await waitForETLCompletion();
-
-        /*
-         * Refresh ETL logs after completion.
-         */
-        await loadETLRunLogs();
-
-        /*
-         * FINAL SUCCESS MESSAGE
-         */
-        alert(
-            "ETL Pipeline Completed Successfully!"
-        );
-
-    }
-    catch (error) {
-
-        console.error(
-            "Manual ETL run error:",
-            error
-        );
-
-        alert(
-            "❌ ETL Pipeline Failed.\n\n" +
-            (
-                error.message ||
-                "Unable to complete the ETL pipeline."
-            )
-        );
-
-    }
-    finally {
-
-        manualRunBtn.disabled = false;
-        manualRunBtn.textContent = "Manual Run";
-
-    }
-}
-
-
-/* ============================================================
-   WAIT FOR ETL COMPLETION
-============================================================ */
-
-async function waitForETLCompletion() {
-
-    const maxAttempts = 60;
-
-    const interval = 3000;
-
-    for (
-        let attempt = 1;
-        attempt <= maxAttempts;
-        attempt++
-    ) {
-
-        console.log(
-            `Checking ETL status... Attempt ${attempt}/${maxAttempts}`
-        );
-
-        try {
-
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/api/etl-run-log/`,
-                    {
-                        method: "GET",
-                        headers: getAuthHeaders()
-                    }
-                );
-
-            if (response.status === 401) {
-                handleUnauthorized();
-                throw new Error("Session expired.");
-            }
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Unable to check ETL run status."
-                );
-            }
-
-            const data =
-                await response.json();
-
-            let logs = [];
-
-            if (Array.isArray(data)) {
-
-                logs = data;
-
-            }
-            else if (Array.isArray(data.logs)) {
-
-                logs = data.logs;
-
-            }
-            else if (Array.isArray(data.data)) {
-
-                logs = data.data;
-            }
-
-            /*
-             * We expect 7 ETL steps.
-             */
-            if (logs.length >= 7) {
-
-                /*
-                 * Get the newest 7 logs.
-                 */
-                const latestLogs =
-                    logs
-                        .slice(0, 7);
-
-                /*
-                 * Check if all 7 are finished.
-                 */
-                const allFinished =
-                    latestLogs.every(
-                        log =>
-                            log.status &&
-                            (
-                                log.status.toLowerCase() ===
-                                    "success" ||
-
-                                log.status.toLowerCase() ===
-                                    "failed"
-                            )
-                    );
-
-                if (allFinished) {
-
-                    const hasFailed =
-                        latestLogs.some(
-                            log =>
-                                log.status &&
-                                log.status.toLowerCase() ===
-                                    "failed"
-                        );
-
-                    if (hasFailed) {
-
-                        throw new Error(
-                            "One or more ETL steps failed."
-                        );
-                    }
-
-                    console.log(
-                        "All 7 ETL steps completed successfully."
-                    );
-
-                    return true;
-                }
-            }
-
-        }
-        catch (error) {
-
-            console.error(
-                "ETL status check error:",
-                error
-            );
-
-            throw error;
-        }
-
-        /*
-         * Wait 3 seconds before checking again.
-         */
-        await new Promise(
-            resolve =>
-                setTimeout(
-                    resolve,
-                    interval
-                )
-        );
-    }
-
-    throw new Error(
-        "ETL pipeline is taking too long to complete."
-    );
-}
 
 
 /* ============================================================
@@ -2795,6 +2420,65 @@ function initializeUserSearch() {
     );
 }
 
+/* ============================================================
+   SEARCH ARCHIVED USERS
+============================================================ */
+
+function initializeArchivedSearch() {
+
+    const searchInput = document.getElementById("searchArchived");
+
+    if (!searchInput) {
+        console.warn("Archived search input not found.");
+        return;
+    }
+
+    searchInput.addEventListener("input", () => {
+
+        const search = searchInput.value.trim().toLowerCase();
+        const rows = document.querySelectorAll("#archivedUserRows tr");
+
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+
+            // Skip placeholder / empty rows
+            if (row.querySelector("td[colspan]")) return;
+
+            const text = row.textContent.toLowerCase();
+            const match = !search || text.includes(search);
+
+            row.style.display = match ? "" : "none";
+            if (match) visibleCount++;
+        });
+
+        // Show/hide "No results" message
+        const tbody = document.getElementById("archivedUserRows");
+        if (!tbody) return;
+
+        let emptyRow = tbody.querySelector(".archived-empty-row");
+
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!emptyRow) {
+                emptyRow = document.createElement("tr");
+                emptyRow.className = "archived-empty-row";
+                emptyRow.innerHTML = `
+                    <td colspan="4" style="padding:30px; text-align:center; color:#999;">
+                        No archived users found matching "<b>${escapeHTML(search)}</b>".
+                    </td>
+                `;
+                tbody.appendChild(emptyRow);
+            } else {
+                emptyRow.querySelector("td").innerHTML = `
+                    No archived users found matching "<b>${escapeHTML(search)}</b>".
+                `;
+                emptyRow.style.display = "";
+            }
+        } else if (emptyRow) {
+            emptyRow.style.display = "none";
+        }
+    });
+}
 
 /* ============================================================
    SEARCH AUDIT LOGS
@@ -2839,49 +2523,6 @@ function initializeAuditSearch() {
     );
 }
 
-
-/* ============================================================
-   SEARCH ETL RUN LOGS
-============================================================ */
-
-function initializeETLSearch() {
-
-    const searchInput =
-        document.getElementById(
-            "searchETL"
-        );
-
-    if (!searchInput) {
-        return;
-    }
-
-    searchInput.addEventListener(
-        "input",
-        () => {
-
-            const search =
-                searchInput.value
-                    .trim()
-                    .toLowerCase();
-
-            document
-                .querySelectorAll(
-                    "#etlRows tr"
-                )
-                .forEach(row => {
-
-                    const text =
-                        row.textContent
-                            .toLowerCase();
-
-                    row.style.display =
-                        text.includes(search)
-                            ? ""
-                            : "none";
-                });
-        }
-    );
-}
 
 
 /* ============================================================
@@ -3011,9 +2652,7 @@ document.addEventListener(
 
         loadAuditLogs();
 
-        /* ETL RUN LOGS */
-
-        loadETLRunLogs();
+       
          /* ARCHIVED USERS */
 
         loadArchivedUsers();
@@ -3023,26 +2662,16 @@ document.addEventListener(
         initializeLocationDropdowns();
 
 
-        /* MANUAL ETL RUN */
-
-        const manualRunBtn =
-            document.getElementById("manualRunBtn");
-
-        if (manualRunBtn) {
-
-            manualRunBtn.addEventListener(
-                "click",
-                manualRunETL
-            );
-
-        }
+       
 
 
         /* SEARCH */
 
         initializeUserSearch();
         initializeAuditSearch();
-        initializeETLSearch();
+        initializeArchivedSearch();
+
+    
         
 
 
@@ -3102,6 +2731,62 @@ document.addEventListener(
         if (closeAuditX && auditModal) {
             closeAuditX.addEventListener("click", () => {
                 auditModal.classList.remove("show");
+            });
+        }
+                /* ARCHIVE DETAILS — Back to Archived Users */
+        const backBtn1 = document.getElementById("backToArchivedBtn");
+        const backBtn2 = document.getElementById("backToArchivedBtn2");
+
+        function goBackToArchived() {
+            document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
+            const archivedView = document.getElementById("view-archived");
+            if (archivedView) archivedView.classList.add("active-view");
+
+            document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+            document.querySelector('.nav-item[data-view="archived"]')?.classList.add("active");
+        }
+
+        if (backBtn1) backBtn1.addEventListener("click", goBackToArchived);
+        if (backBtn2) backBtn2.addEventListener("click", goBackToArchived);
+
+
+        /* ARCHIVE DETAILS — Restore from details page */
+        const restoreFromDetailsBtn = document.getElementById("restoreFromDetailsBtn");
+        if (restoreFromDetailsBtn) {
+            restoreFromDetailsBtn.addEventListener("click", () => {
+                if (!currentArchiveUser) return;
+
+                const fakeBtn = document.createElement("button");
+                fakeBtn.dataset.userId = currentArchiveUser.user_id ?? currentArchiveUser.id;
+                fakeBtn.dataset.userName = 
+                    `${currentArchiveUser.first_name || ""} ${currentArchiveUser.last_name || ""}`.trim();
+                
+                restoreUser(fakeBtn);
+            });
+        }
+                /* CLOSE ARCHIVE DETAILS MODAL */
+        const closeArchiveDetailsBtn = document.getElementById("closeArchiveDetailsBtn");
+        const closeArchiveDetailsX = document.getElementById("closeArchiveDetailsX");
+        const archiveDetailsModal = document.getElementById("archiveDetailsModal");
+
+        if (closeArchiveDetailsBtn && archiveDetailsModal) {
+            closeArchiveDetailsBtn.addEventListener("click", () => {
+                archiveDetailsModal.classList.remove("show");
+            });
+        }
+
+        if (closeArchiveDetailsX && archiveDetailsModal) {
+            closeArchiveDetailsX.addEventListener("click", () => {
+                archiveDetailsModal.classList.remove("show");
+            });
+        }
+
+        // Close kapag click sa labas ng modal
+        if (archiveDetailsModal) {
+            archiveDetailsModal.addEventListener("click", (event) => {
+                if (event.target === archiveDetailsModal) {
+                    archiveDetailsModal.classList.remove("show");
+                }
             });
         }
 

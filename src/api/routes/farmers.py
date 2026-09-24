@@ -143,6 +143,7 @@ def create_farmer(
     new_farmer = Farmer(
         rsbsa_id=farmer.rsbsa_id,
         first_name=farmer.first_name,
+        middle_name=farmer.middle_name,
         last_name=farmer.last_name,
         municipality=municipality,
         barangay=barangay,

@@ -11,7 +11,7 @@ class PlantingIntentBase(BaseModel):
     harvest_date: date
     volume: Decimal
     remarks: Optional[str] = None
-    notes: Optional[str] = None  # NEW: For additional notes/comments
+    notes: Optional[str] = None  
     
 
 class PlantingIntentCreate(PlantingIntentBase):
@@ -25,7 +25,10 @@ class PlantingIntentUpdate(BaseModel):
     harvest_date: Optional[date] = None
     volume: Optional[Decimal] = None
     remarks: Optional[str] = None
-    notes: Optional[str] = None  # NEW: Allow updating notes
+    actual_planting_date: date | None = None  
+    actual_harvest_date: date | None = None  
+    actual_harvest_volume: float | None = None  
+    notes: Optional[str] = None  
 
 
 class PlantingIntentResponse(PlantingIntentBase):
@@ -35,7 +38,16 @@ class PlantingIntentResponse(PlantingIntentBase):
     farmer_name: Optional[str] = None
     location: Optional[str] = None
     status: str = "Pending"
-    attachment_url: Optional[str] = None  # NEW: URL to download attachment
+    attachment_url: Optional[str] = None
+
+    actual_planting_date: Optional[date] = None
+    actual_harvest_date: Optional[date] = None
+    actual_harvest_volume: Optional[float] = None
+
+    finalized_status: Optional[str] = "NOT PLANTED"
+    barangay: Optional[str] = None
+    municipality: Optional[str] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(
         from_attributes=True

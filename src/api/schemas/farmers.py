@@ -6,6 +6,7 @@ from typing import Optional
 class FarmerBase(BaseModel):
     rsbsa_id: str
     first_name: str
+    middle_name: Optional[str] = None
     last_name: str
     municipality: str
     barangay: Optional[str] = None
