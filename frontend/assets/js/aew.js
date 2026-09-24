@@ -2878,37 +2878,170 @@ async function submitPlantingIntent() {
    CONFIRMATION MODAL HELPER
 ============================================================ */
 
-function showConfirmModal(title, message, onConfirm) {
+function showConfirmModal({
+    title = "Confirm Action",
+    message = "Are you sure?",
+    details = null,
+    onConfirm,
+    onCancel = null,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    confirmColor = null,
+} = {}) {
     const modal = document.getElementById("confirmReportModal");
     const titleEl = document.getElementById("confirmReportTitle");
     const textEl = document.getElementById("confirmReportText");
+    const detailsEl = document.getElementById("confirmReportDetails");
     const cancelBtn = document.getElementById("cancelConfirmReportBtn");
     const proceedBtn = document.getElementById("proceedConfirmReportBtn");
-    
-    if (!modal) {
-        if (confirm(message)) onConfirm();
+
+    // Fallback to native confirm if modal markup is missing
+    if (!modal || !titleEl || !textEl || !cancelBtn || !proceedBtn) {
+        if (window.confirm(message)) onConfirm && onConfirm();
         return;
     }
-    
+
     titleEl.textContent = title;
     textEl.innerHTML = message;
-    modal.classList.add("show");
-    
+
+    // Structured details block (optional)
+    if (details && detailsEl) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = "block";
+    } else if (detailsEl) {
+        detailsEl.innerHTML = "";
+        detailsEl.style.display = "none";
+    }
+
+    // Confirm button text + color
+    proceedBtn.textContent = confirmText;
+    proceedBtn.style.background = confirmColor || "";
+
+    // Cancel button text
+    cancelBtn.textContent = cancelText;
+
     const newProceedBtn = proceedBtn.cloneNode(true);
     proceedBtn.parentNode.replaceChild(newProceedBtn, proceedBtn);
-    
+
     const newCancelBtn = cancelBtn.cloneNode(true);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-    
-    newProceedBtn.addEventListener("click", function() {
+
+    newProceedBtn.addEventListener("click", function () {
         modal.classList.remove("show");
-        onConfirm();
+        onConfirm && onConfirm();
     });
-    
-    newCancelBtn.addEventListener("click", function() {
+
+    newCancelBtn.addEventListener("click", function () {
         modal.classList.remove("show");
+        onCancel && onCancel();
     });
+
+    // Click outside to close
+    modal.onclick = function (e) {
+        if (e.target === modal) modal.classList.remove("show");
+    };
+
+    modal.classList.add("show");
 }
+
+
+/* ============================================================
+   SUCCESS MODAL HELPER
+============================================================ */
+
+function showSuccessModal({
+    title = "Success",
+    message = "Operation completed successfully.",
+    confirmText = "Done",
+    icon = "✓",
+    iconBg = "var(--green-light)",
+    titleColor = "var(--green-dark)",
+    onClose = null,
+} = {}) {
+    const modal = document.getElementById("reportSubmittedModal");
+    const titleEl = document.getElementById("reportSubmittedTitle");
+    const messageEl = document.getElementById("reportSubmittedMessage");
+    const closeBtn = document.getElementById("closeReportSubmittedBtn");
+    const iconEl = modal?.querySelector("div[style*='border-radius: 50%']");
+
+    // Fallback to native alert if modal markup is missing
+    if (!modal || !titleEl || !messageEl || !closeBtn) {
+        alert(message.replace(/<[^>]*>/g, ""));
+        onClose && onClose();
+        return;
+    }
+
+    titleEl.textContent = title;
+    titleEl.style.color = titleColor;
+    messageEl.innerHTML = message;
+    closeBtn.textContent = confirmText;
+
+    if (iconEl) {
+        iconEl.textContent = icon;
+        iconEl.style.background = iconBg;
+    }
+
+    // Clean clone to prevent listener stacking
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+    newCloseBtn.addEventListener("click", function () {
+        modal.classList.remove("show");
+        onClose && onClose();
+    });
+
+    // Click outside to close
+    modal.onclick = function (e) {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+            onClose && onClose();
+        }
+    };
+
+    modal.classList.add("show");
+}
+
+
+/* ============================================================
+   NAVIGATION HELPER — force-switch to Reports main view
+   Use after actions that should return the user to the list.
+============================================================ */
+
+function switchToReportsTab() {
+    // 1. Highlight the Reports nav button
+    const reportsNavBtn = document.querySelector('.nav-item[data-view="reports"]');
+    if (reportsNavBtn) {
+        document.querySelectorAll(".nav-item[data-view]").forEach(btn => {
+            btn.classList.toggle("active", btn === reportsNavBtn);
+        });
+    }
+
+    // 2. Show the Reports view, hide others
+    document.querySelectorAll(".view").forEach(view => {
+        view.classList.remove("active-view");
+    });
+    const reportsView = document.getElementById("view-reports");
+    if (reportsView) reportsView.classList.add("active-view");
+
+    // 3. Within Reports, show only the main list
+    const mainView = document.getElementById("reportsMainSubview");
+    const detailsView = document.getElementById("reportDetailsSubview");
+    const submitView = document.getElementById("submitReportSubview");
+
+    if (detailsView) {
+        detailsView.classList.add("hidden-element");
+        detailsView.style.display = "";
+    }
+    if (submitView) {
+        submitView.classList.add("hidden-element");
+        submitView.style.display = "";
+    }
+    if (mainView) {
+        mainView.classList.remove("hidden-element");
+        mainView.style.display = "";
+    }
+}
+
 
 
 /* ============================================================
@@ -2953,46 +3086,101 @@ function initReporting() {
             const notes = document.getElementById("reportNotesInput")?.value?.trim() || "";
             const intents = window.selectedReportIntents || [];
 
-            if (title || notes || intents.length > 0) {
-                const confirmMessage = 
-                    "Are you sure you want to cancel?\n\n" +
-                    "All unsaved changes will be lost:\n" +
-                    `• Title: ${title || "(empty)"}\n` +
-                    `• Intents: ${intents.length}\n` +
-                    `• Notes: ${notes ? "Yes" : "(empty)"}\n\n` +
-                    "This action cannot be undone.";
-
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
+            // Nothing to lose → just close immediately
+            if (!title && !notes && intents.length === 0) {
+                console.log("Cancelling empty report form...");
+                window.currentEditingReportId = null;
+                closeSubmitReportSubview();
+                return;
             }
 
-            console.log("Cancelling report edit...");
-            window.currentEditingReportId = null;        
-            closeSubmitReportSubview();
+            const detailsHtml = `
+                <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                    <span style="font-weight:700;">Title:</span>
+                    <span>${escapeHtml(title || "(empty)")}</span>
+                    <span style="font-weight:700;">Intents:</span>
+                    <span>${intents.length} selected</span>
+                    <span style="font-weight:700;">Notes:</span>
+                    <span>${notes ? "Yes" : "(empty)"}</span>
+                </div>
+            `;
+
+            showConfirmModal({
+                title: "Discard Changes?",
+                message: "All unsaved changes to this report will be lost. <br><strong>This action cannot be undone.</strong>",
+                details: detailsHtml,
+                confirmText: "Yes, Discard",
+                confirmColor: "#C0392B",
+                cancelText: "Keep Editing",
+                onConfirm: () => {
+                    console.log("Cancelling report edit...");
+                    window.currentEditingReportId = null;
+                    closeSubmitReportSubview();
+                },
+            });
         });
     }
 
+    /* ============================================================
+       SUBMIT REPORT — validate first, then styled confirmation
+    ============================================================ */
     if (submitFinalBtn) {
         submitFinalBtn.addEventListener("click", function () {
             const title = document.getElementById("reportTitleInput")?.value?.trim() || "";
             const notes = document.getElementById("reportNotesInput")?.value?.trim() || "";
             const intents = window.selectedReportIntents || [];
-            
-            if (title || notes || intents.length > 0) {
-                const confirmMessage = 
-                    "Are you sure you want to submit this report to Municipal?\n\n" +
-                    `• Title: ${title || "(empty)"}\n` +
-                    `• Intents: ${intents.length}\n` +
-                    `• Notes: ${notes ? notes.substring(0, 50) + (notes.length > 50 ? "..." : "") : "(empty)"}\n\n` +
-                    "Once submitted, you cannot edit it unless it gets flagged for revision.";
-                
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
+
+            const isResubmit =
+                this.dataset.mode === "edit" ||
+                this.textContent.toLowerCase().includes("resubmit");
+
+            if (intents.length === 0) {
+                alert("Please add at least one planting intent.");
+                return;
             }
-            
-            saveReport("SUBMITTED_MUNICIPAL_PENDING");
+
+            if (!title) {
+                alert("Please enter a Report Title.");
+                document.getElementById("reportTitleInput")?.focus();
+                return;
+            }
+
+            if (!notes) {
+                alert("Please enter notes / remarks.");
+                document.getElementById("reportNotesInput")?.focus();
+                return;
+            }
+
+            const truncatedNotes = notes.length > 80
+                ? notes.substring(0, 80) + "..."
+                : notes;
+
+            const detailsHtml = `
+                <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                    <span style="font-weight:700;">Title:</span>
+                    <span>${escapeHtml(title)}</span>
+                    <span style="font-weight:700;">Intents:</span>
+                    <span>${intents.length} planting intent${intents.length !== 1 ? "s" : ""}</span>
+                    <span style="font-weight:700;">Notes:</span>
+                    <span style="font-style:italic;">"${escapeHtml(truncatedNotes)}"</span>
+                </div>
+            `;
+
+            showConfirmModal({
+                title: isResubmit
+                    ? "Resubmit Report to Municipal?"
+                    : "Submit Report to Municipal?",
+                message: isResubmit
+                    ? "This revised report will be sent back to your Municipal Coordinator. <br><strong>Make sure you've addressed all the flagged remarks.</strong>"
+                    : "This report will be sent to your Municipal Coordinator for validation. <br><strong>You can only edit it again if it gets flagged for revision.</strong>",
+                details: detailsHtml,
+                confirmText: isResubmit ? "Yes, Resubmit" : "Yes, Submit",
+                confirmColor: "#2E7D32",
+                cancelText: "Cancel",
+                onConfirm: () => {
+                    saveReport("SUBMITTED_MUNICIPAL_PENDING");
+                },
+            });
         });
     }
 
@@ -3079,57 +3267,118 @@ function initReporting() {
     if (resubmitBtn) {
         resubmitBtn.addEventListener("click", async function () {
             const reportId = this.dataset.reportId;
-            if (!reportId) return;
-            
-            if (!confirm("Are you sure you want to resubmit this report to Municipal?")) {
+            if (!reportId) {
+                alert("Report ID not found.");
                 return;
             }
-            
+
+            // ============================================================
+            // ✅ STEP 1: Confirm
+            // ============================================================
+            const confirmed = confirm(
+                "Are you sure you want to resubmit this report to Municipal?\n\n" +
+                "It will be sent back for validation and moved to the Pending list."
+            );
+            if (!confirmed) return;
+
+            const originalText = this.textContent;
             this.disabled = true;
             this.textContent = "Resubmitting...";
-            
+
             try {
+                // ============================================================
+                // ✅ STEP 2: Send PATCH request
+                // ============================================================
                 await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/${reportId}/status`, {
                     method: "PATCH",
                     body: JSON.stringify({
                         status: "SUBMITTED_MUNICIPAL_PENDING"
                     })
                 });
-                
-                // ✅ 1. Close the details view FIRST (para hindi na ma-view yung stale data)
-                closeReportDetailsSubview();
-                
-                // ✅ 2. Refresh the data + re-render the reports tables
-                await fetchPlantingIntents();
-                await loadReports();
-                
-                // ✅ 3. Clear selection state
+
+                // ============================================================
+                // ✅ STEP 3: Clear selection state BEFORE navigating
+                // ============================================================
                 window.currentSelectedReport = null;
                 window.currentEditingReportId = null;
-                
-                // ✅ 4. Make sure we're on the Reports main view
+                window.selectedReportIntents = [];
+
+                // ============================================================
+                // ✅ STEP 4: Force-switch to Reports tab
+                // ============================================================
+                const reportsNavBtn = document.querySelector('.nav-item[data-view="reports"]');
+                if (reportsNavBtn) {
+                    // Remove active from all nav buttons + views
+                    document.querySelectorAll(".nav-item[data-view]").forEach(btn => {
+                        btn.classList.toggle("active", btn === reportsNavBtn);
+                    });
+                    document.querySelectorAll(".view").forEach(view => {
+                        view.classList.remove("active-view");
+                    });
+
+                    const reportsView = document.getElementById("view-reports");
+                    if (reportsView) reportsView.classList.add("active-view");
+                }
+
+                // ============================================================
+                // ✅ STEP 5: Reset subviews — show main list only
+                // ============================================================
                 const mainView = document.getElementById("reportsMainSubview");
                 const detailsView = document.getElementById("reportDetailsSubview");
                 const submitView = document.getElementById("submitReportSubview");
-                
-                if (detailsView) detailsView.classList.add("hidden-element");
-                if (submitView) submitView.classList.add("hidden-element");
-                if (mainView) mainView.classList.remove("hidden-element");
-                
-                // ✅ 5. Scroll to top para malinaw na nasa list na tayo
+
+                if (detailsView) {
+                    detailsView.classList.add("hidden-element");
+                    detailsView.style.display = "";
+                }
+                if (submitView) {
+                    submitView.classList.add("hidden-element");
+                    submitView.style.display = "";
+                }
+                if (mainView) {
+                    mainView.classList.remove("hidden-element");
+                    mainView.style.display = "";
+                }
+
+                // Also reset the submit form fields
+                resetReportForm();
+
+                // ============================================================
+                // ✅ STEP 6: Refresh data (AWAIT both)
+                // ============================================================
+                await fetchPlantingIntents();
+                await loadReports();
+
+                // ============================================================
+                // ✅ STEP 7: Scroll to top
+                // ============================================================
                 window.scrollTo({ top: 0, behavior: "smooth" });
-                
-                // ✅ 6. Show success message AFTER the view has switched
-                setTimeout(() => {
-                    alert("Report resubmitted to Municipal successfully.");
-                }, 100);
-                
+
+                // ============================================================
+                // ✅ STEP 8: Styled success modal (not alert)
+                // ============================================================
+                showSuccessModal({
+                    title: "Resubmitted to Municipal",
+                    message: "Your revised report has been successfully resubmitted. It now appears under <strong>Pending at Municipal</strong>.",
+                    confirmText: "View Reports",
+                    onClose: () => {
+                        // One more refresh just in case, after user closes
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                    },
+                });
+
             } catch (error) {
                 console.error("Resubmit error:", error);
-                alert("Failed to resubmit report.\n\n" + error.message);
-                // Don't disable the button on error — let user retry
+
+                showSuccessModal({
+                    title: "Resubmit Failed",
+                    message: escapeHtml(error.message || "Please try again."),
+                    confirmText: "OK",
+                });
+
+                // Restore button state on error
                 this.disabled = false;
-                this.textContent = "Resubmit";
+                this.textContent = originalText || "Resubmit";
             }
         });
     }
@@ -3411,20 +3660,20 @@ async function createReportFromIntents(intentIds, notes, attachments) {
 async function loadReports() {
     try {
         console.log("=== LOAD REPORTS DEBUG ===");
-        
+
         if (!PLANTING_INTENTS_DATA || PLANTING_INTENTS_DATA.length === 0) {
             await fetchPlantingIntents();
         }
-        
+
+        // ✅ Only intents at MUNICIPAL level (pending or flagged)
+        //    OR final approved (for reference)
         const finalizedIntents = (PLANTING_INTENTS_DATA || []).filter(function(intent) {
             const status = String(intent.status || '').toUpperCase();
-            return status === 'SUBMITTED' ||
-                status.startsWith('SUBMITTED_') ||
-                status === 'FOR_MUNICIPAL_VALIDATION' ||
-                status === 'FOR_PROVINCIAL_VALIDATION' ||
-                status === 'FOR_DA_RFO_VALIDATION' ||
-                status === 'FINAL_APPROVED' ||
-                status === 'REVISION_REQUIRED';
+            return (
+                status === 'SUBMITTED_MUNICIPAL_PENDING' ||
+                status === 'SUBMITTED_MUNICIPAL_FLAGGED' ||
+                status === 'SUBMITTED_REGIONAL_APPROVED'
+            );
         }).map(function(intent) {
             return {
                 report_id: intent.planting_intent_id,
@@ -3447,23 +3696,28 @@ async function loadReports() {
             };
         });
 
-        console.log("Finalized intents found:", finalizedIntents.length);
-        
+        console.log("Municipal-level intents found:", finalizedIntents.length);
+
         let submittedReports = [];
         try {
             const reportsResponse = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/`, {
                 method: "GET"
             });
-            
-            const allReports = Array.isArray(reportsResponse) 
-                ? reportsResponse 
+
+            const allReports = Array.isArray(reportsResponse)
+                ? reportsResponse
                 : (reportsResponse.data || []);
-            
+
             console.log("All reports from API:", allReports.length);
-            
+
+            // ✅ Only show reports at Municipal level OR final approved
             submittedReports = allReports.filter(function(r) {
                 const status = String(r.status || '').toUpperCase();
-                return status !== 'DRAFT' && status !== '';
+                return (
+                    status === 'SUBMITTED_MUNICIPAL_PENDING' ||
+                    status === 'SUBMITTED_MUNICIPAL_FLAGGED' ||
+                    status === 'SUBMITTED_REGIONAL_APPROVED'
+                );
             }).map(function(r) {
                 return {
                     report_id: r.report_id,
@@ -3477,30 +3731,31 @@ async function loadReports() {
                 };
             });
 
-            console.log("Submitted reports found:", submittedReports.length);
-            
+            console.log("Municipal-level submitted reports:", submittedReports.length);
+
         } catch (err) {
             console.warn("Could not fetch reports:", err);
         }
-        
+
         finalizedIntents.sort(function(a, b) {
             return new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0);
         });
-        
+
         submittedReports.sort(function(a, b) {
             return new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0);
         });
-        
+
         allIndividualReports = finalizedIntents;
-        
+
         renderSubmittedReports(submittedReports);
-        
+
         console.log("=== LOAD REPORTS COMPLETE ===");
-        
+
     } catch (error) {
         console.error("Failed to load reports:", error);
     }
 }
+
 
 
 /* ============================================================
@@ -4138,7 +4393,9 @@ async function closeAllModals() {
    CLOSE SUBMIT REPORT
 ============================================================ */
 
-function closeSubmitReportSubview() {
+function closeSubmitReportSubview(options = {}) {
+    const { forceMainView = false } = options;
+
     const mainView = document.getElementById("reportsMainSubview");
     const submitView = document.getElementById("submitReportSubview");
     const detailsView = document.getElementById("reportDetailsSubview");
@@ -4160,10 +4417,23 @@ function closeSubmitReportSubview() {
         resubmitBtn.style.display = "none";
     }
 
-    if (window.currentSelectedReport && detailsView) {
+    // ✅ If forceMainView → always go back to Reports main list
+    // Otherwise → return to Details if a report is still selected
+    if (forceMainView) {
+        if (detailsView) {
+            detailsView.classList.add("hidden-element");
+            detailsView.style.display = "";
+        }
+        if (mainView) {
+            mainView.classList.remove("hidden-element");
+            mainView.style.display = "";
+        }
+        window.currentSelectedReport = null;
+    } else if (window.currentSelectedReport && detailsView) {
         detailsView.classList.remove("hidden-element");
         if (mainView) mainView.classList.add("hidden-element");
     } else {
+        if (detailsView) detailsView.classList.add("hidden-element");
         if (mainView) mainView.classList.remove("hidden-element");
     }
 
@@ -4774,59 +5044,83 @@ async function saveReport(status) {
 
         if (savedReportId) {
             const fileInput = document.getElementById("reportFileInput");
-            const files = fileInput ? Array.from(fileInput.files || []) : [];
-
-            if (files.length > 0) {
-                console.log(`Uploading ${files.length} file(s) to report #${savedReportId}...`);
-
-                let successCount = 0;
-                let failCount = 0;
-
-                for (const file of files) {
-                    try {
-                        await uploadReportAttachment(savedReportId, file);
-                        successCount++;
-                    } catch (err) {
-                        console.warn(`Failed to upload ${file.name}:`, err);
-                        failCount++;
-                    }
-                }
-
-                if (failCount > 0) {
-                    alert(
-                        `Report saved, but ${failCount} attachment(s) failed to upload.\n\n` +
-                        `${successCount} succeeded, ${failCount} failed.`
-                    );
-                }
-            } else {
-                console.log("No attachments to upload.");
-            }
+            if (fileInput) fileInput.value = "";
+            const fileNameInput = document.getElementById("reportDocFilename");
+            if (fileNameInput) fileNameInput.value = "";
+            const filesList = document.getElementById("selectedFilesList");
+            if (filesList) filesList.innerHTML = "";
         }
 
-        alert(editingReportId
-            ? "Report updated and resubmitted to Municipal successfully!"
-            : "Report submitted to Municipal successfully!"
-        );
+        // ============================================================
+        // ✅ FORCE RETURN TO REPORTS MAIN LIST
+        // ============================================================
+        window.currentSelectedReport = null;
+        window.currentEditingReportId = null;
+        window.selectedReportIntents = [];
 
-        const fileInput = document.getElementById("reportFileInput");
-        if (fileInput) fileInput.value = "";
-        const fileNameInput = document.getElementById("reportDocFilename");
-        if (fileNameInput) fileNameInput.value = "";
-        const filesList = document.getElementById("selectedFilesList");
-        if (filesList) filesList.innerHTML = "";
+        closeSubmitReportSubview({ forceMainView: true });
 
-        closeSubmitReportSubview();
-
+        // ✅ Refresh data AFTER view is reset
         await fetchPlantingIntents();
         await loadReports();
 
+        // ✅ Scroll to top
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // ✅ Styled success modal
+        showSuccessModal({
+            title: editingReportId
+                ? "Resubmitted to Municipal"
+                : "Submitted to Municipal",
+            message: editingReportId
+                ? "Your revised report has been successfully resubmitted. It now appears under <strong>Pending at Municipal</strong>."
+                : "Your report has been successfully submitted. It now appears under <strong>Pending at Municipal</strong>.",
+            confirmText: "View Reports",
+            onClose: () => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            },
+        });
+
     } catch (error) {
         console.error("Failed to save report:", error);
-        alert("Failed to save report.\n\n" + (error.message || "Please try again."));
+
+        const modal = document.getElementById("reportSubmittedModal");
+        const titleEl = document.getElementById("reportSubmittedTitle");
+        const messageEl = document.getElementById("reportSubmittedMessage");
+        const iconEl = modal?.querySelector("div[style*='border-radius: 50%']");
+
+        if (modal && titleEl && messageEl) {
+            if (iconEl) {
+                iconEl.textContent = "⚠";
+                iconEl.style.background = "#FEE2E2";
+            }
+            titleEl.textContent = "Submission Failed";
+            titleEl.style.color = "#C0392B";
+            messageEl.textContent = error.message || "Please try again.";
+
+            modal.classList.add("show");
+
+            const closeBtn = document.getElementById("closeReportSubmittedBtn");
+            if (closeBtn) {
+                const newCloseBtn = closeBtn.cloneNode(true);
+                closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                newCloseBtn.addEventListener("click", () => {
+                    modal.classList.remove("show");
+                    if (iconEl) {
+                        iconEl.textContent = "✓";
+                        iconEl.style.background = "";
+                    }
+                    titleEl.style.color = "";
+                });
+            }
+        } else {
+            alert("Failed to save report.\n\n" + (error.message || "Please try again."));
+        }
     } finally {
         if (submitButton) submitButton.disabled = false;
     }
 }
+
 
 
 /* ============================================================

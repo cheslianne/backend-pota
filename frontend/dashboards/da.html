@@ -8,9 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Leaflet CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
 
@@ -40,9 +38,10 @@
     html,body{
       width:100%;
       min-height:100vh;
-      font-family:'Inter', sans-serif;
+      font-family:'Plus Jakarta Sans', sans-serif;
       background:var(--cream);
       color:var(--ink);
+      -webkit-font-smoothing: antialiased;
     }
     a{ color:inherit; }
     button, input, select, textarea{ font-family:'Inter', sans-serif; }
@@ -125,7 +124,6 @@
       font-weight:700;
       font-size:13px;
     }
-    .avatar svg{ width:20px; height:20px; fill:#fff; }
 
     .layout{ display:flex; min-height:calc(100vh - 73px); }
     .sidebar{
@@ -193,11 +191,11 @@
       margin-bottom:22px;
     }
     .main-header h1{
-      font-family:'Oswald', sans-serif;
-      font-weight:700;
-      font-size:36px;
-      color:var(--green);
-      letter-spacing:0.02em;
+      font-family:'Plus Jakarta Sans', sans-serif;
+      font-weight:800;
+      font-size:28px;
+      color:var(--green-dark);
+      letter-spacing:-0.01em;
       margin:0;
     }
     .card{
@@ -208,10 +206,11 @@
     }
 
     .section-heading{
-      font-family:'Oswald', sans-serif;
-      font-size:32px;
-      font-weight:700;
-      color:var(--green);
+      font-family:'Plus Jakarta Sans', sans-serif;
+      font-size:22px;
+      font-weight:800;
+      color:var(--green-dark);
+      letter-spacing:-0.01em;
       margin:28px 0 16px;
     }
     .section-heading.first{ margin-top:0; }
@@ -507,11 +506,11 @@
       width:90%;
     }
     .modal-box h2{
-      font-family:'Oswald', sans-serif;
-      font-size:28px;
-      font-weight:700;
-      color:#536B5C;
-      margin:0 0 16px;
+      font-family:'Plus Jakarta Sans', sans-serif;
+      font-size:22px;
+      font-weight:800;
+      color:var(--green-dark);
+      margin:0 0 12px;
     }
     .modal-box p{ font-size:15px; color:var(--ink); margin-bottom:24px; line-height:1.4; }
     .modal-actions{ display:flex; justify-content:center; gap:16px; }
@@ -528,18 +527,18 @@
     .modal-btn-confirm:disabled{ opacity:0.5; cursor:not-allowed; }
     .actions-right{ display:flex; justify-content:flex-end; margin-top:20px; }
     .spacing-top-sm{ margin-top:16px; }
-    .hidden-element{ display:none; }
+    .hidden-element{ display:none !important; }
 
     /* ============================================================
-       REPORTS SECTION — consistent with DA dashboard fonts
+       REPORTS SECTION — aligned with provincial
     ============================================================ */
 
     .header-left h1 {
-      font-family:'Oswald', sans-serif;
-      font-size:32px;
-      font-weight:700;
-      color:var(--green);
-      letter-spacing:0.02em;
+      font-family:'Plus Jakarta Sans', sans-serif;
+      font-size:26px;
+      font-weight:800;
+      color:var(--green-dark);
+      letter-spacing:-0.01em;
       margin:0;
     }
     .header-left p {
@@ -551,7 +550,6 @@
     }
     .header-actions { display:flex; align-items:center; gap:12px; }
 
-    /* Search box — match existing style */
     #view-reports .search-box {
       display:flex;
       align-items:center;
@@ -576,7 +574,6 @@
       color:var(--ink);
     }
 
-    /* Section title */
     .text-section-title {
       font-family:'Inter', sans-serif;
       font-size:15px;
@@ -603,7 +600,6 @@
     }
     .count-badge.muted { background: var(--muted); }
 
-    /* Report tables — clean & even */
     #view-reports table {
       width:100%;
       background: transparent;
@@ -611,9 +607,7 @@
       border-spacing: 0;
       margin-bottom:0;
     }
-    #view-reports thead tr {
-      background: transparent;
-    }
+    #view-reports thead tr { background: transparent; }
     #view-reports thead th {
       text-align:left;
       font-family:'Inter', sans-serif;
@@ -627,9 +621,7 @@
       background:transparent;
     }
     #view-reports thead th:first-child,
-    #view-reports thead th:last-child {
-      border-radius:0;
-    }
+    #view-reports thead th:last-child { border-radius:0; }
     #view-reports thead th.center-col,
     #view-reports tbody td.center-col { text-align:center; }
 
@@ -649,7 +641,6 @@
 
     #view-reports .clickable-row { cursor:pointer; }
 
-    /* Status pill */
     .status-pill {
       display:inline-block;
       padding:5px 14px;
@@ -671,7 +662,6 @@
     .status-pill.rfo        { background-color:#2980B9 !important; }
     .status-pill.draft      { background-color:#8a8a8a !important; }
 
-    /* Checkbox */
     #view-reports input[type="checkbox"].row-check,
     #view-reports input[type="checkbox"]#selectAllCheckbox {
       width:16px;
@@ -680,7 +670,6 @@
       accent-color:var(--green);
     }
 
-    /* Primary button */
     .btn-primary {
       appearance:none;
       background:var(--green);
@@ -703,7 +692,6 @@
       cursor:not-allowed;
     }
 
-    /* Detail info grid */
     .detail-info-grid {
       display:grid;
       grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
@@ -730,7 +718,6 @@
       line-height:1.4;
     }
 
-    /* Remarks */
     .notes-row {
       display:flex;
       gap:24px;
@@ -767,7 +754,6 @@
     .textarea-notes:focus { border-color:var(--green); }
     .notes-row-clean { border-top:none; padding-top:0; }
 
-    /* Detail actions */
     .detail-actions-row {
       display:flex;
       justify-content:flex-end;
@@ -785,6 +771,292 @@
       color:#fff;
     }
 
+    /* ============================================================
+       VALIDATION TIMELINE
+    ============================================================ */
+    .validation-timeline { position:relative; padding:8px 0; }
+
+    .timeline-item {
+      position:relative;
+      display:flex;
+      gap:16px;
+      padding-bottom:20px;
+    }
+    .timeline-item:last-child { padding-bottom:0; }
+
+    .timeline-marker {
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:14px;
+      color:#fff;
+      flex-shrink:0;
+      z-index:2;
+      box-shadow:0 0 0 3px var(--white);
+      font-weight:700;
+    }
+    .timeline-line {
+      position:absolute;
+      left:15px;
+      top:32px;
+      bottom:0;
+      width:2px;
+      background:var(--border-light);
+    }
+    .timeline-content {
+      flex:1;
+      background:#FAF8F5;
+      border:1px solid var(--border-light);
+      border-radius:8px;
+      padding:12px 16px;
+      min-width:0;
+    }
+    .timeline-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:6px;
+    }
+    .timeline-action {
+      font-size:12px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+    }
+    .timeline-date {
+      font-size:11px;
+      color:var(--muted);
+      font-variant-numeric:tabular-nums;
+    }
+    .timeline-meta {
+      font-size:12.5px;
+      color:var(--ink);
+      margin-bottom:8px;
+    }
+    .timeline-role {
+      display:inline-block;
+      margin-left:8px;
+      padding:1px 8px;
+      background:var(--green-light);
+      color:var(--green-dark);
+      border-radius:999px;
+      font-size:10px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:0.03em;
+    }
+    .timeline-remarks {
+      font-size:13px;
+      color:var(--ink);
+      line-height:1.5;
+      padding-top:8px;
+      border-top:1px dashed var(--border-light);
+      white-space:pre-wrap;
+    }
+
+    /* ============================================================
+       REPORT SUMMARY CARD (frozen snapshot)
+    ============================================================ */
+    .summary-card {
+      margin-bottom:24px;
+      padding:24px 28px;
+      background:linear-gradient(135deg, #F6F3EB 0%, #FBF8F1 100%);
+      border:1.5px solid var(--border);
+      border-left:4px solid var(--green);
+      border-radius:10px;
+    }
+    .summary-card-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+      padding-bottom:14px;
+      border-bottom:1.5px solid var(--border-light);
+    }
+    .summary-card-title {
+      font-size:14px;
+      font-weight:800;
+      color:var(--green-dark);
+      text-transform:uppercase;
+      letter-spacing:0.06em;
+    }
+    .summary-card-subtitle {
+      font-size:11px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+    .summary-kpi-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .summary-kpi-card {
+      padding:14px 16px;
+      background:#FFFFFF;
+      border-radius:8px;
+      border:1px solid var(--border-light);
+    }
+    .summary-kpi-label {
+      font-size:10px;
+      font-weight:700;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.06em;
+    }
+    .summary-kpi-value {
+      font-size:22px;
+      font-weight:800;
+      color:var(--green-dark);
+      margin-top:4px;
+    }
+    .summary-kpi-subtext {
+      font-size:10px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    .summary-breakdown-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:20px;
+      margin-bottom:16px;
+    }
+    @media (max-width:900px) { .summary-breakdown-grid { grid-template-columns:1fr; } }
+
+    .summary-breakdown-title {
+      font-size:11px;
+      font-weight:700;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.06em;
+      margin-bottom:10px;
+      padding-bottom:6px;
+      border-bottom:1px solid var(--border-light);
+    }
+    .summary-breakdown-body {
+      font-size:13px;
+      color:var(--ink);
+      line-height:1.7;
+    }
+    .summary-breakdown-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:6px 0;
+      border-bottom:1px dashed var(--border-light);
+    }
+    .summary-insight-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      margin-top:16px;
+    }
+    @media (max-width:700px) { .summary-insight-grid { grid-template-columns:1fr; } }
+
+    .summary-insight-card {
+      padding:16px 20px;
+      background:#F6F3EB;
+      border-radius:8px;
+      font-size:13px;
+      color:var(--ink);
+    }
+    .summary-insight-card.green { border-left:3px solid var(--green); }
+    .summary-insight-card.orange { border-left:3px solid #D97706; }
+
+    .summary-footer {
+      margin-top:18px;
+      padding-top:14px;
+      border-top:1px dashed var(--border-light);
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:12px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    /* ============================================================
+       SUMMARY TAB
+    ============================================================ */
+    .period-picker {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 12px;
+      background:#FFFFFF;
+      border:1.5px solid var(--border);
+      border-radius:8px;
+    }
+    .period-picker label {
+      font-size:11px;
+      font-weight:700;
+      text-transform:uppercase;
+      color:var(--muted);
+      letter-spacing:0.04em;
+    }
+    .period-picker input[type="date"] {
+      border:none;
+      outline:none;
+      font-size:13px;
+      font-family:inherit;
+      background:transparent;
+      color:var(--ink);
+      cursor:pointer;
+    }
+    .summary-quick-pills {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .summary-quick-pills .filter-pill {
+      padding:5px 14px;
+      font-size:11.5px;
+    }
+
+    /* ============================================================
+       FILTER PILLS
+    ============================================================ */
+    .filter-pill {
+      appearance: none;
+      padding: 6px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #FFFFFF;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .filter-pill:hover {
+      background: var(--cream);
+      border-color: var(--green);
+      color: var(--ink);
+    }
+
+    .filter-pill.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #FFFFFF;
+    }
+
+    .filter-pill[data-filter="pending"].active {
+      background: #D97706;
+      border-color: #D97706;
+    }
+
+    .filter-pill[data-filter="approved"].active {
+      background: #2E7D32;
+      border-color: #2E7D32;
+    }
     
   </style>
 </head>
@@ -838,7 +1110,7 @@
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="buyer-registry">
+        <button class="nav-item" type="button" data-view="buyer-registry">
           <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Buyer Registry
         </button>
@@ -854,9 +1126,13 @@
           <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
           Alert Log
         </button>
-        <button class="nav-item" type="button" data-view="reports">
+        <button class="nav-item" type="button" data-view="summary">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Summary
+        </button>
+        <button class="nav-item active" type="button" data-view="reports">
           <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-          View Reports
+          All Reports
         </button>
       </div>
 
@@ -869,8 +1145,8 @@
     <!-- MAIN CONTENT -->
     <main class="main">
 
-      <!-- VIEW 1: Buyer Registry (UNCHANGED) -->
-      <section class="view active-view" id="view-buyer-registry">
+      <!-- VIEW 1: Buyer Registry -->
+      <section class="view" id="view-buyer-registry">
         <div id="buyerRegistryList">
           <h2 class="section-heading first">Pending Requests</h2>
           <table>
@@ -901,7 +1177,6 @@
           </table>
         </div>
 
-        <!-- Review Details Subview -->
         <div id="buyerReviewDetails" class="hidden-element">
           <div class="main-header"><h1>Review Details</h1></div>
           <div class="review-details-card">
@@ -939,58 +1214,15 @@
         </div>
       </section>
 
-    <!-- VIEW 2: View Map -->
-<section class="view" id="view-map">
-  <div class="main-header">
-    <div class="header-left">
-      <h1>Regional Field Map</h1>
-      <p>Geospatial tracking of crop production clusters.</p>
-    </div>
-  </div>
+      <!-- VIEW 2: View Map -->
+      <section class="view" id="view-map">
+        <div class="main-header"><h1>Map</h1></div>
+        <div class="card">
+          <div id="map"></div>
+        </div>
+      </section>
 
-  <div class="card">
-    <!-- MAP TITLE + LEGEND -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-      <span style="font-size: 14.5px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.02em;">
-        Field Monitoring &amp; Geographic Clusters
-      </span>
-      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span>
-          Surplus
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span>
-          Balanced
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span>
-          Deficit
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span>
-          No Data
-        </span>
-      </div>
-    </div>
-
-    <!-- FILTERS -->
-    <div style="display: flex; gap: 12px; margin-bottom: 14px;">
-      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
-        <option value="all">All Commodities</option>
-        <option value="Tomato">Tomato</option>
-        <option value="Squash">Squash</option>
-        <option value="Red Onion">Red Onion</option>
-        <option value="White Onion">White Onion</option>
-      </select>
-      
-    </div>
-
-    <div id="map"></div>
-  </div>
-</section>
-
-      <!-- VIEW 3: Alert Threshold (UNCHANGED) -->
+      <!-- VIEW 3: Alert Threshold -->
       <section class="view" id="view-threshold">
         <div class="main-header"><h1>Oversupply Threshold</h1></div>
         <div class="threshold-card">
@@ -1030,7 +1262,7 @@
         </div>
       </section>
 
-      <!-- VIEW 4: Alert Log (UNCHANGED) -->
+      <!-- VIEW 4: Alert Log -->
       <section class="view" id="view-alerts">
         <div class="main-header">
           <h1>System Alert Logs</h1>
@@ -1049,12 +1281,53 @@
         </div>
       </section>
 
-      <!-- ======================================================
-           VIEW 5: REPORTS — RESTRUCTURED (matches provincial)
-      ====================================================== -->
-      <section class="view" id="view-reports">
+      <!-- SUMMARY VIEW -->
+      <section class="view" id="view-summary">
+        <div class="main-header">
+          <div class="header-left">
+            <h1>Regional Summary Report</h1>
+            <p>Aggregated view of all reports across Pampanga for a selected period.</p>
+          </div>
 
-        <!-- LIST SUBVIEW -->
+          <div class="header-actions">
+            <div class="period-picker">
+              <label>From</label>
+              <input type="date" id="summaryPeriodStart">
+              <label>To</label>
+              <input type="date" id="summaryPeriodEnd">
+            </div>
+            <button class="btn-primary" id="applySummaryPeriodBtn" type="button">
+              Apply Period
+            </button>
+            <button class="btn-outline-report" id="printSummaryBtn" type="button">
+              🖨 Print
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-quick-pills" style="margin-bottom: 20px;">
+          <button class="filter-pill active" data-period="this-week" type="button">This Week</button>
+          <button class="filter-pill" data-period="last-week" type="button">Last Week</button>
+          <button class="filter-pill" data-period="this-month" type="button">This Month</button>
+          <button class="filter-pill" data-period="last-30" type="button">Last 30 Days</button>
+          <button class="filter-pill" data-period="this-quarter" type="button">This Quarter</button>
+          <button class="filter-pill" data-period="all-time" type="button">All Time</button>
+        </div>
+
+        <div class="card" id="summaryLoadingCard">
+          <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
+            Loading summary...
+          </div>
+        </div>
+
+        <div class="card" id="summaryContentCard" style="display: none;">
+          <div id="regionalSummaryContent"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: REPORTS — same as Provincial/Municipal -->
+      <section class="view active-view" id="view-reports">
+
         <div id="reportsListView">
 
           <div class="main-header" id="reportsMainHeader">
@@ -1088,7 +1361,7 @@
                     Select All
                   </button>
                   <button class="btn-primary" id="bulkApproveBtn" type="button" disabled>
-                    Approve Selected
+                    Approve Selected & Finalize
                   </button>
                 </div>
               </div>
@@ -1222,27 +1495,49 @@
               <div id="detailReportAttachments" style="font-size:14px; color:var(--muted);">No attachments</div>
             </div>
 
-            <!-- REVISION REMARKS -->
-            <div id="detailRevisionRemarksWrapper" style="
-              display:none;
-              margin-top: 28px;
-              margin-bottom: 24px;
-              padding: 16px 20px;
-              background: #FEE2E2;
-              border-left: 4px solid #C0392B;
-              border-radius: 0 8px 8px 0;
-            ">
+            <!-- REPORT SUMMARY CARD (FROZEN SNAPSHOT) -->
+            <div id="reportSummaryCardWrapper" style="display: none;">
+              <div class="summary-card">
+                <div class="summary-card-header">
+                  <div>
+                    <div class="summary-card-title">📊 Report Summary</div>
+                    <div id="summaryCoveragePeriod" class="summary-card-subtitle">Coverage: —</div>
+                  </div>
+                  <div id="reportSummaryToggle" style="
+                    font-size: 11px;
+                    color: var(--muted);
+                    cursor: pointer;
+                    user-select: none;
+                    padding: 4px 10px;
+                    background: #FFFFFF;
+                    border-radius: 6px;
+                    border: 1px solid var(--border);
+                  ">Hide ▲</div>
+                </div>
+
+                <div id="reportSummaryBody"></div>
+              </div>
+            </div>
+
+            <!-- VALIDATION TIMELINE -->
+            <div id="validationHistoryWrapper" style="margin-top: 28px; margin-bottom: 24px;">
               <div style="
                 font-size: 11px;
                 font-weight: 700;
-                color: #C0392B;
+                color: var(--muted);
                 text-transform: uppercase;
                 letter-spacing: 0.06em;
-                margin-bottom: 12px;
+                margin-bottom: 14px;
+                padding-bottom: 8px;
+                border-bottom: 1.5px solid var(--border-light);
               ">
-                Revision Remarks (Flagged)
+                📜 Validation Timeline (Audit Trail)
               </div>
-              <div id="detailRevisionRemarks" style="font-size:14px; color:#333; line-height:1.6;">—</div>
+              <div id="validationTimelineContainer">
+                <div style="color: var(--muted); font-style: italic; font-size: 13px;">
+                  Loading history...
+                </div>
+              </div>
             </div>
 
             <!-- INCLUDED PLANTING INTENTS -->
@@ -1256,23 +1551,29 @@
                       <th>Farmer</th>
                       <th>Commodity</th>
                       <th class="center-col">Volume</th>
-                      <th class="center-col">Planting Date</th>
-                      <th class="center-col">Harvest Date</th>
+                      <th class="center-col" style="background: #F6F3EB;">📅 Planned Planting</th>
+                      <th class="center-col" style="background: #FFF4E5;">📍 Actual Planting</th>
+                      <th class="center-col" style="background: #F6F3EB;">📅 Planned Harvest</th>
+                      <th class="center-col" style="background: #FFF4E5;">📍 Actual Harvest</th>
                       <th class="center-col">Harvest Status</th>
                     </tr>
                   </thead>
                   <tbody id="detailReportIntentsBody">
-                    <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                    <tr><td colspan="9" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <!-- REMARKS -->
-            <div class="notes-row notes-row-clean" style="margin-top: 28px;">
+            <!-- ADD NEW REMARK -->
+            <div class="notes-row notes-row-clean" style="margin-top: 16px;">
               <div class="notes-field">
-                <label>Remarks</label>
-                <textarea id="remarksTextarea" class="textarea-notes" placeholder="Enter remarks (required if flagging for revision)..."></textarea>
+                <label>Add New Remark</label>
+                <textarea
+                  id="remarksTextarea"
+                  class="textarea-notes"
+                  placeholder="Type your comment here..."
+                ></textarea>
               </div>
             </div>
           </div>
@@ -1288,61 +1589,267 @@
         </div>
       </section>
 
+    </main>
+  </div>
+
   <!-- MODALS -->
 
-  <!-- Buyer Approve -->
-  <div class="modal-overlay" id="confirmApproveModal">
-    <div class="modal-box">
-      <h2>Confirmation</h2>
-      <p>Are you sure you want to approve the request?</p>
-      <div class="modal-actions">
-        <button class="btn-outline-report modal-cancel-btn" type="button">Cancel</button>
-        <button class="modal-btn-confirm" id="confirmApproveBtn" type="button">Yes, Approve</button>
+  <!-- ============================================================
+       ACTION CONFIRMATION MODAL (universal — same as AEW/Municipal)
+  ============================================================ -->
+  <div class="modal-overlay" id="actionConfirmModal">
+    <div class="modal-box" style="max-width: 500px; text-align: left;">
+      <h2 id="actionConfirmTitle" style="
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 12px;
+        text-align: center;
+      ">Confirm Action</h2>
+
+      <p id="actionConfirmMessage" style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 20px;
+        text-align: center;
+      ">Are you sure?</p>
+
+      <div id="actionConfirmDetails" style="
+        display: none;
+        text-align: left;
+        background: #F6F3EB;
+        border-left: 3px solid var(--green);
+        padding: 14px 18px;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 22px;
+        line-height: 1.6;
+      "></div>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-outline-report" id="actionConfirmCancelBtn" type="button">
+          Cancel
+        </button>
+        <button class="modal-btn-confirm" id="actionConfirmOkBtn" type="button">
+          Confirm
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Buyer Reject -->
-  <div class="modal-overlay" id="confirmRejectModal">
-    <div class="modal-box">
-      <h2>Confirmation</h2>
-      <p>Are you sure you want to reject the request?</p>
+  <!-- ============================================================
+       SUCCESS / ERROR MODAL (replaces native alert for post-actions)
+  ============================================================ -->
+  <div class="modal-overlay" id="reportSubmittedModal">
+    <div class="modal-box" style="max-width: 460px;">
+      <div id="reportSubmittedIcon" style="
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--green-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 32px;
+        transition: background 0.2s ease;
+      ">✓</div>
+
+      <h2 id="reportSubmittedTitle" style="
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 10px;
+        transition: color 0.2s ease;
+      ">Success</h2>
+
+      <p id="reportSubmittedMessage" style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 22px;
+      ">
+        Operation completed successfully.
+      </p>
+
       <div class="modal-actions">
-        <button class="btn-outline-report modal-cancel-btn" type="button">Cancel</button>
-        <button class="modal-btn-confirm" id="confirmRejectBtn" type="button">Yes, Reject</button>
+        <button class="modal-btn-confirm" id="closeReportSubmittedBtn" type="button">
+          Done
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Bulk Approve Reports -->
+  <!-- ============================================================
+       BULK APPROVE MODAL
+  ============================================================ -->
   <div class="modal-overlay" id="bulkApproveModal">
-    <div class="modal-box">
-      <p id="bulkApproveText">Approve selected reports?</p>
-      <div style="display:flex; justify-content:center; gap:12px;">
-        <button class="btn-outline-report" id="bulkApproveCancelBtn" type="button">Cancel</button>
-        <button class="modal-btn-confirm" id="bulkApproveConfirmBtn" type="button">Confirm</button>
+    <div class="modal-box" style="max-width: 480px;">
+      <div style="
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #D1FAE5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 32px;
+      ">✓</div>
+
+      <h2 style="
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 10px;
+      ">Bulk Approve</h2>
+
+      <p id="bulkApproveText" style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 22px;
+      ">Approve selected reports?</p>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-outline-report" id="bulkApproveCancelBtn" type="button">
+          Cancel
+        </button>
+        <button class="modal-btn-confirm" id="bulkApproveConfirmBtn" type="button" style="background: #2E7D32;">
+          Yes, Approve
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Alert Detail Modal -->
+  <!-- ============================================================
+       BUYER APPROVE MODAL
+  ============================================================ -->
+  <div class="modal-overlay" id="confirmApproveModal">
+    <div class="modal-box" style="max-width: 460px;">
+      <div style="
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #D1FAE5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 32px;
+      ">✓</div>
+
+      <h2 style="
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 10px;
+      ">Approve Buyer</h2>
+
+      <p style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 22px;
+      ">Are you sure you want to approve this buyer application? They will be added to the verified buyers list.</p>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-outline-report modal-cancel-btn" type="button">Cancel</button>
+        <button class="modal-btn-confirm" id="confirmApproveBtn" type="button" style="background: #2E7D32;">
+          Yes, Approve
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       BUYER REJECT MODAL
+  ============================================================ -->
+  <div class="modal-overlay" id="confirmRejectModal">
+    <div class="modal-box" style="max-width: 460px;">
+      <div style="
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #FEE2E2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 32px;
+      ">⚠</div>
+
+      <h2 style="
+        font-size: 20px;
+        font-weight: 800;
+        color: #C0392B;
+        margin-bottom: 10px;
+      ">Reject Buyer</h2>
+
+      <p style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 22px;
+      ">Are you sure you want to reject this buyer application? <strong>This action cannot be undone.</strong></p>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-outline-report modal-cancel-btn" type="button">Cancel</button>
+        <button class="modal-btn-confirm" id="confirmRejectBtn" type="button" style="background: #C0392B;">
+          Yes, Reject
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ALERT DETAIL MODAL (kept but aligned)
+  ============================================================ -->
   <div class="modal-overlay" id="alertDetailModal">
-    <div class="modal-box alert-detail-box">
+    <div class="modal-box alert-detail-box" style="max-width: 500px;">
       <div class="alert-modal-header">
-        <h2 id="modalAlertTitle">Alert Details</h2>
+        <h2 id="modalAlertTitle" style="
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--green-dark);
+          margin: 0;
+          text-align: left;
+        ">Alert Details</h2>
         <span id="modalAlertSev" class="sev-pill high">High</span>
       </div>
-      <p id="modalAlertDesc" class="alert-desc"></p>
 
-      <div class="modal-stats-grid">
-        <div>Supply: <b id="modalAlertSupply"></b></div>
-        <div>Demand: <b id="modalAlertDemand"></b></div>
-        <div>Surplus: <b id="modalAlertSurplus"></b></div>
-        <div>Date Logged: <b id="modalAlertDate"></b></div>
+      <p id="modalAlertDesc" class="alert-desc" style="
+        text-align: left;
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 20px;
+      "></p>
+
+      <div class="modal-stats-grid" style="
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        background: #FFFFFF;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1.5px solid var(--border);
+        margin-bottom: 22px;
+        font-size: 13px;
+        text-align: left;
+      ">
+        <div style="color: var(--muted);">Supply: <b id="modalAlertSupply" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b></div>
+        <div style="color: var(--muted);">Demand: <b id="modalAlertDemand" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b></div>
+        <div style="color: var(--muted);">Surplus: <b id="modalAlertSurplus" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b></div>
+        <div style="color: var(--muted);">Date Logged: <b id="modalAlertDate" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b></div>
       </div>
 
-      <div class="modal-actions-row">
-        <button class="modal-btn-confirm modal-cancel-btn" type="button" onclick="document.getElementById('alertDetailModal').classList.remove('show')">Close</button>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="modal-btn-confirm modal-cancel-btn" type="button" style="background: var(--green);">
+          Close
+        </button>
       </div>
     </div>
   </div>

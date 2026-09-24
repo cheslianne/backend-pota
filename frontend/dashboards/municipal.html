@@ -1482,14 +1482,86 @@
     </main>
   </div>
 
-  <!-- CONFIRMATION MODAL -->
-  <div class="modal-overlay" id="reportModal">
-    <div class="modal-box">
-      <p id="reportModalText">Report Submitted to Provincial Level</p>
-      <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
+  <!-- ACTION CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="actionConfirmModal">
+    <div class="modal-box" style="max-width: 500px; text-align: left;">
+      <h2 id="actionConfirmTitle" style="
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 12px;
+        text-align: center;
+      ">Confirm Action</h2>
+
+      <p id="actionConfirmMessage" style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 20px;
+        text-align: center;
+      ">Are you sure?</p>
+
+      <div id="actionConfirmDetails" style="
+        display: none;
+        text-align: left;
+        background: #F6F3EB;
+        border-left: 3px solid var(--green);
+        padding: 14px 18px;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 22px;
+        line-height: 1.6;
+      "></div>
+
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn-outline-report" id="actionConfirmCancelBtn" type="button">
+          Cancel
+        </button>
+        <button class="modal-confirm-btn" id="actionConfirmOkBtn" type="button">
+          Confirm
+        </button>
+      </div>
     </div>
   </div>
 
+  <!-- SUCCESS / INFO MODAL (replaces native alert) -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box" style="max-width: 460px;">
+      <div id="reportModalIcon" style="
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--green-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 32px;
+      ">✓</div>
+
+      <h2 id="reportModalTitle" style="
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 10px;
+      ">Success</h2>
+
+      <p id="reportModalText" style="
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+        margin-bottom: 22px;
+      ">Action completed.</p>
+
+      <div class="modal-actions">
+        <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+  
   <!-- BULK CONFIRM MODAL -->
   <div class="modal-overlay" id="bulkApproveModal">
     <div class="modal-box">

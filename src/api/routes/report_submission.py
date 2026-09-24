@@ -14,7 +14,7 @@ from src.models.report_validation_history import ReportValidationHistory
 from src.models.planting_intents import PlantingIntent
 from src.models.report_planting_intents import ReportPlantingIntent
 from src.models.users import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.models.farmers import Farmer
 from src.models.report_planting_intents import ReportPlantingIntent
 from src.models.planting_intents import PlantingIntent
@@ -517,6 +517,7 @@ def get_reports_for_municipal_validation(
             "submitted_at": submission.submitted_at,
             "revision_remarks": submission.revision_remarks,
             "revision_count": submission.revision_count,
+            "intent_count": len(intents_for_report),
         })
 
     return result
@@ -528,16 +529,49 @@ def get_reports_for_municipal_validation(
 
 @router.get("/for-provincial-validation")
 def get_reports_for_provincial_validation(db: Session = Depends(get_db)):
+    """
+    Get reports awaiting provincial validation.
+    Returns ONE row per report (deduplicated).
+    """
     reports = (
-        db.query(ReportSubmission, RawPlantReport, PlantingIntent, User)
+        db.query(ReportSubmission, RawPlantReport, User)
         .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
-        .join(ReportPlantingIntent, ReportPlantingIntent.report_id == RawPlantReport.report_id)
-        .join(PlantingIntent, PlantingIntent.planting_intent_id == ReportPlantingIntent.planting_intent_id)
         .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
         .filter(ReportSubmission.status == FOR_PROVINCIAL_VALIDATION)
         .order_by(ReportSubmission.submitted_at.desc())
+        .distinct()
         .all()
     )
+
+    report_ids = [s.report_id for s, r, u in reports]
+    
+    intent_count_map = {}
+    harvest_date_map = {}
+    
+    if report_ids:
+        links = (
+            db.query(ReportPlantingIntent)
+            .filter(ReportPlantingIntent.report_id.in_(report_ids))
+            .all()
+        )
+        
+        intent_ids = [l.planting_intent_id for l in links]
+        
+        intents = {}
+        if intent_ids:
+            for pi in db.query(PlantingIntent).filter(
+                PlantingIntent.planting_intent_id.in_(intent_ids)
+            ).all():
+                intents[pi.planting_intent_id] = pi
+        
+        for link in links:
+            # Count intents per report
+            intent_count_map[link.report_id] = intent_count_map.get(link.report_id, 0) + 1
+            
+            # Get harvest date (first intent's harvest date)
+            pi = intents.get(link.planting_intent_id)
+            if pi and link.report_id not in harvest_date_map:
+                harvest_date_map[link.report_id] = pi.harvest_date
 
     return [
         {
@@ -547,7 +581,7 @@ def get_reports_for_provincial_validation(db: Session = Depends(get_db)):
             "commodity": report.commodity,
             "municipality": report.municipality,
             "planting_date": report.planting_date,
-            "harvest_date": planting_intent.harvest_date,
+            "harvest_date": harvest_date_map.get(report.report_id),
             "estimated_yield": report.estimated_yield,
             "encoded_by": report.encoded_by,
             "encoded_by_name": f"{user.first_name} {user.last_name}" if user else None,
@@ -555,8 +589,9 @@ def get_reports_for_provincial_validation(db: Session = Depends(get_db)):
             "submitted_at": submission.submitted_at,
             "revision_remarks": submission.revision_remarks,
             "revision_count": submission.revision_count,
+            "intent_count": intent_count_map.get(report.report_id, 0),  
         }
-        for submission, report, planting_intent, user in reports
+        for submission, report, user in reports
     ]
 
 
@@ -566,16 +601,47 @@ def get_reports_for_provincial_validation(db: Session = Depends(get_db)):
 
 @router.get("/for-da-rfo-validation")
 def get_reports_for_da_rfo_validation(db: Session = Depends(get_db)):
+    """
+    Get reports awaiting DA-RFO validation.
+    Returns ONE row per report (deduplicated).
+    """
     reports = (
-        db.query(ReportSubmission, RawPlantReport, PlantingIntent, User)
+        db.query(ReportSubmission, RawPlantReport, User)
         .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
-        .join(ReportPlantingIntent, ReportPlantingIntent.report_id == RawPlantReport.report_id)
-        .join(PlantingIntent, PlantingIntent.planting_intent_id == ReportPlantingIntent.planting_intent_id)
         .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
         .filter(ReportSubmission.status == FOR_DA_RFO_VALIDATION)
         .order_by(ReportSubmission.submitted_at.desc())
+        .distinct()
         .all()
     )
+
+    report_ids = [s.report_id for s, r, u in reports]
+
+    intent_count_map = {}
+    harvest_date_map = {}
+
+    if report_ids:
+        links = (
+            db.query(ReportPlantingIntent)
+            .filter(ReportPlantingIntent.report_id.in_(report_ids))
+            .all()
+        )
+
+        intent_ids = [l.planting_intent_id for l in links]
+
+        intents = {}
+        if intent_ids:
+            for pi in db.query(PlantingIntent).filter(
+                PlantingIntent.planting_intent_id.in_(intent_ids)
+            ).all():
+                intents[pi.planting_intent_id] = pi
+
+        for link in links:
+            intent_count_map[link.report_id] = intent_count_map.get(link.report_id, 0) + 1
+
+            pi = intents.get(link.planting_intent_id)
+            if pi and link.report_id not in harvest_date_map:
+                harvest_date_map[link.report_id] = pi.harvest_date
 
     return [
         {
@@ -585,7 +651,7 @@ def get_reports_for_da_rfo_validation(db: Session = Depends(get_db)):
             "commodity": report.commodity,
             "municipality": report.municipality,
             "planting_date": report.planting_date,
-            "harvest_date": planting_intent.harvest_date,
+            "harvest_date": harvest_date_map.get(report.report_id),
             "estimated_yield": report.estimated_yield,
             "encoded_by": report.encoded_by,
             "encoded_by_name": f"{user.first_name} {user.last_name}" if user else None,
@@ -593,8 +659,9 @@ def get_reports_for_da_rfo_validation(db: Session = Depends(get_db)):
             "submitted_at": submission.submitted_at,
             "revision_remarks": submission.revision_remarks,
             "revision_count": submission.revision_count,
+            "intent_count": intent_count_map.get(report.report_id, 0),
         }
-        for submission, report, planting_intent, user in reports
+        for submission, report, user in reports
     ]
 
 
@@ -904,7 +971,7 @@ def get_sent_to_regional(
         raise HTTPException(status_code=403, detail="Unauthorized.")
 
     PAMPANGA_MUNICIPALITIES = [
-        "Angeles", "Apalit", "Arayat", "Bacolor", "Candaba",
+        "Angeles City", "Apalit", "Arayat", "Bacolor", "Candaba",
         "Floridablanca", "Guagua", "Lubao", "Mabalacat", "Macabebe",
         "Magalang", "Masantol", "Mexico", "Minalin", "Porac",
         "San Fernando", "San Luis", "San Simon", "Santa Ana",
@@ -1036,29 +1103,6 @@ def get_approved_by_regional(
 
 
 # ============================================================
-# GET REPORT SUBMISSION
-# ============================================================
-
-@router.get("/{report_id}")
-def get_report_submission(report_id: int, db: Session = Depends(get_db)):
-    submission = db.query(ReportSubmission).filter(ReportSubmission.report_id == report_id).first()
-
-    if not submission:
-        raise HTTPException(status_code=404, detail="Report submission not found.")
-
-    return {
-        "submission_id": submission.submission_id,
-        "report_id": submission.report_id,
-        "status": submission.status,
-        "current_validator_id": submission.current_validator_id,
-        "current_validator_role": submission.current_validator_role,
-        "revision_remarks": submission.revision_remarks,
-        "revision_count": submission.revision_count,
-        "submitted_at": submission.submitted_at,
-        "approved_at": submission.approved_at,
-    }
-
-# ============================================================
 # MUNICIPAL SUMMARY — AGGREGATED VIEW
 # ============================================================
 
@@ -1072,10 +1116,6 @@ def get_municipal_summary(
     """
     Aggregate all reports in the municipal coordinator's municipality
     for the given period (defaults to last 7 days).
-
-    Returns all intents across all reports in the period, shaped
-    the same way as a single report's intents, so the frontend
-    can reuse its summary renderer.
     """
     if current_user.role != "Municipal Coordinator":
         raise HTTPException(403, "Unauthorized.")
@@ -1089,6 +1129,8 @@ def get_municipal_summary(
     if period_end:
         try:
             period_end_dt = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+            if period_end_dt.tzinfo is not None:
+                period_end_dt = period_end_dt.astimezone(timezone.utc).replace(tzinfo=None)
         except ValueError:
             raise HTTPException(400, "Invalid period_end format.")
     else:
@@ -1097,6 +1139,8 @@ def get_municipal_summary(
     if period_start:
         try:
             period_start_dt = datetime.fromisoformat(period_start.replace("Z", "+00:00"))
+            if period_start_dt.tzinfo is not None:
+                period_start_dt = period_start_dt.astimezone(timezone.utc).replace(tzinfo=None)
         except ValueError:
             raise HTTPException(400, "Invalid period_start format.")
     else:
@@ -1128,12 +1172,25 @@ def get_municipal_summary(
 
     report_ids = [s.report_id for s, r in submissions]
 
+    # ✅ Build report status map (used per-intent in intent_payload)
+    report_status_map = {s.report_id: s.status for s, r in submissions}
+
+    # ✅ Count reports still pending municipal validation
+    pending_report_count = sum(
+        1 for s, r in submissions
+        if s.status == SUBMITTED_MUNICIPAL_PENDING
+    )
+
+    # --------------------------------------------------------
+    # EMPTY STATE
+    # --------------------------------------------------------
     if not report_ids:
         return {
             "municipality": current_user.municipality,
-            "period_start": period_start_dt.isoformat(),
-            "period_end": period_end_dt.isoformat(),
+            "period_start": period_start_dt.isoformat() + "Z",
+            "period_end": period_end_dt.isoformat() + "Z",
             "report_count": 0,
+            "pending_report_count": 1,
             "intents": [],
         }
 
@@ -1155,7 +1212,7 @@ def get_municipal_summary(
     ) if intent_ids else []
 
     # --------------------------------------------------------
-    # FARMERS (for barangay grouping)
+    # FARMERS
     # --------------------------------------------------------
     farmer_ids = list({i.farmer_id for i in intents if i.farmer_id})
     farmers = (
@@ -1202,12 +1259,493 @@ def get_municipal_summary(
             "barangay": farmer.barangay if farmer else None,
             "municipality": farmer.municipality if farmer else None,
             "status": link.plant_status_snapshot,
+            # ✅ NEW: link back to report
+            "report_id": link.report_id,
+            "report_status": report_status_map.get(link.report_id),
         })
 
     return {
         "municipality": current_user.municipality,
-        "period_start": period_start_dt.isoformat(),
-        "period_end": period_end_dt.isoformat(),
+        "period_start": period_start_dt.isoformat() + "Z",
+        "period_end": period_end_dt.isoformat() + "Z",
         "report_count": len(report_ids),
+        "pending_report_count": pending_report_count,
         "intents": intent_payload,
+    }
+
+
+# ============================================================
+# PROVINCIAL SUMMARY — AGGREGATED VIEW (ALL MUNICIPALITIES)
+# ============================================================
+
+@router.get("/provincial-summary")
+def get_provincial_summary(
+    period_start: str | None = None,
+    period_end: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Aggregate all reports across all Pampanga municipalities
+    for the given period (defaults to last 7 days).
+
+    Provincial Coordinator only. Returns all intents across
+    all reports in the period, shaped the same way as a single
+    report's intents so the frontend can reuse its renderer.
+    """
+    if current_user.role not in ("Provincial Coordinator", "Provincial"):
+        raise HTTPException(403, "Unauthorized.")
+
+    # --------------------------------------------------------
+    # PERIOD
+    # --------------------------------------------------------
+    if period_end:
+        try:
+            period_end_dt = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+            if period_end_dt.tzinfo is not None:
+                period_end_dt = period_end_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(400, "Invalid period_end format.")
+    else:
+        period_end_dt = datetime.utcnow()
+
+    if period_start:
+        try:
+            period_start_dt = datetime.fromisoformat(period_start.replace("Z", "+00:00"))
+            if period_start_dt.tzinfo is not None:
+                period_start_dt = period_start_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(400, "Invalid period_start format.")
+    else:
+        period_start_dt = period_end_dt - timedelta(days=7)
+
+    # --------------------------------------------------------
+    # PAMPANGA MUNICIPALITIES
+    # --------------------------------------------------------
+    PAMPANGA_MUNICIPALITIES = [
+        "Angeles", "Angeles City",
+        "Apalit", "Arayat", "Bacolor", "Candaba",
+        "Floridablanca", "Guagua", "Lubao", "Mabalacat", "Macabebe",
+        "Magalang", "Masantol", "Mexico", "Minalin", "Porac",
+        "San Fernando", "San Luis", "San Simon", "Santa Ana",
+        "Santa Rita", "Santo Tomas",
+    ]
+
+    # --------------------------------------------------------
+    # GET ALL SUBMISSIONS IN PERIOD (ALL MUNICIPALITIES)
+    # --------------------------------------------------------
+    submissions = (
+        db.query(ReportSubmission, RawPlantReport)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .filter(
+            RawPlantReport.municipality.in_(PAMPANGA_MUNICIPALITIES),
+            ReportSubmission.submitted_at >= period_start_dt,
+            ReportSubmission.submitted_at <= period_end_dt,
+            ReportSubmission.status.in_([
+                SUBMITTED_MUNICIPAL_PENDING,
+                SUBMITTED_MUNICIPAL_FLAGGED,
+                SUBMITTED_PROVINCIAL_PENDING,
+                SUBMITTED_PROVINCIAL_FLAGGED,
+                SUBMITTED_REGIONAL_PENDING,
+                SUBMITTED_REGIONAL_FLAGGED,
+                SUBMITTED_REGIONAL_APPROVED,
+            ]),
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .all()
+    )
+
+    report_ids = [s.report_id for s, r in submissions]
+
+    # Build maps
+    report_status_map = {s.report_id: s.status for s, r in submissions}
+    report_municipality_map = {r.report_id: r.municipality for s, r in submissions}
+
+    # Count reports still pending provincial validation
+    pending_report_count = sum(
+        1 for s, r in submissions
+        if s.status == SUBMITTED_PROVINCIAL_PENDING
+    )
+
+    # --------------------------------------------------------
+    # EMPTY STATE
+    # --------------------------------------------------------
+    if not report_ids:
+        return {
+            "scope": "Pampanga",
+            "period_start": period_start_dt.isoformat() + "Z",
+            "period_end": period_end_dt.isoformat() + "Z",
+            "report_count": 0,
+            "pending_report_count": 0,
+            "municipality_count": 0,
+            "intents": [],
+        }
+
+    # --------------------------------------------------------
+    # GET ALL INTENTS ACROSS THOSE REPORTS
+    # --------------------------------------------------------
+    links = (
+        db.query(ReportPlantingIntent)
+        .filter(ReportPlantingIntent.report_id.in_(report_ids))
+        .all()
+    )
+
+    intent_ids = [l.planting_intent_id for l in links]
+
+    intents = (
+        db.query(PlantingIntent)
+        .filter(PlantingIntent.planting_intent_id.in_(intent_ids))
+        .all()
+    ) if intent_ids else []
+
+    # --------------------------------------------------------
+    # FARMERS
+    # --------------------------------------------------------
+    farmer_ids = list({i.farmer_id for i in intents if i.farmer_id})
+    farmers = (
+        db.query(Farmer)
+        .filter(Farmer.farmer_id.in_(farmer_ids))
+        .all()
+    ) if farmer_ids else []
+
+    farmer_map = {f.farmer_id: f for f in farmers}
+    intent_map = {i.planting_intent_id: i for i in intents}
+
+    # --------------------------------------------------------
+    # BUILD INTENT PAYLOAD
+    # --------------------------------------------------------
+    intent_payload = []
+    for link in links:
+        pi = intent_map.get(link.planting_intent_id)
+        if not pi:
+            continue
+
+        farmer = farmer_map.get(pi.farmer_id)
+
+        intent_payload.append({
+            "planting_intent_id": pi.planting_intent_id,
+            "farmer_id": pi.farmer_id,
+            "farmer_name": (
+                f"{farmer.first_name} {farmer.last_name}"
+                if farmer else "Unknown"
+            ),
+            "commodity": pi.commodity,
+            "volume": pi.volume,
+            "planting_date": pi.planting_date.isoformat() if pi.planting_date else None,
+            "harvest_date": pi.harvest_date.isoformat() if pi.harvest_date else None,
+            "actual_planting_date": (
+                pi.actual_planting_date.isoformat()
+                if getattr(pi, "actual_planting_date", None) else None
+            ),
+            "actual_harvest_date": (
+                pi.actual_harvest_date.isoformat()
+                if getattr(pi, "actual_harvest_date", None) else None
+            ),
+            "actual_harvest_volume": getattr(pi, "actual_harvest_volume", None),
+            "finalized_status": link.finalized_status_snapshot or "NOT PLANTED",
+            "barangay": farmer.barangay if farmer else None,
+            "municipality": report_municipality_map.get(link.report_id),
+            "status": link.plant_status_snapshot,
+            "report_id": link.report_id,
+            "report_status": report_status_map.get(link.report_id),
+        })
+
+    # Count unique municipalities
+    municipality_count = len(set(report_municipality_map.values()))
+
+    return {
+        "scope": "Pampanga",
+        "period_start": period_start_dt.isoformat() + "Z",
+        "period_end": period_end_dt.isoformat() + "Z",
+        "report_count": len(report_ids),
+        "pending_report_count": pending_report_count,
+        "municipality_count": municipality_count,
+        "intents": intent_payload,
+    }
+
+
+# ============================================================
+# REGIONAL SUMMARY — AGGREGATED VIEW (ALL PAMPANGA)
+# ============================================================
+
+@router.get("/regional-summary")
+def get_regional_summary(
+    period_start: str | None = None,
+    period_end: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Aggregate all reports across all Pampanga municipalities for DA-RFO.
+    Includes ALL statuses (municipal, provincial, regional).
+    """
+    if current_user.role not in ("DA-RFO Officer", "Regional Coordinator", "DA-RFO"):
+        raise HTTPException(403, "Unauthorized.")
+
+    # PERIOD
+    if period_end:
+        try:
+            period_end_dt = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+            if period_end_dt.tzinfo is not None:
+                period_end_dt = period_end_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(400, "Invalid period_end format.")
+    else:
+        period_end_dt = datetime.utcnow()
+
+    if period_start:
+        try:
+            period_start_dt = datetime.fromisoformat(period_start.replace("Z", "+00:00"))
+            if period_start_dt.tzinfo is not None:
+                period_start_dt = period_start_dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(400, "Invalid period_start format.")
+    else:
+        period_start_dt = period_end_dt - timedelta(days=7)
+
+    PAMPANGA_MUNICIPALITIES = [
+        "Angeles", "Angeles City",
+        "Apalit", "Arayat", "Bacolor", "Candaba",
+        "Floridablanca", "Guagua", "Lubao", "Mabalacat", "Macabebe",
+        "Magalang", "Masantol", "Mexico", "Minalin", "Porac",
+        "San Fernando", "San Luis", "San Simon", "Santa Ana",
+        "Santa Rita", "Santo Tomas",
+    ]
+
+    # ✅ ALL STATUSES
+    submissions = (
+        db.query(ReportSubmission, RawPlantReport)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .filter(
+            RawPlantReport.municipality.in_(PAMPANGA_MUNICIPALITIES),
+            ReportSubmission.submitted_at >= period_start_dt,
+            ReportSubmission.submitted_at <= period_end_dt,
+            ReportSubmission.status.in_([
+                SUBMITTED_MUNICIPAL_PENDING,
+                SUBMITTED_MUNICIPAL_FLAGGED,
+                SUBMITTED_PROVINCIAL_PENDING,
+                SUBMITTED_PROVINCIAL_FLAGGED,
+                SUBMITTED_REGIONAL_PENDING,
+                SUBMITTED_REGIONAL_FLAGGED,
+                SUBMITTED_REGIONAL_APPROVED,
+            ]),
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .all()
+    )
+
+    report_ids = [s.report_id for s, r in submissions]
+    report_status_map = {s.report_id: s.status for s, r in submissions}
+    report_municipality_map = {r.report_id: r.municipality for s, r in submissions}
+
+    # Count pending DA-RFO
+    pending_report_count = sum(
+        1 for s, r in submissions
+        if s.status == SUBMITTED_REGIONAL_PENDING
+    )
+
+    # --------------------------------------------------------
+    # EMPTY STATE
+    # --------------------------------------------------------
+    if not report_ids:
+        return {
+            "scope": "Pampanga",
+            "period_start": period_start_dt.isoformat() + "Z",
+            "period_end": period_end_dt.isoformat() + "Z",
+            "report_count": 0,
+            "pending_report_count": 0,
+            "municipality_count": 0,
+            "intents": [],
+        }
+
+    links = (
+        db.query(ReportPlantingIntent)
+        .filter(ReportPlantingIntent.report_id.in_(report_ids))
+        .all()
+    )
+
+    intent_ids = [l.planting_intent_id for l in links]
+
+    intents = (
+        db.query(PlantingIntent)
+        .filter(PlantingIntent.planting_intent_id.in_(intent_ids))
+        .all()
+    ) if intent_ids else []
+
+    farmer_ids = list({i.farmer_id for i in intents if i.farmer_id})
+    farmers = (
+        db.query(Farmer)
+        .filter(Farmer.farmer_id.in_(farmer_ids))
+        .all()
+    ) if farmer_ids else []
+
+    farmer_map = {f.farmer_id: f for f in farmers}
+    intent_map = {i.planting_intent_id: i for i in intents}
+
+    intent_payload = []
+    for link in links:
+        pi = intent_map.get(link.planting_intent_id)
+        if not pi:
+            continue
+        farmer = farmer_map.get(pi.farmer_id)
+        intent_payload.append({
+            "planting_intent_id": pi.planting_intent_id,
+            "farmer_id": pi.farmer_id,
+            "farmer_name": (
+                f"{farmer.first_name} {farmer.last_name}"
+                if farmer else "Unknown"
+            ),
+            "commodity": pi.commodity,
+            "volume": pi.volume,
+            "planting_date": pi.planting_date.isoformat() if pi.planting_date else None,
+            "harvest_date": pi.harvest_date.isoformat() if pi.harvest_date else None,
+            "actual_planting_date": (
+                pi.actual_planting_date.isoformat()
+                if getattr(pi, "actual_planting_date", None) else None
+            ),
+            "actual_harvest_date": (
+                pi.actual_harvest_date.isoformat()
+                if getattr(pi, "actual_harvest_date", None) else None
+            ),
+            "actual_harvest_volume": getattr(pi, "actual_harvest_volume", None),
+            "finalized_status": link.finalized_status_snapshot or "NOT PLANTED",
+            "barangay": farmer.barangay if farmer else None,
+            "municipality": report_municipality_map.get(link.report_id),
+            "status": link.plant_status_snapshot,
+            "report_id": link.report_id,
+            "report_status": report_status_map.get(link.report_id),
+        })
+
+    municipality_count = len(set(report_municipality_map.values()))
+
+    return {
+        "scope": "Pampanga",
+        "period_start": period_start_dt.isoformat() + "Z",
+        "period_end": period_end_dt.isoformat() + "Z",
+        "report_count": len(report_ids),
+        "pending_report_count": pending_report_count,
+        "municipality_count": municipality_count,
+        "intents": intent_payload,
+    }
+
+
+
+# ============================================================
+# ALL REGIONAL REPORTS (DA-RFO view — all statuses)
+# ============================================================
+
+@router.get("/all-regional-reports")
+def get_all_regional_reports(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get ALL reports in Pampanga (regardless of status) for DA-RFO monitoring.
+    Returns one row per report (deduplicated).
+    """
+    if current_user.role not in ("DA-RFO Officer", "Regional Coordinator", "DA-RFO"):
+        raise HTTPException(403, "Unauthorized.")
+
+    PAMPANGA_MUNICIPALITIES = [
+        "Angeles", "Angeles City",
+        "Apalit", "Arayat", "Bacolor", "Candaba",
+        "Floridablanca", "Guagua", "Lubao", "Mabalacat", "Macabebe",
+        "Magalang", "Masantol", "Mexico", "Minalin", "Porac",
+        "San Fernando", "San Luis", "San Simon", "Santa Ana",
+        "Santa Rita", "Santo Tomas",
+    ]
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(
+            RawPlantReport.municipality.in_(PAMPANGA_MUNICIPALITIES),
+            ReportSubmission.status.in_([
+                SUBMITTED_MUNICIPAL_PENDING,
+                SUBMITTED_MUNICIPAL_FLAGGED,
+                SUBMITTED_PROVINCIAL_PENDING,
+                SUBMITTED_PROVINCIAL_FLAGGED,
+                SUBMITTED_REGIONAL_PENDING,
+                SUBMITTED_REGIONAL_FLAGGED,
+                SUBMITTED_REGIONAL_APPROVED,
+            ]),
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .distinct()
+        .all()
+    )
+
+    report_ids = [s.report_id for s, r, u in reports]
+
+    intent_count_map = {}
+    harvest_date_map = {}
+
+    if report_ids:
+        links = (
+            db.query(ReportPlantingIntent)
+            .filter(ReportPlantingIntent.report_id.in_(report_ids))
+            .all()
+        )
+
+        intent_ids = [l.planting_intent_id for l in links]
+
+        intents = {}
+        if intent_ids:
+            for pi in db.query(PlantingIntent).filter(
+                PlantingIntent.planting_intent_id.in_(intent_ids)
+            ).all():
+                intents[pi.planting_intent_id] = pi
+
+        for link in links:
+            intent_count_map[link.report_id] = intent_count_map.get(link.report_id, 0) + 1
+            pi = intents.get(link.planting_intent_id)
+            if pi and link.report_id not in harvest_date_map:
+                harvest_date_map[link.report_id] = pi.harvest_date
+
+    return [
+        {
+            "submission_id": submission.submission_id,
+            "report_id": submission.report_id,
+            "title": report.title,
+            "commodity": report.commodity,
+            "municipality": report.municipality,
+            "planting_date": report.planting_date,
+            "harvest_date": harvest_date_map.get(report.report_id),
+            "estimated_yield": report.estimated_yield,
+            "encoded_by": report.encoded_by,
+            "encoded_by_name": f"{user.first_name} {user.last_name}" if user else None,
+            "status": submission.status,
+            "submitted_at": submission.submitted_at,
+            "approved_at": submission.approved_at,
+            "flagged_at": submission.flagged_at,
+            "revision_remarks": submission.revision_remarks,
+            "revision_count": submission.revision_count,
+            "intent_count": intent_count_map.get(report.report_id, 0),
+        }
+        for submission, report, user in reports
+    ]
+
+
+# ============================================================
+# GET REPORT SUBMISSION
+# ============================================================
+
+@router.get("/{report_id}")
+def get_report_submission(report_id: int, db: Session = Depends(get_db)):
+    submission = db.query(ReportSubmission).filter(ReportSubmission.report_id == report_id).first()
+
+    if not submission:
+        raise HTTPException(status_code=404, detail="Report submission not found.")
+
+    return {
+        "submission_id": submission.submission_id,
+        "report_id": submission.report_id,
+        "status": submission.status,
+        "current_validator_id": submission.current_validator_id,
+        "current_validator_role": submission.current_validator_role,
+        "revision_remarks": submission.revision_remarks,
+        "revision_count": submission.revision_count,
+        "submitted_at": submission.submitted_at,
+        "approved_at": submission.approved_at,
     }

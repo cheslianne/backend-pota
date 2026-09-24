@@ -1463,16 +1463,43 @@
       </div>
 
       <div class="modal-overlay" id="confirmReportModal">
-          <div class="modal-box">
-              <h2 id="confirmReportTitle">Confirm Submission</h2>
-              <p id="confirmReportText">Are you sure?</p>
+          <div class="modal-box" style="max-width: 540px; text-align: left;">
+              <h2 id="confirmReportTitle" style="
+                  font-family: 'Plus Jakarta Sans', sans-serif;
+                  font-size: 20px;
+                  font-weight: 800;
+                  color: var(--green-dark);
+                  margin-bottom: 12px;
+                  text-align: center;
+              ">Confirm Submission</h2>
+
+              <p id="confirmReportText" style="
+                  font-size: 14px;
+                  color: var(--ink);
+                  line-height: 1.5;
+                  margin-bottom: 20px;
+                  text-align: center;
+              ">Are you sure?</p>
+
+              <div id="confirmReportDetails" style="
+                  display: none;
+                  text-align: left;
+                  background: #F6F3EB;
+                  border-left: 3px solid var(--green);
+                  padding: 14px 18px;
+                  border-radius: 0 8px 8px 0;
+                  font-size: 13px;
+                  color: var(--muted);
+                  margin-bottom: 22px;
+                  line-height: 1.6;
+              "></div>
+
               <div class="modal-actions">
-                  <button class="btn-outline-report" id="cancelConfirmReportBtn" type="button">Review</button>
-                  <button class="modal-btn-confirm" id="proceedConfirmReportBtn" type="button">Confirm</button>
+                  <button class="btn-outline-report" id="cancelConfirmReportBtn" type="button">Cancel</button>
+                  <button class="modal-btn-confirm" id="proceedConfirmReportBtn" type="button">Yes, Submit</button>
               </div>
           </div>
       </div>
-
       <div class="modal-overlay" id="confirmOfftakeModal">
           <div class="modal-box">
               <h2>Confirm Offtake Request</h2>
@@ -1500,6 +1527,44 @@
               <p>The planting intent has been saved as a <b>DRAFT</b>.<br>You can review and finalize it later from the Draft Intents tab.</p>
               <div class="modal-actions">
                   <button class="modal-btn-confirm" id="closePlantIntentSubmittedBtn" type="button">Done</button>
+              </div>
+          </div>
+      </div>
+            <!-- REPORT SUBMITTED SUCCESS MODAL -->
+      <div class="modal-overlay" id="reportSubmittedModal">
+          <div class="modal-box" style="max-width: 460px;">
+              <div style="
+                  width: 64px;
+                  height: 64px;
+                  border-radius: 50%;
+                  background: var(--green-light);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin: 0 auto 16px;
+                  font-size: 32px;
+              ">✓</div>
+
+              <h2 id="reportSubmittedTitle" style="
+                  font-size: 22px;
+                  font-weight: 800;
+                  color: var(--green-dark);
+                  margin-bottom: 10px;
+              ">Report Submitted</h2>
+
+              <p id="reportSubmittedMessage" style="
+                  font-size: 14px;
+                  color: var(--ink);
+                  line-height: 1.5;
+                  margin-bottom: 22px;
+              ">
+                  Your report has been successfully submitted to the Municipal Coordinator.
+              </p>
+
+              <div class="modal-actions">
+                  <button class="modal-btn-confirm" id="closeReportSubmittedBtn" type="button">
+                      Done
+                  </button>
               </div>
           </div>
       </div>

@@ -89,7 +89,23 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
         }
 
         if (!response.ok) {
-            const detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            let detail = data?.detail || data?.message || `HTTP ${response.status}`;
+
+            if (Array.isArray(detail)) {
+                detail = detail
+                    .map(e => {
+                        if (typeof e === "string") return e;
+                        if (e.msg) {
+                            const loc = Array.isArray(e.loc) ? e.loc.join(".") : "";
+                            return loc ? `${loc}: ${e.msg}` : e.msg;
+                        }
+                        return JSON.stringify(e);
+                    })
+                    .join("; ");
+            } else if (typeof detail === "object") {
+                detail = JSON.stringify(detail);
+            }
+
             throw new Error(detail);
         }
 
@@ -356,12 +372,16 @@ function getActionStyle(action) {
     const a = String(action || "").toUpperCase();
     if (a === "SUBMITTED")
         return { icon: "📤", label: "Submitted", color: "#2980B9" };
+    if (a === "RESUBMITTED")                                              
+        return { icon: "🔄", label: "Resubmitted", color: "#2980B9" };   
     if (a === "APPROVED")
         return { icon: "✓", label: "Approved", color: "#2E7D32" };
     if (a === "REVISION_REQUIRED")
         return { icon: "⚠", label: "Revision Required", color: "#C0392B" };
     if (a === "PULLED")
         return { icon: "↩", label: "Pulled to Draft", color: "#D97706" };
+    if (a === "STATUS_CHANGED")
+        return { icon: "•", label: "Status Changed", color: "#6c757d" };
     return { icon: "•", label: a || "Action", color: "#6c757d" };
 }
 
@@ -594,12 +614,17 @@ function renderAwaitingRevision() {
         tr.className = "clickable-row";
         tr.dataset.reportId = report.report_id;
 
+        // ✅ Use flagged_at first; fall back gracefully
+        const flaggedDate = report.flagged_at 
+            || report.updated_at 
+            || report.submitted_at;
+
         tr.innerHTML = `
             <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
             <td>${escapeHtml(report.title || "—")}</td>
             <td>${escapeHtml(report.commodity || "—")}</td>
             <td>${escapeHtml(report.municipality || "—")}</td>
-            <td class="center-col">${formatDate(report.submitted_at)}</td>
+            <td class="center-col">${formatDate(flaggedDate)}</td>
             <td class="center-col">
                 <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
             </td>
@@ -609,6 +634,7 @@ function renderAwaitingRevision() {
         tbody.appendChild(tr);
     });
 }
+
 
 
 /* ============================================================
@@ -1060,8 +1086,8 @@ async function openReportDetail(report) {
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
-    } else if (isProvincialFlagged || isRegionalFlagged) {
-        // Flagged by higher level — Municipal can re-flag or resubmit
+    } else if (isProvincialFlagged) {
+        // ✅ Provincial flagged — Municipal can re-flag or resubmit
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
@@ -1074,6 +1100,24 @@ async function openReportDetail(report) {
             resubmitBtn.textContent = "Resubmit to Provincial";
             resubmitBtn.disabled = false;
         }
+    } else if (isRegionalFlagged) {
+        // ✅ Regional flagged — read-only for Municipal
+        // (Provincial should handle this first)
+        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+        if (flagBtn) flagBtn.style.display = "none";
+        if (approveBtn) approveBtn.style.display = "none";
+        if (resubmitBtn) resubmitBtn.style.display = "none";
+
+        // Also hide remarks input para hindi magulo
+        if (remarksEl) {
+            remarksEl.readOnly = true;
+            remarksEl.style.background = "#F6F3EB";
+            remarksEl.style.color = "var(--muted)";
+            remarksEl.style.cursor = "default";
+            remarksEl.placeholder = "Read-only — report is at Regional level.";
+        }
+        const remarksRow = remarksEl ? remarksEl.closest(".notes-row") : null;
+        if (remarksRow) remarksRow.style.display = "none";
     } else {
         // Any other status — read-only
         if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back"; }
@@ -1852,71 +1896,145 @@ function initFlagButton() {
     const flagBtn = document.getElementById("flagBtn");
     if (!flagBtn) return;
 
-    flagBtn.addEventListener("click", async () => {
-        if (!selectedReport) return;
+    flagBtn.addEventListener("click", () => {
+        if (!selectedReport) {
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
 
         const validatorId = localStorage.getItem("user_id");
         const accessToken = getAuthToken();
-        const tokenType = localStorage.getItem("token_type") || "bearer";
 
         if (!validatorId || !accessToken) {
-            openModal("Please log in again.");
+            openModal("Please log in again.", {
+                title: "Session Expired",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
             return;
         }
 
-        const remarksInput = document.getElementById("remarksTextarea").value.trim();
+        const remarksEl = document.getElementById("remarksTextarea");
+        const remarksInput = remarksEl?.value?.trim() || "";
+
+        // ============================================================
+        // ✅ STEP 1: Validation — remarks required
+        // ============================================================
         if (!remarksInput) {
-            openModal("Revision remarks are required.");
+            showActionConfirm({
+                title: "Remarks Required",
+                message: "Please enter your revision remarks in the text area before flagging this report. <br><br>The AEW needs to know <strong>what to fix.</strong>",
+                confirmText: "OK, I'll Add Remarks",
+                confirmColor: "#D97706",
+                cancelText: "Cancel",
+                onConfirm: () => {
+                    remarksEl?.focus();
+                    remarksEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+                },
+            });
             return;
         }
 
-        // ✅ Just send the raw remarks — backend na ang mag-aattach ng user info
         const remarks = remarksInput;
 
-        flagBtn.disabled = true;
-        flagBtn.textContent = "Processing...";
+        // ============================================================
+        // ✅ STEP 2: Build structured details
+        // ============================================================
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
 
-        try {
-            const url =
-                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
-                `?validator_id=${encodeURIComponent(validatorId)}` +
-                `&validator_role=municipal_coordinator` +
-                `&remarks=${encodeURIComponent(remarks)}`;
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                <span style="font-weight:700;">Your remarks:</span>
+                <span style="font-style:italic; color:#C0392B;">"${escapeHtml(remarks)}"</span>
+            </div>
+        `;
 
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `${tokenType} ${accessToken}`
+        // ============================================================
+        // ✅ STEP 3: Show styled confirmation modal
+        // ============================================================
+        showActionConfirm({
+            title: "Flag for Revision?",
+            message: "This report will be returned to the AEW for revision. <br><strong>The AEW will need to resubmit it after making changes.</strong>",
+            details: detailsHtml,
+            confirmText: "Flag for Revision",
+            confirmColor: "#C0392B",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                flagBtn.disabled = true;
+                flagBtn.textContent = "Processing...";
+
+                try {
+                    const tokenType = localStorage.getItem("token_type") || "bearer";
+
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
+                        `?validator_id=${encodeURIComponent(validatorId)}` +
+                        `&validator_role=municipal_coordinator` +
+                        `&remarks=${encodeURIComponent(remarks)}`;
+
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json",
+                            "Authorization": `${tokenType} ${accessToken}`
+                        }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    flagBtn.classList.add("active");
+                    flagBtn.textContent = "Flagged ✓";
+
+                    // ✅ Styled success modal
+                    openModal(
+                        "The report has been returned to the AEW for revision. You'll see it again once they resubmit.",
+                        {
+                            title: "Flagged for Revision",
+                            icon: "⚠",
+                            iconBg: "#FEF3C7",
+                            titleColor: "#D97706",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadAwaitingRevision();
+                        await loadSentToProvincial();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Flag error:", err);
+                    openModal(err.message || "Failed to flag report.", {
+                        title: "Flag Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+                    flagBtn.classList.remove("active");
+                    flagBtn.textContent = "Flag for Revision";
+                } finally {
+                    flagBtn.disabled = false;
                 }
-            });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `HTTP ${res.status}`);
-            }
-
-            flagBtn.classList.add("active");
-            flagBtn.textContent = "Flagged ✓";
-
-            openModal("Report Flagged for Revision");
-
-            setTimeout(async () => {
-                closeReportDetail();
-                await loadPendingReports();
-                await loadSentToProvincial();
-            }, 800);
-
-        } catch (err) {
-            console.error("Flag error:", err);
-            openModal(`Error: ${err.message}`);
-            flagBtn.classList.remove("active");
-            flagBtn.textContent = "Flag for Revision";
-        } finally {
-            flagBtn.disabled = false;
-        }
+            },
+        });
     });
 }
+
 
 
 /* ============================================================
@@ -1927,67 +2045,132 @@ function initApproveButton() {
     const approveBtn = document.getElementById("approveBtn");
     if (!approveBtn) return;
 
-    approveBtn.addEventListener("click", async () => {
-        if (!selectedReport) return;
-
-        const validatorId = localStorage.getItem("user_id");
-        const accessToken = getAuthToken();
-        const tokenType = localStorage.getItem("token_type") || "bearer";
-
-        if (!validatorId || !accessToken) {
-            openModal("Please log in again.");
+    approveBtn.addEventListener("click", () => {
+        if (!selectedReport) {
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
             return;
         }
 
-        const remarksInput = document.getElementById("remarksTextarea").value.trim();
+        const validatorId = localStorage.getItem("user_id");
+        const accessToken = getAuthToken();
 
-        // ✅ Send raw remarks or null — no [Role: Name] prefix
+        if (!validatorId || !accessToken) {
+            openModal("Please log in again.", {
+                title: "Session Expired",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
+            return;
+        }
+
+        const remarksInput = document.getElementById("remarksTextarea")?.value?.trim();
         const remarks = remarksInput || null;
 
-        approveBtn.disabled = true;
-        approveBtn.textContent = "Processing...";
+        // ============================================================
+        // ✅ STEP 1: Build structured details
+        // ============================================================
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
+        const commodity = selectedReport.commodity || "—";
+        const intentCount = selectedReport.intent_count ?? "—";
 
-        try {
-            const url =
-                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
-                `?validator_id=${validatorId}` +
-                `&validator_role=municipal_coordinator` +
-                (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                <span style="font-weight:700;">Commodity:</span>
+                <span>${escapeHtml(commodity)}</span>
+                <span style="font-weight:700;">Intents:</span>
+                <span>${escapeHtml(String(intentCount))}</span>
+                ${remarks ? `
+                    <span style="font-weight:700;">Your remarks:</span>
+                    <span style="font-style:italic;">"${escapeHtml(remarks)}"</span>
+                ` : ""}
+            </div>
+        `;
 
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `${tokenType} ${accessToken}`
+        // ============================================================
+        // ✅ STEP 2: Show styled confirmation modal
+        // ============================================================
+        showActionConfirm({
+            title: "Approve & Send to Provincial?",
+            message: "This report will be forwarded to the Provincial Coordinator for validation. <br><strong>This action cannot be undone.</strong>",
+            details: detailsHtml,
+            confirmText: "Approve & Send",
+            confirmColor: "#2E7D32",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                approveBtn.disabled = true;
+                approveBtn.textContent = "Processing...";
+
+                try {
+                    const tokenType = localStorage.getItem("token_type") || "bearer";
+
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                        `?validator_id=${validatorId}` +
+                        `&validator_role=municipal_coordinator` +
+                        (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
+
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json",
+                            "Authorization": `${tokenType} ${accessToken}`
+                        }
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    approveBtn.classList.add("active");
+                    approveBtn.textContent = "Approved ✓";
+
+                    // ✅ Styled success modal
+                    openModal(
+                        "The report has been successfully forwarded to the Provincial Coordinator for validation.",
+                        {
+                            title: "Approved & Sent",
+                            icon: "✓",
+                            iconBg: "#D1FAE5",
+                            titleColor: "#2E7D32",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadSentToProvincial();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Approve error:", err);
+                    openModal(err.message || "Failed to approve report.", {
+                        title: "Approval Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+                    approveBtn.classList.remove("active");
+                    approveBtn.textContent = "Approve & Send to Provincial";
+                } finally {
+                    approveBtn.disabled = false;
                 }
-            });
-
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `HTTP ${res.status}`);
-            }
-
-            approveBtn.classList.add("active");
-            approveBtn.textContent = "Approved ✓";
-
-            openModal("Report Approved and Sent to Provincial");
-
-            setTimeout(async () => {
-                closeReportDetail();
-                await loadPendingReports();
-                await loadSentToProvincial();
-            }, 800);
-
-        } catch (err) {
-            console.error("Approve error:", err);
-            openModal(`Error: ${err.message}`);
-            approveBtn.classList.remove("active");
-            approveBtn.textContent = "Approve & Send to Provincial";
-        } finally {
-            approveBtn.disabled = false;
-        }
+            },
+        });
     });
 }
+
 
 
 /* ============================================================
@@ -1998,71 +2181,225 @@ function initResubmitButton() {
     const resubmitBtn = document.getElementById("resubmitReportBtn");
     if (!resubmitBtn) return;
 
-    resubmitBtn.addEventListener("click", async () => {
-        if (!selectedReport) return;
-
-        const remarksEl = document.getElementById("remarksTextarea");
-        const remarksInput = remarksEl?.value?.trim() || "";
-
-        // ✅ Send raw remarks or null — no [Role: Name] prefix
-        const remarks = remarksInput || null;
-
-        if (!confirm(`Resubmit report #${selectedReport.report_id} to Provincial?`)) {
+    resubmitBtn.addEventListener("click", () => {
+        if (!selectedReport) {
+            openModal("No report selected.", {
+                title: "Error",
+                icon: "⚠",
+                iconBg: "#FEE2E2",
+                titleColor: "#C0392B",
+            });
             return;
         }
 
-        resubmitBtn.disabled = true;
-        resubmitBtn.textContent = "Processing...";
+        const remarksEl = document.getElementById("remarksTextarea");
+        const remarksInput = remarksEl?.value?.trim() || "";
+        const remarks = remarksInput || null;
 
-        try {
-            const url =
-                `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
-                `?validator_id=${localStorage.getItem("user_id")}` +
-                `&validator_role=municipal_coordinator` +
-                (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
+        const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
+        const municipality = selectedReport.municipality || "—";
 
-            const res = await fetch(url, {
-                method: "POST",
-                headers: getAuthHeaders()
-            });
+        const detailsHtml = `
+            <div style="display:grid; grid-template-columns: auto 1fr; gap: 6px 14px;">
+                <span style="font-weight:700;">Report:</span>
+                <span>${escapeHtml(reportTitle)}</span>
+                <span style="font-weight:700;">Municipality:</span>
+                <span>${escapeHtml(municipality)}</span>
+                ${remarks ? `
+                    <span style="font-weight:700;">Your remarks:</span>
+                    <span style="font-style:italic;">"${escapeHtml(remarks)}"</span>
+                ` : ""}
+            </div>
+        `;
 
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || `HTTP ${res.status}`);
-            }
+        showActionConfirm({
+            title: "Resubmit to Provincial?",
+            message: "This report will be sent back to the Provincial Coordinator. <br><strong>Make sure all issues have been addressed.</strong>",
+            details: detailsHtml,
+            confirmText: "Yes, Resubmit",
+            confirmColor: "#2E7D32",
+            cancelText: "Cancel",
+            onConfirm: async () => {
+                resubmitBtn.disabled = true;
+                resubmitBtn.textContent = "Processing...";
 
-            openModal("Report resubmitted to Provincial successfully.");
+                try {
+                    const url =
+                        `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+                        `?validator_id=${localStorage.getItem("user_id")}` +
+                        `&validator_role=municipal_coordinator` +
+                        (remarks ? `&remarks=${encodeURIComponent(remarks)}` : "");
 
-            setTimeout(async () => {
-                closeReportDetail();
-                await loadPendingReports();
-                await loadAwaitingRevision();
-                await loadSentToProvincial();
-            }, 800);
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: getAuthHeaders()
+                    });
 
-        } catch (err) {
-            console.error("Resubmit error:", err);
-            openModal(`Error: ${err.message}`);
-            resubmitBtn.disabled = false;
-            resubmitBtn.textContent = "Resubmit to Provincial";
-        }
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.detail || `HTTP ${res.status}`);
+                    }
+
+                    openModal(
+                        "The report has been successfully resubmitted to the Provincial Coordinator.",
+                        {
+                            title: "Resubmitted",
+                            icon: "✓",
+                            iconBg: "#D1FAE5",
+                            titleColor: "#2E7D32",
+                        }
+                    );
+
+                    setTimeout(async () => {
+                        closeReportDetail();
+                        await loadPendingReports();
+                        await loadAwaitingRevision();
+                        await loadSentToProvincial();
+                    }, 800);
+
+                } catch (err) {
+                    console.error("Resubmit error:", err);
+                    openModal(err.message || "Failed to resubmit report.", {
+                        title: "Resubmit Failed",
+                        icon: "⚠",
+                        iconBg: "#FEE2E2",
+                        titleColor: "#C0392B",
+                    });
+                    resubmitBtn.disabled = false;
+                    resubmitBtn.textContent = "Resubmit to Provincial";
+                }
+            },
+        });
     });
 }
+
 
 
 /* ============================================================
    MODAL HELPER
 ============================================================ */
 
-function openModal(message) {
+function openModal(message, options = {}) {
+    const {
+        title = "Success",
+        icon = "✓",
+        iconBg = "var(--green-light)",
+        titleColor = "var(--green-dark)",
+    } = options;
+
     const modal = document.getElementById("reportModal");
     const text = document.getElementById("reportModalText");
+    const titleEl = document.getElementById("reportModalTitle");
+    const iconEl = document.getElementById("reportModalIcon");
+    const closeBtn = document.getElementById("reportModalConfirmBtn");
 
-    if (!modal || !text) return;
+    // Fallback kung wala ang modal
+    if (!modal || !text) {
+        alert(message);
+        return;
+    }
+
+    if (titleEl) {
+        titleEl.textContent = title;
+        titleEl.style.color = titleColor;
+    }
+
+    if (iconEl) {
+        iconEl.textContent = icon;
+        iconEl.style.background = iconBg;
+    }
 
     text.textContent = message;
+
+    if (closeBtn) {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.addEventListener("click", () => {
+            modal.classList.remove("show");
+        });
+    }
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.classList.remove("show");
+    };
+
     modal.classList.add("show");
 }
+
+
+/* ============================================================
+   ACTION CONFIRMATION MODAL
+============================================================ */
+
+function showActionConfirm({
+    title = "Confirm Action",
+    message = "Are you sure?",
+    details = null,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    confirmColor = "#5B6B4F",
+    onConfirm,
+    onCancel = null,
+} = {}) {
+    const modal = document.getElementById("actionConfirmModal");
+    const titleEl = document.getElementById("actionConfirmTitle");
+    const messageEl = document.getElementById("actionConfirmMessage");
+    const detailsEl = document.getElementById("actionConfirmDetails");
+    const okBtn = document.getElementById("actionConfirmOkBtn");
+    const cancelBtn = document.getElementById("actionConfirmCancelBtn");
+
+    // Fallback sa native confirm kung wala ang modal markup
+    if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
+        if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
+            onConfirm && onConfirm();
+        }
+        return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
+
+    if (details && details.trim()) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = "block";
+    } else {
+        detailsEl.innerHTML = "";
+        detailsEl.style.display = "none";
+    }
+
+    okBtn.textContent = confirmText;
+    okBtn.style.background = confirmColor;
+    cancelBtn.textContent = cancelText;
+
+    // ✅ Clean clone para hindi mag-stack ng listeners sa sunod-sunod na actions
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    newOkBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onConfirm && onConfirm();
+    });
+
+    newCancelBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        onCancel && onCancel();
+    });
+
+    // Click outside to close (treated as cancel)
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.remove("show");
+            onCancel && onCancel();
+        }
+    };
+
+    modal.classList.add("show");
+}
+
+
 
 
 /* ============================================================
@@ -2304,10 +2641,14 @@ function renderMunicipalSummary(data) {
     );
     const uniqueFarmerCount = uniqueFarmers.size;
 
-    const pendingCount = intents.filter(i => {
-        const s = String(i.status || "").toUpperCase();
-        return s === "SUBMITTED" || s === "SUBMITTED_MUNICIPAL_PENDING";
-    }).length;
+    // ✅ FIX: Count REPORTS pending municipal validation (not intents)
+    const pendingReportIds = new Set();
+    intents.forEach(i => {
+        if (i.report_status === "SUBMITTED_MUNICIPAL_PENDING") {
+            pendingReportIds.add(i.report_id);
+        }
+    });
+    const pendingCount = Number(data.pending_report_count) || 0;
 
     const harvestedIntents = intents.filter(i =>
         (i.finalized_status || "").toUpperCase() === "HARVESTED"
@@ -2402,11 +2743,6 @@ function renderMunicipalSummary(data) {
         .filter(d => !isNaN(d.getTime()));
 
     // ============================================================
-    // COVERAGE — reports included this period
-    // ============================================================
-    const coverageText = `${reportCount} report${reportCount !== 1 ? "s" : ""}`;
-
-    // ============================================================
     // BUILD HTML
     // ============================================================
     const periodLabel = periodStart && periodEnd
@@ -2459,7 +2795,7 @@ function renderMunicipalSummary(data) {
                 padding: 5px 12px;
                 border-radius: 999px;
             ">
-                ${coverageText} included
+                ${reportCount} report${reportCount !== 1 ? "s" : ""} included
             </div>
         </div>
     `;
@@ -2489,15 +2825,19 @@ function renderMunicipalSummary(data) {
 
     // ------------------------------------------------------------
     // KPI ROW 2
-    // ------------------------------------------------------------
+    // ============================================================
+    // ✅ FIXED: Reports count instead of intents count
+    // ============================================================
     html += `
         <div class="summary-kpi-grid">
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">⏳ Pending Validation</div>
+                <div class="summary-kpi-label">⏳ Pending Reports</div>
                 <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">
                     ${pendingCount}
                 </div>
-                <div class="summary-kpi-subtext">Awaiting status update</div>
+                <div class="summary-kpi-subtext">
+                    ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
+                </div>
             </div>
             <div class="summary-kpi-card">
                 <div class="summary-kpi-label">🌾 Harvested Volume</div>
