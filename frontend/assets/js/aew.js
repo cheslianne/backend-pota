@@ -81,6 +81,22 @@ const reportsPerPage = 10;
 
 
 /* ============================================================
+   MARKET PRICE DASHBOARD
+   DA-AMAD Wholesale + Retail
+============================================================ */
+
+let MARKET_PRICES_DATA = [];
+let MARKET_PRICE_FORECASTS_DATA = [];
+let marketPriceChartInstance = null;
+
+const MARKET_PRICES_ENDPOINT = `${API_BASE_URL}/api/market-prices/`;
+const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/`;
+
+
+
+
+
+/* ============================================================
    INITIALIZATION
 ============================================================ */
 
@@ -115,6 +131,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     initFarmerSearch();
     initializePlantingIntentSearch();
+
+     initMarketPriceDashboard();
 });
 
 
@@ -714,6 +732,700 @@ function updateSearchPaginationText(resultCount) {
 }
 
 /* ============================================================
+   FARMER LOCATION DROPDOWNS
+   Municipality → Barangay
+============================================================ */
+
+/* ============================================================
+   FARMER LOCATION DROPDOWNS
+   Municipality → Barangay
+   COMPLETE DATA — all 20 municipalities + Angeles City
+============================================================ */
+
+const BARANGAYS_BY_MUNICIPALITY = {
+    "Angeles City": [
+        "Agapito del Rosario",
+        "Amsic",
+        "Anunas",
+        "Balibago",
+        "Capaya",
+        "Claro M. Recto",
+        "Cuayan",
+        "Cutcut",
+        "Cutud",
+        "Lourdes North West",
+        "Lourdes Sur",
+        "Lourdes Sur East",
+        "Malabanias",
+        "Margot",
+        "Mining",
+        "Pampang",
+        "Pandan",
+        "Pulung Maragul",
+        "Pulungbulu",
+        "Pulung Cacutud",
+        "Salapungan",
+        "San Jose",
+        "San Nicolas",
+        "Santa Teresita",
+        "Santa Trinidad",
+        "Santo Cristo",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Sapalibutad",
+        "Sapangbato",
+        "Tabun",
+        "Virgen Delos Remedios"
+    ],
+
+    "Apalit": [
+        "Balucuc",
+        "Calantipe",
+        "Cansinala",
+        "Capalangan",
+        "Colgante",
+        "Paligui",
+        "Sampaloc",
+        "San Juan",
+        "San Vicente",
+        "Sucad",
+        "Sulipan",
+        "Tabuyuc"
+    ],
+
+    "Arayat": [
+        "Arenas",
+        "Baliti",
+        "Batasan",
+        "Buensuceso",
+        "Candating",
+        "Cupang",
+        "Gatiawin",
+        "Guemasan",
+        "Kaledian",
+        "La Paz",
+        "Lacmit",
+        "Lacquios",
+        "Mangga-Cacutud",
+        "Mapalad",
+        "Matamo",
+        "Panlinlang",
+        "Paralaya",
+        "Plazang Luma",
+        "Poblacion",
+        "San Agustin Norte",
+        "San Agustin Sur",
+        "San Antonio",
+        "San Jose Mesulo",
+        "San Juan Bano",
+        "San Mateo",
+        "San Nicolas",
+        "San Roque Bitas",
+        "Santo Niño Tabuan",
+        "Suclayin",
+        "Telapayong"
+    ],
+
+    "Bacolor": [
+        "Balas",
+        "Cabalantian",
+        "Cabambangan",
+        "Cabetican",
+        "Calibutbut",
+        "Concepcion",
+        "Dolores",
+        "Duat",
+        "Macabacle",
+        "Magliman",
+        "Maliwalu",
+        "Mesalipit",
+        "Parulog",
+        "Potrero",
+        "San Antonio",
+        "San Isidro",
+        "San Vicente",
+        "Santa Barbara",
+        "Santa Ines",
+        "Talba",
+        "Tinajero"
+    ],
+
+    "Candaba": [
+        "Bahay Pare",
+        "Bambang",
+        "Barangca",
+        "Barit",
+        "Buas",
+        "Cuayang Bugtong",
+        "Dalayap",
+        "Dulong Ilog",
+        "Gulap",
+        "Lanang",
+        "Lourdes",
+        "Magumbali",
+        "Mandasig",
+        "Mandili",
+        "Mangga",
+        "Mapaniqui",
+        "Paligui",
+        "Pangclara",
+        "Pansinao",
+        "Paralaya",
+        "Pasig",
+        "Pescadores",
+        "Pulong Gubat",
+        "Pulong Palazan",
+        "Salapungan",
+        "San Agustin",
+        "Santo Rosario",
+        "Tagulod",
+        "Talang",
+        "Tenejero",
+        "Vizal San Pablo",
+        "Vizal Santo Cristo",
+        "Vizal Santo Niño"
+    ],
+
+    "Floridablanca": [
+        "Anon",
+        "Apalit",
+        "Basa Air Base",
+        "Benedicto",
+        "Bodega",
+        "Cabangcalan",
+        "Calantas",
+        "Carmencita",
+        "Consuelo",
+        "Dampe",
+        "Del Carmen",
+        "Fortuna",
+        "Gutad",
+        "Mabical",
+        "Maligaya",
+        "Mawacat",
+        "Nabuclod",
+        "Pabanlag",
+        "Paguiruan",
+        "Palmayo",           // ✅ FIXED (was "Palmyo")
+        "Pandaguirig",
+        "Poblacion",
+        "San Antonio",
+        "San Isidro",
+        "San Jose",
+        "San Nicolas",
+        "San Pedro",
+        "San Ramon",
+        "San Roque",
+        "Santa Monica",
+        "Santo Rosario",
+        "Solib",
+        "Valdez"
+    ],
+
+    "Guagua": [
+        "Ascomo",
+        "Bancal",
+        "Jose Abad Santos",
+        "Lambac",
+        "Magsaysay",
+        "Maquiapo",
+        "Natividad",
+        "Plaza Burgos",
+        "Pulungmasle",
+        "Rizal",
+        "San Agustin",
+        "San Antonio",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Juan Bautista",
+        "San Juan Nepomuceno",
+        "San Matias",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo",
+        "San Pedro",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Filomena",
+        "Santa Ines",
+        "Santa Ursula",
+        "Santo Cristo",
+        "Santo Niño"
+    ],
+
+    "Lubao": [
+        "Balantacan",
+        "Bancal Pugad",
+        "Bancal Sinubli",
+        "Baruya",
+        "Calangain",
+        "Concepcion",
+        "De La Paz",
+        "Del Carmen",
+        "Don Ignacio Dimson",
+        "Lourdes",
+        "Prado Siongco",
+        "Remedios",
+        "San Agustin",
+        "San Antonio",
+        "San Francisco",
+        "San Isidro",
+        "San Jose Apunan",
+        "San Jose Gumi",
+        "San Juan",
+        "San Matias",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo 1st",
+        "San Pablo 2nd",
+        "San Pedro Palcarangan",
+        "San Pedro Saug",
+        "San Roque Arbol",
+        "San Roque Dau",
+        "San Vicente",
+        "Santa Barbara",
+        "Santa Catalina",
+        "Santa Cruz",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santa Monica",
+        "Santa Rita",
+        "Santa Teresa 1st",
+        "Santa Teresa 2nd",
+        "Santiago",
+        "Santo Cristo",
+        "Santo Domingo",
+        "Santo Niño",
+        "Santo Tomas"
+    ],
+
+    "Mabalacat": [
+        "Atlu-Bola",
+        "Bical",
+        "Bundagul",
+        "Cacutud",
+        "Calumpang",
+        "Camachiles",
+        "Dapdap",
+        "Dau",
+        "Dolores",
+        "Duquit",
+        "Lakandula",
+        "Mabiga",
+        "Macapagal Village",
+        "Mamatitang",
+        "Mangalit",
+        "Marcos Village",
+        "Mawaque",
+        "Paralayunan",
+        "Poblacion",
+        "San Francisco",
+        "San Joaquin",
+        "Santa Ines",
+        "Santa Maria",
+        "Santo Rosario",
+        "Sapang Balen",
+        "Sapang Biabas",
+        "Tabun"
+    ],
+
+    "Macabebe": [
+        "Batasan",
+        "Caduang Tete",
+        "Candelaria",
+        "Castuli",
+        "Consuelo",
+        "Dalayap",
+        "Mataguiti",
+        "San Esteban",
+        "San Francisco",
+        "San Gabriel",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Lutgarda",
+        "Santa Maria",
+        "Santa Rita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Saplad David",
+        "Tacasan",
+        "Telacsan"
+    ],
+
+    "Magalang": [
+        "Ayala",
+        "Bucanan",
+        "Camias",
+        "Dolores",
+        "Escaler",
+        "La Paz",
+        "Navaling",
+        "San Agustin",
+        "San Antonio",
+        "San Francisco",      // ✅ FIXED (was "San Franciso")
+        "San Ildefonso",
+        "San Isidro",
+        "San Jose",
+        "San Miguel",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pablo",
+        "San Pedro I",
+        "San Pedro II",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santo Niño",
+        "Santo Rosario",
+        "Turu"
+    ],
+
+    "Masantol": [
+        "Alauli",
+        "Bagang",
+        "Balibago",
+        "Bebe Anac",
+        "Bebe Matua",
+        "Bulacus",
+        "Cambasi",
+        "Malauli",
+        "Nigui",
+        "Palimpe",
+        "Puti",
+        "Sagrada",
+        "San Agustin",
+        "San Isidro Anac",
+        "San Isidro Matua",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Cruz",
+        "Santa Lucia Anac",
+        "Santa Lucia Matua",
+        "Santa Lucia Paguiba",
+        "Santa Lucia Wakas",
+        "Santa Monica",
+        "Santo Niño",
+        "Sapang Kawayan",
+        "Sua"
+    ],
+
+    "Mexico": [
+        "Acli",
+        "Anao",
+        "Balas",
+        "Buenavista",
+        "Camuning",
+        "Cawayan",
+        "Concepcion",
+        "Culubasa",
+        "Divisoria",
+        "Dolores",
+        "Eden",
+        "Gandus",
+        "Lagundi",
+        "Laput",
+        "Laug",
+        "Masamat",
+        "Masangsang",
+        "Nueva Victoria",
+        "Pandacaqui",
+        "Pangatlan",
+        "Panipuan",
+        "Parian",
+        "Sabanilla",
+        "San Antonio",
+        "San Carlos",
+        "San Jose Malino",
+        "San Jose Matulid",
+        "San Juan",
+        "San Lorenzo",
+        "San Miguel",
+        "San Nicolas",
+        "San Pablo",
+        "San Patricio",
+        "San Rafael",
+        "San Roque",
+        "San Vicente",
+        "Santa Cruz",
+        "Santa Maria",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Sapang Maisac",
+        "Suclaban",
+        "Tangle"
+    ],
+
+    "Minalin": [
+        "Bulac",
+        "Dawe",
+        "Lourdes",
+        "Maniango",
+        "San Francisco 1st",
+        "San Francisco 2nd",
+        "San Isidro",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Catalina",
+        "Santa Maria",
+        "Santa Rita",
+        "Santo Domingo",
+        "Santo Rosario",
+        "Saplad"
+    ],
+
+    "Porac": [
+        "Babo Pangulo",
+        "Babo Sacan",
+        "Balubad",
+        "Calzadang Bayu",
+        "Camias",
+        "Cangatba",
+        "Diaz",
+        "Dolores",
+        "Inararo",
+        "Jalung",
+        "Mancatian",
+        "Manibaug Libutad",
+        "Manibaug Paralaya",
+        "Manibaug Pasig",
+        "Manuali",
+        "Mitla Proper",
+        "Palat",
+        "Pias",
+        "Pio",
+        "Planas",
+        "Poblacion",
+        "Pulong Santol",
+        "Salu",
+        "San Jose Mitla",
+        "Santa Cruz",
+        "Sapang Uwak",
+        "Sepung Bulaun",
+        "Sinura",
+        "Villa Maria"
+    ],
+
+    "San Fernando": [
+        "Alasas",
+        "Baliti",
+        "Bulaon",
+        "Calulut",
+        "Del Carmen",
+        "Del Pilar",
+        "Del Rosario",
+        "Dela Paz Norte",
+        "Dela Paz Sur",
+        "Dolores",
+        "Juliana",
+        "Lara",
+        "Lourdes",
+        "Magliman",
+        "Maimpis",
+        "Malino",
+        "Malpitic",
+        "Pandaras",
+        "Panipuan",
+        "Pulung Bulu",
+        "Quebiauan",
+        "Saguin",
+        "San Agustin",
+        "San Felipe",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Pedro",
+        "Santa Lucia",
+        "Santa Teresita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Sindalan",
+        "Telabastagan"
+    ],
+
+    "San Luis": [
+        "San Agustin",
+        "San Carlos",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Roque",
+        "San Sebastian",
+        "Santa Catalina",
+        "Santa Cruz Pambilog",
+        "Santa Cruz Poblacion",
+        "Santa Lucia",
+        "Santa Monica",
+        "Santa Rita",
+        "Santo Niño",
+        "Santo Rosario",
+        "Santo Tomas"
+    ],
+
+    "San Simon": [
+        "Concepcion",
+        "De La Paz",
+        "San Agustin",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Miguel",
+        "San Nicolas",
+        "San Pablo Libutad",
+        "San Pablo Proper",
+        "San Pedro",
+        "Santa Cruz",
+        "Santa Monica",
+        "Santo Niño"
+    ],
+
+    "Santa Ana": [
+        "San Agustin",
+        "San Bartolome",
+        "San Isidro",
+        "San Joaquin",
+        "San Jose",
+        "San Juan",
+        "San Nicolas",
+        "San Pablo",
+        "San Pedro",
+        "San Roque",
+        "Santa Lucia",
+        "Santa Maria",
+        "Santiago",
+        "Santo Rosario"
+    ],
+
+    "Santa Rita": [
+        "Becuran",
+        "Dila-dila",
+        "San Agustin",
+        "San Basilio",
+        "San Isidro",
+        "San Jose",
+        "San Juan",
+        "San Matias",
+        "San Vicente",
+        "Santa Monica"
+    ],
+
+    "Santo Tomas": [
+        "Moras de La Paz",
+        "Poblacion",
+        "San Bartolome",
+        "San Matias",
+        "San Vicente",
+        "Santo Rosario",
+        "Sapa"
+    ],
+
+    "Sasmuan": [
+        "Batang 1st",
+        "Batang 2nd",
+        "Mabuanbuan",
+        "Malusac",
+        "Sabitanan",
+        "San Antonio",
+        "San Nicolas 1st",
+        "San Nicolas 2nd",
+        "San Pedro",
+        "Santa Lucia",
+        "Santa Monica",
+        "Santo Tomas"
+    ]
+};
+
+function initFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) {
+        console.warn("Farmer location dropdowns not found.");
+        return;
+    }
+
+    // Clear existing municipality options
+    municipalitySelect.innerHTML = `
+        <option value="" disabled selected>Select Municipality</option>
+    `;
+
+    // Populate Municipality dropdown
+    Object.keys(BARANGAYS_BY_MUNICIPALITY).forEach(function(municipality) {
+        const option = document.createElement("option");
+
+        option.value = municipality;
+        option.textContent = municipality;
+
+        municipalitySelect.appendChild(option);
+    });
+
+    // Initial Barangay state
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.disabled = true;
+
+    // Municipality → Barangay
+    municipalitySelect.addEventListener("change", function() {
+        const selectedMunicipality = this.value;
+
+        const barangays =
+            BARANGAYS_BY_MUNICIPALITY[selectedMunicipality] || [];
+
+        // Clear barangay options
+        barangaySelect.innerHTML = `
+            <option value="" disabled selected>
+                Select Barangay
+            </option>
+        `;
+
+        // Add barangays
+        barangays.forEach(function(barangay) {
+            const option = document.createElement("option");
+
+            option.value = barangay;
+            option.textContent = barangay;
+
+            barangaySelect.appendChild(option);
+        });
+
+        // Enable only if barangays exist
+        barangaySelect.disabled = barangays.length === 0;
+    });
+}
+function resetFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) return;
+
+    municipalitySelect.value = "";
+
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.value = "";
+    barangaySelect.disabled = true;
+}
+/* ============================================================
    FARMER SUBVIEWS
 ============================================================ */
 
@@ -721,6 +1433,8 @@ function initFarmerSubviews() {
     const listSubview = document.getElementById("farmersListSubview");
     const regSubview = document.getElementById("registerFarmerSubview");
     const manSubview = document.getElementById("manageFarmerSubview");
+
+     initFarmerLocationDropdowns();
 
     const addBtn = document.getElementById("addFarmerBtn");
     const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
@@ -731,6 +1445,7 @@ function initFarmerSubviews() {
             console.log("Add Farmer button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
+            resetFarmerLocationDropdowns();
             setValue("regFarmerId", "");
             if (listSubview) listSubview.classList.add("hidden-element");
             if (regSubview) regSubview.classList.remove("hidden-element");
@@ -742,6 +1457,7 @@ function initFarmerSubviews() {
             console.log("Cancel Register button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
+            resetFarmerLocationDropdowns();
             if (listSubview) listSubview.classList.remove("hidden-element");
             if (regSubview) regSubview.classList.add("hidden-element");
         });
@@ -7894,3 +8610,1269 @@ function formatKg(value) {
         }
     )} kg`;
 }
+
+/* ============================================================
+   MARKET PRICE DASHBOARD
+   DA-AMAD WHOLESALE + RETAIL
+============================================================ */
+
+function initMarketPriceDashboard() {
+    console.log("Initializing Market Price Dashboard...");
+
+    const marketView = document.getElementById("view-market-prices");
+
+    if (!marketView) {
+        console.warn("view-market-prices not found.");
+        return;
+    }
+
+    /*
+     * Load immediately if the dashboard is already active.
+     */
+    if (
+        marketView.classList.contains("active-view") ||
+        marketView.classList.contains("active")
+    ) {
+        loadMarketPriceDashboard();
+    }
+
+    /*
+     * Detect when Market Prices becomes active.
+     */
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            if (
+                mutation.type === "attributes" &&
+                mutation.attributeName === "class"
+            ) {
+                if (
+                    marketView.classList.contains("active-view") ||
+                    marketView.classList.contains("active")
+                ) {
+                    console.log("Market Prices view became active.");
+                    loadMarketPriceDashboard();
+                }
+            }
+        });
+    });
+
+    observer.observe(marketView, {
+        attributes: true,
+    });
+
+    /*
+     * Also listen directly to the navigation button.
+     */
+    const marketNav = document.querySelector(
+        '.nav-item[data-view="market-prices"]'
+    );
+
+    if (marketNav) {
+        marketNav.addEventListener("click", function () {
+            console.log("Market Prices navigation clicked.");
+
+            setTimeout(function () {
+                loadMarketPriceDashboard();
+            }, 200);
+        });
+    }
+}
+
+/* ============================================================
+   LOAD EVERYTHING
+============================================================ */
+
+async function loadMarketPriceDashboard() {
+    console.log("Loading DA-AMAD market price dashboard...");
+
+    try {
+        /*
+         * Load historical market prices.
+         */
+        console.log("Fetching:", MARKET_PRICES_ENDPOINT);
+
+        const marketPrices = await apiRequest(MARKET_PRICES_ENDPOINT, {
+            method: "GET",
+        });
+
+        /*
+         * Load market price forecasts.
+         */
+        console.log("Fetching:", MARKET_PRICE_FORECASTS_ENDPOINT);
+
+        const forecasts = await apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, {
+            method: "GET",
+        });
+
+        if (!Array.isArray(marketPrices)) {
+            throw new Error("Invalid market price response.");
+        }
+
+        if (!Array.isArray(forecasts)) {
+            throw new Error("Invalid market forecast response.");
+        }
+
+        MARKET_PRICES_DATA = marketPrices;
+        MARKET_PRICE_FORECASTS_DATA = forecasts;
+
+        console.log("Historical market prices:", MARKET_PRICES_DATA.length);
+        console.log("Market price forecasts:", MARKET_PRICE_FORECASTS_DATA.length);
+
+        /*
+         * Render sections.
+         */
+        renderWholesaleForecasts(MARKET_PRICE_FORECASTS_DATA);
+        renderRetailForecasts(MARKET_PRICE_FORECASTS_DATA);
+        renderHistoricalMarketPrices(MARKET_PRICES_DATA);
+
+        /*
+         * Initialize chart.
+         */
+        setTimeout(function () {
+            initMarketPriceChart();
+        }, 300);
+    } catch (error) {
+        console.error("Failed to load Market Price Dashboard:", error);
+
+        const containers = [
+            "wholesaleForecastResultsContainer",
+            "retailForecastResultsContainer",
+            "marketHistoricalResultsContainer",
+        ];
+
+        containers.forEach(function (id) {
+            const container = document.getElementById(id);
+
+            if (!container) return;
+
+            container.innerHTML = `
+                <div style="
+                    padding: 30px;
+                    text-align: center;
+                    color: #C0392B;
+                ">
+                    <div style="
+                        font-size: 35px;
+                        margin-bottom: 10px;
+                    ">
+                        ⚠️
+                    </div>
+
+                    <strong>
+                        Failed to load market price data.
+                    </strong>
+
+                    <br>
+
+                    <small style="color:#999;">
+                        ${escapeHtml(
+                            error.message || "Please check the FastAPI server."
+                        )}
+                    </small>
+
+                    <br><br>
+
+                    <button
+                        onclick="loadMarketPriceDashboard()"
+                        style="
+                            padding:8px 20px;
+                            background:#2E7D32;
+                            color:#fff;
+                            border:none;
+                            border-radius:6px;
+                            cursor:pointer;
+                            font-weight:600;
+                        "
+                    >
+                        🔄 Retry
+                    </button>
+                </div>
+            `;
+        });
+    }
+}
+
+/* ============================================================
+   GROUP BY YEAR
+============================================================ */
+
+function groupMarketForecastsByYear(forecasts) {
+    const grouped = {};
+
+    forecasts.forEach(function (forecast) {
+        if (!forecast.forecast_date) return;
+
+        const date = new Date(forecast.forecast_date);
+
+        if (isNaN(date.getTime())) return;
+
+        const year = date.getFullYear();
+
+        if (!grouped[year]) {
+            grouped[year] = [];
+        }
+
+        grouped[year].push(forecast);
+    });
+
+    return grouped;
+}
+
+/* ============================================================
+   GROUP BY MONTH
+============================================================ */
+
+function groupMarketForecastsByMonth(forecasts) {
+    const grouped = {};
+
+    forecasts.forEach(function (forecast) {
+        if (!forecast.forecast_date) return;
+
+        const date = new Date(forecast.forecast_date);
+
+        if (isNaN(date.getTime())) return;
+
+        const month = date.toLocaleString("en-US", {
+            month: "long",
+        });
+
+        if (!grouped[month]) {
+            grouped[month] = [];
+        }
+
+        grouped[month].push(forecast);
+    });
+
+    return grouped;
+}
+
+/* ============================================================
+   WHOLESALE FORECAST
+============================================================ */
+
+function renderWholesaleForecasts(forecasts) {
+    const container = document.getElementById(
+        "wholesaleForecastResultsContainer"
+    );
+
+    if (!container) return;
+
+    const wholesale = forecasts.filter(function (forecast) {
+        return String(forecast.price_type).toUpperCase() === "WHOLESALE";
+    });
+
+    renderMarketForecastTable(container, wholesale, "Wholesale");
+}
+
+/* ============================================================
+   RETAIL FORECAST
+============================================================ */
+
+function renderRetailForecasts(forecasts) {
+    const container = document.getElementById(
+        "retailForecastResultsContainer"
+    );
+
+    if (!container) return;
+
+    const retail = forecasts.filter(function (forecast) {
+        return String(forecast.price_type).toUpperCase() === "RETAIL";
+    });
+
+    renderMarketForecastTable(container, retail, "Retail");
+}
+
+/* ============================================================
+   FORECAST TABLE
+============================================================ */
+
+function renderMarketForecastTable(container, forecasts, priceType) {
+    if (!forecasts || forecasts.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding:40px;
+                text-align:center;
+                color:#777;
+            ">
+                <div style="
+                    font-size:40px;
+                    margin-bottom:10px;
+                ">
+                    📊
+                </div>
+
+                No ${priceType.toLowerCase()}
+                forecast results available.
+            </div>
+        `;
+
+        return;
+    }
+
+    const groupedByYear = groupMarketForecastsByYear(forecasts);
+
+    let html = "";
+
+    const sortedYears = Object.keys(groupedByYear).sort().reverse();
+
+    const monthOrder = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+
+    sortedYears.forEach(function (year) {
+        const yearData = groupedByYear[year];
+        const groupedByMonth = groupMarketForecastsByMonth(yearData);
+
+        html += `
+            <div
+                class="forecast-year-group"
+                style="margin-bottom:16px;"
+            >
+
+                <div
+                    class="forecast-year-header"
+                    onclick="toggleMarketForecastYear(this)"
+                    style="
+                        background:#2E7D32;
+                        color:#fff;
+                        padding:12px 20px;
+                        border-radius:8px;
+                        cursor:pointer;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        font-weight:600;
+                        font-size:16px;
+                    "
+                >
+
+                    <span>
+                        📅 ${year} Projections
+                    </span>
+
+                    <span
+                        style="
+                            font-size:20px;
+                            transition:transform .3s;
+                        "
+                    >
+                        ▼
+                    </span>
+
+                </div>
+
+                <div
+                    class="forecast-year-content"
+                    style="
+                        background:#fff;
+                        border:1px solid #E5E5E5;
+                        border-top:none;
+                        border-radius:0 0 8px 8px;
+                        padding:8px 12px;
+                        overflow:hidden;
+                        transition:max-height .3s ease;
+                    "
+                >
+        `;
+
+        const sortedMonths = Object.keys(groupedByMonth).sort(function (a, b) {
+            return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+        });
+
+        sortedMonths.forEach(function (month, monthIndex) {
+            const monthData = groupedByMonth[month];
+
+            monthData.sort(function (a, b) {
+                return String(a.commodity || "").localeCompare(
+                    String(b.commodity || "")
+                );
+            });
+
+            const isFirstMonth = monthIndex === 0;
+
+            html += `
+                    <div
+                        class="forecast-month-group"
+                        style="margin-bottom:4px;"
+                    >
+
+                        <div
+                            class="forecast-month-header"
+                            onclick="toggleMarketForecastMonth(this)"
+                            style="
+                                padding:10px 12px;
+                                cursor:pointer;
+                                display:flex;
+                                justify-content:space-between;
+                                align-items:center;
+                                background:#F6F3EB;
+                                border-radius:6px;
+                                font-weight:500;
+                                font-size:14px;
+                            "
+                        >
+
+                            <span>
+                                📆 ${month} ${year}
+                            </span>
+
+                            <span
+                                style="
+                                    font-size:16px;
+                                    transform:
+                                        ${isFirstMonth ? "rotate(90deg)" : "rotate(0deg)"};
+                                "
+                            >
+                                ▶
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="forecast-month-content"
+                            style="
+                                padding:8px 12px;
+                                background:#FAF8F5;
+                                border-radius:0 0 6px 6px;
+                                display:
+                                    ${isFirstMonth ? "block" : "none"};
+                            "
+                        >
+
+                            <table style="
+                                width:100%;
+                                border-collapse:collapse;
+                                font-size:13px;
+                            ">
+
+                                <thead>
+
+                                    <tr style="
+                                        border-bottom:
+                                            2px solid #DEDDDC;
+                                    ">
+
+                                        <th style="
+                                            text-align:left;
+                                            padding:8px 6px;
+                                            font-weight:600;
+                                        ">
+                                            Commodity
+                                        </th>
+
+                                        <th style="
+                                            text-align:center;
+                                            padding:8px 6px;
+                                            font-weight:600;
+                                        ">
+                                            Lower Price (₱)
+                                        </th>
+
+                                        <th style="
+                                            text-align:center;
+                                            padding:8px 6px;
+                                            font-weight:600;
+                                        ">
+                                            Upper Price (₱)
+                                        </th>
+
+                                        <th style="
+                                            text-align:center;
+                                            padding:8px 6px;
+                                            font-weight:600;
+                                        ">
+                                            Range
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+            `;
+
+            monthData.forEach(function (forecast, index) {
+                const commodity = forecast.commodity || "—";
+
+                const low = Number(forecast.forecast_price_low) || 0;
+
+                const high = Number(forecast.forecast_price_high) || 0;
+
+                const bgColor = index % 2 === 0 ? "transparent" : "#F6F3EB";
+
+                html += `
+                            <tr style="
+                                background:${bgColor};
+                                border-bottom:
+                                    1px solid #F0EDE8;
+                            ">
+
+                                <td style="
+                                    padding:8px 6px;
+                                    font-weight:500;
+                                ">
+                                    ${escapeHtml(commodity)}
+                                </td>
+
+                                <td style="
+                                    padding:8px 6px;
+                                    text-align:center;
+                                ">
+                                    ₱${low.toFixed(2)}
+                                </td>
+
+                                <td style="
+                                    padding:8px 6px;
+                                    text-align:center;
+                                ">
+                                    ₱${high.toFixed(2)}
+                                </td>
+
+                                <td style="
+                                    padding:8px 6px;
+                                    text-align:center;
+                                ">
+
+                                    <span style="
+                                        background:#2E7D32;
+                                        color:#fff;
+                                        padding:2px 12px;
+                                        border-radius:12px;
+                                        font-size:12px;
+                                        font-weight:600;
+                                    ">
+                                        ₱${low.toFixed(2)}
+                                        – ₱${high.toFixed(2)}
+                                    </span>
+
+                                </td>
+
+                            </tr>
+                        `;
+            });
+
+            html += `
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+                `;
+        });
+
+        html += `
+                </div>
+
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    /*
+     * Expand the first year.
+     */
+    const firstYear = container.querySelector(".forecast-year-content");
+
+    if (firstYear) {
+        firstYear.style.maxHeight = firstYear.scrollHeight + "px";
+    }
+
+    /*
+     * Forecast count.
+     */
+    const countDiv = document.createElement("div");
+
+    countDiv.style.cssText = `
+        margin-top:12px;
+        padding:12px 0;
+        font-size:13px;
+        color:#666;
+        text-align:right;
+        border-top:1px solid #E5E5E5;
+    `;
+
+    countDiv.textContent = `Total: ${forecasts.length} ${priceType.toLowerCase()} forecast(s) found.`;
+
+    container.appendChild(countDiv);
+}
+
+/* ============================================================
+   TOGGLE YEAR
+============================================================ */
+
+function toggleMarketForecastYear(headerElement) {
+    const content = headerElement.nextElementSibling;
+
+    const arrow = headerElement.querySelector("span:last-child");
+
+    if (!content) return;
+
+    if (content.style.maxHeight) {
+        content.style.maxHeight = null;
+
+        if (arrow) {
+            arrow.style.transform = "rotate(0deg)";
+        }
+    } else {
+        content.style.maxHeight = content.scrollHeight + "px";
+
+        if (arrow) {
+            arrow.style.transform = "rotate(180deg)";
+        }
+    }
+}
+
+/* ============================================================
+   TOGGLE MONTH
+============================================================ */
+
+function toggleMarketForecastMonth(headerElement) {
+    const content = headerElement.nextElementSibling;
+
+    const arrow = headerElement.querySelector("span:last-child");
+
+    if (!content) return;
+
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "block";
+
+        if (arrow) {
+            arrow.style.transform = "rotate(90deg)";
+        }
+    } else {
+        content.style.display = "none";
+
+        if (arrow) {
+            arrow.style.transform = "rotate(0deg)";
+        }
+    }
+}
+
+/* ============================================================
+   HISTORICAL MARKET PRICES
+============================================================ */
+
+function renderHistoricalMarketPrices(prices) {
+    const container = document.getElementById(
+        "marketHistoricalResultsContainer"
+    );
+
+    if (!container) return;
+
+    if (!prices || prices.length === 0) {
+        container.innerHTML = `
+            <div style="
+                padding:40px;
+                text-align:center;
+                color:#777;
+            ">
+                No historical market price data available.
+            </div>
+        `;
+
+        return;
+    }
+
+    /*
+     * Group by year.
+     */
+    const grouped = {};
+
+    prices.forEach(function (price) {
+        const date = new Date(price.record_date);
+
+        if (isNaN(date.getTime())) return;
+
+        const year = date.getFullYear();
+
+        if (!grouped[year]) {
+            grouped[year] = [];
+        }
+
+        grouped[year].push(price);
+    });
+
+    const sortedYears = Object.keys(grouped).sort().reverse();
+
+    let html = "";
+
+    sortedYears.forEach(function (year) {
+        const yearData = grouped[year];
+
+        yearData.sort(function (a, b) {
+            return new Date(a.record_date) - new Date(b.record_date);
+        });
+
+        html += `
+            <div
+                class="historical-market-year"
+                style="margin-bottom:16px;"
+            >
+
+                <div style="
+                    background:#F6F3EB;
+                    padding:10px 14px;
+                    border-radius:6px;
+                    font-weight:600;
+                    font-size:14px;
+                    margin-bottom:6px;
+                ">
+                    📅 ${year}
+                </div>
+
+                <div style="
+                    overflow-x:auto;
+                ">
+
+                    <table style="
+                        width:100%;
+                        border-collapse:collapse;
+                        font-size:13px;
+                    ">
+
+                        <thead>
+
+                            <tr style="
+                                border-bottom:
+                                    2px solid #DEDDDC;
+                            ">
+
+                                <th style="
+                                    text-align:left;
+                                    padding:8px 6px;
+                                ">
+                                    Month
+                                </th>
+
+                                <th style="
+                                    text-align:left;
+                                    padding:8px 6px;
+                                ">
+                                    Commodity
+                                </th>
+
+                                <th style="
+                                    text-align:center;
+                                    padding:8px 6px;
+                                ">
+                                    Wholesale (₱/kg)
+                                </th>
+
+                                <th style="
+                                    text-align:center;
+                                    padding:8px 6px;
+                                ">
+                                    Retail (₱/kg)
+                                </th>
+
+                                <th style="
+                                    text-align:center;
+                                    padding:8px 6px;
+                                ">
+                                    Source
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+        `;
+
+        yearData.forEach(function (price, index) {
+            const date = new Date(price.record_date);
+
+            const month = date.toLocaleString("en-US", {
+                month: "long",
+            });
+
+            const wholesale = Number(price.wholesale_price_per_kg) || 0;
+
+            const retail = Number(price.retail_price_per_kg) || 0;
+
+            const source = price.data_source || "DA-AMAD";
+
+            const bgColor = index % 2 === 0 ? "transparent" : "#F6F3EB";
+
+            html += `
+                    <tr style="
+                        background:${bgColor};
+                        border-bottom:
+                            1px solid #F0EDE8;
+                    ">
+
+                        <td style="
+                            padding:8px 6px;
+                        ">
+                            ${month}
+                        </td>
+
+                        <td style="
+                            padding:8px 6px;
+                            font-weight:500;
+                        ">
+                            ${escapeHtml(price.commodity || "—")}
+                        </td>
+
+                        <td style="
+                            padding:8px 6px;
+                            text-align:center;
+                        ">
+                            ₱${wholesale.toFixed(2)}
+                        </td>
+
+                        <td style="
+                            padding:8px 6px;
+                            text-align:center;
+                        ">
+                            ₱${retail.toFixed(2)}
+                        </td>
+
+                        <td style="
+                            padding:8px 6px;
+                            text-align:center;
+                        ">
+                            <span style="
+                                background:#E8F5E9;
+                                color:#2E7D32;
+                                padding:2px 8px;
+                                border-radius:10px;
+                                font-size:11px;
+                                font-weight:600;
+                            ">
+                                ${escapeHtml(source)}
+                            </span>
+                        </td>
+
+                    </tr>
+                `;
+        });
+
+        html += `
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    const countDiv = document.createElement("div");
+
+    countDiv.style.cssText = `
+        margin-top:12px;
+        padding:12px 0;
+        font-size:13px;
+        color:#666;
+        text-align:right;
+        border-top:1px solid #E5E5E5;
+    `;
+
+    countDiv.textContent = `Total: ${prices.length} historical market price record(s) found.`;
+
+    container.appendChild(countDiv);
+}
+
+/* ============================================================
+   MARKET PRICE CHART
+============================================================ */
+
+function initMarketPriceChart() {
+    console.log("Initializing Market Price Chart...");
+
+    const canvas = document.getElementById("marketPriceTrendChart");
+
+    if (!canvas) {
+        console.warn("Market price chart canvas not found.");
+        return;
+    }
+
+    if (typeof Chart === "undefined") {
+        console.warn("Chart.js not loaded yet.");
+
+        setTimeout(initMarketPriceChart, 500);
+
+        return;
+    }
+
+    if (
+        MARKET_PRICES_DATA.length === 0 &&
+        MARKET_PRICE_FORECASTS_DATA.length === 0
+    ) {
+        console.warn("No market price data for chart.");
+
+        return;
+    }
+
+    renderMarketPriceChart(
+        MARKET_PRICES_DATA,
+        MARKET_PRICE_FORECASTS_DATA,
+        "all"
+    );
+}
+
+/* ============================================================
+   MARKET PRICE CHART
+============================================================ */
+
+function renderMarketPriceChart(historical, forecasts, commodityFilter) {
+    const canvas = document.getElementById("marketPriceTrendChart");
+
+    if (!canvas) return;
+
+    /*
+     * Destroy old chart.
+     */
+    if (marketPriceChartInstance) {
+        marketPriceChartInstance.destroy();
+
+        marketPriceChartInstance = null;
+    }
+
+    /*
+     * Filter historical.
+     */
+    let filteredHistorical = historical;
+
+    if (commodityFilter !== "all") {
+        filteredHistorical = historical.filter(function (price) {
+            return price.commodity === commodityFilter;
+        });
+    }
+
+    /*
+     * Filter forecasts.
+     */
+    let filteredForecasts = forecasts;
+
+    if (commodityFilter !== "all") {
+        filteredForecasts = forecasts.filter(function (forecast) {
+            return forecast.commodity === commodityFilter;
+        });
+    }
+
+    /*
+     * Use only wholesale for the chart
+     * initially.
+     *
+     * Historical wholesale
+     * +
+     * Wholesale forecast range
+     */
+    const wholesaleHistorical = filteredHistorical.slice();
+
+    const wholesaleForecasts = filteredForecasts.filter(function (f) {
+        return String(f.price_type).toUpperCase() === "WHOLESALE";
+    });
+
+    /*
+     * Build date labels.
+     */
+    const dateMap = {};
+
+    wholesaleHistorical.forEach(function (price) {
+        const date = new Date(price.record_date);
+
+        if (isNaN(date.getTime())) return;
+
+        const key = date.toISOString().slice(0, 10);
+
+        dateMap[key] = true;
+    });
+
+    wholesaleForecasts.forEach(function (forecast) {
+        const date = new Date(forecast.forecast_date);
+
+        if (isNaN(date.getTime())) return;
+
+        const key = date.toISOString().slice(0, 10);
+
+        dateMap[key] = true;
+    });
+
+    const dateKeys = Object.keys(dateMap).sort();
+
+    const labels = dateKeys.map(function (key) {
+        return new Date(key).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+        });
+    });
+
+    /*
+     * Historical wholesale line.
+     */
+    const historicalData = dateKeys.map(function (key) {
+        const found = wholesaleHistorical.find(function (price) {
+            return (
+                new Date(price.record_date).toISOString().slice(0, 10) === key
+            );
+        });
+
+        if (!found) return null;
+
+        return Number(found.wholesale_price_per_kg);
+    });
+
+    /*
+     * Forecast lower.
+     */
+    const forecastLow = dateKeys.map(function (key) {
+        const found = wholesaleForecasts.find(function (forecast) {
+            return (
+                new Date(forecast.forecast_date).toISOString().slice(0, 10) ===
+                key
+            );
+        });
+
+        if (!found) return null;
+
+        return Number(found.forecast_price_low);
+    });
+
+    /*
+     * Forecast upper.
+     */
+    const forecastHigh = dateKeys.map(function (key) {
+        const found = wholesaleForecasts.find(function (forecast) {
+            return (
+                new Date(forecast.forecast_date).toISOString().slice(0, 10) ===
+                key
+            );
+        });
+
+        if (!found) return null;
+
+        return Number(found.forecast_price_high);
+    });
+
+    const datasets = [];
+
+    /*
+     * Historical line.
+     */
+    datasets.push({
+        label:
+            commodityFilter === "all"
+                ? "Wholesale Historical"
+                : commodityFilter + " Wholesale Historical",
+
+        data: historicalData,
+
+        borderColor: "#2E7D32",
+
+        backgroundColor: "rgba(46,125,50,0.10)",
+
+        borderWidth: 3,
+
+        pointRadius: 3,
+
+        tension: 0.3,
+
+        fill: false,
+
+        spanGaps: false,
+    });
+
+    /*
+     * Forecast lower.
+     */
+    datasets.push({
+        label: "Wholesale Forecast Low",
+
+        data: forecastLow,
+
+        borderColor: "#F39C12",
+
+        backgroundColor: "rgba(243,156,18,0.10)",
+
+        borderWidth: 2,
+
+        borderDash: [6, 4],
+
+        pointRadius: 4,
+
+        tension: 0.3,
+
+        fill: false,
+
+        spanGaps: false,
+    });
+
+    /*
+     * Forecast upper.
+     */
+    datasets.push({
+        label: "Wholesale Forecast High",
+
+        data: forecastHigh,
+
+        borderColor: "#E67E22",
+
+        backgroundColor: "transparent",
+
+        borderWidth: 2,
+
+        borderDash: [6, 4],
+
+        pointRadius: 4,
+
+        tension: 0.3,
+
+        fill: false,
+
+        spanGaps: false,
+    });
+
+    const ctx = canvas.getContext("2d");
+
+    marketPriceChartInstance = new Chart(ctx, {
+        type: "line",
+
+        data: {
+            labels: labels,
+            datasets: datasets,
+        },
+
+        options: {
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: "index",
+                intersect: false,
+            },
+
+            plugins: {
+                legend: {
+                    position: "top",
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.raw;
+
+                            if (value === null || value === undefined) {
+                                return context.dataset.label + ": No data";
+                            }
+
+                            return (
+                                context.dataset.label +
+                                ": ₱" +
+                                Number(value).toFixed(2) +
+                                "/kg"
+                            );
+                        },
+                    },
+                },
+            },
+
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                    },
+
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 30,
+                    },
+                },
+
+                y: {
+                    beginAtZero: false,
+
+                    title: {
+                        display: true,
+                        text: "Price (₱/kg)",
+                    },
+
+                    ticks: {
+                        callback: function (value) {
+                            return "₱" + Number(value).toFixed(0);
+                        },
+                    },
+                },
+            },
+        },
+    });
+}
+
+/* ============================================================
+   CHART FILTER
+============================================================ */
+
+function updateMarketPriceChart(commodity) {
+    console.log("Market chart filter:", commodity);
+
+    if (
+        MARKET_PRICES_DATA.length === 0 &&
+        MARKET_PRICE_FORECASTS_DATA.length === 0
+    ) {
+        console.warn("No market price data.");
+
+        return;
+    }
+
+    /*
+     * Update button appearance.
+     */
+    document
+        .querySelectorAll("#view-market-prices .market-chart-btn")
+        .forEach(function (btn) {
+            const text = btn.textContent.trim();
+
+            if (
+                text === commodity ||
+                (commodity === "all" && text === "All")
+            ) {
+                btn.style.background = "#2E7D32";
+
+                btn.style.color = "#fff";
+
+                btn.style.borderColor = "#2E7D32";
+            } else {
+                btn.style.background = "#FFFFFF";
+
+                btn.style.color = "var(--ink)";
+
+                btn.style.borderColor = "var(--border)";
+            }
+        });
+
+    renderMarketPriceChart(
+        MARKET_PRICES_DATA,
+        MARKET_PRICE_FORECASTS_DATA,
+        commodity
+    );
+}
+
+/* ============================================================
+   START MARKET PRICE DASHBOARD
+============================================================ */
+
+document.addEventListener("DOMContentLoaded", function () {
+    initMarketPriceDashboard();
+});
+
+console.log("Market Price Dashboard functions loaded!");

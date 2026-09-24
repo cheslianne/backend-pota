@@ -772,6 +772,44 @@
       margin-bottom: 24px;
       font-size: 13px;
     }
+/* --- ACTION CELL (multiple buttons) --- */
+.action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-archive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  min-width: 80px;
+  white-space: nowrap;
+  background: #fdf3e0;
+  color: #8a5a00;
+}
+
+.btn-archive:hover:not(:disabled) {
+  background: #f5e2b8;
+  transform: translateY(-1px);
+}
+
+.btn-archive:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+
+}
 
     .modal-stats-grid div { color: var(--muted); }
     .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
@@ -826,7 +864,11 @@
         <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
         Audit Log
       </button>
-    </div>
+          <button class="nav-item" type="button" data-view="archived">
+        <svg viewBox="0 0 24 24"><path d="M20.54 5.23l-1.39-1.68A1.45 1.45 0 0018 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19a2 2 0 002 2h14a2 2 0 002-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+        Archived Users
+      </button>
+       </div>
 
     <a class="signout" href="../index.html" id="signOutButton">
       <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
@@ -1034,6 +1076,47 @@
       </div>
     </section>
 
+        <section class="view" id="view-archived">
+      <div class="main-header">
+        <h1>Archived Users</h1>
+        <div class="search-row">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchArchived" placeholder="Search archived users...">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Archived User Accounts</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Location</th>
+                <th>Archived At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="archivedUserRows">
+              <tr><td colspan="6" class="loading-row">Loading archived users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-container">
+          <span class="pagination-info" id="archivedPaginationInfo">Showing 0 of 0</span>
+          <div class="pagination-controls">
+            <button class="btn-page" id="archivedPrevPageBtn" type="button" disabled>&laquo; Prev</button>
+            <div id="archivedPageNumberBtns" class="page-numbers-wrap"></div>
+            <button class="btn-page" id="archivedNextPageBtn" type="button">Next &raquo;</button>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -1103,6 +1186,42 @@
     <div class="modal-actions">
       <button class="btn-secondary" id="cancelLogoutBtn" type="button">Cancel</button>
       <button class="btn-primary btn-danger" id="finalLogoutBtn" type="button">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE USER MODAL -->
+<div class="modal-overlay" id="confirmDeleteModal">
+  <div class="modal-box" style="max-width: 440px; text-align: center;">
+    <h2 id="deleteModalTitle">Confirm Deletion</h2>
+    <p id="deleteModalDesc">Are you sure you want to delete this user? This action cannot be undone.</p>
+    <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
+      <button class="btn-secondary" id="cancelDeleteBtn" type="button">Cancel</button>
+      <button class="btn-primary btn-danger" id="finalDeleteBtn" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM ARCHIVE USER MODAL -->
+<div class="modal-overlay" id="confirmArchiveModal">
+  <div class="modal-box" style="max-width: 440px; text-align: center;">
+    <h2 id="archiveModalTitle">Confirm Archive</h2>
+    <p id="archiveModalDesc">Are you sure you want to archive this user?</p>
+    <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
+      <button class="btn-secondary" id="cancelArchiveBtn" type="button">Cancel</button>
+      <button class="btn-primary btn-danger" id="finalArchiveBtn" type="button">Archive</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM RESTORE USER MODAL -->
+<div class="modal-overlay" id="confirmRestoreModal">
+  <div class="modal-box" style="max-width: 440px; text-align: center;">
+    <h2 id="restoreModalTitle">Confirm Restore</h2>
+    <p id="restoreModalDesc">Are you sure you want to restore this user?</p>
+    <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
+      <button class="btn-secondary" id="cancelRestoreBtn" type="button">Cancel</button>
+      <button class="btn-primary" id="finalRestoreBtn" type="button">Restore</button>
     </div>
   </div>
 </div>

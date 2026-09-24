@@ -1214,6 +1214,7 @@
           <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
           Fair Prices
         </button>
+        <!-- MARKET PRICES --> <button class="nav-item" type="button" data-view="market-prices"> <svg viewBox="0 0 24 24"> <path d="M4 19V5M4 19h16M7 15l3-4 3 2 5-7"/> </svg> Market Prices </button>
         <button class="nav-item" type="button" data-view="map">
           <svg viewBox="0 0 24 24"><path d="M15 5.1L9 3 3 5.1v15.8l6-2.1 6 2.1 6-2.1V3zM9 5.4l6-1.7v14.9l-6 1.7z"/></svg>
           View Map
@@ -1290,18 +1291,30 @@
                               <label>Farmer ID (RSBSA ID) <span class="req">*</span></label>
                               <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
                           </div>
-                          <div class="form-field-item">
-                              <label>Municipality <span class="req">*</span></label>
-                              <input type="text" id="regMunicipality" placeholder="e.g. San Jose City" required>
-                          </div>
+                         <div class="form-field-item">
+    <label>Municipality <span class="req">*</span></label>
+
+    <select id="regMunicipality" required>
+        <option value="" disabled selected>Select Municipality</option>
+    </select>
+</div>
+                          <!-- FIRST NAME -->
                           <div class="form-field-item">
                               <label>First Name <span class="req">*</span></label>
                               <input type="text" id="regFirstName" placeholder="Pancho" required>
                           </div>
-                          <div class="form-field-item">
-                              <label>Barangay <span class="req">*</span></label>
-                              <input type="text" id="regBarangay" placeholder="e.g. San Agustin" required>
-                          </div>
+                          <!-- BARANGAY -->
+                           <div class="form-field-item">
+    <label>Barangay <span class="req">*</span></label>
+
+    <select id="regBarangay" required disabled>
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    </select>
+</div>
+
+                          <!-- MIDDLE NAME -->
                           <div class="form-field-item">
                               <label>Middle Name</label>
                               <input type="text" id="regMiddleName" placeholder="Reyes">
@@ -2093,21 +2106,141 @@
           </div>
       </section>
 
-      <!-- ============================================================
-          VIEW 5: MAP
-      ============================================================ -->
-      <section class="view" id="view-map">
-          <div class="main-header">
-              <div class="header-left">
-                  <h1>Regional Field Map</h1>
-                  <p>Geospatial tracking of crop production clusters.</p>
-              </div>
-          </div>
-          <div class="card">
-              <div class="map-title">Field Monitoring & Geographic Clusters</div>
-              <div id="map"></div>
-          </div>
-      </section>
+      <section class="view" id="view-market-prices">
+
+    <div class="main-header">
+        <div class="header-left">
+            <h1>Market Price Dashboard</h1>
+            <p>
+                Historical and forecasted wholesale and retail market prices
+                based on DA-AMAD.
+            </p>
+        </div>
+    </div>
+
+    <div class="fair-price-dashboard-container">
+
+        <!-- TOP CARD -->
+        <div class="fair-price-top-card">
+
+            <div class="fair-price-left-pane">
+
+                <h2>Market Price Intelligence</h2>
+
+                <p>
+                    Monitor historical wholesale and retail prices and
+                    projected market prices for selected commodities.
+                </p>
+
+                <div class="vegetable-collage-banner">
+
+                    <div class="vegetable-item">
+                        <img src="../images/tomato.jpg" alt="Tomato">
+                        <div class="vegetable-label">Tomato</div>
+                    </div>
+
+                    <div class="vegetable-item">
+                        <img src="../images/squash.jpg" alt="Squash">
+                        <div class="vegetable-label">Squash</div>
+                    </div>
+
+                    <div class="vegetable-item">
+                        <img src="../images/whiteonion.jpg" alt="White Onion">
+                        <div class="vegetable-label">White Onion</div>
+                    </div>
+
+                    <div class="vegetable-item">
+                        <img src="../images/onion.jpg" alt="Red Onion">
+                        <div class="vegetable-label">Red Onion</div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- WHOLESALE FORECAST -->
+        <div class="market-forecast-card">
+
+            <h3 class="forecast-title">
+                Wholesale Market Price Forecast
+            </h3>
+
+            <p class="forecast-subtitle">
+                Projected wholesale prices for selected commodities.
+            </p>
+
+            <div id="wholesaleForecastResultsContainer">
+                Loading wholesale forecasts...
+            </div>
+
+        </div>
+
+
+        <!-- RETAIL FORECAST -->
+        <div class="market-forecast-card" style="margin-top:20px;">
+
+            <h3 class="forecast-title">
+                Retail Market Price Forecast
+            </h3>
+
+            <p class="forecast-subtitle">
+                Projected retail prices for selected commodities.
+            </p>
+
+            <div id="retailForecastResultsContainer">
+                Loading retail forecasts...
+            </div>
+
+        </div>
+
+
+       
+    <!-- VIEW 5: Map -->
+<section class="view" id="view-map">
+  <div class="main-header">
+    <div class="header-left">
+      <h1>Regional Field Map</h1>
+      <p>Geospatial tracking of crop production clusters.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <span>Field Monitoring &amp; Geographic Clusters</span>
+      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span> Surplus
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span> Balanced
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Deficit
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span> No Data
+        </span>
+      </div>
+    </div>
+
+    <div class="map-filters-container" style="display: flex; gap: 12px; margin-bottom: 14px;">
+      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
+        <option value="all">All Commodities</option>
+        <option value="Tomato">Tomato</option>
+        <option value="Squash">Squash</option>
+        <option value="Red Onion">Red Onion</option>
+        <option value="White Onion">White Onion</option>
+      </select>
+    </div>
+
+    <div id="map"></div>
+  </div>
+</section>
+
+      <!-- VIEW 6: REPORTS -->
+      <section class="view" id="view-reports">
 
       <!-- ============================================================
           VIEW 6: REPORTS
