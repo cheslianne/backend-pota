@@ -2224,20 +2224,17 @@ async function waitForETLCompletion() {
                 logs = data.data;
             }
 
-            /*
-             * We expect 7 ETL steps.
-             */
-            if (logs.length >= 7) {
+            if (logs.length >= 9) {
 
                 /*
-                 * Get the newest 7 logs.
+                 * Get the newest 9 logs.
                  */
                 const latestLogs =
                     logs
-                        .slice(0, 7);
+                        .slice(0, 9);
 
                 /*
-                 * Check if all 7 are finished.
+                 * Check if all 9 are finished.
                  */
                 const allFinished =
                     latestLogs.every(
@@ -2270,7 +2267,7 @@ async function waitForETLCompletion() {
                     }
 
                     console.log(
-                        "All 7 ETL steps completed successfully."
+                        "All 9 ETL steps completed successfully."
                     );
 
                     return true;

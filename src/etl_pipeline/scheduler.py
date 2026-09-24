@@ -33,6 +33,8 @@ from src.etl_pipeline.forecast import main as run_forecast
 from src.etl_pipeline.forecast_kalabasa import main as run_kalabasa_forecast
 from src.etl_pipeline.red_onion import main as run_red_onion
 from src.etl_pipeline.white_onion import main as run_white_onion
+from src.etl_pipeline.market_price_etl import run_market_price_etl
+from src.etl_pipeline.market_price_forecast import main as run_market_price_forecast
 
 
 # ============================================================
@@ -217,6 +219,16 @@ def run_pipeline():
     run_etl_step(
         "White Onion Forecast",
         lambda: run_forecast("White Onion")
+    )
+
+    run_etl_step(
+        "Market Price ETL",
+        run_market_price_etl
+    )
+
+    run_etl_step(
+        "Market Price Forecast",
+        run_market_price_forecast
     )
 
 
