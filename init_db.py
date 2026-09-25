@@ -17,6 +17,8 @@ from src.models import (
     etl_run_log,
     farmers,
     forecasts,
+    market_price,
+    market_price_forecast,
     offtake_requests,
     planting_intents,
     price_data,
