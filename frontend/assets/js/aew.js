@@ -50,7 +50,8 @@ let currentFinalizedIntentsFilter = "all";
 let currentFarmersPage = 1;
 let currentPlantingIntentsPage = 1;
 const farmersPerPage = 10;
-const plantingIntentsPerPage = 10;
+const plantingIntentsPerPage = 7;
+const draftIntentsPerPage = 7;
 let currentDraftIntentsPage = 1;
 let currentSubmittedIntentsPage = 1;
 
@@ -63,8 +64,11 @@ let MUNICIPALITY_MAP_RAW_DATA = [];
 let mapMarkersLayer = null;
 
 // Offtake state
-let currentOfftakeRequest = null;
-let OFFTAKE_REQUESTS_DATA = [];
+let currentOfftakePage = 1;
+const offtakePerPage = 7;
+let filteredOfftakeRequests = null;
+let OFFTAKE_REQUESTS_DATA = [];          // ✅ IDAGDAG
+let currentOfftakeRequest = null;  
 
 // Forecasting
 let FORECASTS_DATA = [];
@@ -1950,6 +1954,7 @@ function initializePlantingIntentSearch() {
             currentDraftIntentsPage = 1;
             currentSubmittedIntentsPage = 1;
             renderPlantingIntentsTable();
+            updatePlantingSummaryCards();
             return;
         }
 
@@ -1995,22 +2000,37 @@ async function fetchPlantingIntents() {
 
     try {
         console.log("📡 Fetching planting intents from:", PLANTING_INTENTS_ENDPOINT);
-        
-        const data = await apiRequest(PLANTING_INTENTS_ENDPOINT, { method: "GET" });
-        console.log("📡 API Response:", data);
 
-        if (data && data.data && Array.isArray(data.data)) {
-            PLANTING_INTENTS_DATA = data.data.map(normalizePlantingIntent);
-            console.log("Loaded " + PLANTING_INTENTS_DATA.length + " planting intents from paginated response");
-        } 
-        else if (Array.isArray(data)) {
-            PLANTING_INTENTS_DATA = data.map(normalizePlantingIntent);
-            console.log("Loaded " + PLANTING_INTENTS_DATA.length + " planting intents from array response");
-        } 
-        else {
-            console.error("Unexpected response format:", data);
-            throw new Error("Invalid planting intents response. Expected an array or paginated object.");
-        }
+        let allItems = [];
+        let page = 1;
+        let totalPages = 1;
+
+        do {
+            const url = `${PLANTING_INTENTS_ENDPOINT}?page=${page}&per_page=100`;
+            const data = await apiRequest(url, { method: "GET" });
+            console.log(`📡 API Response (page ${page}):`, data);
+
+            if (data && Array.isArray(data.data)) {
+                allItems = allItems.concat(data.data);
+
+                if (data.pagination) {
+                    totalPages = data.pagination.total_pages || 1;
+                } else {
+                    totalPages = 1;
+                }
+            } else if (Array.isArray(data)) {
+                allItems = allItems.concat(data);
+                totalPages = 1;
+            } else {
+                console.error("Unexpected response format:", data);
+                throw new Error("Invalid planting intents response. Expected an array or paginated object.");
+            }
+
+            page++;
+        } while (page <= totalPages);
+
+        PLANTING_INTENTS_DATA = allItems.map(normalizePlantingIntent);
+        console.log("✅ Loaded " + PLANTING_INTENTS_DATA.length + " planting intents (ALL pages combined)");
 
         filteredPlantingIntents = null;
         currentDraftIntentsPage = 1;
@@ -2081,7 +2101,7 @@ function renderPlantingIntentsTable() {
         return status === 'draft' || status === 'pending';
     });
 
-    let submittedIntents = dataSource.filter(function(intent) {
+        const submittedIntentsAll = dataSource.filter(function(intent) {
         const status = (intent.status || '').toLowerCase();
         return status === 'submitted' ||
             status.startsWith('submitted_') ||
@@ -2092,8 +2112,10 @@ function renderPlantingIntentsTable() {
             status === 'final_approved';
     });
 
+    let submittedIntents = submittedIntentsAll;
+
     if (currentFinalizedIntentsFilter !== "all") {
-        submittedIntents = submittedIntents.filter(function(intent) {
+        submittedIntents = submittedIntentsAll.filter(function(intent) {
             const hs = (intent.finalized_status || "NOT PLANTED").toUpperCase();
             return hs === currentFinalizedIntentsFilter;
         });
@@ -2102,7 +2124,7 @@ function renderPlantingIntentsTable() {
     const draftCount = document.getElementById('draftCount');
     const submittedCount = document.getElementById('submittedCount');
     if (draftCount) draftCount.textContent = draftIntents.length;
-    if (submittedCount) submittedCount.textContent = submittedIntents.length;
+    if (submittedCount) submittedCount.textContent = submittedIntentsAll.length; // total, hindi apektado ng filter pill
 
     if (draftIntents.length === 0) {
         draftTbody.innerHTML = `
@@ -2114,8 +2136,8 @@ function renderPlantingIntentsTable() {
             </tr>
         `;
     } else {
-        const draftStart = (currentDraftIntentsPage - 1) * plantingIntentsPerPage;
-        const paginatedDraftIntents = draftIntents.slice(draftStart, draftStart + plantingIntentsPerPage);
+        const draftStart = (currentDraftIntentsPage - 1) * draftIntentsPerPage;
+        const paginatedDraftIntents = draftIntents.slice(draftStart, draftStart + draftIntentsPerPage);
 
         paginatedDraftIntents.forEach(function(intent) {
             const tr = createPlantingIntentRow(intent, 'draft');
@@ -2144,8 +2166,62 @@ function renderPlantingIntentsTable() {
 
     renderPagination(draftIntents.length, "draft");
     renderPagination(submittedIntents.length, "submitted");
+    updatePlantingSummaryCards();
 }
 
+/* ============================================================
+   PLANTING INTENTS SUMMARY CARDS
+============================================================ */
+function updatePlantingSummaryCards() {
+    // Draft intents (not yet submitted)
+    const draftCount = PLANTING_INTENTS_DATA.filter(function(intent) {
+        const status = String(intent.status || "Pending").toLowerCase();
+        return status === "draft" || status === "pending";
+    }).length;
+
+    // Finalized intents (submitted to municipal or beyond)
+    const submittedIntents = PLANTING_INTENTS_DATA.filter(function(intent) {
+        const status = String(intent.status || "").toLowerCase();
+        return (
+            status === "submitted" ||
+            status.startsWith("submitted_") ||
+            status === "for_municipal_validation" ||
+            status === "for_provincial_validation" ||
+            status === "for_da_rfo_validation" ||
+            status === "revision_required" ||
+            status === "final_approved"
+        );
+    });
+
+    const finalizedCount = submittedIntents.length;
+
+    // Breakdown ng finalized intents per status
+    const statusCounts = {
+        "NOT PLANTED": 0,
+        "PLANTED": 0,
+        "HARVESTED": 0,
+        "MEDIATING": 0
+    };
+
+    submittedIntents.forEach(function(intent) {
+        const hs = String(intent.finalized_status || "NOT PLANTED").toUpperCase();
+        if (statusCounts.hasOwnProperty(hs)) {
+            statusCounts[hs]++;
+        }
+    });
+
+    const setCount = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setCount("plantingCountDraft", draftCount);
+    setCount("plantingCountFinalized", finalizedCount);
+    setCount("plantingCountNotPlanted", statusCounts["NOT PLANTED"]);
+    setCount("plantingCountPlanted", statusCounts["PLANTED"]);
+    setCount("plantingCountHarvested", statusCounts["HARVESTED"]);
+    setCount("plantingCountMediating", statusCounts["MEDIATING"]);
+}
 
 // ============================================================
 // PAGINATION
@@ -2162,12 +2238,14 @@ function renderPagination(totalCount, type) {
     const existing = card.querySelector(".planting-intent-pagination");
     if (existing) existing.remove();
 
-    if (totalCount <= plantingIntentsPerPage) {
+        const perPage = type === "draft" ? draftIntentsPerPage : plantingIntentsPerPage;
+
+    if (totalCount <= perPage) {
         return;
     }
 
     let currentPage = type === "draft" ? currentDraftIntentsPage : currentSubmittedIntentsPage;
-    const totalPages = Math.ceil(totalCount / plantingIntentsPerPage);
+    const totalPages = Math.ceil(totalCount / perPage);
     
     if (currentPage > totalPages) {
         currentPage = totalPages;
@@ -2178,8 +2256,8 @@ function renderPagination(totalCount, type) {
         }
     }
 
-    const startItem = (currentPage - 1) * plantingIntentsPerPage + 1;
-    const endItem = Math.min(currentPage * plantingIntentsPerPage, totalCount);
+    const startItem = (currentPage - 1) * perPage + 1;
+    const endItem = Math.min(currentPage * perPage, totalCount);
 
     let html = `
         <div class="pagination-container planting-intent-pagination" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #DFD8C6;">
@@ -6130,7 +6208,7 @@ function renderReportSummary(selectedIntents, allSubmittedIntents, reportMeta) {
                     margin-bottom: 10px;
                     padding-bottom: 6px;
                     border-bottom: 1px solid var(--border-light);
-                ">📅 Planting Window</div>
+                "> Planting Window</div>
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                     <span style="color: var(--muted);">🌱 Earliest:</span>
@@ -6160,7 +6238,7 @@ function renderReportSummary(selectedIntents, allSubmittedIntents, reportMeta) {
                     margin-bottom: 10px;
                     padding-bottom: 6px;
                     border-bottom: 1px solid var(--border-light);
-                ">📅 Planting Window</div>
+                ">  Planting Window</div>
                 <span style="color: var(--muted); font-style: italic;">No planting dates available.</span>
             `;
         }
@@ -6887,51 +6965,51 @@ function initOfftakeRequest() {
         // ============================================================
     // ✅ SEARCH FILTER FOR OFFTAKE REQUESTS
     // ============================================================
-    const offtakeSearchInput = document.getElementById("searchOfftakeInput");
+        const offtakeSearchInput = document.getElementById("searchOfftakeInput");
 
     if (offtakeSearchInput) {
         offtakeSearchInput.addEventListener("input", function () {
             const keyword = this.value.toLowerCase().trim();
-            const tbody = document.getElementById("offtakeTableBody");
-            if (!tbody) return;
 
-            const rows = tbody.querySelectorAll("tr");
-            let visibleCount = 0;
+            if (!keyword) {
+                filteredOfftakeRequests = null;
+                currentOfftakePage = 1;
+                renderOfftakeTable();
+                updateOfftakeSummaryCards(OFFTAKE_REQUESTS_DATA);
+                return;
+            }
 
-            rows.forEach(function (row) {
-                // Skip "no data" placeholder rows
-                if (row.querySelector("td[colspan]")) return;
-
-                const text = row.textContent.toLowerCase();
-                const match = !keyword || text.includes(keyword);
-
-                row.style.display = match ? "" : "none";
-                if (match) visibleCount++;
+            filteredOfftakeRequests = OFFTAKE_REQUESTS_DATA.filter(function (request) {
+                const searchableText = [
+                    request._farmerName,
+                    request.commodity,
+                    request.quantity,
+                    request._farmerLocation,
+                    request.harvest_date
+                ].join(" ").toLowerCase();
+                return searchableText.includes(keyword);
             });
 
-            // Show/hide "No results" message
-            let emptyRow = tbody.querySelector(".offtake-empty-row");
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!emptyRow) {
-                    emptyRow = document.createElement("tr");
-                    emptyRow.className = "offtake-empty-row";
-                    emptyRow.innerHTML = `
-                        <td colspan="6" style="padding:30px; text-align:center; color:#999;">
-                            No offtake requests found matching "<b>${escapeHtml(keyword)}</b>".
-                        </td>
-                    `;
-                    tbody.appendChild(emptyRow);
-                } else {
-                    emptyRow.querySelector("td").innerHTML = `
-                        No offtake requests found matching "<b>${escapeHtml(keyword)}</b>".
-                    `;
-                }
-                emptyRow.style.display = "";
-            } else if (emptyRow) {
-                emptyRow.style.display = "none";
-            }
+            currentOfftakePage = 1;
+            renderOfftakeTable();
         });
     }
+
+    document.getElementById("offtakePrevBtn")?.addEventListener("click", function () {
+        if (currentOfftakePage > 1) {
+            currentOfftakePage--;
+            renderOfftakeTable();
+        }
+    });
+
+        document.getElementById("offtakeNextBtn")?.addEventListener("click", function () {
+        const dataSource = (filteredOfftakeRequests !== null) ? filteredOfftakeRequests : OFFTAKE_REQUESTS_DATA;
+        const totalPages = Math.max(1, Math.ceil(dataSource.length / offtakePerPage));
+        if (currentOfftakePage < totalPages) {
+            currentOfftakePage++;
+            renderOfftakeTable();
+        }
+    });
 }
 
 async function fetchOfftakeRequests() {
@@ -6945,24 +7023,16 @@ async function fetchOfftakeRequests() {
 
     try {
         const requests = await apiRequest(OFFTAKE_REQUESTS_ENDPOINT, { method: "GET" });
-        console.log("Offtake Requests API response:", requests);
 
         if (!Array.isArray(allFarmers) || allFarmers.length === 0) {
             await fetchFarmers();
         }
 
-        tbody.innerHTML = "";
-
-        if (!requests || requests.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#777;">No offtake requests found.</td></tr>`;
-            return;
-        }
-
-        requests.forEach(function(request) {
+        OFFTAKE_REQUESTS_DATA = (requests || []).map(function (request) {
             let farmer = null;
             const requestFarmerId = request.farmer_id;
             if (requestFarmerId) {
-                farmer = allFarmers.find(function(f) { return f.farmer_id == requestFarmerId; });
+                farmer = allFarmers.find(function (f) { return f.farmer_id == requestFarmerId; });
             }
 
             let farmerName = "Unknown Farmer";
@@ -6972,21 +7042,117 @@ async function fetchOfftakeRequests() {
                 farmerLocation = farmer.address || [farmer.barangay, farmer.municipality].filter(Boolean).join(", ") || "—";
             }
 
-            const row = document.createElement("tr");
-            row.className = "clickable-row";
-            row.innerHTML = `
-                <td><span class="pill">${escapeHtml(farmerName)}</span></td>
-                <td><span class="pill">${escapeHtml(request.commodity || "—")}</span></td>
-                <td><span class="pill">${escapeHtml(request.quantity || "—")} kg</span></td>
-                <td><span class="pill">${escapeHtml(farmerLocation)}</span></td>
-                <td><span class="pill">${escapeHtml(request.harvest_date || "—")}</span></td>
-                <td><span class="status-pill submitted">Submitted</span></td>
-            `;
-            tbody.appendChild(row);
+            return { ...request, _farmerName: farmerName, _farmerLocation: farmerLocation };
         });
+
+        filteredOfftakeRequests = null;
+        currentOfftakePage = 1;
+        renderOfftakeTable();
+        updateOfftakeSummaryCards(OFFTAKE_REQUESTS_DATA); 
+
     } catch (error) {
         console.error("Unable to load offtake requests:", error);
+        OFFTAKE_REQUESTS_DATA = [];
         tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load offtake requests.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
+        updateOfftakePagination();
+        updateOfftakeSummaryCards([]);
+     
+    }
+}
+
+function renderOfftakeTable() {
+    const tbody = document.getElementById("offtakeTableBody");
+    if (!tbody) return;
+
+    const dataSource = (filteredOfftakeRequests !== null) ? filteredOfftakeRequests : OFFTAKE_REQUESTS_DATA;
+    tbody.innerHTML = "";
+
+    if (dataSource.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#777;">No offtake requests found.</td></tr>`;
+        updateOfftakePagination();
+        return;
+    }
+
+    const start = (currentOfftakePage - 1) * offtakePerPage;
+    const paginatedItems = dataSource.slice(start, start + offtakePerPage);
+
+    paginatedItems.forEach(function (request) {
+        const row = document.createElement("tr");
+        row.className = "clickable-row";
+        row.innerHTML = `
+            <td><span class="pill">${escapeHtml(request._farmerName)}</span></td>
+            <td><span class="pill">${escapeHtml(request.commodity || "—")}</span></td>
+            <td><span class="pill">${escapeHtml(request.quantity || "—")} kg</span></td>
+            <td><span class="pill">${escapeHtml(request._farmerLocation)}</span></td>
+            <td><span class="pill">${escapeHtml(request.harvest_date || "—")}</span></td>
+            <td><span class="status-pill submitted">Submitted</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateOfftakePagination();
+}
+
+/* ============================================================
+   OFFTAKE SUMMARY CARDS
+============================================================ */
+function updateOfftakeSummaryCards(requests) {
+    const total = (requests || []).length;
+
+    // Count per commodity (case-insensitive)
+    const commodityCounts = {};
+    (requests || []).forEach(req => {
+        const commodity = String(req.commodity || "").trim().toLowerCase();
+        if (!commodity) return;
+        commodityCounts[commodity] = (commodityCounts[commodity] || 0) + 1;
+    });
+
+    const setCount = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setCount("offtakeCountTotal", total);
+    setCount("offtakeCountTomato",     commodityCounts["tomato"] || 0);
+    setCount("offtakeCountRedOnion",   commodityCounts["red onion"] || 0);
+    setCount("offtakeCountWhiteOnion", commodityCounts["white onion"] || 0);
+    setCount("offtakeCountSquash",     commodityCounts["squash"] || 0);
+}
+
+function updateOfftakePagination() {
+    const dataSource = (filteredOfftakeRequests !== null) ? filteredOfftakeRequests : OFFTAKE_REQUESTS_DATA;
+    const total = dataSource.length;
+    const totalPages = Math.max(1, Math.ceil(total / offtakePerPage));
+
+    if (currentOfftakePage > totalPages) currentOfftakePage = totalPages;
+
+    const start = total === 0 ? 0 : (currentOfftakePage - 1) * offtakePerPage + 1;
+    const end = Math.min(currentOfftakePage * offtakePerPage, total);
+
+    const info = document.getElementById("offtakePaginationInfo");
+    if (info) info.textContent = `Showing ${start}-${end} of ${total} offtake requests`;
+
+    const prev = document.getElementById("offtakePrevBtn");
+    if (prev) prev.disabled = currentOfftakePage <= 1;
+
+    const next = document.getElementById("offtakeNextBtn");
+    if (next) next.disabled = currentOfftakePage >= totalPages;
+
+    const btns = document.getElementById("offtakePageNumberBtns");
+    if (btns) {
+        btns.innerHTML = "";
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.className = `btn-page ${i === currentOfftakePage ? "active" : ""}`;
+            btn.textContent = i;
+            btn.type = "button";
+            btn.addEventListener("click", function () {
+                currentOfftakePage = i;
+                renderOfftakeTable();
+                updateOfftakeSummaryCards(OFFTAKE_REQUESTS_DATA);  
+            });
+            btns.appendChild(btn);
+        }
     }
 }
 
@@ -7626,7 +7792,7 @@ function renderForecastResults(forecasts) {
                     font-size: 16px;
                     transition: background 0.2s;
                 " onclick="toggleForecastYear(this)">
-                    <span>📅 ${year} Projections</span>
+                    <span> ${year} Projections</span>
                     <span style="font-size: 20px; transition: transform 0.3s;">▼</span>
                 </div>
                 <div class="forecast-year-content" style="
@@ -7673,7 +7839,7 @@ function renderForecastResults(forecasts) {
                         font-size: 14px;
                         transition: background 0.2s;
                     " onclick="toggleForecastMonth(this)">
-                        <span>📆 ${month} ${year}</span>
+                        <span> ${month} ${year}</span>
                         <span style="font-size: 16px; transition: transform 0.3s; transform: ${arrowRotation};">▶</span>
                     </div>
                     <div class="forecast-month-content" style="
@@ -7887,7 +8053,7 @@ function renderChart(forecasts, commodityFilter) {
         const dateB = new Date(b);
         return dateA - dateB;
     });
-    console.log('📅 Dates:', allDates);
+    console.log(' Dates:', allDates);
     
     Object.keys(commodities).forEach(function(commodity, idx) {
         const data = commodities[commodity];
@@ -7921,9 +8087,26 @@ function renderChart(forecasts, commodityFilter) {
             }
         });
         
-        datasets.push({
+                datasets.push({
             label: commodity + ' (Low)',
             data: lowerPrices,
+            borderColor: colorObj.main,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 4,
+            pointBackgroundColor: colorObj.main,
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7,
+            tension: 0.4,
+            fill: false,
+            spanGaps: false
+        });
+
+        datasets.push({
+            label: commodity + ' (High)',
+            data: upperPrices,
             borderColor: colorObj.main,
             backgroundColor: function(context) {
                 const chart = context.chart;
@@ -7944,23 +8127,6 @@ function renderChart(forecasts, commodityFilter) {
             pointHoverRadius: 8,
             tension: 0.4,
             fill: true,
-            spanGaps: false
-        });
-        
-        datasets.push({
-            label: commodity + ' (High)',
-            data: upperPrices,
-            borderColor: colorObj.main,
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [6, 4],
-            pointRadius: 4,
-            pointBackgroundColor: colorObj.main,
-            pointBorderColor: '#FFFFFF',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            tension: 0.4,
-            fill: false,
             spanGaps: false
         });
     });
@@ -7995,7 +8161,7 @@ function renderChart(forecasts, commodityFilter) {
                     mode: 'index',
                     intersect: false
                 },
-                plugins: {
+                                    plugins: {
                     legend: {
                         position: 'top',
                         labels: {
@@ -8004,12 +8170,25 @@ function renderChart(forecasts, commodityFilter) {
                                 weight: '600',
                                 family: 'Plus Jakarta Sans'
                             },
-                            boxWidth: 20,
-                            boxHeight: 12,
+                            boxWidth: 32,
+                            boxHeight: 0,
                             padding: 16,
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            color: '#2E2A22'
+                            usePointStyle: false,
+                            color: '#2E2A22',
+                            generateLabels: function(chart) {
+                                return chart.data.datasets.map(function(dataset, i) {
+                                    return {
+                                        text: dataset.label,
+                                        strokeStyle: dataset.borderColor,
+                                        fillStyle: dataset.borderColor,
+                                        lineWidth: dataset.borderWidth || 2,
+                                        lineDash: dataset.borderDash || [],
+                                        pointStyle: 'line',
+                                        hidden: !chart.isDatasetVisible(i),
+                                        datasetIndex: i
+                                    };
+                                });
+                            }
                         }
                     },
                     tooltip: {
@@ -8477,7 +8656,7 @@ function renderMarketForecastTable(container, forecasts, priceType) {
                 >
 
                     <span>
-                        📅 ${year} Projections
+                         ${year} Projections
                     </span>
 
                     <span
@@ -8543,7 +8722,7 @@ function renderMarketForecastTable(container, forecasts, priceType) {
                         >
 
                             <span>
-                                📆 ${month} ${year}
+                                 ${month} ${year}
                             </span>
 
                             <span
@@ -8841,7 +9020,7 @@ function renderHistoricalMarketPrices(prices) {
                     font-size:14px;
                     margin-bottom:6px;
                 ">
-                    📅 ${year}
+                     ${year}
                 </div>
 
                 <div style="
@@ -9548,4 +9727,5 @@ function formatKg(value) {
         }
     )} kg`;
 }
+
 
