@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>System Admin — eSaka</title>
 
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+
   <link rel="stylesheet" href="../assets/css/base.css">
+
 
   <style>
     :root {
@@ -32,11 +35,13 @@
       --radius-md: 12px;
     }
 
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+
 
     html, body {
       width: 100%;
@@ -47,8 +52,10 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    a { color: inherit; }
+
+    a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font-family: inherit; }
+
 
     /* --- TOPBAR --- */
     .topbar {
@@ -64,15 +71,17 @@
       height: var(--topbar-height);
     }
 
+
     .topbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
     }
 
+
     .hamburger {
       background: #FFF;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       cursor: pointer;
       padding: 8px 10px;
@@ -82,10 +91,12 @@
       transition: all 0.2s ease;
     }
 
+
     .hamburger:hover {
       background: var(--green-light);
       border-color: var(--green);
     }
+
 
     .hamburger span {
       display: block;
@@ -95,11 +106,13 @@
       border-radius: 2px;
     }
 
+
     .logos {
       display: flex;
       align-items: center;
       gap: 12px;
     }
+
 
     .topbar-right {
       display: flex;
@@ -107,41 +120,6 @@
       gap: 18px;
     }
 
-    .bell-wrap {
-      position: relative;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--green);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: transform 0.15s ease, background 0.2s ease;
-    }
-
-    .bell-wrap:hover {
-      background: var(--green-dark);
-      transform: scale(1.04);
-    }
-
-    .bell-wrap svg {
-      width: 18px;
-      height: 18px;
-      fill: #fff;
-    }
-
-    .bell-dot {
-      position: absolute;
-      top: 3px;
-      right: 3px;
-      width: 9px;
-      height: 9px;
-      background: #C0392B;
-      border-radius: 50%;
-      border: 2px solid var(--cream);
-    }
 
     .user-info {
       display: flex;
@@ -152,6 +130,7 @@
       border-radius: 999px;
       border: 1px solid var(--border);
     }
+
 
     .avatar {
       width: 32px;
@@ -166,16 +145,19 @@
       font-size: 13px;
     }
 
+
     .user-text {
       text-align: left;
       line-height: 1.2;
     }
+
 
     .user-name {
       font-size: 13.5px;
       font-weight: 700;
       color: var(--ink);
     }
+
 
     .user-role {
       font-size: 11px;
@@ -185,11 +167,13 @@
       letter-spacing: 0.04em;
     }
 
+
     /* --- SIDEBAR --- */
     .layout {
       display: flex;
       min-height: calc(100vh - var(--topbar-height));
     }
+
 
     .sidebar {
       width: 230px;
@@ -208,15 +192,18 @@
       transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+
     .sidebar.open {
       left: 0;
     }
+
 
     .nav-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
+
 
     .nav-item {
       display: flex;
@@ -236,6 +223,7 @@
       transition: all 0.2s ease;
     }
 
+
     .nav-item svg {
       width: 19px;
       height: 19px;
@@ -243,16 +231,19 @@
       flex-shrink: 0;
     }
 
+
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
     }
+
 
     .nav-item.active {
       background: var(--green-dark);
       color: #FFFFFF;
       font-weight: 700;
     }
+
 
     .signout {
       display: flex;
@@ -271,16 +262,19 @@
       transition: all 0.2s ease;
     }
 
+
     .signout svg {
       width: 18px;
       height: 18px;
       fill: currentColor;
     }
 
+
     .signout:hover {
       background: rgba(192, 57, 43, 0.25);
       color: #FFF;
     }
+
 
     /* --- MAIN CONTENT & ACTION PANELS --- */
     .main {
@@ -289,8 +283,10 @@
       min-width: 0;
     }
 
+
     .view { display: none; }
     .view.active-view { display: block; }
+
 
     .main-header {
       display: flex;
@@ -301,6 +297,7 @@
       margin-bottom: 20px;
     }
 
+
     .main-header h1 {
       font-size: 26px;
       font-weight: 800;
@@ -309,12 +306,14 @@
       margin: 0;
     }
 
+
     .card {
       background: var(--white);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
       padding: 22px 24px;
     }
+
 
     .card-title {
       font-size: 15px;
@@ -325,12 +324,15 @@
       letter-spacing: 0.03em;
     }
 
+
     /* --- SEARCH BOX & HEADER ACTIONS --- */
     .search-row {
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
     }
+
 
     .search-box {
       display: flex;
@@ -340,14 +342,16 @@
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 8px 14px;
-      min-width: 260px;
+      min-width: 240px;
       transition: all 0.2s ease;
     }
+
 
     .search-box:focus-within {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
+
 
     .search-box svg {
       width: 15px;
@@ -358,6 +362,7 @@
       flex-shrink: 0;
     }
 
+
     .search-box input {
       border: none;
       outline: none;
@@ -367,42 +372,40 @@
       color: var(--ink);
     }
 
-    .filter-btn {
+
+    .filter-input {
       background: #FFFFFF;
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 9px 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 13px;
+      color: var(--ink);
+      outline: none;
       transition: all 0.2s ease;
     }
 
-    .filter-btn svg {
-      width: 16px;
-      height: 16px;
-      fill: var(--muted);
+
+    .filter-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
 
-    .filter-btn:hover:not(:disabled) {
-      background: var(--cream);
-      border-color: var(--green);
-    }
 
     /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     .table-wrapper {
-        overflow-x: auto;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        margin-top: 8px;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-top: 8px;
     }
+
 
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
     }
+
 
     thead th {
       text-align: left;
@@ -416,6 +419,7 @@
       background: #f8f6f2;
     }
 
+
     tbody td {
       padding: 13px 14px;
       font-size: 13.5px;
@@ -424,26 +428,31 @@
       color: var(--ink);
     }
 
+
     tbody tr {
       transition: background 0.15s ease;
     }
+
 
     tbody tr:hover td {
       background: #F3EEE4;
     }
 
+
     .name-pill { font-weight: 500; color: #1e1a16; }
     .username-pill { color: #5a554a; font-size: 13px; }
     .location-pill { color: #5a554a; font-size: 12.5px; }
 
+
     .role {
-        display: inline-block;
-        padding: 3px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
     }
+
 
     .status-badge {
       display: inline-block;
@@ -455,8 +464,10 @@
       text-transform: uppercase;
     }
 
+
     .status-badge.active { background: #e6f4ea; color: #1e1a16 !important; }
     .status-badge.inactive { background: #fce8e6; color: #1e1a16 !important; }
+
 
     /* --- BUTTONS --- */
     .btn-primary {
@@ -475,10 +486,12 @@
       transition: all 0.2s ease;
     }
 
+
     .btn-primary:hover:not(:disabled) {
       background: var(--green-dark);
       transform: translateY(-1px);
     }
+
 
     .btn-secondary {
       appearance: none;
@@ -493,13 +506,16 @@
       transition: all 0.2s ease;
     }
 
+
     .btn-secondary:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
     }
 
+
     .btn-danger { background: #A1382B !important; color: #FFF !important; }
     .btn-danger:hover { background: #84281D !important; }
+
 
     .btn-deactivate,
     .btn-reactivate,
@@ -520,10 +536,12 @@
       white-space: nowrap;
     }
 
+
     .btn-deactivate { background: #fce8e6; color: #b3261e; }
     .btn-deactivate:hover { background: #f5d0cc; transform: translateY(-1px); }
     .btn-reactivate { background: #e6f4ea; color: #1e7e34; }
     .btn-reactivate:hover { background: #c8e6d0; transform: translateY(-1px); }
+
 
     .action-btn {
       border: 1.5px solid var(--border);
@@ -531,15 +549,18 @@
       color: var(--ink);
     }
 
+
     .action-btn:hover:not(:disabled) {
       background: var(--cream);
       border-color: var(--green);
       color: var(--green-dark);
     }
 
+
     td:last-child, thead th:last-child {
       text-align: center !important;
     }
+
 
     /* --- FORM LAYOUT & INPUT FIELDS --- */
     .form-grid {
@@ -548,10 +569,12 @@
       gap: 18px 30px;
     }
 
+
     .form-field {
       display: flex;
       flex-direction: column;
     }
+
 
     .form-field label {
       display: block;
@@ -562,6 +585,7 @@
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
+
 
     .form-field input,
     .form-field select {
@@ -576,11 +600,13 @@
       transition: all 0.2s ease;
     }
 
+
     .form-field input:focus,
     .form-field select:focus {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
+
 
     .form-field select:disabled {
       background: #F0EDE4;
@@ -589,12 +615,14 @@
       opacity: 0.75;
     }
 
+
     .form-actions {
       display: flex;
       justify-content: flex-end;
       gap: 12px;
       margin-top: 24px;
     }
+
 
     /* --- PAGINATION STYLES --- */
     .pagination-container {
@@ -608,8 +636,10 @@
       color: var(--muted);
     }
 
+
     .pagination-controls { display: flex; align-items: center; gap: 6px; }
     .page-numbers-wrap { display: flex; gap: 4px; }
+
 
     .btn-page {
       padding: 5px 11px;
@@ -623,10 +653,12 @@
       transition: all 0.15s ease;
     }
 
+
     .btn-page:hover:not(:disabled) {
       background: #EDE7D8;
       border-color: var(--green);
     }
+
 
     .btn-page.active {
       background: var(--green);
@@ -634,80 +666,9 @@
       border-color: var(--green);
     }
 
+
     .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* --- ALERTS & PILLS --- */
-    .alert-container-card { padding: 24px; }
-    .alert-list { display: flex; flex-direction: column; gap: 16px; }
-
-    .alert-card {
-      background: #F6F3EB;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 18px 24px;
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
-
-    .alert-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-      border-color: var(--green);
-    }
-
-    .alert-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .alert-title-group { display: flex; align-items: center; gap: 12px; }
-    .alert-title { font-size: 15px; font-weight: 700; color: var(--ink); }
-
-    .sev-pill {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .sev-pill.high { background: #C0392B; color: #FFFFFF; }
-    .sev-pill.medium { background: #D97706; color: #FFFFFF; }
-    .sev-pill.low { background: var(--status-confirmed); color: #FFFFFF; }
-
-    .status-pill-btn {
-      border: none;
-      font-size: 11.5px;
-      font-weight: 700;
-      padding: 5px 14px;
-      border-radius: 999px;
-      cursor: pointer;
-    }
-
-    .status-pill-btn.unresolved { background: #FADBD8; color: #922B21; }
-    .status-pill-btn.acknowledged { background: var(--green-light); color: var(--green-dark); }
-
-    .alert-desc {
-      font-size: 13.5px;
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 0 0 12px;
-    }
-
-    .alert-stats {
-      display: flex;
-      align-items: center;
-      gap: 36px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .alert-stats span b { color: var(--ink); font-weight: 700; }
-    .alert-date { margin-left: auto; font-size: 12.5px; color: var(--muted); }
 
     /* --- MODALS --- */
     .modal-overlay {
@@ -720,7 +681,9 @@
       z-index: 3000;
     }
 
+
     .modal-overlay.show { display: flex; }
+
 
     .modal-box {
       background: var(--cream);
@@ -733,12 +696,14 @@
       width: 90%;
     }
 
+
     .modal-box h2 {
       font-size: 22px;
       font-weight: 800;
       color: var(--green);
       margin-bottom: 10px;
     }
+
 
     .modal-box p {
       font-size: 14px;
@@ -747,9 +712,12 @@
       line-height: 1.45;
     }
 
+
     .modal-actions { display: flex; justify-content: center; gap: 12px; }
 
+
     .alert-detail-box { max-width: 480px; text-align: left; }
+
 
     .alert-modal-header {
       display: flex;
@@ -758,102 +726,163 @@
       margin-bottom: 16px;
     }
 
+
     .alert-modal-header h2 { font-size: 18px; font-weight: 800; color: var(--green); margin: 0; }
 
-    .modal-stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      background: #FFFFFF;
-      padding: 16px;
+
+    .action-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+
+    .btn-archive {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 16px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: none;
       border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
-      margin-bottom: 24px;
-      font-size: 13px;
-    }
-/* --- ACTION CELL (multiple buttons) --- */
-.action-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.btn-archive {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 16px;
-  font-size: 12.5px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  min-width: 80px;
-  white-space: nowrap;
-  background: #fdf3e0;
-  color: #8a5a00;
-}
-
-.btn-archive:hover:not(:disabled) {
-  background: #f5e2b8;
-  transform: translateY(-1px);
-}
-
-.btn-archive:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-
-}
-    /* --- ARCHIVE DETAILS PAGE --- */
-    #view-archive-details {
-      padding: 8px 0 0 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      min-width: 80px;
+      white-space: nowrap;
+      background: #fdf3e0;
+      color: #8a5a00;
     }
 
-    #view-archive-details .status-badge {
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+
+    .btn-archive:hover:not(:disabled) {
+      background: #f5e2b8;
+      transform: translateY(-1px);
     }
 
-    /* Responsive */
-    @media (max-width: 1024px) {
-      #view-archive-details > div:nth-child(3) {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
+
+    .btn-archive:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
-    @media (max-width: 640px) {
-      #view-archive-details > div:nth-child(3) {
-        grid-template-columns: 1fr !important;
-      }
-
-      #view-archive-details > div:nth-child(2) {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 16px !important;
-      }
-
-      #view-archive-details > div:nth-child(2) > div:first-child {
-        width: 72px !important;
-        height: 72px !important;
-        font-size: 26px !important;
-      }
-    }
 
     .modal-stats-grid div { color: var(--muted); }
     .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
+
 
     .modal-actions-row { display: flex; justify-content: flex-end; gap: 12px; }
     .modal-title { font-size: 20px; font-weight: 800; color: var(--green); margin-bottom: 16px; }
     .modal-ok { margin-top: 8px; }
     .loading-row { text-align: center; padding: 24px; color: var(--muted); }
+
+    /* --- MODAL CONFIRM BUTTON (para sa OK button) --- */
+.modal-btn-confirm {
+  border: none;
+  background: var(--green);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: inherit;
+  display: inline-block;
+  text-align: center;
+}
+
+.modal-btn-confirm:hover {
+  background: var(--green-dark);
+}
+/* ===== ROLE SUMMARY CARDS ===== */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-left: 5px solid var(--border);
+  box-shadow: 0 1px 4px rgba(46, 42, 34, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(46, 42, 34, 0.10);
+}
+
+.summary-card.active-filter {
+  background: var(--green-light);
+  border-color: var(--green);
+}
+
+.summary-icon {
+  font-size: 26px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F6F2E8;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.summary-info h3 {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.summary-count {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1;
+}
+
+.summary-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #A09888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Color coding per role */
+.summary-card.aew        { border-left-color: #5B6B4F; }
+.summary-card.municipal  { border-left-color: #2E7D32; }
+.summary-card.provincial { border-left-color: #C08A4E; }
+.summary-card.da-rfo     { border-left-color: #8E44AD; }
+
+.summary-card.aew .summary-icon        { background: #E7EDDF; }
+.summary-card.municipal .summary-icon  { background: #E6F4EA; }
+.summary-card.provincial .summary-icon { background: #FDF3E0; }
+.summary-card.da-rfo .summary-icon     { background: #F3E8FA; }
   </style>
 </head>
 <body>
+
 
 <div class="topbar">
   <div class="topbar-left">
@@ -861,22 +890,23 @@
       <span></span><span></span><span></span>
     </button>
     <div class="logos">
-      <img src="../assets/images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
-      <img src="../assets/images/esakaname.png" alt="eSaka Name" style="height: 28px; width: auto; display: block;">
-    </div>
+  <a href="../home.html" style="position: relative; z-index: 10; display: inline-block;">
+    <img src="../images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block; cursor: pointer;">
+  </a>
+</div>
   </div>
 
-  <div class="topbar-right">
-   
-    <div class="user-info">
-      <div class="avatar">SA</div>
-      <div class="user-text">
-        <div class="user-name" id="loggedInUserName">System Admin</div>
-        <div class="user-role" id="loggedInUserRole">System Administrator</div>
-      </div>
-    </div>
+
+  <div class="user-info" id="openProfileBtn" title="Click to edit profile" style="cursor: pointer;">
+  <div class="avatar" id="userDisplayInitials">SA</div>
+  <div class="user-text">
+    <div class="user-name" id="loggedInUserName">System Admin</div>
+    <div class="user-role" id="loggedInUserRole">System Administrator</div>
   </div>
 </div>
+  </div>
+</div>
+
 
 <div class="layout">
   <nav class="sidebar" id="sidebar">
@@ -885,16 +915,18 @@
         <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         Manage Users
       </button>
-      
+     
       <button class="nav-item" type="button" data-view="audit">
         <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
         Audit Log
       </button>
-          <button class="nav-item" type="button" data-view="archived">
+       
+      <button class="nav-item" type="button" data-view="archived">
         <svg viewBox="0 0 24 24"><path d="M20.54 5.23l-1.39-1.68A1.45 1.45 0 0018 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19a2 2 0 002 2h14a2 2 0 002-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
         Archived Users
       </button>
-       </div>
+    </div>
+
 
     <a class="signout" href="../index.html" id="signOutButton">
       <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
@@ -902,21 +934,64 @@
     </a>
   </nav>
 
+
   <main class="main">
 
-    <section class="view active-view" id="view-users">
-      <div class="main-header">
-        <h1>All Users</h1>
-        <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
-          <div class="search-row" style="margin: 0;">
-            <div class="search-box">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="searchUsers" placeholder="Search users...">
-            </div>
-          </div>
-          <button class="btn-primary" id="addAccountBtn" type="button" style="white-space: nowrap;">+ Add Account</button>
+
+   <section class="view active-view" id="view-users">
+  <div class="main-header">
+    <h1>All Users</h1>
+    <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+      <div class="search-row" style="margin: 0;">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchUsers" placeholder="Search users...">
         </div>
       </div>
+      <button class="btn-primary" id="addAccountBtn" type="button" style="white-space: nowrap;">+ Add Account</button>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY CARDS ===== -->
+  <div class="summary-cards" id="roleSummaryCards">
+    <div class="summary-card aew" data-role="AEW">
+      <div class="summary-icon">🌾</div>
+      <div class="summary-info">
+        <h3>Agricultural Extension Workers</h3>
+        <p class="summary-count" id="countAEW">0</p>
+        <span class="summary-label">Registered Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card municipal" data-role="Municipal Coordinator">
+      <div class="summary-icon">🏛️</div>
+      <div class="summary-info">
+        <h3>Municipal Coordinators</h3>
+        <p class="summary-count" id="countMunicipal">0</p>
+        <span class="summary-label">Registered Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card provincial" data-role="Provincial Coordinator">
+      <div class="summary-icon">🏢</div>
+      <div class="summary-info">
+        <h3>Provincial Coordinators</h3>
+        <p class="summary-count" id="countProvincial">0</p>
+        <span class="summary-label">Registered Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card da-rfo" data-role="DA-RFO">
+      <div class="summary-icon">👨‍💼</div>
+      <div class="summary-info">
+        <h3>DA-RFO Officers</h3>
+        <p class="summary-count" id="countDARFO">0</p>
+        <span class="summary-label">Registered Accounts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
 
       <div class="card">
         <div class="card-title">User Account Management</div>
@@ -938,6 +1013,7 @@
           </table>
         </div>
 
+
         <div class="pagination-container">
           <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
           <div class="pagination-controls" id="paginationControls">
@@ -949,10 +1025,12 @@
       </div>
     </section>
 
+
     <section class="view" id="view-add-account">
       <div class="main-header">
         <h1>Add New Account</h1>
       </div>
+
 
       <div class="card">
         <form id="addAccountForm" novalidate>
@@ -974,24 +1052,24 @@
               <input type="email" id="newEmail" required>
             </div>
             <div class="form-field">
-  <label for="newPassword">Password *</label>
-  <input type="password" id="newPassword" required>
-  <small class="password-hint" id="passwordHint">
-    Must be 8–32 characters with at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.
-  </small>
-</div>
+              <label for="newPassword">Password *</label>
+              <input type="password" id="newPassword" required>
+              <small class="password-hint" id="passwordHint">
+                Must be 8–32 characters with at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.
+              </small>
+            </div>
             <div class="form-field">
-  <label for="phoneNumber">Phone Number *</label>
-  <input type="tel" id="phoneNumber" required maxlength="11" inputmode="numeric" autocomplete="off">
-  <small class="field-hint" id="phoneHint">
-    Must be exactly 11 digits (numbers only). Example: 09171234567
-  </small>
-</div>
+              <label for="phoneNumber">Phone Number *</label>
+              <input type="tel" id="phoneNumber" required maxlength="11" inputmode="numeric" autocomplete="off">
+              <small class="field-hint" id="phoneHint">
+                Must be exactly 11 digits (numbers only). Example: 09171234567
+              </small>
+            </div>
             <div class="form-field">
-  <label for="confirmPassword">Confirm Password *</label>
-  <input type="password" id="confirmPassword" required>
-  <small class="password-hint" id="confirmPasswordHint"></small>
-</div>
+              <label for="confirmPassword">Confirm Password *</label>
+              <input type="password" id="confirmPassword" required>
+              <small class="password-hint" id="confirmPasswordHint"></small>
+            </div>
             <div class="form-field">
               <label for="roleSelect">Role *</label>
               <select id="roleSelect" required>
@@ -1004,7 +1082,7 @@
               </select>
             </div>
 
-            <!-- REGION / PROVINCE / MUNICIPALITY -->
+
             <div class="form-field">
               <label for="regionSelect">Region *</label>
               <select id="regionSelect" required>
@@ -1025,6 +1103,7 @@
             </div>
           </div>
 
+
           <div class="form-actions">
             <button type="button" class="btn-secondary" id="cancelAddAccount">Cancel</button>
             <button type="submit" class="btn-primary">Create Account</button>
@@ -1033,7 +1112,8 @@
       </div>
     </section>
 
-   
+
+    <!-- AUDIT LOG VIEW WITH FILTERS -->
     <section class="view" id="view-audit">
       <div class="main-header">
         <h1>System Audit Logs</h1>
@@ -1042,8 +1122,15 @@
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="searchAudit" placeholder="Search audit logs...">
           </div>
+          <!-- Audit Filters: Action & Date -->
+          <select id="filterAuditAction" class="filter-input">
+            <option value="">All Actions</option>
+          </select>
+          <input type="date" id="filterAuditDate" class="filter-input" title="Filter by date">
+          <button type="button" class="btn-secondary" id="resetAuditFiltersBtn" style="padding: 8px 12px; font-size: 12.5px;">Reset Filters</button>
         </div>
       </div>
+
 
       <div class="card">
         <div class="card-title">Platform Audit Log</div>
@@ -1054,7 +1141,6 @@
                 <th>Log ID</th>
                 <th>User</th>
                 <th>Action</th>
-                
                 <th>Timestamp</th>
                 <th>Details</th>
               </tr>
@@ -1064,6 +1150,7 @@
             </tbody>
           </table>
         </div>
+
 
         <div class="pagination-container">
           <span class="pagination-info" id="auditPaginationInfo">Showing 0 of 0</span>
@@ -1076,16 +1163,68 @@
       </div>
     </section>
 
-        <section class="view" id="view-archived">
-      <div class="main-header">
-        <h1>Archived Users</h1>
-        <div class="search-row">
-          <div class="search-box">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchArchived" placeholder="Search archived users...">
-          </div>
-        </div>
+
+   <section class="view" id="view-archived">
+  <div class="main-header">
+    <h1>Archived Users</h1>
+    <div class="search-row">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchArchived" placeholder="Search archived users...">
       </div>
+    </div>
+  </div>
+
+  <!-- ===== ARCHIVED SUMMARY CARDS ===== -->
+  <div class="summary-cards" id="archivedSummaryCards">
+    <div class="summary-card archived-total">
+      <div class="summary-icon">📦</div>
+      <div class="summary-info">
+        <h3>Total Archived</h3>
+        <p class="summary-count" id="archivedCountTotal">0</p>
+        <span class="summary-label">All Roles</span>
+      </div>
+    </div>
+
+    <div class="summary-card aew" data-role="AEW">
+      <div class="summary-icon">🌾</div>
+      <div class="summary-info">
+        <h3>AEW</h3>
+        <p class="summary-count" id="archivedCountAEW">0</p>
+        <span class="summary-label">Archived Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card municipal" data-role="Municipal Coordinator">
+      <div class="summary-icon">🏛️</div>
+      <div class="summary-info">
+        <h3>Municipal</h3>
+        <p class="summary-count" id="archivedCountMunicipal">0</p>
+        <span class="summary-label">Archived Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card provincial" data-role="Provincial Coordinator">
+      <div class="summary-icon">🏢</div>
+      <div class="summary-info">
+        <h3>Provincial</h3>
+        <p class="summary-count" id="archivedCountProvincial">0</p>
+        <span class="summary-label">Archived Accounts</span>
+      </div>
+    </div>
+
+    <div class="summary-card da-rfo" data-role="DA-RFO">
+      <div class="summary-icon">👨‍💼</div>
+      <div class="summary-info">
+        <h3>DA-RFO</h3>
+        <p class="summary-count" id="archivedCountDARFO">0</p>
+        <span class="summary-label">Archived Accounts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+
 
       <div class="card">
         <div class="card-title">Archived User Accounts</div>
@@ -1094,9 +1233,7 @@
             <thead>
               <tr>
                 <th>Name</th>
-                
                 <th>Role</th>
-                
                 <th>Archived At</th>
                 <th>Actions</th>
               </tr>
@@ -1107,6 +1244,7 @@
           </table>
         </div>
 
+
         <div class="pagination-container">
           <span class="pagination-info" id="archivedPaginationInfo">Showing 0 of 0</span>
           <div class="pagination-controls">
@@ -1116,9 +1254,9 @@
           </div>
         </div>
       </div>
-       </section>
+    </section>
 
-<!-- ARCHIVE DETAILS - RECEIPT EDITION -->
+    <!-- ARCHIVE DETAILS - RECEIPT EDITION -->
 <section class="view" id="view-archive-details">
   <style>
     #view-archive-details .adt-wrap {
@@ -1127,13 +1265,11 @@
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     }
 
-    /* ===== RECEIPT PAPER ===== */
     #view-archive-details .adt-receipt {
       position: relative;
       background: #FFFEFB;
       padding: 38px 34px 34px;
       box-shadow: 0 8px 32px -8px rgba(46, 42, 34, 0.15);
-      /* torn top edge */
       -webkit-mask:
         radial-gradient(circle at 8px 0, transparent 7px, #000 7.5px) 0 0 / 16px 100% repeat-x,
         radial-gradient(circle at 8px 100%, transparent 7px, #000 7.5px) 0 100% / 16px 100% repeat-x,
@@ -1144,7 +1280,6 @@
         linear-gradient(#000 0 0) 0 8px / 100% calc(100% - 16px) no-repeat;
     }
 
-    /* ===== HEADER ===== */
     #view-archive-details .adt-r-head {
       text-align: center;
       padding-bottom: 22px;
@@ -1197,7 +1332,6 @@
       font-weight: 500;
     }
 
-    /* ===== LINE ITEMS ===== */
     #view-archive-details .adt-r-items {
       display: flex;
       flex-direction: column;
@@ -1238,7 +1372,6 @@
       letter-spacing: 0.01em;
     }
 
-    /* ===== REMARKS BLOCK ===== */
     #view-archive-details .adt-r-remarks {
       padding: 16px 18px;
       background: #FBF7EC;
@@ -1265,7 +1398,6 @@
       margin: 0;
     }
 
-    /* ===== FOOTER ===== */
     #view-archive-details .adt-r-foot {
       padding-top: 20px;
       border-top: 1.5px dashed #D8D2C4;
@@ -1288,7 +1420,6 @@
       color: #1A1D1A;
     }
 
-    /* ===== ACTIONS ===== */
     #view-archive-details .adt-r-actions {
       display: flex;
       flex-direction: column;
@@ -1340,12 +1471,115 @@
       border-color: #C8C0AE;
       color: #1A1D1A;
     }
+
+    /* --- PROFILE MODAL & AVATAR STYLES --- */
+.profile-modal-box {
+  max-width: 520px !important;
+  text-align: left !important;
+}
+
+.profile-avatar-select-wrap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px 0;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  justify-items: center;
+}
+
+.avatar-option {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid var(--border);
+  transition: all 0.2s ease;
+  background: #E5E2DA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-option img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.avatar-option:hover {
+  border-color: var(--green);
+  transform: scale(1.05);
+}
+
+.avatar-option.selected {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.3);
+  transform: scale(1.08);
+}
+
+.profile-readonly-field {
+  background: #ECE6D8 !important;
+  color: var(--muted) !important;
+  cursor: not-allowed;
+}
+
+.user-info .avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.form-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 30px;
+}
+
+.form-field-item label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.form-field-item label .req { color: #C0392B; }
+
+.form-field-item input,
+.form-field-item select,
+.form-field-item textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  outline: none;
+  background: #FFFFFF;
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+.form-field-item input:focus,
+.form-field-item select:focus,
+.form-field-item textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+}
+
+.form-field-full { grid-column: 1 / -1; }
   </style>
 
   <div class="adt-wrap">
     <div class="adt-receipt">
 
-      <!-- HEADER -->
       <div class="adt-r-head">
         <div class="adt-r-badge">Archived</div>
         <div class="adt-r-monogram" id="archiveDetailInitials">—</div>
@@ -1353,7 +1587,6 @@
         <div class="adt-r-handle" id="archiveDetailUsername">—</div>
       </div>
 
-      <!-- LINE ITEMS -->
       <div class="adt-r-items">
         <div class="adt-r-item">
           <span class="adt-r-key">Role</span>
@@ -1369,19 +1602,16 @@
         </div>
       </div>
 
-      <!-- REMARKS -->
       <div class="adt-r-remarks">
         <div class="adt-r-remarks-label">Remarks</div>
         <p class="adt-r-remarks-text" id="archiveDetailRemarks">—</p>
       </div>
 
-      <!-- FOOTER -->
       <div class="adt-r-foot">
         <div class="adt-r-foot-label">Archived By</div>
         <div class="adt-r-foot-name" id="archiveDetailArchivedBy">—</div>
       </div>
 
-      <!-- ACTIONS -->
       <div class="adt-r-actions">
         <button class="btn-restore" id="restoreFromDetailsBtn" type="button">
           <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
@@ -1395,6 +1625,12 @@
     </div>
   </div>
 </section>
+
+  </main>
+</div>
+
+
+<!-- MODALS -->
 <div class="modal-overlay" id="successModal">
   <div class="modal-box">
     <p class="modal-title">Account Created Successfully</p>
@@ -1402,46 +1638,21 @@
   </div>
 </div>
 
-<!-- AUDIT LOG DETAIL MODAL -->
+
 <div class="modal-overlay" id="auditDetailModal">
   <div class="modal-box alert-detail-box" style="max-width: 520px; text-align: left;">
     <div class="alert-modal-header">
       <h2 id="modalAuditTitle">Audit Log Details</h2>
       <button type="button" class="btn-secondary" id="closeAuditModalX" style="padding: 4px 10px; font-size: 12px;">✕</button>
     </div>
-   
-    <div id="modalAuditContent" style="max-height: 350px; overflow-y: auto; font-size: 13.5px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; padding: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 20px;">
-    </div>
-
+    <div id="modalAuditContent" style="max-height: 350px; overflow-y: auto; font-size: 13.5px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; padding: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 20px;"></div>
     <div class="modal-actions-row">
       <button class="btn-primary" id="closeAuditModalBtn" type="button">Close</button>
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" id="alertDetailModal">
-  <div class="modal-box alert-detail-box">
-    <div class="alert-modal-header">
-      <h2 id="modalAlertTitle">Alert Details</h2>
-      <span id="modalAlertSev" class="sev-pill high">High</span>
-    </div>
-    <p id="modalAlertDesc" class="alert-desc"></p>
 
-    <div class="modal-stats-grid">
-      <div>Supply: <b id="modalAlertSupply"></b></div>
-      <div>Demand: <b id="modalAlertDemand"></b></div>
-      <div>Surplus: <b id="modalAlertSurplus"></b></div>
-      <div>Date Logged: <b id="modalAlertDate"></b></div>
-    </div>
-
-    <div class="modal-actions-row">
-      <button class="btn-secondary" id="closeAlertModalBtn" type="button">Close</button>
-      <button class="btn-primary" id="toggleAlertStatusBtn" type="button">Acknowledge Alert</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFIRM USER STATUS MODAL -->
 <div class="modal-overlay" id="confirmStatusModal">
   <div class="modal-box" style="max-width: 420px; text-align: center;">
     <h2 id="statusModalTitle">Confirm Action</h2>
@@ -1453,7 +1664,7 @@
   </div>
 </div>
 
-<!-- CONFIRM LOGOUT MODAL -->
+
 <div class="modal-overlay" id="confirmLogoutModal">
   <div class="modal-box">
     <h2>Confirm Sign Out</h2>
@@ -1465,43 +1676,16 @@
   </div>
 </div>
 
-<!-- CONFIRM DELETE USER MODAL -->
-<div class="modal-overlay" id="confirmDeleteModal">
-  <div class="modal-box" style="max-width: 440px; text-align: center;">
-    <h2 id="deleteModalTitle">Confirm Deletion</h2>
-    <p id="deleteModalDesc">Are you sure you want to delete this user? This action cannot be undone.</p>
-    <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
-      <button class="btn-secondary" id="cancelDeleteBtn" type="button">Cancel</button>
-      <button class="btn-primary btn-danger" id="finalDeleteBtn" type="button">Delete</button>
-    </div>
-  </div>
-</div>
 
-
-<!-- CONFIRM ARCHIVE USER MODAL -->
 <div class="modal-overlay" id="confirmArchiveModal">
   <div class="modal-box" style="max-width: 460px; text-align: left;">
     <h2 id="archiveModalTitle" style="text-align:center;">Confirm Archive</h2>
     <p id="archiveModalDesc" style="text-align:center;">Are you sure you want to archive this user?</p>
-
     <div class="form-field" style="margin-bottom: 8px;">
       <label for="archiveRemarks">Remarks <span style="color:#C0392B;">*</span></label>
-      <textarea
-        id="archiveRemarks"
-        rows="3"
-        maxlength="500"
-        required
-        placeholder="Reason for archiving (required)"
-        style="width:100%; padding:10px 14px; border:1.5px solid var(--border);
-               border-radius: var(--radius-sm); font-size:13.5px; resize:vertical;
-               outline:none; font-family:inherit;"
-      ></textarea>
-      <small id="archiveRemarksError"
-             style="color:#C0392B; font-size:12px; margin-top:4px; display:none;">
-        Remarks is required.
-      </small>
+      <textarea id="archiveRemarks" rows="3" maxlength="500" required placeholder="Reason for archiving (required)" style="width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius: var(--radius-sm); font-size:13.5px; resize:vertical; outline:none; font-family:inherit;"></textarea>
+      <small id="archiveRemarksError" style="color:#C0392B; font-size:12px; margin-top:4px; display:none;">Remarks is required.</small>
     </div>
-
     <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
       <button class="btn-secondary" id="cancelArchiveBtn" type="button">Cancel</button>
       <button class="btn-primary btn-danger" id="finalArchiveBtn" type="button">Archive</button>
@@ -1509,7 +1693,7 @@
   </div>
 </div>
 
-<!-- CONFIRM RESTORE USER MODAL -->
+
 <div class="modal-overlay" id="confirmRestoreModal">
   <div class="modal-box" style="max-width: 440px; text-align: center;">
     <h2 id="restoreModalTitle">Confirm Restore</h2>
@@ -1522,9 +1706,70 @@
 </div>
 
 
-
 <script src="../assets/js/dashboard-common.js"></script>
 <script src="../assets/js/system-admin.js"></script>
 
+<!-- PROFILE SETTINGS MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box profile-modal-box">
+    <h2>User Profile Settings</h2>
+
+    <form id="profileForm">
+      <div class="form-field-item" style="margin-bottom: 16px; text-align: center;">
+        <label style="margin-bottom: 8px; display: block; font-weight: 700;">Pumili ng Profile Picture</label>
+        <div class="profile-avatar-select-wrap">
+          <div class="avatar-option selected" data-avatar-img="../images/1.png"><img src="../images/1.png" alt="Avatar 1"></div>
+          <div class="avatar-option" data-avatar-img="../images/2.png"><img src="../images/2.png" alt="Avatar 2"></div>
+          <div class="avatar-option" data-avatar-img="../images/3.png"><img src="../images/3.png" alt="Avatar 3"></div>
+          <div class="avatar-option" data-avatar-img="../images/4.png"><img src="../images/4.png" alt="Avatar 4"></div>
+          <div class="avatar-option" data-avatar-img="../images/5.png"><img src="../images/5.png" alt="Avatar 5"></div>
+          <div class="avatar-option" data-avatar-img="../images/6.png"><img src="../images/6.png" alt="Avatar 6"></div>
+          <div class="avatar-option" data-avatar-img="../images/7.png"><img src="../images/7.png" alt="Avatar 7"></div>
+          <div class="avatar-option" data-avatar-img="../images/8.png"><img src="../images/8.png" alt="Avatar 8"></div>
+          <div class="avatar-option" data-avatar-img="../images/9.png"><img src="../images/9.png" alt="Avatar 9"></div>
+          <div class="avatar-option" data-avatar-img="../images/10.png"><img src="../images/10.png" alt="Avatar 10"></div>
+          <div class="avatar-option" data-avatar-img="../images/11.png"><img src="../images/11.png" alt="Avatar 11"></div>
+          <div class="avatar-option" data-avatar-img="../images/12.png"><img src="../images/12.png" alt="Avatar 12"></div>
+        </div>
+      </div>
+
+      <div class="form-grid-two">
+        <div class="form-field-item form-field-full">
+          <label>Username </label>
+          <input type="text" id="profileUsername" class="input-readonly profile-readonly-field" readonly>
+        </div>
+        <div class="form-field-item">
+          <label>First Name <span class="req">*</span></label>
+          <input type="text" id="profileFirstName" required>
+        </div>
+        <div class="form-field-item">
+          <label>Last Name <span class="req">*</span></label>
+          <input type="text" id="profileLastName" required>
+        </div>
+        <div class="form-field-item form-field-full">
+          <label>Birthdate <span class="req">*</span></label>
+          <input type="date" id="profileBirthdate" required>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn-secondary" id="closeProfileModalBtn" type="button">Cancel</button>
+        <button class="btn-primary" type="submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CUSTOM SUCCESS MODAL -->
+<div class="modal-overlay" id="customAlertModal">
+  <div class="modal-box" style="max-width: 400px; padding: 28px;">
+    <h2 style="font-size: 20px; color: var(--green-dark); margin-bottom: 12px;">Tagumpay!</h2>
+    <p id="customAlertText" style="font-size: 14.5px; color: var(--ink); margin-bottom: 24px;">Profile updated successfully!</p>
+    <div style="display: flex; justify-content: center;">
+      <button class="modal-btn-confirm" id="closeCustomAlertBtn" type="button" style="width: 120px;">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
+

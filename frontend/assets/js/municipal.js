@@ -152,12 +152,15 @@ function formatRole(role) {
 }
 
 function setupUserProfile() {
+    // Priority: user_display_name > full_name > name > username
     const storedName =
+        localStorage.getItem("user_display_name") ||
         localStorage.getItem("full_name") ||
         localStorage.getItem("name") ||
         localStorage.getItem("username");
 
     const storedRole = localStorage.getItem("role");
+    const storedAvatar = localStorage.getItem("user_avatar_src");
 
     const nameEl = document.getElementById("userDisplayName");
     const roleEl = document.getElementById("userDisplayRole");
@@ -165,7 +168,16 @@ function setupUserProfile() {
 
     if (nameEl && storedName) nameEl.textContent = storedName;
     if (roleEl && storedRole) roleEl.textContent = formatRole(storedRole);
-    if (initEl) initEl.textContent = getInitials(storedName || storedRole);
+
+    // Show avatar image if saved, otherwise show initials
+    if (initEl) {
+        if (storedAvatar) {
+            initEl.innerHTML = `<img src="${storedAvatar}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            initEl.style.background = "transparent";
+        } else {
+            initEl.textContent = getInitials(storedName || storedRole);
+        }
+    }
 }
 
 
@@ -3163,6 +3175,127 @@ function renderMunicipalSummary(data) {
     container.innerHTML = html;
 }
 
+    /* ============================================================
+   PROFILE & AVATAR PERSISTENCE (Municipal Coordinator)
+============================================================ */
+
+function initProfileModal() {
+    const openProfileBtn = document.getElementById("openProfileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfileModalBtn = document.getElementById("closeProfileModalBtn");
+    const profileForm = document.getElementById("profileForm");
+
+    const profileUsername = document.getElementById("profileUsername");
+    const profileFirstName = document.getElementById("profileFirstName");
+    const profileLastName = document.getElementById("profileLastName");
+    const profileBirthdate = document.getElementById("profileBirthdate");
+    const avatarOptions = document.querySelectorAll(".avatar-option");
+
+    const customAlertModal = document.getElementById("customAlertModal");
+    const customAlertText = document.getElementById("customAlertText");
+    const closeCustomAlertBtn = document.getElementById("closeCustomAlertBtn");
+
+    if (!openProfileBtn || !profileModal) return;
+
+    function showCustomAlert(message) {
+        if (customAlertText) customAlertText.textContent = message;
+        if (customAlertModal) customAlertModal.classList.add("show");
+    }
+
+    closeCustomAlertBtn?.addEventListener("click", () => {
+        customAlertModal?.classList.remove("show");
+    });
+
+    let currentSelectedSrc = localStorage.getItem("user_avatar_src") || "../images/1.png";
+
+    function loadSavedProfile() {
+        // Load saved display name
+        const savedName = localStorage.getItem("user_display_name");
+        if (savedName) {
+            const displayNameEl = document.getElementById("userDisplayName");
+            if (displayNameEl) displayNameEl.textContent = savedName;
+        }
+
+        // Load saved avatar
+        const savedAvatar = localStorage.getItem("user_avatar_src");
+        if (savedAvatar) {
+            currentSelectedSrc = savedAvatar;
+            const avatarBox = document.querySelector(".user-info .avatar");
+            if (avatarBox) {
+                avatarBox.innerHTML = '<img src="' + savedAvatar + '" alt="Avatar">';
+                avatarBox.style.background = "transparent";
+            }
+        }
+    }
+
+    loadSavedProfile();
+
+    // Open profile modal
+    openProfileBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const currentName = document.getElementById("userDisplayName")?.textContent || "Juan Dela Cruz";
+        const nameParts = currentName.trim().split(" ");
+
+        if (profileFirstName) profileFirstName.value = nameParts[0] || "";
+        if (profileLastName) profileLastName.value = nameParts.slice(1).join(" ") || "";
+
+        if (profileUsername) {
+            profileUsername.value = localStorage.getItem("username") || localStorage.getItem("user_id") || "mcoord_user_01";
+        }
+        if (profileBirthdate) {
+            profileBirthdate.value = localStorage.getItem("user_birthdate") || "1990-01-15";
+        }
+
+        avatarOptions.forEach(opt => {
+            opt.classList.toggle("selected", opt.dataset.avatarImg === currentSelectedSrc);
+        });
+
+        profileModal.classList.add("show");
+    });
+
+    // Avatar selection
+    avatarOptions.forEach(opt => {
+        opt.addEventListener("click", () => {
+            avatarOptions.forEach(el => el.classList.remove("selected"));
+            opt.classList.add("selected");
+            currentSelectedSrc = opt.dataset.avatarImg;
+        });
+    });
+
+    // Close modal
+    closeProfileModalBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        profileModal.classList.remove("show");
+    });
+
+    // Close on overlay click
+    profileModal.addEventListener("click", (e) => {
+        if (e.target === profileModal) profileModal.classList.remove("show");
+    });
+
+    // Save profile
+    profileForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const fName = profileFirstName.value.trim();
+        const lName = profileLastName.value.trim();
+        const bDate = profileBirthdate.value;
+
+        if (!fName || !lName || !bDate) {
+            showCustomAlert("Pakisagutan ang lahat ng kinakailangang fields.");
+            return;
+        }
+
+        localStorage.setItem("user_display_name", fName + " " + lName);
+        localStorage.setItem("user_birthdate", bDate);
+        localStorage.setItem("user_avatar_src", currentSelectedSrc);
+
+        loadSavedProfile();
+
+        profileModal.classList.remove("show");
+        showCustomAlert("Profile updated and saved successfully!");
+    });
+}
 
 /* ============================================================
    INITIALIZATION
@@ -3176,6 +3309,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initMap();
     loadMunicipalityMapData();
     setupUserProfile();
+    initProfileModal(); 
     initSearch();
     initBulkActions();
     initFlagButton();

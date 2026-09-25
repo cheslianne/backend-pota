@@ -1,6 +1,7 @@
 /* ============================================================
    eSAKA — DA-RFO OFFICER DASHBOARD
    Aligned with Provincial/Municipal logic
+   (Pagination: Buyer Registry 7/page, System Alerts 4/page, ETL Logs 7/page)
 ============================================================ */
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -113,7 +114,142 @@ let selectedReport = null;
 let currentSummaryPeriod = { start: null, end: null, preset: "this-week" };
 let currentSummaryData = null;
 
+/* ---------- PAGINATION STATE (7 items per page) ---------- */
+const ITEMS_PER_PAGE = 7;
+const ALERTS_PER_PAGE = 4;   // alert cards are taller, so 4 per page
 
+let currentPendingPage = 1;
+let currentVerifiedPage = 1;
+
+let systemAlertsCache = [];
+let alertSearchTerm = "";
+let currentAlertsPage = 1;
+
+let etlLogsCache = [];
+let etlSearchTerm = "";
+let currentEtlPage = 1;
+
+/* ============================================================
+   PROFILE & AVATAR PERSISTENCE (DA-RFO Officer)
+============================================================ */
+
+function initProfileModal() {
+    const openProfileBtn = document.getElementById("openProfileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfileModalBtn = document.getElementById("closeProfileModalBtn");
+    const profileForm = document.getElementById("profileForm");
+
+    const profileUsername = document.getElementById("profileUsername");
+    const profileFirstName = document.getElementById("profileFirstName");
+    const profileLastName = document.getElementById("profileLastName");
+    const profileBirthdate = document.getElementById("profileBirthdate");
+    const avatarOptions = document.querySelectorAll(".avatar-option");
+
+    const customAlertModal = document.getElementById("customAlertModal");
+    const customAlertText = document.getElementById("customAlertText");
+    const closeCustomAlertBtn = document.getElementById("closeCustomAlertBtn");
+
+    if (!openProfileBtn || !profileModal) return;
+
+    function showCustomAlert(message) {
+        if (customAlertText) customAlertText.textContent = message;
+        if (customAlertModal) customAlertModal.classList.add("show");
+    }
+
+    closeCustomAlertBtn?.addEventListener("click", () => {
+        customAlertModal?.classList.remove("show");
+    });
+
+    let currentSelectedSrc = localStorage.getItem("user_avatar_src") || "../images/1.png";
+
+    function loadSavedProfile() {
+        // Load saved display name
+        const savedName = localStorage.getItem("user_display_name");
+        if (savedName) {
+            const displayNameEl = document.getElementById("userDisplayName");
+            if (displayNameEl) displayNameEl.textContent = savedName;
+        }
+
+        // Load saved avatar
+        const savedAvatar = localStorage.getItem("user_avatar_src");
+        if (savedAvatar) {
+            currentSelectedSrc = savedAvatar;
+            const avatarBox = document.querySelector(".topbar .avatar");
+            if (avatarBox) {
+                avatarBox.innerHTML = '<img src="' + savedAvatar + '" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;">';
+                avatarBox.style.background = "transparent";
+            }
+        }
+    }
+
+    loadSavedProfile();
+
+    // Open profile modal
+    openProfileBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const currentName = document.getElementById("userDisplayName")?.textContent || "";
+        const nameParts = currentName.trim().split(" ").filter(Boolean);
+
+        if (profileFirstName) profileFirstName.value = nameParts[0] || "";
+        if (profileLastName) profileLastName.value = nameParts.slice(1).join(" ") || "";
+
+        if (profileUsername) {
+            profileUsername.value = localStorage.getItem("username") || localStorage.getItem("user_id") || "darfo_user_01";
+        }
+        if (profileBirthdate) {
+            profileBirthdate.value = localStorage.getItem("user_birthdate") || "1980-01-15";
+        }
+
+        avatarOptions.forEach(opt => {
+            opt.classList.toggle("selected", opt.dataset.avatarImg === currentSelectedSrc);
+        });
+
+        profileModal.classList.add("show");
+    });
+
+    // Avatar selection
+    avatarOptions.forEach(opt => {
+        opt.addEventListener("click", () => {
+            avatarOptions.forEach(el => el.classList.remove("selected"));
+            opt.classList.add("selected");
+            currentSelectedSrc = opt.dataset.avatarImg;
+        });
+    });
+
+    // Close modal button
+    closeProfileModalBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        profileModal.classList.remove("show");
+    });
+
+    // Close on overlay click
+    profileModal.addEventListener("click", (e) => {
+        if (e.target === profileModal) profileModal.classList.remove("show");
+    });
+
+    // Save profile
+    profileForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const fName = profileFirstName.value.trim();
+        const lName = profileLastName.value.trim();
+        const bDate = profileBirthdate.value;
+
+        if (!fName || !lName || !bDate) {
+            showCustomAlert("Pakisagutan ang lahat ng kinakailangang fields.");
+            return;
+        }
+
+        localStorage.setItem("user_display_name", fName + " " + lName);
+        localStorage.setItem("user_birthdate", bDate);
+        localStorage.setItem("user_avatar_src", currentSelectedSrc);
+
+        loadSavedProfile();
+
+        profileModal.classList.remove("show");
+        showCustomAlert("Profile updated and saved successfully!");
+    });
+}
 /* ============================================================
    PAGE INITIALIZATION
 ============================================================ */
@@ -130,8 +266,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     initModalListeners();
     initSummaryPeriodPicker();
     loadUserInformation();
+    initProfileModal();
 
-    // ✅ NEW — ETL Pipeline
+    // ETL Pipeline
     initializeETLSearch();
     const manualRunBtn = document.getElementById("manualRunBtn");
     if (manualRunBtn) {
@@ -153,12 +290,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 ============================================================ */
 
 function loadUserInformation() {
+    // Priority: user_display_name > username > name > full_name
     const userName =
+        localStorage.getItem("user_display_name") ||
         localStorage.getItem("username") ||
         localStorage.getItem("name") ||
         localStorage.getItem("full_name");
 
     const role = localStorage.getItem("role");
+    const storedAvatar = localStorage.getItem("user_avatar_src");
 
     const userDisplayName = document.getElementById("userDisplayName");
     const userDisplayRole = document.getElementById("userDisplayRole");
@@ -178,7 +318,15 @@ function loadUserInformation() {
         userDisplayRole.textContent = roleMap[role] || role;
     }
 
-    if (userInitials) userInitials.textContent = getInitials(userName || role || "");
+    // Show avatar image if saved, otherwise show initials
+    if (userInitials) {
+        if (storedAvatar) {
+            userInitials.innerHTML = `<img src="${storedAvatar}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;">`;
+            userInitials.style.background = "transparent";
+        } else {
+            userInitials.textContent = getInitials(userName || role || "");
+        }
+    }
 }
 
 function getInitials(name) {
@@ -304,10 +452,6 @@ function initSignout() {
    LEAFLET MAP
 ============================================================ */
 
-/* ============================================================
-   LEAFLET MAP
-============================================================ */
-
 const municipalityCoordinates = {
     "Angeles City": [15.1450, 120.5887],
     "Apalit": [14.9470, 120.7700],
@@ -372,7 +516,7 @@ async function loadMunicipalityMapData() {
         MUNICIPALITY_MAP_RAW_DATA = result.data;
         renderFilteredMapMarkers();
 
-        // ✅ Attach filter listeners
+        // Attach filter listeners
         document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
         document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
 
@@ -465,7 +609,7 @@ function renderFilteredMapMarkers() {
 
 
 /* ============================================================
-   BUYER REGISTRY (UNCHANGED)
+   BUYER REGISTRY (with pagination — 7 per page)
 ============================================================ */
 
 function initBuyerRegistry() {
@@ -478,7 +622,7 @@ function initBuyerRegistry() {
         await viewBuyerAttachment(currentSelectedBuyer);
     });
 
-        document.getElementById("approveBuyerBtn")?.addEventListener("click", () => {
+    document.getElementById("approveBuyerBtn")?.addEventListener("click", () => {
         if (!currentSelectedBuyer) {
             showSuccessModal({
                 title: "Error",
@@ -590,7 +734,8 @@ async function loadPendingBuyers() {
     const tbody = document.getElementById("pendingBuyersBody");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="2">Loading pending buyer applications...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="table-msg">Loading pending buyer applications...</td></tr>`;
+    removePaginationControls("pendingBuyersPagination");
 
     try {
         const response = await fetch(PENDING_BUYERS_ENDPOINT, { method: "GET", headers: getAuthHeaders() });
@@ -607,11 +752,12 @@ async function loadPendingBuyers() {
     } catch (error) {
         console.error("LOAD PENDING BUYERS ERROR:", error);
         tbody.innerHTML = `
-            <tr><td colspan="2">
+            <tr><td colspan="4" class="table-msg" style="color:#C0392B;">
                 <strong>Unable to load pending buyers.</strong><br>
                 <small>Check if FastAPI is running and the endpoint is available.</small>
             </td></tr>
         `;
+        removePaginationControls("pendingBuyersPagination");
     }
 }
 
@@ -621,32 +767,49 @@ function renderPendingBuyers(buyers) {
 
     tbody.innerHTML = "";
 
-    if (!buyers.length) {
-        tbody.innerHTML = `<tr><td colspan="2">No pending buyer applications.</td></tr>`;
+    // --- PAGINATION LOGIC (7 items per page) ---
+    const totalPages = Math.ceil(buyers.length / ITEMS_PER_PAGE) || 1;
+    if (currentPendingPage > totalPages) currentPendingPage = totalPages;
+    if (currentPendingPage < 1) currentPendingPage = 1;
+    const startIndex = (currentPendingPage - 1) * ITEMS_PER_PAGE;
+    const paginatedBuyers = buyers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    if (!paginatedBuyers.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="table-msg">No pending buyer applications.</td></tr>`;
+        removePaginationControls("pendingBuyersPagination");
         return;
     }
 
-    buyers.forEach(buyer => {
+    paginatedBuyers.forEach(buyer => {
         const row = document.createElement("tr");
         row.className = "clickable-row";
         row.dataset.buyerStatusId = buyer.buyer_status_id ?? "";
         row.dataset.buyerRegistryId = buyer.buyer_registry_id ?? "";
 
         row.innerHTML = `
-            <td><span class="pill">${escapeHtml(buyer.organization || "N/A")}</span></td>
-            <td><span class="pill">${escapeHtml(buyer.contact_person || "N/A")}</span></td>
+            <td style="font-weight:600;">${escapeHtml(buyer.organization || "N/A")}</td>
+            <td>${escapeHtml(buyer.contact_person || "N/A")}</td>
+            <td>${escapeHtml(buyer.email_address || "N/A")}</td>
+            <td class="center-col"><span class="row-action">Review &rarr;</span></td>
         `;
 
         row.addEventListener("click", () => openBuyerReview(buyer));
         tbody.appendChild(row);
     });
+
+    // Render pagination buttons
+    renderPaginationUI("pendingBuyersBody", currentPendingPage, totalPages, (newPage) => {
+        currentPendingPage = newPage;
+        renderPendingBuyers(buyers);
+    }, "pendingBuyersPagination", { totalItems: buyers.length, pageSize: ITEMS_PER_PAGE, label: "pending buyers" });
 }
 
 async function loadVerifiedBuyers() {
     const tbody = document.getElementById("verifiedBuyersBody");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="5">Loading verified buyers...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="table-msg">Loading verified buyers...</td></tr>`;
+    removePaginationControls("verifiedBuyersPagination");
 
     try {
         const response = await fetch(VERIFIED_BUYERS_ENDPOINT, { method: "GET", headers: getAuthHeaders() });
@@ -663,11 +826,12 @@ async function loadVerifiedBuyers() {
     } catch (error) {
         console.error("LOAD VERIFIED BUYERS ERROR:", error);
         tbody.innerHTML = `
-            <tr><td colspan="5">
+            <tr><td colspan="4" class="table-msg" style="color:#C0392B;">
                 <strong>Unable to load verified buyers.</strong><br>
                 <small>Check if FastAPI is running and the endpoint is available.</small>
             </td></tr>
         `;
+        removePaginationControls("verifiedBuyersPagination");
     }
 }
 
@@ -677,23 +841,36 @@ function renderVerifiedBuyers(buyers) {
 
     tbody.innerHTML = "";
 
-    if (!buyers.length) {
-        tbody.innerHTML = `<tr><td colspan="4">No verified buyers found.</td></tr>`;
+    // --- PAGINATION LOGIC (7 items per page) ---
+    const totalPages = Math.ceil(buyers.length / ITEMS_PER_PAGE) || 1;
+    if (currentVerifiedPage > totalPages) currentVerifiedPage = totalPages;
+    if (currentVerifiedPage < 1) currentVerifiedPage = 1;
+    const startIndex = (currentVerifiedPage - 1) * ITEMS_PER_PAGE;
+    const paginatedBuyers = buyers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    if (!paginatedBuyers.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="table-msg">No verified buyers found.</td></tr>`;
+        removePaginationControls("verifiedBuyersPagination");
         return;
     }
 
-    buyers.forEach(buyer => {
+    paginatedBuyers.forEach(buyer => {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td><span class="pill">${escapeHtml(buyer.organization || "N/A")}</span></td>
-            <td><span class="pill">${escapeHtml(buyer.contact_person || "N/A")}</span></td>
-            <td><span class="pill">${escapeHtml(buyer.email_address || "N/A")}</span></td>
-            <td><span class="status-text-verified">Verified</span></td>
+            <td style="font-weight:600;">${escapeHtml(buyer.organization || "N/A")}</td>
+            <td>${escapeHtml(buyer.contact_person || "N/A")}</td>
+            <td>${escapeHtml(buyer.email_address || "N/A")}</td>
+            <td class="center-col"><span class="status-pill approved">Verified</span></td>
         `;
 
         tbody.appendChild(row);
     });
+
+    renderPaginationUI("verifiedBuyersBody", currentVerifiedPage, totalPages, (newPage) => {
+        currentVerifiedPage = newPage;
+        renderVerifiedBuyers(buyers);
+    }, "verifiedBuyersPagination", { totalItems: buyers.length, pageSize: ITEMS_PER_PAGE, label: "verified buyers" });
 }
 
 function openBuyerReview(buyer) {
@@ -1016,10 +1193,18 @@ function initAlertThreshold() {
 
 
 /* ============================================================
-   ALERTS SECTION (UNCHANGED)
+   ALERTS SECTION (with pagination — 7 per page)
 ============================================================ */
 
 function initAlertsSection() {
+    // Search now filters the FULL alert list, then paginates the result
+    const searchAlerts = document.getElementById("searchAlerts");
+    searchAlerts?.addEventListener("input", () => {
+        alertSearchTerm = searchAlerts.value.toLowerCase().trim();
+        currentAlertsPage = 1;
+        renderSystemAlertLogs();
+    });
+
     loadSystemAlertLogs();
 }
 
@@ -1028,6 +1213,7 @@ async function loadSystemAlertLogs() {
     if (!alertList) return;
 
     alertList.innerHTML = `<div style="text-align:center; padding:30px;">Loading system alerts...</div>`;
+    removePaginationControls("alertListPagination");
 
     try {
         const response = await fetch(
@@ -1040,6 +1226,7 @@ async function loadSystemAlertLogs() {
         const result = await response.json();
 
         if (!result.data || !Array.isArray(result.data)) {
+            systemAlertsCache = [];
             alertList.innerHTML = `<div style="text-align:center; padding:30px;">No system alerts found.</div>`;
             return;
         }
@@ -1064,21 +1251,21 @@ async function loadSystemAlertLogs() {
 
                     const alertData = await alertResponse.json();
 
-                    // ✅ BAGO — handle both OVERSUPPLY at DEFICIT
-const status = String(alertData.status || "").toUpperCase();
+                    // Handle both OVERSUPPLY and DEFICIT
+                    const status = String(alertData.status || "").toUpperCase();
 
-if (status === "OVERSUPPLY" || status === "DEFICIT") {
-    alertResults.push({
-        commodity: alertData.commodity || commodity,
-        municipality: alertData.municipality || municipality,
-        base_demand: Number(alertData.base_demand || 0),
-        projected_supply: Number(alertData.projected_supply || 0),
-        excess_supply: Number(alertData.excess_supply || 0),
-        supply_percentage: Number(alertData.supply_percentage || 0),
-        status: status,
-        date: new Date()
-    });
-}
+                    if (status === "OVERSUPPLY" || status === "DEFICIT") {
+                        alertResults.push({
+                            commodity: alertData.commodity || commodity,
+                            municipality: alertData.municipality || municipality,
+                            base_demand: Number(alertData.base_demand || 0),
+                            projected_supply: Number(alertData.projected_supply || 0),
+                            excess_supply: Number(alertData.excess_supply || 0),
+                            supply_percentage: Number(alertData.supply_percentage || 0),
+                            status: status,
+                            date: new Date()
+                        });
+                    }
 
                 } catch (error) {
                     console.error(`Error checking ${commodity} - ${municipality}:`, error);
@@ -1086,91 +1273,107 @@ if (status === "OVERSUPPLY" || status === "DEFICIT") {
             }
         }
 
-        renderSystemAlertLogs(alertResults);
+        systemAlertsCache = alertResults;
+        currentAlertsPage = 1;
+        renderSystemAlertLogs();
 
     } catch (error) {
         console.error("LOAD SYSTEM ALERT LOGS ERROR:", error);
         alertList.innerHTML = `<div style="text-align:center; padding:30px; color:#C0392B;">Unable to load system alerts.</div>`;
+        removePaginationControls("alertListPagination");
     }
 }
 
-function renderSystemAlertLogs(alerts) {
+function getAlertSeverity(alertItem) {
+    const pct = Number(alertItem.supply_percentage) || 0;
+
+    if (alertItem.status === "DEFICIT") {
+        // Lower supply vs demand = more severe
+        if (pct < 50) return { label: "High", cls: "high" };
+        if (pct < 80) return { label: "Medium", cls: "medium" };
+        return { label: "Low", cls: "low" };
+    }
+
+    // OVERSUPPLY — higher supply vs demand = more severe
+    if (pct >= 150) return { label: "High", cls: "high" };
+    if (pct >= 120) return { label: "Medium", cls: "medium" };
+    return { label: "Low", cls: "low" };
+}
+
+function renderSystemAlertLogs() {
     const alertList = document.getElementById("alertList");
     if (!alertList) return;
 
     alertList.innerHTML = "";
 
-    if (!alerts.length) {
-        alertList.innerHTML = `<div style="text-align:center; padding:30px;">No active alerts.</div>`;
+    // Apply search on the full cache
+    const alerts = systemAlertsCache.filter(a => {
+        if (!alertSearchTerm) return true;
+        const haystack = `${a.commodity} ${a.municipality} ${a.status}`.toLowerCase();
+        return haystack.includes(alertSearchTerm);
+    });
+
+    // --- PAGINATION LOGIC (4 alerts per page) ---
+    const totalPages = Math.ceil(alerts.length / ALERTS_PER_PAGE) || 1;
+    if (currentAlertsPage > totalPages) currentAlertsPage = totalPages;
+    if (currentAlertsPage < 1) currentAlertsPage = 1;
+    const startIndex = (currentAlertsPage - 1) * ALERTS_PER_PAGE;
+    const paginatedAlerts = alerts.slice(startIndex, startIndex + ALERTS_PER_PAGE);
+
+    if (!paginatedAlerts.length) {
+        alertList.innerHTML = `<div style="text-align:center; padding:30px;">${
+            alertSearchTerm ? "No alerts match your search." : "No active alerts."
+        }</div>`;
+        removePaginationControls("alertListPagination");
         return;
     }
 
-    alerts.forEach(alert => {
+    paginatedAlerts.forEach(alertItem => {
+        const isDeficit = alertItem.status === "DEFICIT";
+        const sev = getAlertSeverity(alertItem);
+
+        // Surplus for oversupply; shortfall for deficit
+        const gap = isDeficit
+            ? Math.abs(alertItem.excess_supply) || Math.max(alertItem.base_demand - alertItem.projected_supply, 0)
+            : Math.abs(alertItem.excess_supply);
+
+        const title = `${alertItem.commodity} ${isDeficit ? "Deficit" : "Oversupply"} — ${alertItem.municipality}`;
+        const desc = isDeficit
+            ? `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is only ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`
+            : `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`;
+
         const card = document.createElement("div");
         card.className = "alert-card";
-
-        const isOversupply = alert.status === "OVERSUPPLY";
-        const isDeficit = alert.status === "DEFICIT";
-
-        const supply = alert.projected_supply;
-        const demand = alert.base_demand;
-
-        let percentage = 0;
-        if (demand > 0) percentage = ((supply - demand) / demand) * 100;
-
-        const alertDate = new Date(alert.date).toLocaleDateString("en-CA");
-
-        // ✅ Dynamic title, desc, severity
-        let title, description, sevClass, sevText;
-
-        if (isOversupply) {
-            title = `${alert.commodity} Oversupply Risk — ${alert.municipality}`;
-            description = `${alert.commodity} supply in ${alert.municipality} is ${Math.round(percentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
-            sevClass = "high";
-            sevText = "High";
-        } else if (isDeficit) {
-            title = `${alert.commodity} Deficit Risk — ${alert.municipality}`;
-            description = `${alert.commodity} supply in ${alert.municipality} is ${Math.abs(Math.round(percentage))}% below projected demand. Coordinate with suppliers and monitor closely.`;
-            sevClass = "medium";  // or "high" depending on severity
-            sevText = "Medium";
-        }
-
-        card.dataset.severity = sevClass;
-
-        // ✅ Different stats for deficit
-        const statsHtml = isOversupply
-            ? `
-                <span>Supply: <b>${formatKg(supply)}</b></span>
-                <span>Demand: <b>${formatKg(demand)}</b></span>
-                <span>Surplus: <b>+${Math.round(percentage)}%</b></span>
-              `
-            : `
-                <span>Supply: <b>${formatKg(supply)}</b></span>
-                <span>Demand: <b>${formatKg(demand)}</b></span>
-                <span>Deficit: <b>${Math.round(percentage)}%</b></span>
-              `;
+        card.style.cursor = "pointer";
 
         card.innerHTML = `
             <div class="alert-top">
-                <div class="alert-title-group">
-                    <span class="alert-title">${escapeHtml(title)}</span>
-                    <span class="sev-pill ${sevClass}">${sevText}</span>
-                </div>
+                <span class="alert-title">${escapeHtml(title)}</span>
+                <span class="sev-pill ${sev.cls}">${escapeHtml(sev.label)}</span>
             </div>
-            <p class="alert-desc">${escapeHtml(description)}</p>
+            <div class="alert-desc">${escapeHtml(desc)}</div>
             <div class="alert-stats">
-                ${statsHtml}
-                <span class="alert-date">${alertDate}</span>
+                <span>Supply: <b>${escapeHtml(formatKg(alertItem.projected_supply))}</b></span>
+                <span>Demand: <b>${escapeHtml(formatKg(alertItem.base_demand))}</b></span>
+                <span>${isDeficit ? "Deficit" : "Surplus"}: <b>${escapeHtml(formatKg(gap))}</b></span>
             </div>
+            <div class="alert-date">${escapeHtml(formatDateTimeLong(alertItem.date))}</div>
         `;
 
         card.addEventListener("click", () => {
+            if (currentActiveAlertCard) currentActiveAlertCard.classList.remove("active");
+            card.classList.add("active");
             currentActiveAlertCard = card;
             openAlertDetailModal(card);
         });
 
         alertList.appendChild(card);
     });
+
+    renderPaginationUI("alertList", currentAlertsPage, totalPages, (newPage) => {
+        currentAlertsPage = newPage;
+        renderSystemAlertLogs();
+    }, "alertListPagination", { totalItems: alerts.length, pageSize: ALERTS_PER_PAGE, label: "alerts" });
 }
 
 function openAlertDetailModal(card) {
@@ -1205,11 +1408,11 @@ function openAlertDetailModal(card) {
     const demand = document.getElementById("modalAlertDemand");
     if (demand) demand.textContent = stats[1]?.textContent || "—";
 
-    // ✅ Detect kung deficit o oversupply
+    // Detect deficit or oversupply
     const thirdStatLabel = card.querySelectorAll(".alert-stats span")[2]?.textContent || "";
     const isDeficit = thirdStatLabel.toLowerCase().includes("deficit");
 
-    // ✅ Update label ng third stat sa modal
+    // Update label of third stat in modal
     const thirdStatContainer = document.querySelector(
         "#alertDetailModal .modal-stats-grid div:nth-child(3)"
     );
@@ -1226,16 +1429,6 @@ function openAlertDetailModal(card) {
 
     document.getElementById("alertDetailModal")?.classList.add("show");
 }
-
-const searchAlerts = document.getElementById("searchAlerts");
-searchAlerts?.addEventListener("input", () => {
-    const searchTerm = searchAlerts.value.toLowerCase().trim();
-
-    document.querySelectorAll("#alertList .alert-card").forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(searchTerm) ? "" : "none";
-    });
-});
 
 
 /* ============================================================
@@ -1258,67 +1451,6 @@ function initModalListeners() {
     document.getElementById("closeReportSubmittedBtn")?.addEventListener("click", function() {
         this.closest(".modal-overlay")?.classList.remove("show");
     });
-}
-
-
-/* ============================================================
-   ACTION CONFIRMATION MODAL
-============================================================ */
-
-function showActionConfirm({
-    title = "Confirm Action",
-    message = "Are you sure?",
-    details = null,
-    confirmText = "Confirm",
-    cancelText = "Cancel",
-    confirmColor = "#5B6B4F",
-    onConfirm,
-    onCancel = null,
-}) {
-    const modal = document.getElementById("actionConfirmModal");
-    const titleEl = document.getElementById("actionConfirmTitle");
-    const messageEl = document.getElementById("actionConfirmMessage");
-    const detailsEl = document.getElementById("actionConfirmDetails");
-    const okBtn = document.getElementById("actionConfirmOkBtn");
-    const cancelBtn = document.getElementById("actionConfirmCancelBtn");
-
-    if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
-        if (window.confirm(message)) onConfirm && onConfirm();
-        return;
-    }
-
-    titleEl.textContent = title;
-    messageEl.innerHTML = message;
-
-    if (details && details.trim()) {
-        detailsEl.innerHTML = details;
-        detailsEl.style.display = "block";
-    } else {
-        detailsEl.innerHTML = "";
-        detailsEl.style.display = "none";
-    }
-
-    okBtn.textContent = confirmText;
-    okBtn.style.background = confirmColor;
-    cancelBtn.textContent = cancelText;
-
-    const newOkBtn = okBtn.cloneNode(true);
-    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
-
-    const newCancelBtn = cancelBtn.cloneNode(true);
-    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-
-    newOkBtn.addEventListener("click", () => {
-        modal.classList.remove("show");
-        onConfirm && onConfirm();
-    });
-
-    newCancelBtn.addEventListener("click", () => {
-        modal.classList.remove("show");
-        onCancel && onCancel();
-    });
-
-    modal.classList.add("show");
 }
 
 
@@ -1734,7 +1866,7 @@ async function bulkApproveSelected() {
 
         document.getElementById("bulkApproveModal")?.classList.remove("show");
 
-        // ✅ Styled success modal
+        // Styled success modal
         showSuccessModal({
             title: "Bulk Approval Complete",
             message: `<strong>${data.approved_count || 0}</strong> report${(data.approved_count || 0) !== 1 ? "s" : ""} approved and finalized.`,
@@ -1959,7 +2091,7 @@ async function openReportDetail(report) {
 
 
 /* ============================================================
-   📜 RENDER VALIDATION TIMELINE
+   RENDER VALIDATION TIMELINE
 ============================================================ */
 
 function renderValidationTimeline(history) {
@@ -2027,7 +2159,7 @@ function renderValidationTimeline(history) {
 
 
 /* ============================================================
-   📊 RENDER REPORT SUMMARY CARD (frozen snapshot)
+   RENDER REPORT SUMMARY CARD (frozen snapshot)
 ============================================================ */
 
 function renderReportSummaryCard(intents, meta) {
@@ -2668,9 +2800,7 @@ function flagReport() {
     const remarksEl = document.getElementById("remarksTextarea");
     const remarksInput = remarksEl?.value?.trim();
 
-    // ============================================================
-    // ✅ Validation — remarks required
-    // ============================================================
+    // Validation — remarks required
     if (!remarksInput) {
         showActionConfirm({
             title: "Remarks Required",
@@ -2688,9 +2818,7 @@ function flagReport() {
 
     const remarks = remarksInput;
 
-    // ============================================================
-    // ✅ Build structured details
-    // ============================================================
+    // Build structured details
     const reportTitle = selectedReport.title || `Report #${selectedReport.report_id}`;
     const municipality = selectedReport.municipality || "—";
 
@@ -2705,9 +2833,7 @@ function flagReport() {
         </div>
     `;
 
-    // ============================================================
-    // ✅ Show styled confirmation
-    // ============================================================
+    // Show styled confirmation
     showActionConfirm({
         title: "Flag for Revision?",
         message: "This report will be returned to the Provincial Coordinator for revision. <br><strong>They will need to forward it again after making changes.</strong>",
@@ -2749,7 +2875,7 @@ function flagReport() {
                     flagBtn.textContent = "Flagged ✓";
                 }
 
-                // ✅ Styled success modal
+                // Styled success modal
                 showSuccessModal({
                     title: "Flagged for Revision",
                     message: "The report has been returned to the Provincial Coordinator for revision. You'll see it again once they resubmit.",
@@ -2879,7 +3005,7 @@ function approveReport() {
                     approveBtn.textContent = "Approved ✓";
                 }
 
-                // ✅ Styled success modal
+                // Styled success modal
                 showSuccessModal({
                     title: "Report Approved",
                     message: "The report has been marked as <strong>APPROVED</strong> and is now the final version.",
@@ -3049,7 +3175,7 @@ async function loadRegionalSummary() {
 
         const data = await fetchJsonWithTimeout(
             url,
-            { method: "GET", headers: getAuthHeaders({ "Accept": "application/json" }) },
+            { method: "GET", headers: getAuthHeaders(false) },
             15000
         );
 
@@ -3120,8 +3246,8 @@ function renderRegionalSummary(data) {
     const uniqueFarmers = new Set(intents.map(i => i.farmer_id || i.farmer_name).filter(Boolean));
     const uniqueFarmerCount = uniqueFarmers.size;
 
-    // ✅ FIX: Use backend-provided pending_report_count (source of truth)
-    //    Backend counts REPORTS awaiting DA-RFO validation, not intents.
+    // Use backend-provided pending_report_count (source of truth)
+    // Backend counts REPORTS awaiting DA-RFO validation, not intents.
     const pendingCount = Number(data.pending_report_count) || 0;
 
     const harvestedIntents = intents.filter(i =>
@@ -3327,9 +3453,11 @@ function renderRegionalSummary(data) {
     container.innerHTML = html;
 }
 
+
 /* ============================================================
-   ETL RUN LOGS
+   ETL RUN LOGS (with pagination — 7 per page)
    GET /api/etl-run-log/
+   Flow: fetch once -> cache in etlLogsCache -> renderETLLogs()
 ============================================================ */
 
 async function loadETLRunLogs() {
@@ -3346,6 +3474,7 @@ async function loadETLRunLogs() {
             </td>
         </tr>
     `;
+    removePaginationControls("etlTablePagination");
 
     try {
         const response = await fetch(
@@ -3385,54 +3514,8 @@ async function loadETLRunLogs() {
         else if (Array.isArray(data.data)) logs = data.data;
         else throw new Error("Unexpected ETL log response format.");
 
-        if (logs.length === 0) {
-            etlRows.innerHTML = `
-                <tr>
-                    <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
-                        No ETL logs available.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        etlRows.innerHTML = "";
-
-        logs.forEach(log => {
-            const row = document.createElement("tr");
-
-            const runDateTime = formatAuditDate(log.run_date_time);
-            const dataSource  = log.data_source || "—";
-            const status      = log.status || "—";
-
-            const statusColor =
-                status.toLowerCase() === "success" ? "#2E7D32" :
-                status.toLowerCase() === "failed"  ? "#C0392B" :
-                "#6c757d";
-
-            row.innerHTML = `
-                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
-                    ${escapeHtml(runDateTime)}
-                </td>
-                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
-                    ${escapeHtml(dataSource)}
-                </td>
-                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
-                    <span style="
-                        display:inline-block;
-                        padding:4px 12px;
-                        border-radius:999px;
-                        font-size:11.5px;
-                        font-weight:700;
-                        color:#FFFFFF;
-                        background-color:${statusColor};
-                        text-transform:uppercase;
-                    ">${escapeHtml(status)}</span>
-                </td>
-            `;
-
-            etlRows.appendChild(row);
-        });
+        etlLogsCache = logs;
+        renderETLLogs();
 
     } catch (error) {
         console.error("Load ETL run logs error:", error);
@@ -3443,7 +3526,86 @@ async function loadETLRunLogs() {
                 </td>
             </tr>
         `;
+        removePaginationControls("etlTablePagination");
     }
+}
+
+function renderETLLogs() {
+    const etlRows = document.getElementById("etlRows");
+    if (!etlRows) return;
+
+    // Apply search on the full cache
+    const logs = etlLogsCache.filter(log => {
+        if (!etlSearchTerm) return true;
+        const haystack = [
+            formatAuditDate(log.run_date_time),
+            log.data_source || "",
+            log.status || ""
+        ].join(" ").toLowerCase();
+        return haystack.includes(etlSearchTerm);
+    });
+
+    etlRows.innerHTML = "";
+
+    if (logs.length === 0) {
+        etlRows.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
+                    ${etlSearchTerm ? "No ETL logs match your search." : "No ETL logs available."}
+                </td>
+            </tr>
+        `;
+        removePaginationControls("etlTablePagination");
+        return;
+    }
+
+    // --- PAGINATION LOGIC (7 items per page) ---
+    const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE) || 1;
+    if (currentEtlPage > totalPages) currentEtlPage = totalPages;
+    if (currentEtlPage < 1) currentEtlPage = 1;
+    const startIndex = (currentEtlPage - 1) * ITEMS_PER_PAGE;
+    const paginatedLogs = logs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    paginatedLogs.forEach(log => {
+        const row = document.createElement("tr");
+
+        const runDateTime = formatAuditDate(log.run_date_time);
+        const dataSource  = log.data_source || "—";
+        const status      = log.status || "—";
+
+        const statusColor =
+            status.toLowerCase() === "success" ? "#2E7D32" :
+            status.toLowerCase() === "failed"  ? "#C0392B" :
+            "#6c757d";
+
+        row.innerHTML = `
+            <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                ${escapeHtml(runDateTime)}
+            </td>
+            <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                ${escapeHtml(dataSource)}
+            </td>
+            <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                <span style="
+                    display:inline-block;
+                    padding:4px 12px;
+                    border-radius:999px;
+                    font-size:11.5px;
+                    font-weight:700;
+                    color:#FFFFFF;
+                    background-color:${statusColor};
+                    text-transform:uppercase;
+                ">${escapeHtml(status)}</span>
+            </td>
+        `;
+
+        etlRows.appendChild(row);
+    });
+
+    renderPaginationUI("etlRows", currentEtlPage, totalPages, (newPage) => {
+        currentEtlPage = newPage;
+        renderETLLogs();
+    }, "etlTablePagination", { totalItems: logs.length, pageSize: ITEMS_PER_PAGE, label: "logs" });
 }
 
 /* ============================================================
@@ -3494,6 +3656,9 @@ async function manualRunETL() {
         console.log("ETL pipeline started. Waiting for completion...");
 
         await waitForETLCompletion();
+
+        // Go back to the first page so the newest logs are visible
+        currentEtlPage = 1;
         await loadETLRunLogs();
 
         alert("ETL Pipeline Completed Successfully!");
@@ -3509,6 +3674,7 @@ async function manualRunETL() {
         manualRunBtn.textContent = "Manual Run";
     }
 }
+
 /* ============================================================
    WAIT FOR ETL COMPLETION
 ============================================================ */
@@ -3576,8 +3742,9 @@ async function waitForETLCompletion() {
 
     throw new Error("ETL pipeline is taking too long to complete.");
 }
+
 /* ============================================================
-   FORMAT AUDIT DATE (para sa ETL logs)
+   FORMAT AUDIT DATE (for ETL logs)
 ============================================================ */
 
 function formatAuditDate(value) {
@@ -3595,8 +3762,10 @@ function formatAuditDate(value) {
         second: "2-digit"
     });
 }
+
 /* ============================================================
    SEARCH ETL RUN LOGS
+   Filters the full cache, then re-paginates from page 1
 ============================================================ */
 
 function initializeETLSearch() {
@@ -3604,12 +3773,9 @@ function initializeETLSearch() {
     if (!searchInput) return;
 
     searchInput.addEventListener("input", () => {
-        const search = searchInput.value.trim().toLowerCase();
-
-        document.querySelectorAll("#etlRows tr").forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(search) ? "" : "none";
-        });
+        etlSearchTerm = searchInput.value.trim().toLowerCase();
+        currentEtlPage = 1;
+        renderETLLogs();
     });
 }
 
@@ -3635,7 +3801,7 @@ function showActionConfirm({
     const okBtn = document.getElementById("actionConfirmOkBtn");
     const cancelBtn = document.getElementById("actionConfirmCancelBtn");
 
-    // Fallback sa native confirm kung wala ang modal markup
+    // Fallback to native confirm if modal markup is missing
     if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
         if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
             onConfirm && onConfirm();
@@ -3686,6 +3852,83 @@ function showActionConfirm({
     modal.classList.add("show");
 }
 
+
+/* ============================================================
+   PAGINATION HELPERS (shared)
+   - If containerId is a <tbody>, controls are placed right after its <table>
+   - Otherwise controls are appended inside the container
+============================================================ */
+
+function renderPaginationUI(containerId, currentPage, totalPages, onPageChange, paginationWrapperId, meta = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    removePaginationControls(paginationWrapperId);
+
+    const totalItems = Number(meta.totalItems) || 0;
+    const pageSize   = Number(meta.pageSize) || ITEMS_PER_PAGE;
+    const label      = meta.label || "items";
+
+    const from = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const to   = Math.min(currentPage * pageSize, totalItems);
+
+    // Build page list with ellipsis: 1 … 4 5 6 … 12
+    const pages = [];
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+        pages.push(1);
+        if (currentPage > 3) pages.push("...");
+        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+        if (currentPage < totalPages - 2) pages.push("...");
+        pages.push(totalPages);
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.id = paginationWrapperId;
+    wrapper.className = "pagination-bar";
+
+    const pageButtons = pages.map(p => {
+        if (p === "...") return `<span class="pg-ellipsis">…</span>`;
+        return `<button type="button" class="pg-btn pg-num ${p === currentPage ? "active" : ""}" data-page="${p}">${p}</button>`;
+    }).join("");
+
+    wrapper.innerHTML = `
+        <span class="pagination-info">Showing ${from}–${to} of ${totalItems} ${escapeHtml(label)}</span>
+        <div class="pagination-controls">
+            <button type="button" class="pg-btn pg-prev" ${currentPage === 1 ? "disabled" : ""}>« Prev</button>
+            ${pageButtons}
+            <button type="button" class="pg-btn pg-next" ${currentPage === totalPages ? "disabled" : ""}>Next »</button>
+        </div>
+    `;
+
+    wrapper.querySelector(".pg-prev").addEventListener("click", () => {
+        if (currentPage > 1) onPageChange(currentPage - 1);
+    });
+    wrapper.querySelector(".pg-next").addEventListener("click", () => {
+        if (currentPage < totalPages) onPageChange(currentPage + 1);
+    });
+    wrapper.querySelectorAll(".pg-num").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = Number(btn.dataset.page);
+            if (target !== currentPage) onPageChange(target);
+        });
+    });
+
+    if (container.tagName === "TBODY") {
+        // Place the bar OUTSIDE the table's scroll wrapper (inside the card)
+        const table = container.closest("table");
+        const host = table.parentNode;
+        host.parentNode.insertBefore(wrapper, host.nextSibling);
+    } else {
+        container.appendChild(wrapper);
+    }
+}
+
+function removePaginationControls(paginationWrapperId) {
+    const existing = document.getElementById(paginationWrapperId);
+    if (existing) existing.remove();
+}
 
 /* ============================================================
    SUCCESS / ERROR MODAL
@@ -3746,3 +3989,4 @@ function showSuccessModal({
 /* ============================================================
    END OF da.js
 ============================================================ */
+

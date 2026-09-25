@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
@@ -34,5 +34,16 @@ class ForecastResponse(ForecastBase):
     forecast_id: int
     generated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
+
+    # ✅ I-serialize ang Decimal fields as float na 2 decimal places
+    @field_serializer(
+        "price_movement_wow",
+        "forecast_price_low",
+        "forecast_price_high",
+        when_used="json",
+    )
+    def serialize_decimal(self, value: Optional[Decimal]) -> Optional[float]:
+        if value is None:
+            return None
+        return float(round(value, 2))
