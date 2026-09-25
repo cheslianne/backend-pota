@@ -551,6 +551,7 @@ async function loadPendingReports() {
 
         renderPendingReports();
         updateBulkApproveButton();
+        updateReportSummaryCards(); 
 
     } catch (err) {
         console.error("Load pending error:", err);
@@ -663,6 +664,7 @@ async function loadAwaitingRevision() {
 
         awaitingRevisionReports = Array.isArray(data) ? data : [];
         renderAwaitingRevision();
+        updateReportSummaryCards(); 
 
     } catch (err) {
         console.error("Load awaiting revision error:", err);
@@ -741,6 +743,7 @@ async function loadSentToProvincial() {
 
         sentReports = Array.isArray(data) ? data : [];
         renderSentReports();
+        updateReportSummaryCards(); 
 
     } catch (err) {
         console.error("Load sent error:", err);
@@ -832,7 +835,38 @@ function renderSentReports() {
     });
 }
 
+/* ============================================================
+   REPORT SUMMARY CARDS
+============================================================ */
+function updateReportSummaryCards() {
+    // Pending = rows sa pending table (excl. empty state)
+    const pendingCount = pendingReports.filter(report => {
+        const s = String(report.status || "").toUpperCase();
+        return s === "SUBMITTED_MUNICIPAL_PENDING" || s === "FOR_MUNICIPAL_VALIDATION";
+    }).length;
 
+    // Awaiting revision
+    const revisionCount = awaitingRevisionReports.length;
+
+    // Sent to Provincial = lahat ng nasa sentReports
+    const provincialCount = sentReports.length;
+
+    // Approved = mga may status na regional approved o final approved
+    const approvedCount = sentReports.filter(report => {
+        const s = String(report.status || "").toUpperCase();
+        return s === "SUBMITTED_REGIONAL_APPROVED" || s === "FINAL_APPROVED";
+    }).length;
+
+    const setCount = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setCount("reportCountPending", pendingCount);
+    setCount("reportCountRevision", revisionCount);
+    setCount("reportCountProvincial", provincialCount);
+    setCount("reportCountApproved", approvedCount);
+}
 /* ============================================================
    FILTER PILLS — SENT TO PROVINCIAL
 ============================================================ */
@@ -1054,6 +1088,8 @@ async function openReportDetail(report) {
     const sentView = document.getElementById("sentToProvincialView");
     const awaitingView = document.getElementById("awaitingRevisionView");
     const detailView = document.getElementById("individualDetailView");
+     const summaryCards = document.getElementById("reportSummaryCards");
+    if (summaryCards) summaryCards.style.display = "none";
 
     if (pendingView) pendingView.style.display = "none";
     if (sentView) sentView.style.display = "none";
@@ -1970,6 +2006,9 @@ function closeReportDetail() {
 
     const mainHeader = document.getElementById("reportsMainHeader");
     if (mainHeader) mainHeader.style.display = "flex";
+    const summaryCards = document.getElementById("reportSummaryCards");
+    if (summaryCards) summaryCards.style.display = "grid";
+
 }
 
 

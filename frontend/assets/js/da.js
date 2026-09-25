@@ -748,6 +748,7 @@ async function loadPendingBuyers() {
         const data = await response.json();
         pendingBuyersCache = Array.isArray(data) ? data : [];
         renderPendingBuyers(pendingBuyersCache);
+        updateBuyerSummaryCards();
 
     } catch (error) {
         console.error("LOAD PENDING BUYERS ERROR:", error);
@@ -822,6 +823,7 @@ async function loadVerifiedBuyers() {
         const data = await response.json();
         verifiedBuyersCache = Array.isArray(data) ? data : [];
         renderVerifiedBuyers(verifiedBuyersCache);
+        updateBuyerSummaryCards();
 
     } catch (error) {
         console.error("LOAD VERIFIED BUYERS ERROR:", error);
@@ -873,11 +875,30 @@ function renderVerifiedBuyers(buyers) {
     }, "verifiedBuyersPagination", { totalItems: buyers.length, pageSize: ITEMS_PER_PAGE, label: "verified buyers" });
 }
 
+/* ============================================================
+   BUYER SUMMARY CARDS
+============================================================ */
+function updateBuyerSummaryCards() {
+    const pendingCount = pendingBuyersCache.length;
+    const verifiedCount = verifiedBuyersCache.length;
+
+    const setCount = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setCount("buyerCountPending", pendingCount);
+    setCount("buyerCountVerified", verifiedCount);
+}
+
 function openBuyerReview(buyer) {
     currentSelectedBuyer = buyer;
 
     const buyerRegistryList = document.getElementById("buyerRegistryList");
     const buyerReviewDetails = document.getElementById("buyerReviewDetails");
+
+    const summaryCards = document.getElementById("buyerSummaryCards");
+    if (summaryCards) summaryCards.style.display = "none";
 
     const reviewOrg = document.getElementById("reviewOrg");
     if (reviewOrg) reviewOrg.textContent = buyer.organization || "N/A";
@@ -935,6 +956,9 @@ function showBuyerList() {
 
     buyerReviewDetails?.classList.add("hidden-element");
     buyerRegistryList?.classList.remove("hidden-element");
+
+    const summaryCards = document.getElementById("buyerSummaryCards");
+    if (summaryCards) summaryCards.style.display = "grid";
 
     currentSelectedBuyer = null;
 }

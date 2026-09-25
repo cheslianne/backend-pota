@@ -518,6 +518,7 @@ async function loadPendingReports() {
 
         renderPendingReports();
         updateBulkApproveButton();
+        updateReportSummaryCards();  
 
     } catch (err) {
         console.error("Load pending error:", err);
@@ -630,6 +631,7 @@ async function loadReturnedToMunicipal() {
 
         returnedToMunicipalReports = Array.isArray(data) ? data : [];
         renderReturnedToMunicipal();
+        updateReportSummaryCards();
 
     } catch (err) {
         console.error("Load returned error:", err);
@@ -674,7 +676,9 @@ function renderReturnedToMunicipal() {
         tr.addEventListener("click", () => openReportDetail(report));
         tbody.appendChild(tr);
     });
+    
 }
+
 
 
 /* ============================================================
@@ -696,6 +700,7 @@ async function loadSentToRegional() {
 
         sentReports = Array.isArray(data) ? data : [];
         renderSentReports();
+        updateReportSummaryCards();
 
     } catch (err) {
         console.error("Load sent error:", err);
@@ -786,6 +791,31 @@ function renderSentReports() {
         tr.addEventListener("click", () => openReportDetail(report));
         tbody.appendChild(tr);
     });
+}
+/* ============================================================
+   REPORT SUMMARY CARDS
+============================================================ */
+function updateReportSummaryCards() {
+    // Pending = reports na may status na provincial pending
+    const pendingCount = pendingReports.filter(report => {
+        const s = String(report.status || "").toUpperCase();
+        return s === "SUBMITTED_PROVINCIAL_PENDING" || s === "FOR_PROVINCIAL_VALIDATION";
+    }).length;
+
+    // Returned to Municipal
+    const returnedCount = returnedToMunicipalReports.length;
+
+    // Sent to Regional
+    const regionalCount = sentReports.length;
+
+    const setCount = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setCount("reportCountPending", pendingCount);
+    setCount("reportCountReturned", returnedCount);
+    setCount("reportCountRegional", regionalCount);
 }
 
 
@@ -1025,7 +1055,12 @@ async function openReportDetail(report) {
     document.getElementById("returnedToMunicipalView")?.style.setProperty("display", "none");
     document.getElementById("sentToRegionalView")?.style.setProperty("display", "none");
 
+     const summaryCards = document.getElementById("reportSummaryCards");
+    if (summaryCards) summaryCards.style.display = "none";
     const detailView = document.getElementById("individualDetailView");
+    
+     
+    
     if (detailView) {
         detailView.classList.remove("hidden-element");
         detailView.style.display = "block";
@@ -1894,6 +1929,9 @@ function closeReportDetail() {
 
     const mainHeader = document.getElementById("reportsMainHeader");
     if (mainHeader) mainHeader.style.display = "flex";
+    const summaryCards = document.getElementById("reportSummaryCards");
+    if (summaryCards) summaryCards.style.display = "grid";
+
 }
 
 

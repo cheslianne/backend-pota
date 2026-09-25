@@ -1339,6 +1339,78 @@
 
 .form-field-full { grid-column: 1 / -1; }
 
+/* ===== BUYER SUMMARY CARDS ===== */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.summary-cards .summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-left: 5px solid var(--border);
+  box-shadow: 0 1px 4px rgba(46, 42, 34, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  margin-bottom: 0;
+}
+
+.summary-cards .summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(46, 42, 34, 0.10);
+}
+
+.summary-cards .summary-icon {
+  font-size: 24px;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F6F2E8;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.summary-cards .summary-info h3 {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.summary-cards .summary-count {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1;
+}
+
+.summary-cards .summary-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #A09888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Color coding */
+.summary-cards .summary-card.buyers-pending  { border-left-color: #D97706; }
+.summary-cards .summary-card.buyers-verified { border-left-color: #2E7D32; }
+
+.summary-cards .summary-card.buyers-pending .summary-icon  { background: #FDF3E0; }
+.summary-cards .summary-card.buyers-verified .summary-icon { background: #E6F4EA; }
+
   </style>
 </head>
 <body>
@@ -1420,6 +1492,28 @@
               <p>Review pending buyer applications and browse verified buyers.</p>
             </div>
           </div>
+
+           <!-- ===== BUYER SUMMARY CARDS ===== -->
+    <div class="summary-cards buyers-summary" id="buyerSummaryCards">
+      <div class="summary-card buyers-pending">
+        <div class="summary-icon">⏳</div>
+        <div class="summary-info">
+          <h3>Pending Requests</h3>
+          <p class="summary-count" id="buyerCountPending">0</p>
+          <span class="summary-label">Awaiting Review</span>
+        </div>
+      </div>
+
+      <div class="summary-card buyers-verified">
+        <div class="summary-icon">✅</div>
+        <div class="summary-info">
+          <h3>Verified Buyers</h3>
+          <p class="summary-count" id="buyerCountVerified">0</p>
+          <span class="summary-label">Approved</span>
+        </div>
+      </div>
+    </div>
+
 
           <!-- PENDING REQUESTS -->
           <div class="card" style="margin-bottom:24px;">
