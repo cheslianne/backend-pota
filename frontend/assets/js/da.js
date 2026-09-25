@@ -96,12 +96,13 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
 ============================================================ */
 
 let mapInstance = null;
-let MUNICIPALITY_MAP_RAW_DATA = [];
-let mapMarkersLayer = null;
 let currentSelectedBuyer = null;
 let pendingBuyersCache = [];
 let verifiedBuyersCache = [];
 let currentActiveAlertCard = null;
+
+let MUNICIPALITY_MAP_RAW_DATA = [];
+let mapMarkersLayer = null;
 
 let pendingReports = [];
 let returnedToProvincialReports = [];
@@ -129,6 +130,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     initModalListeners();
     initSummaryPeriodPicker();
     loadUserInformation();
+
+    // ✅ NEW — ETL Pipeline
+    initializeETLSearch();
+    const manualRunBtn = document.getElementById("manualRunBtn");
+    if (manualRunBtn) {
+        manualRunBtn.addEventListener("click", manualRunETL);
+    }
+    loadETLRunLogs();
 
     await loadReports();
 
@@ -270,6 +279,7 @@ function initViewNavigation() {
             if (targetViewKey === "buyer-registry") loadBuyerRegistry();
             if (targetViewKey === "reports") loadReports();
             if (targetViewKey === "summary") loadRegionalSummary();
+            if (targetViewKey === "etl") loadETLRunLogs();
         });
     });
 }
@@ -294,6 +304,34 @@ function initSignout() {
    LEAFLET MAP
 ============================================================ */
 
+/* ============================================================
+   LEAFLET MAP
+============================================================ */
+
+const municipalityCoordinates = {
+    "Angeles City": [15.1450, 120.5887],
+    "Apalit": [14.9470, 120.7700],
+    "Arayat": [15.1500, 120.7690],
+    "Bacolor": [15.0000, 120.6520],
+    "Candaba": [15.0950, 120.8260],
+    "Floridablanca": [14.9770, 120.5280],
+    "Guagua": [14.9650, 120.6350],
+    "Lubao": [14.9400, 120.6000],
+    "Mabalacat": [15.2230, 120.5740],
+    "Macabebe": [14.9080, 120.7150],
+    "Magalang": [15.2160, 120.6630],
+    "Masantol": [14.8960, 120.7100],
+    "Mexico": [15.0640, 120.7190],
+    "Minalin": [14.9670, 120.6840],
+    "Porac": [15.0710, 120.5420],
+    "San Fernando": [15.0343, 120.6840],
+    "San Luis": [15.0400, 120.7870],
+    "San Simon": [14.9990, 120.7800],
+    "Santa Ana": [15.0950, 120.7720],
+    "Santa Rita": [15.0190, 120.6110],
+    "Santo Tomas": [14.9950, 120.7090]
+};
+
 function initMap() {
     const mapEl = document.getElementById("map");
     if (!mapEl || typeof L === "undefined") return;
@@ -311,33 +349,10 @@ function initMap() {
         maxZoom: 18
     }).addTo(mapInstance);
 
-    const municipalityCoordinates = {
-        "Angeles City": [15.1450, 120.5887],
-        "Apalit": [14.9470, 120.7700],
-        "Arayat": [15.1500, 120.7690],
-        "Bacolor": [15.0000, 120.6520],
-        "Candaba": [15.0950, 120.8260],
-        "Floridablanca": [14.9770, 120.5280],
-        "Guagua": [14.9650, 120.6350],
-        "Lubao": [14.9400, 120.6000],
-        "Mabalacat": [15.2230, 120.5740],
-        "Macabebe": [14.9080, 120.7150],
-        "Magalang": [15.2160, 120.6630],
-        "Masantol": [14.8960, 120.7100],
-        "Mexico": [15.0640, 120.7190],
-        "Minalin": [14.9670, 120.6840],
-        "Porac": [15.0710, 120.5420],
-        "San Fernando": [15.0343, 120.6840],
-        "San Luis": [15.0400, 120.7870],
-        "San Simon": [14.9990, 120.7800],
-        "Santa Ana": [15.0950, 120.7720],
-        "Santa Rita": [15.0190, 120.6110],
-        "Santo Tomas": [14.9950, 120.7090]
-    };
-
-    loadMunicipalityMapData(municipalityCoordinates);
+    loadMunicipalityMapData();
 }
-async function loadMunicipalityMapData(municipalityCoordinates) {
+
+async function loadMunicipalityMapData() {
     try {
         const response = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
@@ -347,17 +362,22 @@ async function loadMunicipalityMapData(municipalityCoordinates) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
-        if (!result.data || !Array.isArray(result.data)) return;
+        console.log("DA-RFO Municipality Map Data:", result);
+
+        if (!result.data || !Array.isArray(result.data)) {
+            console.warn("No municipality map data found.");
+            return;
+        }
 
         MUNICIPALITY_MAP_RAW_DATA = result.data;
-        window._municipalityCoordinates = municipalityCoordinates;
         renderFilteredMapMarkers();
 
+        // ✅ Attach filter listeners
         document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
         document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
 
     } catch (error) {
-        console.error("Failed to load municipality map data:", error);
+        console.error("Failed to load DA-RFO municipality map data:", error);
     }
 }
 
@@ -370,90 +390,6 @@ function renderFilteredMapMarkers() {
 
     mapMarkersLayer = L.layerGroup().addTo(mapInstance);
 
-    const municipalityCoordinates = window._municipalityCoordinates || {};
-    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
-    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
-
-    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
-        const municipality = municipalityData.municipality;
-        const baseCoordinates = municipalityCoordinates[municipality];
-
-        if (!baseCoordinates || !municipalityData.commodities) return;
-
-        const filteredCommodities = municipalityData.commodities.filter(item => {
-            const commodityMatch = selectedCommodity === 'all' ||
-                (item.commodity || "").toLowerCase() === selectedCommodity.toLowerCase();
-            const statusVal = (item.status || "").toUpperCase();
-
-            let statusMatch = true;
-            if (selectedStatus !== 'all') {
-                statusMatch = statusVal.includes(selectedStatus);
-            }
-
-            return commodityMatch && statusMatch;
-        });
-
-        const totalFiltered = filteredCommodities.length;
-
-        filteredCommodities.forEach((item, index) => {
-            const commodity = item.commodity;
-            const status = (item.status || "").toUpperCase();
-
-            const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
-            const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
-            const markerCoordinates = [offsetLat, offsetLng];
-
-            let markerColor = "#6c757d"; // Gray = No Data
-
-            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
-                markerColor = "#C0392B"; // Red
-            } else if (status.includes("BALANCED")) {
-                markerColor = "#2E7D32"; // Green
-            } else if (status.includes("DEFICIT")) {
-                markerColor = "#D97706"; // Amber
-            }
-
-            const customIcon = L.divIcon({
-                className: 'custom-map-marker',
-                html: `<div style="
-                    background-color: ${markerColor};
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 50%;
-                    border: 2px solid white;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                "></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-
-            const popupContent = `
-                <div style="min-width:180px;">
-                    <strong>Municipality:</strong> ${escapeHtml(municipality)}
-                    <br><br>
-                    <strong>Commodity:</strong> ${escapeHtml(commodity)}
-                    <br>
-                    <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
-                </div>
-            `;
-
-            L.marker(markerCoordinates, { icon: customIcon })
-                .addTo(mapMarkersLayer)
-                .bindPopup(popupContent);
-        });
-    });
-}
-
-function renderFilteredMapMarkers() {
-    if (!mapInstance) return;
-
-    if (mapMarkersLayer) {
-        mapInstance.removeLayer(mapMarkersLayer);
-    }
-
-    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
-
-    const municipalityCoordinates = window._municipalityCoordinates || {};
     const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
     const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
 
@@ -1128,18 +1064,21 @@ async function loadSystemAlertLogs() {
 
                     const alertData = await alertResponse.json();
 
-                    if (String(alertData.status || "").toUpperCase() === "OVERSUPPLY") {
-                        alertResults.push({
-                            commodity: alertData.commodity || commodity,
-                            municipality: alertData.municipality || municipality,
-                            base_demand: Number(alertData.base_demand || 0),
-                            projected_supply: Number(alertData.projected_supply || 0),
-                            excess_supply: Number(alertData.excess_supply || 0),
-                            supply_percentage: Number(alertData.supply_percentage || 0),
-                            status: alertData.status,
-                            date: new Date()
-                        });
-                    }
+                    // ✅ BAGO — handle both OVERSUPPLY at DEFICIT
+const status = String(alertData.status || "").toUpperCase();
+
+if (status === "OVERSUPPLY" || status === "DEFICIT") {
+    alertResults.push({
+        commodity: alertData.commodity || commodity,
+        municipality: alertData.municipality || municipality,
+        base_demand: Number(alertData.base_demand || 0),
+        projected_supply: Number(alertData.projected_supply || 0),
+        excess_supply: Number(alertData.excess_supply || 0),
+        supply_percentage: Number(alertData.supply_percentage || 0),
+        status: status,
+        date: new Date()
+    });
+}
 
                 } catch (error) {
                     console.error(`Error checking ${commodity} - ${municipality}:`, error);
@@ -1162,39 +1101,65 @@ function renderSystemAlertLogs(alerts) {
     alertList.innerHTML = "";
 
     if (!alerts.length) {
-        alertList.innerHTML = `<div style="text-align:center; padding:30px;">No active oversupply alerts.</div>`;
+        alertList.innerHTML = `<div style="text-align:center; padding:30px;">No active alerts.</div>`;
         return;
     }
 
     alerts.forEach(alert => {
         const card = document.createElement("div");
         card.className = "alert-card";
-        card.dataset.severity = "high";
+
+        const isOversupply = alert.status === "OVERSUPPLY";
+        const isDeficit = alert.status === "DEFICIT";
 
         const supply = alert.projected_supply;
         const demand = alert.base_demand;
 
-        let surplusPercentage = 0;
-        if (demand > 0) surplusPercentage = ((supply - demand) / demand) * 100;
+        let percentage = 0;
+        if (demand > 0) percentage = ((supply - demand) / demand) * 100;
 
         const alertDate = new Date(alert.date).toLocaleDateString("en-CA");
 
-        const description = `${alert.commodity} supply in ${alert.municipality} is ${Math.round(surplusPercentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
+        // ✅ Dynamic title, desc, severity
+        let title, description, sevClass, sevText;
+
+        if (isOversupply) {
+            title = `${alert.commodity} Oversupply Risk — ${alert.municipality}`;
+            description = `${alert.commodity} supply in ${alert.municipality} is ${Math.round(percentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
+            sevClass = "high";
+            sevText = "High";
+        } else if (isDeficit) {
+            title = `${alert.commodity} Deficit Risk — ${alert.municipality}`;
+            description = `${alert.commodity} supply in ${alert.municipality} is ${Math.abs(Math.round(percentage))}% below projected demand. Coordinate with suppliers and monitor closely.`;
+            sevClass = "medium";  // or "high" depending on severity
+            sevText = "Medium";
+        }
+
+        card.dataset.severity = sevClass;
+
+        // ✅ Different stats for deficit
+        const statsHtml = isOversupply
+            ? `
+                <span>Supply: <b>${formatKg(supply)}</b></span>
+                <span>Demand: <b>${formatKg(demand)}</b></span>
+                <span>Surplus: <b>+${Math.round(percentage)}%</b></span>
+              `
+            : `
+                <span>Supply: <b>${formatKg(supply)}</b></span>
+                <span>Demand: <b>${formatKg(demand)}</b></span>
+                <span>Deficit: <b>${Math.round(percentage)}%</b></span>
+              `;
 
         card.innerHTML = `
             <div class="alert-top">
                 <div class="alert-title-group">
-                    <span class="alert-title">
-                        ${escapeHtml(alert.commodity)} Oversupply Risk — ${escapeHtml(alert.municipality)}
-                    </span>
-                    <span class="sev-pill high">High</span>
+                    <span class="alert-title">${escapeHtml(title)}</span>
+                    <span class="sev-pill ${sevClass}">${sevText}</span>
                 </div>
             </div>
             <p class="alert-desc">${escapeHtml(description)}</p>
             <div class="alert-stats">
-                <span>Supply: <b>${formatKg(supply)}</b></span>
-                <span>Demand: <b>${formatKg(demand)}</b></span>
-                <span>Surplus: <b>+${Math.round(surplusPercentage)}%</b></span>
+                ${statsHtml}
                 <span class="alert-date">${alertDate}</span>
             </div>
         `;
@@ -1225,7 +1190,13 @@ function openAlertDetailModal(card) {
     if (modalSeverity && severity) {
         modalSeverity.textContent = severity.textContent;
         modalSeverity.className = "sev-pill";
-        modalSeverity.classList.add(severity.classList.contains("high") ? "high" : "medium");
+        if (severity.classList.contains("high")) {
+            modalSeverity.classList.add("high");
+        } else if (severity.classList.contains("medium")) {
+            modalSeverity.classList.add("medium");
+        } else {
+            modalSeverity.classList.add("low");
+        }
     }
 
     const supply = document.getElementById("modalAlertSupply");
@@ -1233,6 +1204,19 @@ function openAlertDetailModal(card) {
 
     const demand = document.getElementById("modalAlertDemand");
     if (demand) demand.textContent = stats[1]?.textContent || "—";
+
+    // ✅ Detect kung deficit o oversupply
+    const thirdStatLabel = card.querySelectorAll(".alert-stats span")[2]?.textContent || "";
+    const isDeficit = thirdStatLabel.toLowerCase().includes("deficit");
+
+    // ✅ Update label ng third stat sa modal
+    const thirdStatContainer = document.querySelector(
+        "#alertDetailModal .modal-stats-grid div:nth-child(3)"
+    );
+    if (thirdStatContainer) {
+        const labelText = isDeficit ? "Deficit:" : "Surplus:";
+        thirdStatContainer.innerHTML = `${labelText} <b id="modalAlertSurplus" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b>`;
+    }
 
     const surplus = document.getElementById("modalAlertSurplus");
     if (surplus) surplus.textContent = stats[2]?.textContent || "—";
@@ -3341,6 +3325,292 @@ function renderRegionalSummary(data) {
     `;
 
     container.innerHTML = html;
+}
+
+/* ============================================================
+   ETL RUN LOGS
+   GET /api/etl-run-log/
+============================================================ */
+
+async function loadETLRunLogs() {
+    const etlRows = document.getElementById("etlRows");
+    if (!etlRows) {
+        console.warn("ETL run log table body #etlRows not found.");
+        return;
+    }
+
+    etlRows.innerHTML = `
+        <tr>
+            <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
+                Loading ETL logs...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/etl-run-log/`,
+            { method: "GET", headers: getAuthHeaders() }
+        );
+
+        let data = {};
+        try { data = await response.json(); } catch { data = {}; }
+
+        console.log("GET /api/etl-run-log/:", response.status, data);
+
+        if (response.status === 401) {
+            localStorage.clear();
+            window.location.href = "../index.html";
+            return;
+        }
+
+        if (response.status === 403) {
+            etlRows.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align:center; padding:24px; color:#C0392B;">
+                        You do not have permission to view ETL logs.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        let logs = [];
+        if (Array.isArray(data)) logs = data;
+        else if (Array.isArray(data.logs)) logs = data.logs;
+        else if (Array.isArray(data.data)) logs = data.data;
+        else throw new Error("Unexpected ETL log response format.");
+
+        if (logs.length === 0) {
+            etlRows.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
+                        No ETL logs available.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        etlRows.innerHTML = "";
+
+        logs.forEach(log => {
+            const row = document.createElement("tr");
+
+            const runDateTime = formatAuditDate(log.run_date_time);
+            const dataSource  = log.data_source || "—";
+            const status      = log.status || "—";
+
+            const statusColor =
+                status.toLowerCase() === "success" ? "#2E7D32" :
+                status.toLowerCase() === "failed"  ? "#C0392B" :
+                "#6c757d";
+
+            row.innerHTML = `
+                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                    ${escapeHtml(runDateTime)}
+                </td>
+                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                    ${escapeHtml(dataSource)}
+                </td>
+                <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
+                    <span style="
+                        display:inline-block;
+                        padding:4px 12px;
+                        border-radius:999px;
+                        font-size:11.5px;
+                        font-weight:700;
+                        color:#FFFFFF;
+                        background-color:${statusColor};
+                        text-transform:uppercase;
+                    ">${escapeHtml(status)}</span>
+                </td>
+            `;
+
+            etlRows.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Load ETL run logs error:", error);
+        etlRows.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align:center; padding:24px; color:#C0392B;">
+                    Failed to load ETL logs.<br><br>${escapeHtml(error.message)}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/* ============================================================
+   MANUAL ETL RUN
+   POST /api/etl-run-log/manual-run
+============================================================ */
+
+async function manualRunETL() {
+    const manualRunBtn = document.getElementById("manualRunBtn");
+    if (!manualRunBtn) {
+        console.warn("Manual ETL button #manualRunBtn not found.");
+        return;
+    }
+
+    const confirmed = confirm(
+        "Are you sure you want to run the ETL pipeline manually?"
+    );
+    if (!confirmed) return;
+
+    manualRunBtn.disabled = true;
+    manualRunBtn.textContent = "Running ETL...";
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/etl-run-log/manual-run`,
+            { method: "POST", headers: getAuthHeaders() }
+        );
+
+        let data = {};
+        try { data = await response.json(); } catch { data = {}; }
+
+        console.log("POST /api/etl-run-log/manual-run:", response.status, data);
+
+        if (response.status === 401) {
+            localStorage.clear();
+            window.location.href = "../index.html";
+            return;
+        }
+
+        if (response.status === 403) {
+            throw new Error("You do not have permission to run the ETL pipeline.");
+        }
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Failed to start ETL pipeline.");
+        }
+
+        console.log("ETL pipeline started. Waiting for completion...");
+
+        await waitForETLCompletion();
+        await loadETLRunLogs();
+
+        alert("ETL Pipeline Completed Successfully!");
+
+    } catch (error) {
+        console.error("Manual ETL run error:", error);
+        alert(
+            "❌ ETL Pipeline Failed.\n\n" +
+            (error.message || "Unable to complete the ETL pipeline.")
+        );
+    } finally {
+        manualRunBtn.disabled = false;
+        manualRunBtn.textContent = "Manual Run";
+    }
+}
+/* ============================================================
+   WAIT FOR ETL COMPLETION
+============================================================ */
+
+async function waitForETLCompletion() {
+    const maxAttempts = 60;
+    const interval = 3000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        console.log(`Checking ETL status... Attempt ${attempt}/${maxAttempts}`);
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/etl-run-log/`,
+                { method: "GET", headers: getAuthHeaders() }
+            );
+
+            if (response.status === 401) {
+                localStorage.clear();
+                window.location.href = "../index.html";
+                throw new Error("Session expired.");
+            }
+
+            if (!response.ok) {
+                throw new Error("Unable to check ETL run status.");
+            }
+
+            const data = await response.json();
+
+            let logs = [];
+            if (Array.isArray(data)) logs = data;
+            else if (Array.isArray(data.logs)) logs = data.logs;
+            else if (Array.isArray(data.data)) logs = data.data;
+
+            if (logs.length >= 7) {
+                const latestLogs = logs.slice(0, 7);
+
+                const allFinished = latestLogs.every(log =>
+                    log.status &&
+                    (log.status.toLowerCase() === "success" ||
+                     log.status.toLowerCase() === "failed")
+                );
+
+                if (allFinished) {
+                    const hasFailed = latestLogs.some(log =>
+                        log.status &&
+                        log.status.toLowerCase() === "failed"
+                    );
+
+                    if (hasFailed) {
+                        throw new Error("One or more ETL steps failed.");
+                    }
+
+                    console.log("All 7 ETL steps completed successfully.");
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error("ETL status check error:", error);
+            throw error;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, interval));
+    }
+
+    throw new Error("ETL pipeline is taking too long to complete.");
+}
+/* ============================================================
+   FORMAT AUDIT DATE (para sa ETL logs)
+============================================================ */
+
+function formatAuditDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return date.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+}
+/* ============================================================
+   SEARCH ETL RUN LOGS
+============================================================ */
+
+function initializeETLSearch() {
+    const searchInput = document.getElementById("searchETL");
+    if (!searchInput) return;
+
+    searchInput.addEventListener("input", () => {
+        const search = searchInput.value.trim().toLowerCase();
+
+        document.querySelectorAll("#etlRows tr").forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(search) ? "" : "none";
+        });
+    });
 }
 
 

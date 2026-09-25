@@ -29,7 +29,7 @@ let currentSummaryPeriod = {
 };
 let currentSummaryData = null;
 
-
+// ✅ MAP STATE
 let MUNICIPALITY_MAP_RAW_DATA = [];
 let mapMarkersLayer = null;
 
@@ -307,6 +307,7 @@ async function loadMunicipalityMapData() {
     }
 }
 
+// ✅ NEW: Color-coded marker rendering
 function renderFilteredMapMarkers() {
     if (!window.leafletMap) return;
 

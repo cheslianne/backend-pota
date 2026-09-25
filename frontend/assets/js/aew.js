@@ -70,16 +70,6 @@ let OFFTAKE_REQUESTS_DATA = [];
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 
-// Reporting
-let allIndividualReports = [];
-let individualFilterStatus = 'all';
-let INDIVIDUAL_REPORTS_DATA = [];
-let SUBMITTED_REPORTS_DATA = [];
-let currentIndividualReportsPage = 1;
-let currentSubmittedReportsPage = 1;
-const reportsPerPage = 10;
-
-
 /* ============================================================
    MARKET PRICE DASHBOARD
    DA-AMAD Wholesale + Retail
@@ -92,8 +82,14 @@ let marketPriceChartInstance = null;
 const MARKET_PRICES_ENDPOINT = `${API_BASE_URL}/api/market-prices/`;
 const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/`;
 
-
-
+// Reporting
+let allIndividualReports = [];
+let individualFilterStatus = 'all';
+let INDIVIDUAL_REPORTS_DATA = [];
+let SUBMITTED_REPORTS_DATA = [];
+let currentIndividualReportsPage = 1;
+let currentSubmittedReportsPage = 1;
+const reportsPerPage = 10;
 
 
 /* ============================================================
@@ -131,8 +127,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     initFarmerSearch();
     initializePlantingIntentSearch();
-
-     initMarketPriceDashboard();
+    initMarketPriceDashboard();
 });
 
 
@@ -407,6 +402,275 @@ const municipalityCoordinates = {
     "Santa Rita": [15.0190, 120.6110],
     "Santo Tomas": [14.9950, 120.7090]
 };
+
+/* ============================================================
+   FARMER LOCATION DROPDOWNS
+   Municipality → Barangay
+   COMPLETE DATA — all 20 municipalities + Angeles City + Sasmuan
+============================================================ */
+
+const BARANGAYS_BY_MUNICIPALITY = {
+    "Angeles City": [
+        "Agapito del Rosario", "Amsic", "Anunas", "Balibago", "Capaya",
+        "Claro M. Recto", "Cuayan", "Cutcut", "Cutud", "Lourdes North West",
+        "Lourdes Sur", "Lourdes Sur East", "Malabanias", "Margot", "Mining",
+        "Pampang", "Pandan", "Pulung Maragul", "Pulungbulu", "Pulung Cacutud",
+        "Salapungan", "San Jose", "San Nicolas", "Santa Teresita",
+        "Santa Trinidad", "Santo Cristo", "Santo Domingo", "Santo Rosario",
+        "Sapalibutad", "Sapangbato", "Tabun", "Virgen Delos Remedios"
+    ],
+
+    "Apalit": [
+        "Balucuc", "Calantipe", "Cansinala", "Capalangan", "Colgante",
+        "Paligui", "Sampaloc", "San Juan", "San Vicente", "Sucad",
+        "Sulipan", "Tabuyuc"
+    ],
+
+    "Arayat": [
+        "Arenas", "Baliti", "Batasan", "Buensuceso", "Candating", "Cupang",
+        "Gatiawin", "Guemasan", "Kaledian", "La Paz", "Lacmit", "Lacquios",
+        "Mangga-Cacutud", "Mapalad", "Matamo", "Panlinlang", "Paralaya",
+        "Plazang Luma", "Poblacion", "San Agustin Norte", "San Agustin Sur",
+        "San Antonio", "San Jose Mesulo", "San Juan Bano", "San Mateo",
+        "San Nicolas", "San Roque Bitas", "Santo Niño Tabuan", "Suclayin",
+        "Telapayong"
+    ],
+
+    "Bacolor": [
+        "Balas", "Cabalantian", "Cabambangan", "Cabetican", "Calibutbut",
+        "Concepcion", "Dolores", "Duat", "Macabacle", "Magliman", "Maliwalu",
+        "Mesalipit", "Parulog", "Potrero", "San Antonio", "San Isidro",
+        "San Vicente", "Santa Barbara", "Santa Ines", "Talba", "Tinajero"
+    ],
+
+    "Candaba": [
+        "Bahay Pare", "Bambang", "Barangca", "Barit", "Buas", "Cuayang Bugtong",
+        "Dalayap", "Dulong Ilog", "Gulap", "Lanang", "Lourdes", "Magumbali",
+        "Mandasig", "Mandili", "Mangga", "Mapaniqui", "Paligui", "Pangclara",
+        "Pansinao", "Paralaya", "Pasig", "Pescadores", "Pulong Gubat",
+        "Pulong Palazan", "Salapungan", "San Agustin", "Santo Rosario",
+        "Tagulod", "Talang", "Tenejero", "Vizal San Pablo",
+        "Vizal Santo Cristo", "Vizal Santo Niño"
+    ],
+
+    "Floridablanca": [
+        "Anon", "Apalit", "Basa Air Base", "Benedicto", "Bodega",
+        "Cabangcalan", "Calantas", "Carmencita", "Consuelo", "Dampe",
+        "Del Carmen", "Fortuna", "Gutad", "Mabical", "Maligaya", "Mawacat",
+        "Nabuclod", "Pabanlag", "Paguiruan", "Palmayo", "Pandaguirig",
+        "Poblacion", "San Antonio", "San Isidro", "San Jose", "San Nicolas",
+        "San Pedro", "San Ramon", "San Roque", "Santa Monica",
+        "Santo Rosario", "Solib", "Valdez"
+    ],
+
+    "Guagua": [
+        "Ascomo", "Bancal", "Jose Abad Santos", "Lambac", "Magsaysay",
+        "Maquiapo", "Natividad", "Plaza Burgos", "Pulungmasle", "Rizal",
+        "San Agustin", "San Antonio", "San Isidro", "San Jose", "San Juan",
+        "San Juan Bautista", "San Juan Nepomuceno", "San Matias",
+        "San Miguel", "San Nicolas 1st", "San Nicolas 2nd", "San Pablo",
+        "San Pedro", "San Rafael", "San Roque", "San Vicente",
+        "Santa Filomena", "Santa Ines", "Santa Ursula", "Santo Cristo",
+        "Santo Niño"
+    ],
+
+    "Lubao": [
+        "Balantacan", "Bancal Pugad", "Bancal Sinubli", "Baruya", "Calangain",
+        "Concepcion", "De La Paz", "Del Carmen", "Don Ignacio Dimson",
+        "Lourdes", "Prado Siongco", "Remedios", "San Agustin", "San Antonio",
+        "San Francisco", "San Isidro", "San Jose Apunan", "San Jose Gumi",
+        "San Juan", "San Matias", "San Miguel", "San Nicolas 1st",
+        "San Nicolas 2nd", "San Pablo 1st", "San Pablo 2nd",
+        "San Pedro Palcarangan", "San Pedro Saug", "San Roque Arbol",
+        "San Roque Dau", "San Vicente", "Santa Barbara", "Santa Catalina",
+        "Santa Cruz", "Santa Lucia", "Santa Maria", "Santa Monica",
+        "Santa Rita", "Santa Teresa 1st", "Santa Teresa 2nd", "Santiago",
+        "Santo Cristo", "Santo Domingo", "Santo Niño", "Santo Tomas"
+    ],
+
+    "Mabalacat": [
+        "Atlu-Bola", "Bical", "Bundagul", "Cacutud", "Calumpang",
+        "Camachiles", "Dapdap", "Dau", "Dolores", "Duquit", "Lakandula",
+        "Mabiga", "Macapagal Village", "Mamatitang", "Mangalit",
+        "Marcos Village", "Mawaque", "Paralayunan", "Poblacion",
+        "San Francisco", "San Joaquin", "Santa Ines", "Santa Maria",
+        "Santo Rosario", "Sapang Balen", "Sapang Biabas", "Tabun"
+    ],
+
+    "Macabebe": [
+        "Batasan", "Caduang Tete", "Candelaria", "Castuli", "Consuelo",
+        "Dalayap", "Mataguiti", "San Esteban", "San Francisco",
+        "San Gabriel", "San Isidro", "San Jose", "San Juan", "San Rafael",
+        "San Roque", "San Vicente", "Santa Cruz", "Santa Lutgarda",
+        "Santa Maria", "Santa Rita", "Santo Niño", "Santo Rosario",
+        "Saplad David", "Tacasan", "Telacsan"
+    ],
+
+    "Magalang": [
+        "Ayala", "Bucanan", "Camias", "Dolores", "Escaler", "La Paz",
+        "Navaling", "San Agustin", "San Antonio", "San Francisco",
+        "San Ildefonso", "San Isidro", "San Jose", "San Miguel",
+        "San Nicolas 1st", "San Nicolas 2nd", "San Pablo", "San Pedro I",
+        "San Pedro II", "San Roque", "San Vicente", "Santa Cruz",
+        "Santa Lucia", "Santa Maria", "Santo Niño", "Santo Rosario", "Turu"
+    ],
+
+    "Masantol": [
+        "Alauli", "Bagang", "Balibago", "Bebe Anac", "Bebe Matua",
+        "Bulacus", "Cambasi", "Malauli", "Nigui", "Palimpe", "Puti",
+        "Sagrada", "San Agustin", "San Isidro Anac", "San Isidro Matua",
+        "San Nicolas", "San Pedro", "Santa Cruz", "Santa Lucia Anac",
+        "Santa Lucia Matua", "Santa Lucia Paguiba", "Santa Lucia Wakas",
+        "Santa Monica", "Santo Niño", "Sapang Kawayan", "Sua"
+    ],
+
+    "Mexico": [
+        "Acli", "Anao", "Balas", "Buenavista", "Camuning", "Cawayan",
+        "Concepcion", "Culubasa", "Divisoria", "Dolores", "Eden",
+        "Gandus", "Lagundi", "Laput", "Laug", "Masamat", "Masangsang",
+        "Nueva Victoria", "Pandacaqui", "Pangatlan", "Panipuan", "Parian",
+        "Sabanilla", "San Antonio", "San Carlos", "San Jose Malino",
+        "San Jose Matulid", "San Juan", "San Lorenzo", "San Miguel",
+        "San Nicolas", "San Pablo", "San Patricio", "San Rafael",
+        "San Roque", "San Vicente", "Santa Cruz", "Santa Maria",
+        "Santo Domingo", "Santo Rosario", "Sapang Maisac", "Suclaban",
+        "Tangle"
+    ],
+
+    "Minalin": [
+        "Bulac", "Dawe", "Lourdes", "Maniango", "San Francisco 1st",
+        "San Francisco 2nd", "San Isidro", "San Nicolas", "San Pedro",
+        "Santa Catalina", "Santa Maria", "Santa Rita", "Santo Domingo",
+        "Santo Rosario", "Saplad"
+    ],
+
+    "Porac": [
+        "Babo Pangulo", "Babo Sacan", "Balubad", "Calzadang Bayu",
+        "Camias", "Cangatba", "Diaz", "Dolores", "Inararo", "Jalung",
+        "Mancatian", "Manibaug Libutad", "Manibaug Paralaya",
+        "Manibaug Pasig", "Manuali", "Mitla Proper", "Palat", "Pias",
+        "Pio", "Planas", "Poblacion", "Pulong Santol", "Salu",
+        "San Jose Mitla", "Santa Cruz", "Sapang Uwak", "Sepung Bulaun",
+        "Sinura", "Villa Maria"
+    ],
+
+    "San Fernando": [
+        "Alasas", "Baliti", "Bulaon", "Calulut", "Del Carmen",
+        "Del Pilar", "Del Rosario", "Dela Paz Norte", "Dela Paz Sur",
+        "Dolores", "Juliana", "Lara", "Lourdes", "Magliman", "Maimpis",
+        "Malino", "Malpitic", "Pandaras", "Panipuan", "Pulung Bulu",
+        "Quebiauan", "Saguin", "San Agustin", "San Felipe", "San Isidro",
+        "San Jose", "San Juan", "San Nicolas", "San Pedro",
+        "Santa Lucia", "Santa Teresita", "Santo Niño", "Santo Rosario",
+        "Sindalan", "Telabastagan"
+    ],
+
+    "San Luis": [
+        "San Agustin", "San Carlos", "San Isidro", "San Jose", "San Juan",
+        "San Nicolas", "San Roque", "San Sebastian", "Santa Catalina",
+        "Santa Cruz Pambilog", "Santa Cruz Poblacion", "Santa Lucia",
+        "Santa Monica", "Santa Rita", "Santo Niño", "Santo Rosario",
+        "Santo Tomas"
+    ],
+
+    "San Simon": [
+        "Concepcion", "De La Paz", "San Agustin", "San Isidro", "San Jose",
+        "San Juan", "San Miguel", "San Nicolas", "San Pablo Libutad",
+        "San Pablo Proper", "San Pedro", "Santa Cruz", "Santa Monica",
+        "Santo Niño"
+    ],
+
+    "Santa Ana": [
+        "San Agustin", "San Bartolome", "San Isidro", "San Joaquin",
+        "San Jose", "San Juan", "San Nicolas", "San Pablo", "San Pedro",
+        "San Roque", "Santa Lucia", "Santa Maria", "Santiago",
+        "Santo Rosario"
+    ],
+
+    "Santa Rita": [
+        "Becuran", "Dila-dila", "San Agustin", "San Basilio", "San Isidro",
+        "San Jose", "San Juan", "San Matias", "San Vicente", "Santa Monica"
+    ],
+
+    "Santo Tomas": [
+        "Moras de La Paz", "Poblacion", "San Bartolome", "San Matias",
+        "San Vicente", "Santo Rosario", "Sapa"
+    ],
+
+    "Sasmuan": [
+        "Batang 1st", "Batang 2nd", "Mabuanbuan", "Malusac", "Sabitanan",
+        "San Antonio", "San Nicolas 1st", "San Nicolas 2nd", "San Pedro",
+        "Santa Lucia", "Santa Monica", "Santo Tomas"
+    ]
+};
+
+function initFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) {
+        console.warn("Farmer location dropdowns not found.");
+        return;
+    }
+
+    municipalitySelect.innerHTML = `
+        <option value="" disabled selected>Select Municipality</option>
+    `;
+
+    Object.keys(BARANGAYS_BY_MUNICIPALITY).forEach(function(municipality) {
+        const option = document.createElement("option");
+        option.value = municipality;
+        option.textContent = municipality;
+        municipalitySelect.appendChild(option);
+    });
+
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.disabled = true;
+
+    municipalitySelect.addEventListener("change", function() {
+        const selectedMunicipality = this.value;
+        const barangays = BARANGAYS_BY_MUNICIPALITY[selectedMunicipality] || [];
+
+        barangaySelect.innerHTML = `
+            <option value="" disabled selected>
+                Select Barangay
+            </option>
+        `;
+
+        barangays.forEach(function(barangay) {
+            const option = document.createElement("option");
+            option.value = barangay;
+            option.textContent = barangay;
+            barangaySelect.appendChild(option);
+        });
+
+        barangaySelect.disabled = barangays.length === 0;
+    });
+}
+
+function resetFarmerLocationDropdowns() {
+    const municipalitySelect = document.getElementById("regMunicipality");
+    const barangaySelect = document.getElementById("regBarangay");
+
+    if (!municipalitySelect || !barangaySelect) return;
+
+    municipalitySelect.value = "";
+
+    barangaySelect.innerHTML = `
+        <option value="" disabled selected>
+            Select Municipality first
+        </option>
+    `;
+
+    barangaySelect.value = "";
+    barangaySelect.disabled = true;
+}
+
 
 async function loadMunicipalityMapData() {
     try {
@@ -732,700 +996,6 @@ function updateSearchPaginationText(resultCount) {
 }
 
 /* ============================================================
-   FARMER LOCATION DROPDOWNS
-   Municipality → Barangay
-============================================================ */
-
-/* ============================================================
-   FARMER LOCATION DROPDOWNS
-   Municipality → Barangay
-   COMPLETE DATA — all 20 municipalities + Angeles City
-============================================================ */
-
-const BARANGAYS_BY_MUNICIPALITY = {
-    "Angeles City": [
-        "Agapito del Rosario",
-        "Amsic",
-        "Anunas",
-        "Balibago",
-        "Capaya",
-        "Claro M. Recto",
-        "Cuayan",
-        "Cutcut",
-        "Cutud",
-        "Lourdes North West",
-        "Lourdes Sur",
-        "Lourdes Sur East",
-        "Malabanias",
-        "Margot",
-        "Mining",
-        "Pampang",
-        "Pandan",
-        "Pulung Maragul",
-        "Pulungbulu",
-        "Pulung Cacutud",
-        "Salapungan",
-        "San Jose",
-        "San Nicolas",
-        "Santa Teresita",
-        "Santa Trinidad",
-        "Santo Cristo",
-        "Santo Domingo",
-        "Santo Rosario",
-        "Sapalibutad",
-        "Sapangbato",
-        "Tabun",
-        "Virgen Delos Remedios"
-    ],
-
-    "Apalit": [
-        "Balucuc",
-        "Calantipe",
-        "Cansinala",
-        "Capalangan",
-        "Colgante",
-        "Paligui",
-        "Sampaloc",
-        "San Juan",
-        "San Vicente",
-        "Sucad",
-        "Sulipan",
-        "Tabuyuc"
-    ],
-
-    "Arayat": [
-        "Arenas",
-        "Baliti",
-        "Batasan",
-        "Buensuceso",
-        "Candating",
-        "Cupang",
-        "Gatiawin",
-        "Guemasan",
-        "Kaledian",
-        "La Paz",
-        "Lacmit",
-        "Lacquios",
-        "Mangga-Cacutud",
-        "Mapalad",
-        "Matamo",
-        "Panlinlang",
-        "Paralaya",
-        "Plazang Luma",
-        "Poblacion",
-        "San Agustin Norte",
-        "San Agustin Sur",
-        "San Antonio",
-        "San Jose Mesulo",
-        "San Juan Bano",
-        "San Mateo",
-        "San Nicolas",
-        "San Roque Bitas",
-        "Santo Niño Tabuan",
-        "Suclayin",
-        "Telapayong"
-    ],
-
-    "Bacolor": [
-        "Balas",
-        "Cabalantian",
-        "Cabambangan",
-        "Cabetican",
-        "Calibutbut",
-        "Concepcion",
-        "Dolores",
-        "Duat",
-        "Macabacle",
-        "Magliman",
-        "Maliwalu",
-        "Mesalipit",
-        "Parulog",
-        "Potrero",
-        "San Antonio",
-        "San Isidro",
-        "San Vicente",
-        "Santa Barbara",
-        "Santa Ines",
-        "Talba",
-        "Tinajero"
-    ],
-
-    "Candaba": [
-        "Bahay Pare",
-        "Bambang",
-        "Barangca",
-        "Barit",
-        "Buas",
-        "Cuayang Bugtong",
-        "Dalayap",
-        "Dulong Ilog",
-        "Gulap",
-        "Lanang",
-        "Lourdes",
-        "Magumbali",
-        "Mandasig",
-        "Mandili",
-        "Mangga",
-        "Mapaniqui",
-        "Paligui",
-        "Pangclara",
-        "Pansinao",
-        "Paralaya",
-        "Pasig",
-        "Pescadores",
-        "Pulong Gubat",
-        "Pulong Palazan",
-        "Salapungan",
-        "San Agustin",
-        "Santo Rosario",
-        "Tagulod",
-        "Talang",
-        "Tenejero",
-        "Vizal San Pablo",
-        "Vizal Santo Cristo",
-        "Vizal Santo Niño"
-    ],
-
-    "Floridablanca": [
-        "Anon",
-        "Apalit",
-        "Basa Air Base",
-        "Benedicto",
-        "Bodega",
-        "Cabangcalan",
-        "Calantas",
-        "Carmencita",
-        "Consuelo",
-        "Dampe",
-        "Del Carmen",
-        "Fortuna",
-        "Gutad",
-        "Mabical",
-        "Maligaya",
-        "Mawacat",
-        "Nabuclod",
-        "Pabanlag",
-        "Paguiruan",
-        "Palmayo",           // ✅ FIXED (was "Palmyo")
-        "Pandaguirig",
-        "Poblacion",
-        "San Antonio",
-        "San Isidro",
-        "San Jose",
-        "San Nicolas",
-        "San Pedro",
-        "San Ramon",
-        "San Roque",
-        "Santa Monica",
-        "Santo Rosario",
-        "Solib",
-        "Valdez"
-    ],
-
-    "Guagua": [
-        "Ascomo",
-        "Bancal",
-        "Jose Abad Santos",
-        "Lambac",
-        "Magsaysay",
-        "Maquiapo",
-        "Natividad",
-        "Plaza Burgos",
-        "Pulungmasle",
-        "Rizal",
-        "San Agustin",
-        "San Antonio",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Juan Bautista",
-        "San Juan Nepomuceno",
-        "San Matias",
-        "San Miguel",
-        "San Nicolas 1st",
-        "San Nicolas 2nd",
-        "San Pablo",
-        "San Pedro",
-        "San Rafael",
-        "San Roque",
-        "San Vicente",
-        "Santa Filomena",
-        "Santa Ines",
-        "Santa Ursula",
-        "Santo Cristo",
-        "Santo Niño"
-    ],
-
-    "Lubao": [
-        "Balantacan",
-        "Bancal Pugad",
-        "Bancal Sinubli",
-        "Baruya",
-        "Calangain",
-        "Concepcion",
-        "De La Paz",
-        "Del Carmen",
-        "Don Ignacio Dimson",
-        "Lourdes",
-        "Prado Siongco",
-        "Remedios",
-        "San Agustin",
-        "San Antonio",
-        "San Francisco",
-        "San Isidro",
-        "San Jose Apunan",
-        "San Jose Gumi",
-        "San Juan",
-        "San Matias",
-        "San Miguel",
-        "San Nicolas 1st",
-        "San Nicolas 2nd",
-        "San Pablo 1st",
-        "San Pablo 2nd",
-        "San Pedro Palcarangan",
-        "San Pedro Saug",
-        "San Roque Arbol",
-        "San Roque Dau",
-        "San Vicente",
-        "Santa Barbara",
-        "Santa Catalina",
-        "Santa Cruz",
-        "Santa Lucia",
-        "Santa Maria",
-        "Santa Monica",
-        "Santa Rita",
-        "Santa Teresa 1st",
-        "Santa Teresa 2nd",
-        "Santiago",
-        "Santo Cristo",
-        "Santo Domingo",
-        "Santo Niño",
-        "Santo Tomas"
-    ],
-
-    "Mabalacat": [
-        "Atlu-Bola",
-        "Bical",
-        "Bundagul",
-        "Cacutud",
-        "Calumpang",
-        "Camachiles",
-        "Dapdap",
-        "Dau",
-        "Dolores",
-        "Duquit",
-        "Lakandula",
-        "Mabiga",
-        "Macapagal Village",
-        "Mamatitang",
-        "Mangalit",
-        "Marcos Village",
-        "Mawaque",
-        "Paralayunan",
-        "Poblacion",
-        "San Francisco",
-        "San Joaquin",
-        "Santa Ines",
-        "Santa Maria",
-        "Santo Rosario",
-        "Sapang Balen",
-        "Sapang Biabas",
-        "Tabun"
-    ],
-
-    "Macabebe": [
-        "Batasan",
-        "Caduang Tete",
-        "Candelaria",
-        "Castuli",
-        "Consuelo",
-        "Dalayap",
-        "Mataguiti",
-        "San Esteban",
-        "San Francisco",
-        "San Gabriel",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Rafael",
-        "San Roque",
-        "San Vicente",
-        "Santa Cruz",
-        "Santa Lutgarda",
-        "Santa Maria",
-        "Santa Rita",
-        "Santo Niño",
-        "Santo Rosario",
-        "Saplad David",
-        "Tacasan",
-        "Telacsan"
-    ],
-
-    "Magalang": [
-        "Ayala",
-        "Bucanan",
-        "Camias",
-        "Dolores",
-        "Escaler",
-        "La Paz",
-        "Navaling",
-        "San Agustin",
-        "San Antonio",
-        "San Francisco",      // ✅ FIXED (was "San Franciso")
-        "San Ildefonso",
-        "San Isidro",
-        "San Jose",
-        "San Miguel",
-        "San Nicolas 1st",
-        "San Nicolas 2nd",
-        "San Pablo",
-        "San Pedro I",
-        "San Pedro II",
-        "San Roque",
-        "San Vicente",
-        "Santa Cruz",
-        "Santa Lucia",
-        "Santa Maria",
-        "Santo Niño",
-        "Santo Rosario",
-        "Turu"
-    ],
-
-    "Masantol": [
-        "Alauli",
-        "Bagang",
-        "Balibago",
-        "Bebe Anac",
-        "Bebe Matua",
-        "Bulacus",
-        "Cambasi",
-        "Malauli",
-        "Nigui",
-        "Palimpe",
-        "Puti",
-        "Sagrada",
-        "San Agustin",
-        "San Isidro Anac",
-        "San Isidro Matua",
-        "San Nicolas",
-        "San Pedro",
-        "Santa Cruz",
-        "Santa Lucia Anac",
-        "Santa Lucia Matua",
-        "Santa Lucia Paguiba",
-        "Santa Lucia Wakas",
-        "Santa Monica",
-        "Santo Niño",
-        "Sapang Kawayan",
-        "Sua"
-    ],
-
-    "Mexico": [
-        "Acli",
-        "Anao",
-        "Balas",
-        "Buenavista",
-        "Camuning",
-        "Cawayan",
-        "Concepcion",
-        "Culubasa",
-        "Divisoria",
-        "Dolores",
-        "Eden",
-        "Gandus",
-        "Lagundi",
-        "Laput",
-        "Laug",
-        "Masamat",
-        "Masangsang",
-        "Nueva Victoria",
-        "Pandacaqui",
-        "Pangatlan",
-        "Panipuan",
-        "Parian",
-        "Sabanilla",
-        "San Antonio",
-        "San Carlos",
-        "San Jose Malino",
-        "San Jose Matulid",
-        "San Juan",
-        "San Lorenzo",
-        "San Miguel",
-        "San Nicolas",
-        "San Pablo",
-        "San Patricio",
-        "San Rafael",
-        "San Roque",
-        "San Vicente",
-        "Santa Cruz",
-        "Santa Maria",
-        "Santo Domingo",
-        "Santo Rosario",
-        "Sapang Maisac",
-        "Suclaban",
-        "Tangle"
-    ],
-
-    "Minalin": [
-        "Bulac",
-        "Dawe",
-        "Lourdes",
-        "Maniango",
-        "San Francisco 1st",
-        "San Francisco 2nd",
-        "San Isidro",
-        "San Nicolas",
-        "San Pedro",
-        "Santa Catalina",
-        "Santa Maria",
-        "Santa Rita",
-        "Santo Domingo",
-        "Santo Rosario",
-        "Saplad"
-    ],
-
-    "Porac": [
-        "Babo Pangulo",
-        "Babo Sacan",
-        "Balubad",
-        "Calzadang Bayu",
-        "Camias",
-        "Cangatba",
-        "Diaz",
-        "Dolores",
-        "Inararo",
-        "Jalung",
-        "Mancatian",
-        "Manibaug Libutad",
-        "Manibaug Paralaya",
-        "Manibaug Pasig",
-        "Manuali",
-        "Mitla Proper",
-        "Palat",
-        "Pias",
-        "Pio",
-        "Planas",
-        "Poblacion",
-        "Pulong Santol",
-        "Salu",
-        "San Jose Mitla",
-        "Santa Cruz",
-        "Sapang Uwak",
-        "Sepung Bulaun",
-        "Sinura",
-        "Villa Maria"
-    ],
-
-    "San Fernando": [
-        "Alasas",
-        "Baliti",
-        "Bulaon",
-        "Calulut",
-        "Del Carmen",
-        "Del Pilar",
-        "Del Rosario",
-        "Dela Paz Norte",
-        "Dela Paz Sur",
-        "Dolores",
-        "Juliana",
-        "Lara",
-        "Lourdes",
-        "Magliman",
-        "Maimpis",
-        "Malino",
-        "Malpitic",
-        "Pandaras",
-        "Panipuan",
-        "Pulung Bulu",
-        "Quebiauan",
-        "Saguin",
-        "San Agustin",
-        "San Felipe",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Nicolas",
-        "San Pedro",
-        "Santa Lucia",
-        "Santa Teresita",
-        "Santo Niño",
-        "Santo Rosario",
-        "Sindalan",
-        "Telabastagan"
-    ],
-
-    "San Luis": [
-        "San Agustin",
-        "San Carlos",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Nicolas",
-        "San Roque",
-        "San Sebastian",
-        "Santa Catalina",
-        "Santa Cruz Pambilog",
-        "Santa Cruz Poblacion",
-        "Santa Lucia",
-        "Santa Monica",
-        "Santa Rita",
-        "Santo Niño",
-        "Santo Rosario",
-        "Santo Tomas"
-    ],
-
-    "San Simon": [
-        "Concepcion",
-        "De La Paz",
-        "San Agustin",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Miguel",
-        "San Nicolas",
-        "San Pablo Libutad",
-        "San Pablo Proper",
-        "San Pedro",
-        "Santa Cruz",
-        "Santa Monica",
-        "Santo Niño"
-    ],
-
-    "Santa Ana": [
-        "San Agustin",
-        "San Bartolome",
-        "San Isidro",
-        "San Joaquin",
-        "San Jose",
-        "San Juan",
-        "San Nicolas",
-        "San Pablo",
-        "San Pedro",
-        "San Roque",
-        "Santa Lucia",
-        "Santa Maria",
-        "Santiago",
-        "Santo Rosario"
-    ],
-
-    "Santa Rita": [
-        "Becuran",
-        "Dila-dila",
-        "San Agustin",
-        "San Basilio",
-        "San Isidro",
-        "San Jose",
-        "San Juan",
-        "San Matias",
-        "San Vicente",
-        "Santa Monica"
-    ],
-
-    "Santo Tomas": [
-        "Moras de La Paz",
-        "Poblacion",
-        "San Bartolome",
-        "San Matias",
-        "San Vicente",
-        "Santo Rosario",
-        "Sapa"
-    ],
-
-    "Sasmuan": [
-        "Batang 1st",
-        "Batang 2nd",
-        "Mabuanbuan",
-        "Malusac",
-        "Sabitanan",
-        "San Antonio",
-        "San Nicolas 1st",
-        "San Nicolas 2nd",
-        "San Pedro",
-        "Santa Lucia",
-        "Santa Monica",
-        "Santo Tomas"
-    ]
-};
-
-function initFarmerLocationDropdowns() {
-    const municipalitySelect = document.getElementById("regMunicipality");
-    const barangaySelect = document.getElementById("regBarangay");
-
-    if (!municipalitySelect || !barangaySelect) {
-        console.warn("Farmer location dropdowns not found.");
-        return;
-    }
-
-    // Clear existing municipality options
-    municipalitySelect.innerHTML = `
-        <option value="" disabled selected>Select Municipality</option>
-    `;
-
-    // Populate Municipality dropdown
-    Object.keys(BARANGAYS_BY_MUNICIPALITY).forEach(function(municipality) {
-        const option = document.createElement("option");
-
-        option.value = municipality;
-        option.textContent = municipality;
-
-        municipalitySelect.appendChild(option);
-    });
-
-    // Initial Barangay state
-    barangaySelect.innerHTML = `
-        <option value="" disabled selected>
-            Select Municipality first
-        </option>
-    `;
-
-    barangaySelect.disabled = true;
-
-    // Municipality → Barangay
-    municipalitySelect.addEventListener("change", function() {
-        const selectedMunicipality = this.value;
-
-        const barangays =
-            BARANGAYS_BY_MUNICIPALITY[selectedMunicipality] || [];
-
-        // Clear barangay options
-        barangaySelect.innerHTML = `
-            <option value="" disabled selected>
-                Select Barangay
-            </option>
-        `;
-
-        // Add barangays
-        barangays.forEach(function(barangay) {
-            const option = document.createElement("option");
-
-            option.value = barangay;
-            option.textContent = barangay;
-
-            barangaySelect.appendChild(option);
-        });
-
-        // Enable only if barangays exist
-        barangaySelect.disabled = barangays.length === 0;
-    });
-}
-function resetFarmerLocationDropdowns() {
-    const municipalitySelect = document.getElementById("regMunicipality");
-    const barangaySelect = document.getElementById("regBarangay");
-
-    if (!municipalitySelect || !barangaySelect) return;
-
-    municipalitySelect.value = "";
-
-    barangaySelect.innerHTML = `
-        <option value="" disabled selected>
-            Select Municipality first
-        </option>
-    `;
-
-    barangaySelect.value = "";
-    barangaySelect.disabled = true;
-}
-/* ============================================================
    FARMER SUBVIEWS
 ============================================================ */
 
@@ -1434,8 +1004,7 @@ function initFarmerSubviews() {
     const regSubview = document.getElementById("registerFarmerSubview");
     const manSubview = document.getElementById("manageFarmerSubview");
 
-     initFarmerLocationDropdowns();
-
+    initFarmerLocationDropdowns(); 
     const addBtn = document.getElementById("addFarmerBtn");
     const cancelRegBtn = document.getElementById("cancelRegisterFarmerBtn");
     const backManBtn = document.getElementById("backFromManageFarmerBtn");
@@ -1445,7 +1014,7 @@ function initFarmerSubviews() {
             console.log("Add Farmer button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
-            resetFarmerLocationDropdowns();
+            resetFarmerLocationDropdowns(); 
             setValue("regFarmerId", "");
             if (listSubview) listSubview.classList.add("hidden-element");
             if (regSubview) regSubview.classList.remove("hidden-element");
@@ -1457,7 +1026,7 @@ function initFarmerSubviews() {
             console.log("Cancel Register button clicked");
             const regForm = document.getElementById("registerFarmerForm");
             if (regForm) regForm.reset();
-            resetFarmerLocationDropdowns();
+            resetFarmerLocationDropdowns(); 
             if (listSubview) listSubview.classList.remove("hidden-element");
             if (regSubview) regSubview.classList.add("hidden-element");
         });
@@ -1647,10 +1216,18 @@ function initFarmerSubviews() {
             if (!confirmSave) return;
 
             const email = getValue("manEmail");
-            if (!email) {
-                alert("Please enter an email address.");
-                return;
-            }
+
+if (!email) {
+    alert("Please enter an email address.");
+    return;
+}
+
+const gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+
+if (!gmailPattern.test(email)) {
+    alert("Please enter a valid Gmail address. Example: juan@gmail.com");
+    return;
+}
 
             const updateData = {
                 address: getValue("manAddress"),
@@ -7181,6 +6758,54 @@ function initOfftakeRequest() {
         currentOfftakeRequest = null;
         resetOfftakeForm();
     });
+        // ============================================================
+    // ✅ SEARCH FILTER FOR OFFTAKE REQUESTS
+    // ============================================================
+    const offtakeSearchInput = document.getElementById("searchOfftakeInput");
+
+    if (offtakeSearchInput) {
+        offtakeSearchInput.addEventListener("input", function () {
+            const keyword = this.value.toLowerCase().trim();
+            const tbody = document.getElementById("offtakeTableBody");
+            if (!tbody) return;
+
+            const rows = tbody.querySelectorAll("tr");
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                // Skip "no data" placeholder rows
+                if (row.querySelector("td[colspan]")) return;
+
+                const text = row.textContent.toLowerCase();
+                const match = !keyword || text.includes(keyword);
+
+                row.style.display = match ? "" : "none";
+                if (match) visibleCount++;
+            });
+
+            // Show/hide "No results" message
+            let emptyRow = tbody.querySelector(".offtake-empty-row");
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!emptyRow) {
+                    emptyRow = document.createElement("tr");
+                    emptyRow.className = "offtake-empty-row";
+                    emptyRow.innerHTML = `
+                        <td colspan="6" style="padding:30px; text-align:center; color:#999;">
+                            No offtake requests found matching "<b>${escapeHtml(keyword)}</b>".
+                        </td>
+                    `;
+                    tbody.appendChild(emptyRow);
+                } else {
+                    emptyRow.querySelector("td").innerHTML = `
+                        No offtake requests found matching "<b>${escapeHtml(keyword)}</b>".
+                    `;
+                }
+                emptyRow.style.display = "";
+            } else if (emptyRow) {
+                emptyRow.style.display = "none";
+            }
+        });
+    }
 }
 
 async function fetchOfftakeRequests() {
@@ -8401,217 +8026,6 @@ function updateChart(commodity) {
 console.log("Price Trend Chart functions loaded!");
 
 /* ============================================================
-   AEW NOTIFICATION BELL
-============================================================ */
-
-async function initNotificationBell() {
-    const bell = document.getElementById("notificationBell");
-    const dropdown = document.getElementById("notificationDropdown");
-
-    if (!bell || !dropdown) return;
-
-    bell.addEventListener("click", async (event) => {
-        event.stopPropagation();
-        dropdown.classList.toggle("show");
-
-        if (dropdown.classList.contains("show")) {
-            await loadAEWNotifications();
-        }
-    });
-
-    document.addEventListener("click", (event) => {
-        if (!bell.contains(event.target)) {
-            dropdown.classList.remove("show");
-        }
-    });
-
-    await loadAEWNotifications();
-}
-
-
-/* ============================================================
-   LOAD AEW NOTIFICATIONS
-============================================================ */
-
-async function loadAEWNotifications() {
-    const notificationList = document.getElementById("notificationList");
-    const notificationDot = document.getElementById("notificationDot");
-
-    if (!notificationList) return;
-
-    try {
-        notificationList.innerHTML = `
-            <div class="notification-empty">
-                Loading notifications...
-            </div>
-        `;
-
-        const mapResponse = await fetch(
-            `${API_BASE_URL}/api/planting-intents/municipality-map`,
-            {
-                method: "GET",
-                headers: getAuthHeaders()
-            }
-        );
-
-        if (!mapResponse.ok) {
-            throw new Error(`Map API error: ${mapResponse.status}`);
-        }
-
-        const mapResult = await mapResponse.json();
-
-        if (!mapResult.data || !Array.isArray(mapResult.data)) {
-            showNoNotifications();
-            return;
-        }
-
-        const alerts = [];
-
-        for (const municipalityData of mapResult.data) {
-            const municipality = municipalityData.municipality;
-
-            if (!municipalityData.commodities || !Array.isArray(municipalityData.commodities)) {
-                continue;
-            }
-
-            for (const item of municipalityData.commodities) {
-                const commodity = item.commodity;
-
-                try {
-                    const alertResponse = await fetch(
-                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
-                        {
-                            method: "GET",
-                            headers: getAuthHeaders()
-                        }
-                    );
-
-                    if (!alertResponse.ok) {
-                        continue;
-                    }
-
-                    const alertData = await alertResponse.json();
-
-                    if (alertData.status === "OVERSUPPLY") {
-                        const supply = Number(alertData.projected_supply || 0);
-                        const demand = Number(alertData.base_demand || 0);
-                        let surplusPercentage = 0;
-
-                        if (demand > 0) {
-                            surplusPercentage = ((supply - demand) / demand) * 100;
-                        }
-
-                        alerts.push({
-                            commodity: alertData.commodity || commodity,
-                            municipality: alertData.municipality || municipality,
-                            supply: supply,
-                            demand: demand,
-                            surplusPercentage: surplusPercentage,
-                            date: new Date()
-                        });
-                    }
-                } catch (error) {
-                    console.warn(`Failed to check ${commodity} in ${municipality}:`, error);
-                }
-            }
-        }
-
-        renderAEWNotifications(alerts);
-
-        if (notificationDot) {
-            notificationDot.style.display = alerts.length > 0 ? "block" : "none";
-        }
-
-    } catch (error) {
-        console.error("Failed to load AEW notifications:", error);
-        notificationList.innerHTML = `
-            <div class="notification-empty">
-                No new notifications.
-            </div>
-        `;
-        if (notificationDot) {
-            notificationDot.style.display = "none";
-        }
-    }
-}
-
-
-/* ============================================================
-   RENDER NOTIFICATIONS
-============================================================ */
-
-function renderAEWNotifications(alerts) {
-    const notificationList = document.getElementById("notificationList");
-
-    if (!notificationList) return;
-
-    if (!alerts.length) {
-        showNoNotifications();
-        return;
-    }
-
-    notificationList.innerHTML = "";
-
-    alerts.forEach(alert => {
-        const item = document.createElement("div");
-        item.className = "notification-item";
-        item.style.padding = "12px 18px";
-        item.style.borderBottom = "1px solid var(--border-light)";
-        item.style.fontSize = "13px";
-
-        item.innerHTML = `
-            <div class="notification-title" style="font-weight:700; color:#C0392B; margin-bottom:4px;">
-                🔴 ${escapeHtml(alert.commodity)} Oversupply Risk
-            </div>
-            <div class="notification-details" style="color:var(--muted); line-height:1.4;">
-                <strong>${escapeHtml(alert.municipality)}</strong><br>
-                Supply: ${formatKg(alert.supply)}<br>
-                Demand: ${formatKg(alert.demand)}<br>
-                Surplus: +${Math.round(alert.surplusPercentage)}%
-            </div>
-        `;
-
-        notificationList.appendChild(item);
-    });
-}
-
-
-/* ============================================================
-   NO NOTIFICATIONS
-============================================================ */
-
-function showNoNotifications() {
-    const notificationList = document.getElementById("notificationList");
-    const notificationDot = document.getElementById("notificationDot");
-
-    if (notificationList) {
-        notificationList.innerHTML = `
-            <div class="notification-empty" style="padding: 20px; text-align: center; color: var(--muted); font-size: 13px;">
-                No new notifications.
-            </div>
-        `;
-    }
-
-    if (notificationDot) {
-        notificationDot.style.display = "none";
-    }
-}
-
-
-/* ============================================================
-   FORMAT KG
-============================================================ */
-
-function formatKg(value) {
-    return `${Number(value || 0).toLocaleString(
-        "en-US",
-        {
-            maximumFractionDigits: 2
-        }
-    )} kg`;
-}
-
-/* ============================================================
    MARKET PRICE DASHBOARD
    DA-AMAD WHOLESALE + RETAIL
 ============================================================ */
@@ -8626,9 +8040,6 @@ function initMarketPriceDashboard() {
         return;
     }
 
-    /*
-     * Load immediately if the dashboard is already active.
-     */
     if (
         marketView.classList.contains("active-view") ||
         marketView.classList.contains("active")
@@ -8636,9 +8047,6 @@ function initMarketPriceDashboard() {
         loadMarketPriceDashboard();
     }
 
-    /*
-     * Detect when Market Prices becomes active.
-     */
     const observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             if (
@@ -8660,9 +8068,6 @@ function initMarketPriceDashboard() {
         attributes: true,
     });
 
-    /*
-     * Also listen directly to the navigation button.
-     */
     const marketNav = document.querySelector(
         '.nav-item[data-view="market-prices"]'
     );
@@ -8686,18 +8091,12 @@ async function loadMarketPriceDashboard() {
     console.log("Loading DA-AMAD market price dashboard...");
 
     try {
-        /*
-         * Load historical market prices.
-         */
         console.log("Fetching:", MARKET_PRICES_ENDPOINT);
 
         const marketPrices = await apiRequest(MARKET_PRICES_ENDPOINT, {
             method: "GET",
         });
 
-        /*
-         * Load market price forecasts.
-         */
         console.log("Fetching:", MARKET_PRICE_FORECASTS_ENDPOINT);
 
         const forecasts = await apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, {
@@ -8718,16 +8117,10 @@ async function loadMarketPriceDashboard() {
         console.log("Historical market prices:", MARKET_PRICES_DATA.length);
         console.log("Market price forecasts:", MARKET_PRICE_FORECASTS_DATA.length);
 
-        /*
-         * Render sections.
-         */
         renderWholesaleForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderRetailForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderHistoricalMarketPrices(MARKET_PRICES_DATA);
 
-        /*
-         * Initialize chart.
-         */
         setTimeout(function () {
             initMarketPriceChart();
         }, 300);
@@ -9182,18 +8575,12 @@ function renderMarketForecastTable(container, forecasts, priceType) {
 
     container.innerHTML = html;
 
-    /*
-     * Expand the first year.
-     */
     const firstYear = container.querySelector(".forecast-year-content");
 
     if (firstYear) {
         firstYear.style.maxHeight = firstYear.scrollHeight + "px";
     }
 
-    /*
-     * Forecast count.
-     */
     const countDiv = document.createElement("div");
 
     countDiv.style.cssText = `
@@ -9287,9 +8674,6 @@ function renderHistoricalMarketPrices(prices) {
         return;
     }
 
-    /*
-     * Group by year.
-     */
     const grouped = {};
 
     prices.forEach(function (price) {
@@ -9538,18 +8922,12 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
 
     if (!canvas) return;
 
-    /*
-     * Destroy old chart.
-     */
     if (marketPriceChartInstance) {
         marketPriceChartInstance.destroy();
 
         marketPriceChartInstance = null;
     }
 
-    /*
-     * Filter historical.
-     */
     let filteredHistorical = historical;
 
     if (commodityFilter !== "all") {
@@ -9558,9 +8936,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         });
     }
 
-    /*
-     * Filter forecasts.
-     */
     let filteredForecasts = forecasts;
 
     if (commodityFilter !== "all") {
@@ -9569,23 +8944,12 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         });
     }
 
-    /*
-     * Use only wholesale for the chart
-     * initially.
-     *
-     * Historical wholesale
-     * +
-     * Wholesale forecast range
-     */
     const wholesaleHistorical = filteredHistorical.slice();
 
     const wholesaleForecasts = filteredForecasts.filter(function (f) {
         return String(f.price_type).toUpperCase() === "WHOLESALE";
     });
 
-    /*
-     * Build date labels.
-     */
     const dateMap = {};
 
     wholesaleHistorical.forEach(function (price) {
@@ -9617,9 +8981,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         });
     });
 
-    /*
-     * Historical wholesale line.
-     */
     const historicalData = dateKeys.map(function (key) {
         const found = wholesaleHistorical.find(function (price) {
             return (
@@ -9632,9 +8993,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         return Number(found.wholesale_price_per_kg);
     });
 
-    /*
-     * Forecast lower.
-     */
     const forecastLow = dateKeys.map(function (key) {
         const found = wholesaleForecasts.find(function (forecast) {
             return (
@@ -9648,9 +9006,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         return Number(found.forecast_price_low);
     });
 
-    /*
-     * Forecast upper.
-     */
     const forecastHigh = dateKeys.map(function (key) {
         const found = wholesaleForecasts.find(function (forecast) {
             return (
@@ -9666,9 +9021,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
 
     const datasets = [];
 
-    /*
-     * Historical line.
-     */
     datasets.push({
         label:
             commodityFilter === "all"
@@ -9692,9 +9044,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         spanGaps: false,
     });
 
-    /*
-     * Forecast lower.
-     */
     datasets.push({
         label: "Wholesale Forecast Low",
 
@@ -9717,9 +9066,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
         spanGaps: false,
     });
 
-    /*
-     * Forecast upper.
-     */
     datasets.push({
         label: "Wholesale Forecast High",
 
@@ -9834,9 +9180,6 @@ function updateMarketPriceChart(commodity) {
         return;
     }
 
-    /*
-     * Update button appearance.
-     */
     document
         .querySelectorAll("#view-market-prices .market-chart-btn")
         .forEach(function (btn) {
@@ -9867,12 +9210,215 @@ function updateMarketPriceChart(commodity) {
     );
 }
 
+console.log("Market Price Dashboard functions loaded!");
+
 /* ============================================================
-   START MARKET PRICE DASHBOARD
+   AEW NOTIFICATION BELL
 ============================================================ */
 
-document.addEventListener("DOMContentLoaded", function () {
-    initMarketPriceDashboard();
-});
+async function initNotificationBell() {
+    const bell = document.getElementById("notificationBell");
+    const dropdown = document.getElementById("notificationDropdown");
 
-console.log("Market Price Dashboard functions loaded!");
+    if (!bell || !dropdown) return;
+
+    bell.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        dropdown.classList.toggle("show");
+
+        if (dropdown.classList.contains("show")) {
+            await loadAEWNotifications();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!bell.contains(event.target)) {
+            dropdown.classList.remove("show");
+        }
+    });
+
+    await loadAEWNotifications();
+}
+
+
+/* ============================================================
+   LOAD AEW NOTIFICATIONS
+============================================================ */
+
+async function loadAEWNotifications() {
+    const notificationList = document.getElementById("notificationList");
+    const notificationDot = document.getElementById("notificationDot");
+
+    if (!notificationList) return;
+
+    try {
+        notificationList.innerHTML = `
+            <div class="notification-empty">
+                Loading notifications...
+            </div>
+        `;
+
+        const mapResponse = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        if (!mapResponse.ok) {
+            throw new Error(`Map API error: ${mapResponse.status}`);
+        }
+
+        const mapResult = await mapResponse.json();
+
+        if (!mapResult.data || !Array.isArray(mapResult.data)) {
+            showNoNotifications();
+            return;
+        }
+
+        const alerts = [];
+
+        for (const municipalityData of mapResult.data) {
+            const municipality = municipalityData.municipality;
+
+            if (!municipalityData.commodities || !Array.isArray(municipalityData.commodities)) {
+                continue;
+            }
+
+            for (const item of municipalityData.commodities) {
+                const commodity = item.commodity;
+
+                try {
+                    const alertResponse = await fetch(
+                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
+                        {
+                            method: "GET",
+                            headers: getAuthHeaders()
+                        }
+                    );
+
+                    if (!alertResponse.ok) {
+                        continue;
+                    }
+
+                    const alertData = await alertResponse.json();
+
+                    if (alertData.status === "OVERSUPPLY") {
+                        const supply = Number(alertData.projected_supply || 0);
+                        const demand = Number(alertData.base_demand || 0);
+                        let surplusPercentage = 0;
+
+                        if (demand > 0) {
+                            surplusPercentage = ((supply - demand) / demand) * 100;
+                        }
+
+                        alerts.push({
+                            commodity: alertData.commodity || commodity,
+                            municipality: alertData.municipality || municipality,
+                            supply: supply,
+                            demand: demand,
+                            surplusPercentage: surplusPercentage,
+                            date: new Date()
+                        });
+                    }
+                } catch (error) {
+                    console.warn(`Failed to check ${commodity} in ${municipality}:`, error);
+                }
+            }
+        }
+
+        renderAEWNotifications(alerts);
+
+        if (notificationDot) {
+            notificationDot.style.display = alerts.length > 0 ? "block" : "none";
+        }
+
+    } catch (error) {
+        console.error("Failed to load AEW notifications:", error);
+        notificationList.innerHTML = `
+            <div class="notification-empty">
+                No new notifications.
+            </div>
+        `;
+        if (notificationDot) {
+            notificationDot.style.display = "none";
+        }
+    }
+}
+
+
+/* ============================================================
+   RENDER NOTIFICATIONS
+============================================================ */
+
+function renderAEWNotifications(alerts) {
+    const notificationList = document.getElementById("notificationList");
+
+    if (!notificationList) return;
+
+    if (!alerts.length) {
+        showNoNotifications();
+        return;
+    }
+
+    notificationList.innerHTML = "";
+
+    alerts.forEach(alert => {
+        const item = document.createElement("div");
+        item.className = "notification-item";
+        item.style.padding = "12px 18px";
+        item.style.borderBottom = "1px solid var(--border-light)";
+        item.style.fontSize = "13px";
+
+        item.innerHTML = `
+            <div class="notification-title" style="font-weight:700; color:#C0392B; margin-bottom:4px;">
+                🔴 ${escapeHtml(alert.commodity)} Oversupply Risk
+            </div>
+            <div class="notification-details" style="color:var(--muted); line-height:1.4;">
+                <strong>${escapeHtml(alert.municipality)}</strong><br>
+                Supply: ${formatKg(alert.supply)}<br>
+                Demand: ${formatKg(alert.demand)}<br>
+                Surplus: +${Math.round(alert.surplusPercentage)}%
+            </div>
+        `;
+
+        notificationList.appendChild(item);
+    });
+}
+
+
+/* ============================================================
+   NO NOTIFICATIONS
+============================================================ */
+
+function showNoNotifications() {
+    const notificationList = document.getElementById("notificationList");
+    const notificationDot = document.getElementById("notificationDot");
+
+    if (notificationList) {
+        notificationList.innerHTML = `
+            <div class="notification-empty" style="padding: 20px; text-align: center; color: var(--muted); font-size: 13px;">
+                No new notifications.
+            </div>
+        `;
+    }
+
+    if (notificationDot) {
+        notificationDot.style.display = "none";
+    }
+}
+
+
+/* ============================================================
+   FORMAT KG
+============================================================ */
+
+function formatKg(value) {
+    return `${Number(value || 0).toLocaleString(
+        "en-US",
+        {
+            maximumFractionDigits: 2
+        }
+    )} kg`;
+}

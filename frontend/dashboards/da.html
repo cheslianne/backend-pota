@@ -1091,10 +1091,6 @@
     </div>
 
     <div class="topbar-right">
-      <div class="bell-wrap" aria-label="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
-        <span class="bell-dot"></span>
-      </div>
 
       <div class="user-info">
         <div class="user-text">
@@ -1126,6 +1122,10 @@
           <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
           Alert Log
         </button>
+        <button class="nav-item" type="button" data-view="etl">
+  <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg>
+  Monitor ETL Pipeline
+</button>
         <button class="nav-item" type="button" data-view="summary">
           <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
           Summary
@@ -1192,7 +1192,10 @@
               <div class="detail-field-label">Email:</div>
               <span class="pill" id="reviewEmail">—</span>
             </div>
-            
+            <div class="detail-field-row">
+              <div class="detail-field-label">Commodities:</div>
+              <div class="detail-pills-wrap" id="reviewCommodities"></div>
+            </div>
 
             <div class="message-field-wrap">
               <label>Message:</label>
@@ -1215,12 +1218,46 @@
       </section>
 
       <!-- VIEW 2: View Map -->
-      <section class="view" id="view-map">
-        <div class="main-header"><h1>Map</h1></div>
-        <div class="card">
-          <div id="map"></div>
-        </div>
-      </section>
+<!-- VIEW 2: View Map -->
+<section class="view" id="view-map">
+  <div class="main-header"><h1>Map</h1></div>
+  <div class="card">
+
+    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+      <span style="font-size: 14.5px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.02em;">
+        Field Monitoring &amp; Geographic Clusters
+      </span>
+
+      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span> Surplus
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span> Balanced
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Deficit
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span> No Data
+        </span>
+      </div>
+    </div>
+
+    <!-- ✅ FIXED: Naka-close na nang tama ang map-filters-container -->
+    <div class="map-filters-container" style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
+      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
+        <option value="all">All Commodities</option>
+        <option value="Tomato">Tomato</option>
+        <option value="Squash">Squash</option>
+        <option value="Red Onion">Red Onion</option>
+        <option value="White Onion">White Onion</option>
+      </select>
+    </div>
+
+    <div id="map"></div>
+  </div>
+</section>
 
       <!-- VIEW 3: Alert Threshold -->
       <section class="view" id="view-threshold">
@@ -1239,7 +1276,7 @@
           </div>
 
           <div class="form-group">
-            <label for="baseDemandInput">Target Demand</label>
+            <label for="baseDemandInput">Target Demand (kg)</label>
             <input type="number" id="baseDemandInput" class="form-input" placeholder="e.g. 50000">
           </div>
 
@@ -1277,6 +1314,43 @@
         <div class="card alert-container-card">
           <div class="alert-list" id="alertList">
             <!-- Alerts will be loaded dynamically -->
+          </div>
+          
+        </div>
+      </section>
+
+            <!-- VIEW: Monitor ETL Pipeline -->
+      <section class="view" id="view-etl">
+        <div class="main-header">
+          <h1>ETL Pipeline Run Logs</h1>
+          <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+            <div class="search-row" style="margin: 0;">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchETL" placeholder="Search logs...">
+              </div>
+            </div>
+            <button class="btn-primary" id="manualRunBtn" type="button" style="white-space: nowrap;">Manual Run</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:15px; font-weight:800; color:var(--green); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.03em;">
+            ETL Pipeline Run Log
+          </div>
+          <div style="overflow-x:auto; border-radius:8px; border:1px solid var(--border); margin-top:8px;">
+            <table style="width:100%; border-collapse:separate; border-spacing:0; margin-bottom:0;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; font-size:12px; font-weight:700; color:var(--muted); padding:12px 14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1.5px solid var(--border); background:#f8f6f2;">Run Date/Time</th>
+                  <th style="text-align:left; font-size:12px; font-weight:700; color:var(--muted); padding:12px 14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1.5px solid var(--border); background:#f8f6f2;">Data Source</th>
+                  <th style="text-align:left; font-size:12px; font-weight:700; color:var(--muted); padding:12px 14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1.5px solid var(--border); background:#f8f6f2;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="etlRows">
+                <tr><td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">No ETL logs available.</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -1387,6 +1461,7 @@
                   </tbody>
                 </table>
               </div>
+            
             </div>
           </div>
 
@@ -1591,6 +1666,8 @@
 
     </main>
   </div>
+
+  
 
   <!-- MODALS -->
 
@@ -1858,5 +1935,84 @@
   <script src="../assets/js/logout.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/da.js"></script>
+
+  <script>
+(function () {
+  // ============================================================
+  // 1. REPORTS SEARCH — filter all visible rows in #view-reports
+  // ============================================================
+  const reportSearch = document.getElementById('reportSearchInput');
+  if (reportSearch) {
+    const reportsView = document.getElementById('view-reports');
+
+    function filterReports() {
+      const q = reportSearch.value.trim().toLowerCase();
+      if (!reportsView) return;
+
+      reportsView.querySelectorAll('tbody').forEach(tbody => {
+        tbody.querySelectorAll('tr').forEach(row => {
+          if (row.querySelector('td[colspan]')) return;
+          const match = !q || row.innerText.toLowerCase().includes(q);
+          row.style.display = match ? '' : 'none';
+        });
+      });
+    }
+
+    reportSearch.addEventListener('input', filterReports);
+    reportSearch.addEventListener('keyup', filterReports);
+
+    // Linisin kapag lumipat ng view
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        reportSearch.value = '';
+        filterReports();
+      });
+    });
+  }
+
+  // ============================================================
+  // 2. ALERTS SEARCH — filter alert cards
+  // ============================================================
+  const alertSearch = document.getElementById('searchAlerts');
+  if (alertSearch) {
+    const alertList = document.getElementById('alertList');
+
+    function filterAlerts() {
+      const q = alertSearch.value.trim().toLowerCase();
+      if (!alertList) return;
+
+      alertList.querySelectorAll('.alert-card').forEach(card => {
+        const match = !q || card.innerText.toLowerCase().includes(q);
+        card.style.display = match ? '' : 'none';
+      });
+    }
+
+    alertSearch.addEventListener('input', filterAlerts);
+    alertSearch.addEventListener('keyup', filterAlerts);
+  }
+
+  // ============================================================
+  // 3. ETL SEARCH — filter rows in #etlRows
+  // ============================================================
+  const etlSearch = document.getElementById('searchETL');
+  if (etlSearch) {
+    const etlBody = document.getElementById('etlRows');
+
+    function filterETL() {
+      const q = etlSearch.value.trim().toLowerCase();
+      if (!etlBody) return;
+
+      etlBody.querySelectorAll('tr').forEach(row => {
+        if (row.querySelector('td[colspan]')) return;
+        const match = !q || row.innerText.toLowerCase().includes(q);
+        row.style.display = match ? '' : 'none';
+      });
+    }
+
+    etlSearch.addEventListener('input', filterETL);
+    etlSearch.addEventListener('keyup', filterETL);
+  }
+})();
+</script>
 </body>
 </html>

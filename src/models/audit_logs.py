@@ -38,3 +38,9 @@ class AuditLog(Base):
         "User",
         back_populates="audit_logs"
     )
+
+    @property
+    def user_name(self) -> str:
+        if self.user:
+            return f"{self.user.first_name} {self.user.last_name}"
+        return f"User #{self.user_id}"

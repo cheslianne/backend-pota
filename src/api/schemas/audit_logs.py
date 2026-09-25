@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 
 class AuditLogBase(BaseModel):
     user_id: int
+    
     action: str
     resource_type: str
     resource_id: int
@@ -31,6 +32,7 @@ class AuditLogUpdate(BaseModel):
 class AuditLogResponse(AuditLogBase):
     log_id: int
     created_at: datetime
+    user_name: str 
 
     class Config:
         from_attributes = True

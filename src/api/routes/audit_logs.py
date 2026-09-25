@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.core.database import get_db
 from src.core.rbac import require_role, Role
@@ -33,6 +33,7 @@ def get_audit_logs(
 
     logs = (
         db.query(AuditLog)
+        .options(joinedload(AuditLog.user))
         .order_by(
             AuditLog.created_at.desc(),
             AuditLog.log_id.desc()

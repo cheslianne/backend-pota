@@ -32,6 +32,14 @@ let selectedReportIds = new Set();
 let selectedReport = null;
 let currentSentToProvincialFilter = "all";
 
+// Summary state
+let currentSummaryPeriod = {
+    start: null,
+    end: null,
+    preset: "this-week",
+};
+let currentSummaryData = null;
+
 let MUNICIPALITY_MAP_RAW_DATA = [];
 let mapMarkersLayer = null;
 
@@ -311,6 +319,7 @@ async function loadMunicipalityMapData() {
     }
 }
 
+// ✅ NEW: Color-coded marker rendering (galing File 2)
 function renderFilteredMapMarkers() {
     if (!window.leafletMap) return;
 

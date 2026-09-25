@@ -1089,20 +1089,7 @@
     </div>
 
     <div class="topbar-right">
-      <div class="bell-wrap" id="notificationBell" aria-label="Notifications">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
-        </svg>
-        <span class="bell-dot"></span>
-
-        <div class="notification-dropdown" id="notificationDropdown">
-          <div class="notification-header"><strong>Notifications</strong></div>
-          <div class="notification-list">
-            <div class="notification-empty">No new notifications.</div>
-          </div>
-        </div>
-      </div>
-
+  
       <div class="user-info">
         <div class="avatar" id="userDisplayInitials">--</div>
         <div class="user-text">
@@ -1463,24 +1450,54 @@
           <div id="municipalSummaryContent"></div>
         </div>
       </section>
-
-      <!-- ===================== VIEW: Map ===================== -->
-      <section class="view" id="view-map">
-        <div class="main-header">
-          <div class="header-left">
-            <h1>Regional Field Map</h1>
-            <p>Geospatial tracking of crop production clusters in Pampanga.</p>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="map-title">Field Monitoring &amp; Geographic Clusters</div>
-          <div id="map"></div>
-        </div>
-      </section>
-
-    </main>
+<!-- ===================== VIEW: Map ===================== -->
+<section class="view" id="view-map">
+  <div class="main-header">
+    <div class="header-left">
+      <h1>Regional Field Map</h1>
+      <p>Geospatial tracking of crop production clusters in Pampanga.</p>
+    </div>
   </div>
+
+  <div class="card">
+    <!-- MAP TITLE + LEGEND -->
+    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <span>Field Monitoring &amp; Geographic Clusters</span>
+      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center; text-transform: none; letter-spacing: 0;">
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span>
+          Surplus
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span>
+          Balanced
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span>
+          Deficit
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span>
+          No Data
+        </span>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
+      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
+        <option value="all">All Commodities</option>
+        <option value="Tomato">Tomato</option>
+        <option value="Squash">Squash</option>
+        <option value="Red Onion">Red Onion</option>
+        <option value="White Onion">White Onion</option>
+      </select>
+
+      
+
+    <div id="map"></div>
+  </div>
+</section>
 
   <!-- ACTION CONFIRMATION MODAL -->
   <div class="modal-overlay" id="actionConfirmModal">
@@ -1576,5 +1593,62 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/municipal.js"></script>
   <script src="../assets/js/logout.js"></script>
+
+  <script>
+(function() {
+  const searchInput = document.getElementById('reportSearchInput');
+  if (!searchInput) return;
+
+  // Palitan ang placeholder base sa active view
+  function updatePlaceholder() {
+    const activeView = document.querySelector('.view.active-view');
+    if (!activeView) return;
+    if (activeView.id === 'view-reports') {
+      searchInput.placeholder = 'Search pending reports...';
+    }
+  }
+
+  function filterTables() {
+    const query = searchInput.value.trim().toLowerCase();
+
+    // I-filter lahat ng table rows sa Reports view
+    const tables = [
+      { body: 'pendingReportsBody' },
+      { body: 'awaitingRevisionBody' },
+      { body: 'sentToProvincialBody' }
+    ];
+
+    tables.forEach(({ body }) => {
+      const tbody = document.getElementById(body);
+      if (!tbody) return;
+
+      const rows = tbody.querySelectorAll('tr');
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        // Skip "no data" / loading rows
+        if (row.querySelector('td[colspan]')) return;
+
+        const text = row.innerText.toLowerCase();
+        const match = !query || text.includes(query);
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+    });
+  }
+
+  searchInput.addEventListener('input', filterTables);
+  searchInput.addEventListener('keyup', filterTables);
+
+  // Optional: clear search kapag lumipat ng view
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      searchInput.value = '';
+      filterTables();
+      updatePlaceholder();
+    });
+  });
+})();
+</script>
 </body>
 </html>
