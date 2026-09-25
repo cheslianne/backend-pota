@@ -38,6 +38,14 @@ MISSING_COLUMNS = [
     ("users", "archived_at", "TIMESTAMP"),
     ("users", "archive_remarks", "VARCHAR"),
     ("users", "archived_by", "INTEGER"),
+    ("farmers", "middle_name", "VARCHAR"),
+    ("planting_intents", "actual_planting_date", "DATE"),
+    ("planting_intents", "actual_harvest_date", "DATE"),
+    ("planting_intents", "actual_harvest_volume", "DECIMAL(10, 2)"),
+    ("planting_intents", "notes", "TEXT"),
+    ("planting_intents", "attachment_path", "VARCHAR(500)"),
+    ("planting_intents", "finalized_status", "VARCHAR NOT NULL DEFAULT 'NOT PLANTED'"),
+    ("planting_intents", "is_in_report", "BOOLEAN NOT NULL DEFAULT false"),
 ]
 
 
