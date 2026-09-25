@@ -422,7 +422,15 @@ async function loadUsers() {
                 </td>
             `;
             userRows.appendChild(row);
+
+            row.style.cursor = "pointer";
+row.addEventListener("click", (event) => {
+    // Huwag i-expand kung button ang pinindot
+    if (event.target.closest("button")) return;
+    openUserDetails(user);
+});
         });
+
 
 
         pagination.updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
@@ -465,6 +473,60 @@ if (nextBtn) {
         userRows.innerHTML = `<tr><td colspan="6" class="api-error">Failed to load users.<br><br>${escapeHTML(error.message)}</td></tr>`;
     }
 }
+
+/* ============================================================
+   VIEW USER DETAILS (Manage Users)
+============================================================ */
+function openUserDetails(user) {
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
+    const username = user.username || "—";
+    const role = user.role || "—";
+    const email = user.email_address || user.email || "—";
+    const phone = user.phone_number || user.phone || "—";
+    const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
+    const locationText = locationParts.length ? locationParts.join(", ") : "—";
+
+    let isActive = true;
+    if (typeof user.is_active === "boolean") isActive = user.is_active;
+    else if (typeof user.status === "string") isActive = user.status.toLowerCase() === "active";
+
+    const roleStyle = getRoleStyle(role);
+
+    const content = document.getElementById("modalUserContent");
+    if (content) {
+        content.innerHTML = `
+            <div><b>Full Name:</b> ${escapeHTML(fullName)}</div>
+            <div><b>Username:</b> ${escapeHTML(username)}</div>
+            <div><b>Role:</b> <span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></div>
+            <div><b>Email:</b> ${escapeHTML(email)}</div>
+            <div><b>Phone Number:</b> ${escapeHTML(phone)}</div>
+            <div><b>Region:</b> ${escapeHTML(user.region || "—")}</div>
+            <div><b>Province:</b> ${escapeHTML(user.province || "—")}</div>
+            <div><b>Municipality/City:</b> ${escapeHTML(user.municipality || "—")}</div>
+            <div><b>Location:</b> ${escapeHTML(locationText)}</div>
+            <div><b>Status:</b> <span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></div>
+            <div><b>User ID:</b> ${escapeHTML(user.user_id ?? user.id ?? "—")}</div>
+        `;
+    }
+
+    const titleEl = document.getElementById("modalUserTitle");
+    if (titleEl) titleEl.textContent = fullName;
+
+    document.getElementById("userDetailModal")?.classList.add("show");
+}
+
+// Close handlers
+document.getElementById("closeUserModalBtn")?.addEventListener("click", () => {
+    document.getElementById("userDetailModal")?.classList.remove("show");
+});
+document.getElementById("closeUserModalX")?.addEventListener("click", () => {
+    document.getElementById("userDetailModal")?.classList.remove("show");
+});
+document.getElementById("userDetailModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "userDetailModal") {
+        e.target.classList.remove("show");
+    }
+});
 /* ============================================================
    ROLE SUMMARY CARDS
 ============================================================ */
@@ -1431,6 +1493,34 @@ document.addEventListener("DOMContentLoaded", () => {
     loadArchivedUsers();
     initializeLocationDropdowns();
     initProfileModal(); 
+        /* ============================================================
+       USER DETAIL MODAL — Close Handlers
+    ============================================================ */
+    const userDetailModal = document.getElementById("userDetailModal");
+    const closeUserModalBtn = document.getElementById("closeUserModalBtn");
+    const closeUserModalX = document.getElementById("closeUserModalX");
+
+    closeUserModalBtn?.addEventListener("click", () => {
+        userDetailModal?.classList.remove("show");
+    });
+
+    closeUserModalX?.addEventListener("click", () => {
+        userDetailModal?.classList.remove("show");
+    });
+
+    // Close kapag click sa overlay (labas ng modal box)
+    userDetailModal?.addEventListener("click", (e) => {
+        if (e.target === userDetailModal) {
+            userDetailModal.classList.remove("show");
+        }
+    });
+
+    // Close kapag pinindot ang ESC key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && userDetailModal?.classList.contains("show")) {
+            userDetailModal.classList.remove("show");
+        }
+    });
 
     /* ARCHIVE DETAILS — Back to Archived Users */
 const backBtn2 = document.getElementById("backToArchivedBtn2");
