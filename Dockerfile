@@ -10,7 +10,7 @@ COPY init_db.py start.sh ./
 COPY seed_admin.py seed_aew.py seed_alert_thresholds.py seed_buyers.py seed_darfo.py seed_farmers.py seed_municipal.py seed_planting_intents.py seed_provincial.py ./
 COPY uploads ./uploads
 
-RUN chmod +x start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 8000
 
