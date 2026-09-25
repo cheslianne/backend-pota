@@ -184,6 +184,15 @@ def create_report_from_intents(
 
     report_municipality = municipalities.pop()
 
+    municipal_coordinator = (
+        db.query(User)
+        .filter(
+            User.role == "Municipal Coordinator",
+            User.municipality == report_municipality,
+        )
+        .first()
+    )
+
     commodity = intents[0].commodity if intents else "Crop"
 
     # Create report
@@ -196,6 +205,7 @@ def create_report_from_intents(
         notes=notes,
         status=status,
         municipality=report_municipality,
+        municipal_coordinator_id=(municipal_coordinator.user_id if municipal_coordinator else None),
     )
     
 
@@ -294,11 +304,33 @@ def create_report_from_planting_intent(
     # CREATE REPORT
     # --------------------------------------------------------
 
+    farmer = (
+        db.query(Farmer)
+        .filter(Farmer.farmer_id == planting_intent.farmer_id)
+        .first()
+    )
+
+    if not farmer or not farmer.municipality:
+        raise HTTPException(
+            status_code=400,
+            detail="Farmer municipality is required before creating a report."
+        )
+
+    municipal_coordinator = (
+        db.query(User)
+        .filter(
+            User.role == "Municipal Coordinator",
+            User.municipality == farmer.municipality,
+        )
+        .first()
+    )
+
     db_report = RawPlantReport(
         commodity=planting_intent.commodity,
         planting_date=planting_intent.planting_date,
         estimated_yield=planting_intent.volume,
-        municipal_coordinator_id=None,
+        municipality=farmer.municipality,
+        municipal_coordinator_id=(municipal_coordinator.user_id if municipal_coordinator else None),
         encoded_by=current_user.user_id,
     )
 
