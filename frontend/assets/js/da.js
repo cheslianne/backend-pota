@@ -3706,6 +3706,7 @@ async function manualRunETL() {
 async function waitForETLCompletion() {
     const maxAttempts = 60;
     const interval = 3000;
+    const expectedStepCount = 9;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         console.log(`Checking ETL status... Attempt ${attempt}/${maxAttempts}`);
@@ -3733,26 +3734,26 @@ async function waitForETLCompletion() {
             else if (Array.isArray(data.logs)) logs = data.logs;
             else if (Array.isArray(data.data)) logs = data.data;
 
-            if (logs.length >= 7) {
-                const latestLogs = logs.slice(0, 7);
+            if (logs.length >= expectedStepCount) {
+                const latestLogs = logs.slice(0, expectedStepCount);
 
                 const allFinished = latestLogs.every(log =>
                     log.status &&
-                    (log.status.toLowerCase() === "success" ||
-                     log.status.toLowerCase() === "failed")
+                    (String(log.status).toLowerCase() === "success" ||
+                     String(log.status).toLowerCase() === "failed")
                 );
 
                 if (allFinished) {
                     const hasFailed = latestLogs.some(log =>
                         log.status &&
-                        log.status.toLowerCase() === "failed"
+                        String(log.status).toLowerCase() === "failed"
                     );
 
                     if (hasFailed) {
                         throw new Error("One or more ETL steps failed.");
                     }
 
-                    console.log("All 7 ETL steps completed successfully.");
+                    console.log(`All ${expectedStepCount} ETL steps completed successfully.`);
                     return true;
                 }
             }
