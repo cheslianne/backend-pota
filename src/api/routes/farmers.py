@@ -25,6 +25,54 @@ router = APIRouter(
 )
 
 
+def scoped_farmer_query(db: Session, current_user: User):
+    """Return only farmers visible within the current user's assigned area."""
+    query = db.query(Farmer)
+
+    if current_user.role == "Agricultural Extension Worker":
+        return query.filter(Farmer.aew_id == current_user.user_id)
+
+    if current_user.role == "Municipal Coordinator":
+        if not current_user.municipality:
+            return query.filter(False)
+        return query.filter(Farmer.municipality == current_user.municipality)
+
+    if current_user.role in ("Provincial Coordinator", "Provincial"):
+        if not current_user.province:
+            return query.filter(False)
+        municipalities = db.query(User.municipality).filter(
+            User.role == "Municipal Coordinator",
+            User.province == current_user.province,
+            User.municipality.isnot(None),
+        ).distinct().subquery()
+        return query.filter(Farmer.municipality.in_(municipalities))
+
+    if current_user.role in (
+        "DA-RFO Officer",
+        "Regional Coordinator",
+        "DA-RFO",
+    ):
+        if not current_user.region:
+            return query.filter(False)
+        municipalities = db.query(User.municipality).filter(
+            User.role == "Municipal Coordinator",
+            User.region == current_user.region,
+            User.municipality.isnot(None),
+        ).distinct().subquery()
+        return query.filter(Farmer.municipality.in_(municipalities))
+
+    if current_user.role in ("System Administrator", "System Admin"):
+        return query
+
+    return query.filter(False)
+
+
+def get_scoped_farmer(farmer_id: int, current_user: User, db: Session):
+    return scoped_farmer_query(db, current_user).filter(
+        Farmer.farmer_id == farmer_id
+    ).first()
+
+
 
 
 # ============================================================
@@ -181,21 +229,11 @@ def get_farmers(
     current_user: User = Depends(get_current_user),  # ✅ Get logged-in user
     db: Session = Depends(get_db)
 ):
-    """
-    Get farmers.
-    AEWs only see their assigned farmers.
-    Admins/DA-RFO see all farmers.
-    """
-    
-    query = db.query(Farmer)
-    
-    if current_user.role == "Agricultural Extension Worker":
-        query = query.filter(Farmer.aew_id == current_user.user_id)
-        print(f"🔍 AEW {current_user.username} filtering farmers by aew_id: {current_user.user_id}")
+    """Get farmers visible within the current user's assigned area."""
+
+    query = scoped_farmer_query(db, current_user)
     
     farmers = query.order_by(Farmer.farmer_id.desc()).all()
-    
-    print(f"Found {len(farmers)} farmers for user {current_user.username}")
     
     updated = False
     for farmer in farmers:
@@ -231,13 +269,10 @@ def get_farmers(
 )
 def get_farmer(
     farmer_id: int,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    farmer = (
-        db.query(Farmer)
-        .filter(Farmer.farmer_id == farmer_id)
-        .first()
-    )
+    farmer = get_scoped_farmer(farmer_id, current_user, db)
 
     if not farmer:
         raise HTTPException(
@@ -286,13 +321,10 @@ def get_farmer(
 def update_farmer(
     farmer_id: int,
     farmer_data: FarmerUpdate,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    farmer = (
-        db.query(Farmer)
-        .filter(Farmer.farmer_id == farmer_id)
-        .first()
-    )
+    farmer = get_scoped_farmer(farmer_id, current_user, db)
 
     if not farmer:
         raise HTTPException(
@@ -372,7 +404,7 @@ def delete_farmer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    farmer = db.query(Farmer).filter(Farmer.farmer_id == farmer_id).first()
+    farmer = get_scoped_farmer(farmer_id, current_user, db)
     
     if not farmer:
         raise HTTPException(status_code=404, detail="Farmer not found")
