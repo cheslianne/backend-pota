@@ -21,6 +21,12 @@ for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
 from src.core.database import SessionLocal
 from src.models.etl_run_log import ETLRunLog
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 
 # ============================================================
 # ETL IMPORTS
@@ -71,7 +77,7 @@ def run_etl_step(data_source, etl_function):
         db.commit()
 
         print()
-        print(f"{data_source} → SUCCESS")
+        print(f"{data_source} -> SUCCESS")
 
     except Exception as error:
 
@@ -81,7 +87,7 @@ def run_etl_step(data_source, etl_function):
 
         print()
         print("=" * 60)
-        print(f"{data_source} → FAILED")
+        print(f"{data_source} -> FAILED")
         print("=" * 60)
 
         print(f"ERROR: {error}")
