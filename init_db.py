@@ -36,6 +36,8 @@ MISSING_COLUMNS = [
     ("users", "municipality", "VARCHAR(100)"),
     ("users", "is_archived", "BOOLEAN NOT NULL DEFAULT false"),
     ("users", "archived_at", "TIMESTAMP"),
+    ("users", "archive_remarks", "VARCHAR"),
+    ("users", "archived_by", "INTEGER"),
 ]
 
 
