@@ -29,7 +29,7 @@ def scoped_farmer_query(db: Session, current_user: User):
     """Return only farmers visible within the current user's assigned area."""
     query = db.query(Farmer)
 
-    if current_user.role == "Agricultural Extension Worker":
+    if is_aew_role(current_user.role):
         return query.filter(Farmer.aew_id == current_user.user_id)
 
     if current_user.role == "Municipal Coordinator":
@@ -71,6 +71,14 @@ def get_scoped_farmer(farmer_id: int, current_user: User, db: Session):
     return scoped_farmer_query(db, current_user).filter(
         Farmer.farmer_id == farmer_id
     ).first()
+
+
+def is_aew_role(role: str | None) -> bool:
+    normalized_role = " ".join((role or "").replace("_", " ").split()).lower()
+    return normalized_role in {
+        "aew",
+        "agricultural extension worker",
+    }
 
 
 
@@ -157,7 +165,7 @@ def create_farmer(
     db: Session = Depends(get_db)
 ):
     # Only AEWs can register farmers
-    if current_user.role != "Agricultural Extension Worker":
+    if not is_aew_role(current_user.role):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Agricultural Extension Workers can register farmers."
