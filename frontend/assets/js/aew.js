@@ -9396,7 +9396,7 @@ function renderMarketPriceSummary() {
 
     const displayNames = { "Squash fruit": "Squash" };
     const categories = { Tomato: "SOLANACEAE", Squash: "CUCURBITS", "Squash fruit": "CUCURBITS", "White Onion": "ALLIUMS", "Red Onion": "ALLIUMS" };
-    const icons = { Tomato: "●", Squash: "✿", "Squash fruit": "✿", "White Onion": "◉", "Red Onion": "◉" };
+    const photos = { Tomato: "tomato.jpg", Squash: "squash.jpg", "Squash fruit": "squash.jpg", "White Onion": "whiteonion.jpg", "Red Onion": "onion.jpg" };
     const cardClasses = { Tomato: "tomato", Squash: "squash", "Squash fruit": "squash", "White Onion": "white-onion", "Red Onion": "red-onion" };
 
     host.innerHTML = commodities.map((commodity) => {
@@ -9422,7 +9422,9 @@ function renderMarketPriceSummary() {
             <article class="commodity-price-card ${cardClasses[commodity] || ""}">
                 <div class="commodity-price-top">
                     <div><span class="commodity-price-category">${escapeHtml(categories[commodity] || "COMMODITY")}</span><h3>${escapeHtml(name)}</h3></div>
-                    <span class="commodity-price-icon" aria-hidden="true">${icons[commodity] || "◌"}</span>
+                    <span class="commodity-price-icon">${photos[commodity]
+                        ? `<img src="../images/${photos[commodity]}" alt="${escapeHtml(name)}" loading="lazy">`
+                        : `<span aria-hidden="true">◌</span>`}</span>
                 </div>
                 <strong class="commodity-price-value">${formatMarketCurrency(latestValue)} <span class="commodity-price-unit">/kg</span></strong>
                 <span class="commodity-price-change ${direction}">${direction === "up" ? "↑" : direction === "down" ? "↓" : direction === "flat" ? "→" : "•"} ${movement}</span>
