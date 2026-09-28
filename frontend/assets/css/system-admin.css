@@ -39,10 +39,12 @@ body .layout { min-height: calc(100vh - 68px); }
 body .sidebar {
   width: 252px;
   top: 68px;
+  left: -252px;
   padding: 20px 14px 16px;
   background: linear-gradient(180deg, var(--admin-forest) 0%, #041f17 100%);
   box-shadow: 5px 0 24px rgba(6,43,32,.16);
 }
+body .sidebar.open { left: 0; }
 body .nav-list { gap: 5px; padding: 6px 0; }
 body .nav-item {
   min-height: 44px;
