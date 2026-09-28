@@ -1191,10 +1191,10 @@ async function openReportDetail(report) {
 
     if (isMunicipalPending) {
         // Municipal can approve or flag
-        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back to Reports"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
-            flagBtn.textContent = "Flag for Revision";
+            flagBtn.textContent = "Return to AEW for Revision";
             flagBtn.disabled = false;
         }
         if (approveBtn) {
@@ -1204,15 +1204,15 @@ async function openReportDetail(report) {
         }
     } else if (isMunicipalFlagged) {
         // ✅ Municipal already flagged — wait for AEW revision. READ-ONLY.
-        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back to Reports"; }
         if (flagBtn) flagBtn.style.display = "none";
         if (approveBtn) approveBtn.style.display = "none";
     } else if (isProvincialFlagged) {
         // ✅ Provincial flagged — Municipal can re-flag or resubmit
-        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+        if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Back to Reports"; }
         if (flagBtn) {
             flagBtn.style.display = "inline-flex";
-            flagBtn.textContent = "Flag for Revision";
+            flagBtn.textContent = "Return to AEW for Revision";
             flagBtn.disabled = false;
         }
         if (approveBtn) approveBtn.style.display = "none";
@@ -2088,10 +2088,10 @@ function initFlagButton() {
         // ✅ STEP 3: Show styled confirmation modal
         // ============================================================
         showActionConfirm({
-            title: "Flag for Revision?",
+            title: "Return to AEW for Revision?",
             message: "This report will be returned to the AEW for revision. <br><strong>The AEW will need to resubmit it after making changes.</strong>",
             details: detailsHtml,
-            confirmText: "Flag for Revision",
+            confirmText: "Return to AEW",
             confirmColor: "#C0392B",
             cancelText: "Cancel",
             onConfirm: async () => {
@@ -2125,9 +2125,9 @@ function initFlagButton() {
 
                     // ✅ Styled success modal
                     openModal(
-                        "The report has been returned to the AEW for revision. You'll see it again once they resubmit.",
+                        "Return successful. The report is now available in the AEW dashboard under Flagged Reports. It will return to Municipal Pending after the AEW resubmits it.",
                         {
-                            title: "Flagged for Revision",
+                            title: "Returned Successfully",
                             icon: "⚠",
                             iconBg: "#FEF3C7",
                             titleColor: "#D97706",
@@ -2150,7 +2150,7 @@ function initFlagButton() {
                         titleColor: "#C0392B",
                     });
                     flagBtn.classList.remove("active");
-                    flagBtn.textContent = "Flag for Revision";
+                    flagBtn.textContent = "Return to AEW for Revision";
                 } finally {
                     flagBtn.disabled = false;
                 }
