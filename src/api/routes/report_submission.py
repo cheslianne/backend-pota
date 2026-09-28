@@ -875,6 +875,11 @@ def get_awaiting_aew_revision(
         "Provincial Coordinator": SUBMITTED_PROVINCIAL_FLAGGED,
         "DA-RFO Officer": SUBMITTED_REGIONAL_FLAGGED,
         "Regional Coordinator": SUBMITTED_REGIONAL_FLAGGED,
+        "Agricultural Extension Worker": [
+            SUBMITTED_MUNICIPAL_FLAGGED,
+            SUBMITTED_PROVINCIAL_FLAGGED,
+            SUBMITTED_REGIONAL_FLAGGED,
+        ],
     }
 
     allowed_status = role_status_map.get(current_user.role)
@@ -885,7 +890,11 @@ def get_awaiting_aew_revision(
         db.query(ReportSubmission, RawPlantReport, User)
         .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
         .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
-        .filter(ReportSubmission.status == allowed_status)
+        .filter(
+            ReportSubmission.status.in_(allowed_status)
+            if isinstance(allowed_status, list)
+            else ReportSubmission.status == allowed_status
+        )
     )
 
     if current_user.role == "Municipal Coordinator":
@@ -893,6 +902,8 @@ def get_awaiting_aew_revision(
             func.lower(func.trim(RawPlantReport.municipality)) ==
             func.lower(func.trim(current_user.municipality))
         )
+    elif current_user.role == "Agricultural Extension Worker":
+        query = query.filter(RawPlantReport.encoded_by == current_user.user_id)
 
     reports = query.order_by(ReportSubmission.submitted_at.desc()).all()
 

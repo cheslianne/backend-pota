@@ -13,6 +13,7 @@ const FARMERS_ENDPOINT = `${API_BASE_URL}/api/farmers/farmers/`;
 const PLANTING_INTENTS_ENDPOINT = `${API_BASE_URL}/api/planting-intents/`;
 const RAW_PLANT_REPORTS_ENDPOINT = `${API_BASE_URL}/api/raw-plant-reports/from-planting-intent`;
 const REPORT_SUBMISSIONS_ENDPOINT = `${API_BASE_URL}/api/report-submissions`;
+const AEW_REVISION_ENDPOINT = `${API_BASE_URL}/api/report-submissions/awaiting-aew-revision`;
 const OFFTAKE_REQUESTS_ENDPOINT = `${API_BASE_URL}/api/offtake-requests/`;
 const FORECASTS_ENDPOINT = `${API_BASE_URL}/api/forecasts/`;
 
@@ -4199,18 +4200,30 @@ async function loadReports() {
 
         let submittedReports = [];
         try {
-            const reportsResponse = await apiRequest(`${API_BASE_URL}/api/raw-plant-reports/`, {
-                method: "GET"
-            });
+            const [reportsResponse, revisionResponse] = await Promise.all([
+                apiRequest(`${API_BASE_URL}/api/raw-plant-reports/`, { method: "GET" }),
+                apiRequest(AEW_REVISION_ENDPOINT, { method: "GET" })
+            ]);
 
             const allReports = Array.isArray(reportsResponse)
                 ? reportsResponse
                 : (reportsResponse.data || []);
+            const revisionReports = Array.isArray(revisionResponse)
+                ? revisionResponse
+                : (revisionResponse.data || []);
 
-            console.log("All reports from API:", allReports.length);
+            const reportsById = new Map(allReports.map(report => [String(report.report_id), report]));
+            revisionReports.forEach(report => {
+                reportsById.set(String(report.report_id), {
+                    ...reportsById.get(String(report.report_id)),
+                    ...report
+                });
+            });
+
+            console.log("All reports from API:", reportsById.size);
 
             // ✅ Only show reports at Municipal level OR final approved
-            submittedReports = allReports.filter(function(r) {
+            submittedReports = Array.from(reportsById.values()).filter(function(r) {
                 const status = String(r.status || '').toUpperCase().split('.').pop();
                 return (
                     status === 'SUBMITTED_MUNICIPAL_PENDING' ||
