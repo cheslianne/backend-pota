@@ -73,7 +73,10 @@ let currentOfftakeRequest = null;
 
 // Forecasting
 let FORECASTS_DATA = [];
+let PRICE_DATA = [];
 let priceChartInstance = null;
+let isForecastLoading = false;
+const PRICE_DATA_ENDPOINT = `${API_BASE_URL}/api/price-data/`;
 
 /* ============================================================
    MARKET PRICE DASHBOARD
@@ -7568,133 +7571,180 @@ function updateFairPriceDisplay(month) {
 ============================================================ */
 
 function initForecastResults() {
-    console.log("Initializing Forecast Results...");
-    
     const forecastView = document.getElementById("view-fair-prices");
-    if (!forecastView) {
-        console.warn("view-fair-prices not found in DOM");
-        return;
-    }
-    
-    console.log("Forecast view found:", forecastView);
-    
-    if (forecastView.classList.contains("active-view")) {
-        console.log("Fair Prices view is currently active, loading forecasts...");
-        setTimeout(function() {
-            loadForecastResults();
-            setTimeout(initPriceChart, 500);
-        }, 300);
-    }
-    
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                if (forecastView.classList.contains('active-view')) {
-                    console.log("Fair Prices view became active, loading forecasts...");
-                    loadForecastResults();
-                    setTimeout(initPriceChart, 500);
-                }
-            }
-        });
-    });
-    observer.observe(forecastView, { attributes: true });
-    
+    if (!forecastView) return;
+    initFairPriceControls();
+
+    const loadWhenVisible = function() {
+        if (forecastView.classList.contains("active-view")) loadForecastResults();
+    };
+
+    loadWhenVisible();
+    const observer = new MutationObserver(loadWhenVisible);
+    observer.observe(forecastView, { attributes: true, attributeFilter: ["class"] });
+
     const forecastNav = document.querySelector('.nav-item[data-view="fair-prices"]');
-    if (forecastNav) {
-        forecastNav.addEventListener('click', function() {
-            console.log("Fair Prices nav clicked, loading forecasts...");
-            setTimeout(function() {
-                loadForecastResults();
-                setTimeout(initPriceChart, 500);
-            }, 200);
-        });
-    } else {
-        console.warn("Nav item with data-view='fair-prices' not found");
-    }
-    
-    setTimeout(function() {
-        if (forecastView.classList.contains('active-view')) {
-            console.log("Safety check: loading forecasts...");
-            loadForecastResults();
-            setTimeout(initPriceChart, 500);
-        }
-    }, 1000);
+    forecastNav?.addEventListener("click", function() {
+        window.setTimeout(loadWhenVisible, 100);
+    });
 }
 
 
 async function loadForecastResults() {
-    console.log("loadForecastResults() called...");
-    
     const container = document.getElementById("forecastResultsContainer");
-    if (!container) {
-        console.warn("forecastResultsContainer not found.");
-        return;
-    }
-
-    console.log("Container found, loading forecasts...");
+    if (!container || isForecastLoading) return;
+    isForecastLoading = true;
 
     container.innerHTML = `
-        <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid #E5E5E5; border-top-color: #2E7D32; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
-            <br>Loading forecast results...
-        </div>
+        <div class="fair-price-empty" role="status">Loading forecast data...</div>
     `;
 
     try {
-        console.log("Fetching from:", FORECASTS_ENDPOINT);
-        const forecasts = await apiRequest(FORECASTS_ENDPOINT, { method: "GET" });
-        console.log("Forecast Results API response:", forecasts);
+        const [forecastResult, priceResult] = await Promise.allSettled([
+            apiRequest(FORECASTS_ENDPOINT, { method: "GET" }),
+            apiRequest(PRICE_DATA_ENDPOINT, { method: "GET" }),
+        ]);
 
-        if (!Array.isArray(forecasts)) {
-            throw new Error("Invalid forecast response.");
+        if (forecastResult.status !== "fulfilled") throw forecastResult.reason;
+        if (!Array.isArray(forecastResult.value)) throw new Error("Invalid forecast response.");
+
+        FORECASTS_DATA = forecastResult.value;
+        PRICE_DATA = priceResult.status === "fulfilled" && Array.isArray(priceResult.value)
+            ? priceResult.value
+            : [];
+
+        renderForecastResults(FORECASTS_DATA);
+        renderFairPriceDashboard();
+        if (priceResult.status === "rejected") {
+            console.warn("Historical price series could not be loaded:", priceResult.reason);
         }
-
-        FORECASTS_DATA = forecasts;
-        renderForecastResults(forecasts);
-        
-        setTimeout(function() {
-            initPriceChart();
-        }, 300);
-
     } catch (error) {
         console.error("Failed to load forecast results:", error);
-        container.innerHTML = `
-            <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
-                <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
-                <strong>Failed to load forecast results.</strong>
-                <br><small style="color: #999;">${escapeHtml(error.message || "Please check the FastAPI server.")}</small>
-                <br><br>
-                <button onclick="loadForecastResults()" style="padding: 8px 20px; background: #2E7D32; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    🔄 Retry
-                </button>
-            </div>
-        `;
+        FORECASTS_DATA = [];
+        PRICE_DATA = [];
+        container.innerHTML = `<div class="fair-price-empty" role="alert">Forecast data could not be loaded. <button class="btn-outline-report" type="button" onclick="loadForecastResults()">Retry</button></div>`;
+        renderFairPriceDashboard();
+    } finally {
+        isForecastLoading = false;
     }
 }
 
 function updatePriceMetrics(forecasts) {
-    const lowestPriceEl = document.getElementById("lowestPriceDisplay");
-    const highestPriceEl = document.getElementById("highestPriceDisplay");
-    
-    if (!lowestPriceEl || !highestPriceEl) return;
-    
-    let allPrices = [];
-    forecasts.forEach(function(f) {
-        if (f.forecast_price_low) allPrices.push(Number(f.forecast_price_low));
-        if (f.forecast_price_high) allPrices.push(Number(f.forecast_price_high));
+    renderFairPriceDashboard();
+}
+
+function monthKey(value) {
+    const match = String(value || "").match(/^(\d{4})-(\d{2})/);
+    return match ? `${match[1]}-${match[2]}` : null;
+}
+
+function monthLabel(key) {
+    const [year, month] = key.split("-").map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString("en-PH", {
+        month: "short",
+        year: "numeric",
     });
-    
-    if (allPrices.length === 0) {
-        lowestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
-        highestPriceEl.innerHTML = '₱0 <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>';
-        return;
+}
+
+function displayCommodityName(name) {
+    return name === "Squash fruit" ? "Squash" : name;
+}
+
+function initFairPriceControls() {
+    const commoditySelect = document.getElementById("fairPriceCommodity");
+    const periodSelect = document.getElementById("fairPricePeriod");
+    if (commoditySelect && !commoditySelect.dataset.bound) {
+        commoditySelect.addEventListener("change", function() {
+            renderFairPriceDashboard();
+        });
+        commoditySelect.dataset.bound = "true";
     }
-    
-    const minPrice = Math.min(...allPrices);
-    const maxPrice = Math.max(...allPrices);
-    
-    lowestPriceEl.innerHTML = `₱${minPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
-    highestPriceEl.innerHTML = `₱${maxPrice.toFixed(2)} <span style="font-size: 13px; font-weight: 500; color: #fff;">/kg</span>`;
+    if (periodSelect && !periodSelect.dataset.bound) {
+        periodSelect.addEventListener("change", function() {
+            renderFairPriceDashboard();
+        });
+        periodSelect.dataset.bound = "true";
+    }
+}
+
+function renderFairPriceDashboard() {
+    const commoditySelect = document.getElementById("fairPriceCommodity");
+    const periodSelect = document.getElementById("fairPricePeriod");
+    if (!commoditySelect || !periodSelect) return;
+
+    const previousSelection = commoditySelect.value || "all";
+    const availableCommodities = [...new Set([
+        ...PRICE_DATA.map((row) => row.commodity),
+        ...FORECASTS_DATA.map((row) => row.commodity),
+    ].filter(Boolean))].sort((a, b) => displayCommodityName(a).localeCompare(displayCommodityName(b)));
+
+    const optionSignature = availableCommodities.join("|");
+    if (commoditySelect.dataset.options !== optionSignature) {
+        commoditySelect.replaceChildren(new Option("All commodities", "all"));
+        availableCommodities.forEach((commodity) => {
+            commoditySelect.add(new Option(displayCommodityName(commodity), commodity));
+        });
+        commoditySelect.dataset.options = optionSignature;
+        commoditySelect.value = availableCommodities.includes(previousSelection) || previousSelection === "all"
+            ? previousSelection
+            : "all";
+    }
+
+    const selectedCommodity = commoditySelect.value || "all";
+    const selectedPeriod = periodSelect.value || "all";
+    const cutoff = new Date();
+    if (selectedPeriod === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
+    if (selectedPeriod === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+
+    const isInPeriod = (value) => {
+        if (selectedPeriod === "all") return true;
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= cutoff;
+    };
+    const matchesCommodity = (row) => selectedCommodity === "all" || row.commodity === selectedCommodity;
+    const historical = PRICE_DATA.filter((row) => matchesCommodity(row) && isInPeriod(row.record_date));
+    const forecasts = FORECASTS_DATA.filter((row) => matchesCommodity(row) && isInPeriod(row.forecast_date));
+    const observedValues = historical.map((row) => Number(row.price_per_kg)).filter(Number.isFinite);
+    const formatPrice = (value) => Number.isFinite(value)
+        ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2 }).format(value)
+        : "—";
+
+    const minimum = document.getElementById("fairPriceMinimum");
+    const average = document.getElementById("fairPriceAverage");
+    const maximum = document.getElementById("fairPriceMaximum");
+    const forecastCount = document.getElementById("fairPriceForecastCount");
+    if (minimum) minimum.textContent = observedValues.length ? formatPrice(Math.min(...observedValues)) : "—";
+    if (average) average.textContent = observedValues.length
+        ? formatPrice(observedValues.reduce((total, value) => total + value, 0) / observedValues.length)
+        : "—";
+    if (maximum) maximum.textContent = observedValues.length ? formatPrice(Math.max(...observedValues)) : "—";
+    if (forecastCount) forecastCount.textContent = new Intl.NumberFormat("en-PH").format(forecasts.length);
+
+    const latestForecast = forecasts.slice().sort((left, right) =>
+        String(left.forecast_date).localeCompare(String(right.forecast_date))
+    ).at(-1);
+    const insightTitle = document.getElementById("priceInsightTitle");
+    const insightCopy = document.getElementById("priceInsightCopy");
+    const insightLow = document.getElementById("priceInsightLow");
+    const insightHigh = document.getElementById("priceInsightHigh");
+    const insightPeriod = document.getElementById("priceInsightPeriod");
+    if (latestForecast) {
+        const commodityName = displayCommodityName(latestForecast.commodity || selectedCommodity);
+        const forecastDate = new Date(`${monthKey(latestForecast.forecast_date)}-01T00:00:00`);
+        if (insightTitle) insightTitle.textContent = `${commodityName} outlook`;
+        if (insightCopy) insightCopy.textContent = `Projected farmgate range for ${forecastDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}. Estimates are modeled ranges, not guaranteed transaction prices.`;
+        if (insightLow) insightLow.textContent = formatPrice(Number(latestForecast.forecast_price_low));
+        if (insightHigh) insightHigh.textContent = formatPrice(Number(latestForecast.forecast_price_high));
+        if (insightPeriod) insightPeriod.textContent = `${forecasts.length} forecast points · ${latestForecast.data_source || "PSA OpenSTAT"}`;
+    } else {
+        if (insightTitle) insightTitle.textContent = "No forecast in this range";
+        if (insightCopy) insightCopy.textContent = "Historical observations remain available where recorded. Choose another commodity or period to review projections.";
+        if (insightLow) insightLow.textContent = "—";
+        if (insightHigh) insightHigh.textContent = "—";
+        if (insightPeriod) insightPeriod.textContent = "Source: PSA OpenSTAT farmgate series.";
+    }
+
+    renderFairPriceChart(selectedCommodity, selectedPeriod);
 }
 
 function groupForecastsByYear(forecasts) {
@@ -7910,17 +7960,10 @@ function renderForecastResults(forecasts) {
                 html += `
                     <tr style="background: ${bgColor}; border-bottom: 1px solid #F0EDE8;">
                         <td style="padding: 8px 6px; font-weight: 500;">${escapeHtml(commodity)}</td>
-                        <td style="padding: 8px 6px; text-align: center;">₱${lowerPriceStr}</td>
-                        <td style="padding: 8px 6px; text-align: center;">₱${upperPriceStr}</td>
+                                    <td class="forecast-low-price" style="padding: 8px 6px; text-align: center;">₱${lowerPriceStr}</td>
+                                    <td class="forecast-high-price" style="padding: 8px 6px; text-align: center;">₱${upperPriceStr}</td>
                         <td style="padding: 8px 6px; text-align: center;">
-                            <span style="
-                                background: #2E7D32;
-                                color: #fff;
-                                padding: 2px 12px;
-                                border-radius: 12px;
-                                font-size: 12px;
-                                font-weight: 600;
-                            ">₱${lowerPriceStr} – ₱${upperPriceStr}</span>
+                                        <span class="forecast-range-badge">₱${lowerPriceStr} – ₱${upperPriceStr}</span>
                         </td>
                     </tr>
                 `;
@@ -7947,10 +7990,9 @@ function renderForecastResults(forecasts) {
         firstYearContent.style.maxHeight = firstYearContent.scrollHeight + 'px';
     }
 
-    updatePriceMetrics(forecasts);
-
     const countDiv = document.createElement('div');
-    countDiv.style.cssText = 'margin-top: 12px; padding: 12px 0; font-size: 13px; color: #666; text-align: right; border-top: 1px solid #E5E5E5;';
+    countDiv.className = "forecast-results-count";
+    countDiv.style.cssText = 'margin-top:12px;padding:12px 0;font-size:13px;text-align:right;border-top:1px solid var(--border);';
     countDiv.textContent = `Total: ${forecasts.length} forecast(s) found.`;
     container.appendChild(countDiv);
     
@@ -7962,40 +8004,9 @@ function renderForecastResults(forecasts) {
 ============================================================ */
 
 function initPriceChart() {
-    console.log("🔍 initPriceChart called...");
-    
     const canvas = document.getElementById('priceTrendChart');
-    if (!canvas) {
-        console.warn('❌ Price trend chart canvas not found');
-        return;
-    }
-    console.log('✅ Canvas found');
-    
-    if (typeof Chart === 'undefined') {
-        console.warn('⚠️ Chart.js not loaded yet, waiting...');
-        setTimeout(initPriceChart, 500);
-        return;
-    }
-    console.log('✅ Chart.js loaded');
-    
-    const forecasts = FORECASTS_DATA || [];
-    console.log('📊 Forecasts data:', forecasts.length, 'records');
-    
-    if (forecasts.length === 0) {
-        console.warn('❌ No forecast data available for chart');
-        if (canvas.parentElement) {
-            canvas.parentElement.innerHTML = `
-                <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
-                    No price data available for chart.
-                    <br><small style="color: #999;">Please load forecast data first.</small>
-                </div>
-            `;
-        }
-        return;
-    }
-    
-    renderChart(forecasts, 'all');
+    if (!canvas || typeof Chart === "undefined") return;
+    renderFairPriceDashboard();
 }
 
 function renderChart(forecasts, commodityFilter) {
@@ -8342,29 +8353,194 @@ function renderChart(forecasts, commodityFilter) {
     }
 }
 
-function updateChart(commodity) {
-    console.log("🔍 updateChart called with:", commodity);
-    
-    const forecasts = FORECASTS_DATA || [];
-    if (forecasts.length === 0) {
-        console.warn('❌ No forecast data available for chart');
+function renderFairPriceChart(selectedCommodity, selectedPeriod) {
+    const canvas = document.getElementById("priceTrendChart");
+    const emptyState = document.getElementById("priceChartEmpty");
+    if (!canvas || typeof Chart === "undefined") {
+        if (emptyState) {
+            emptyState.hidden = false;
+            emptyState.textContent = typeof Chart === "undefined"
+                ? "The price chart library could not be loaded."
+                : "Price chart is unavailable.";
+        }
         return;
     }
-    
-    document.querySelectorAll('.fair-price-dashboard-container .btn-outline-report').forEach(function(btn) {
-        const btnText = btn.textContent.trim();
-        if (btnText === commodity || (commodity === 'all' && btnText === 'All')) {
-            btn.style.background = '#2E7D32';
-            btn.style.color = '#fff';
-            btn.style.borderColor = '#2E7D32';
-        } else {
-            btn.style.background = '#FFFFFF';
-            btn.style.color = 'var(--ink)';
-            btn.style.borderColor = 'var(--border)';
-        }
+
+    const cutoff = new Date();
+    if (selectedPeriod === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
+    if (selectedPeriod === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+    const inPeriod = (value) => {
+        if (selectedPeriod === "all") return true;
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= cutoff;
+    };
+    const matchesCommodity = (row) => selectedCommodity === "all" || row.commodity === selectedCommodity;
+    const historical = PRICE_DATA.filter((row) => matchesCommodity(row) && inPeriod(row.record_date));
+    const forecasts = FORECASTS_DATA.filter((row) => matchesCommodity(row) && inPeriod(row.forecast_date));
+    const seriesNames = [...new Set([
+        ...historical.map((row) => row.commodity),
+        ...forecasts.map((row) => row.commodity),
+    ].filter(Boolean))];
+    const colors = ["#167A58", "#D65B4A", "#D28A16", "#4385B7", "#735E9B", "#4C918A"];
+    const months = new Set();
+    const monthlyHistorical = new Map();
+    const monthlyForecasts = new Map();
+
+    historical.forEach((row) => {
+        const key = monthKey(row.record_date);
+        const value = Number(row.price_per_kg);
+        if (!key || !Number.isFinite(value)) return;
+        months.add(key);
+        const seriesKey = `${row.commodity}|${key}`;
+        if (!monthlyHistorical.has(seriesKey)) monthlyHistorical.set(seriesKey, []);
+        monthlyHistorical.get(seriesKey).push(value);
     });
-    
-    renderChart(forecasts, commodity);
+    forecasts.forEach((row) => {
+        const key = monthKey(row.forecast_date);
+        const low = Number(row.forecast_price_low);
+        const high = Number(row.forecast_price_high);
+        if (!key || !Number.isFinite(low) || !Number.isFinite(high)) return;
+        months.add(key);
+        const seriesKey = `${row.commodity}|${key}`;
+        if (!monthlyForecasts.has(seriesKey)) monthlyForecasts.set(seriesKey, []);
+        monthlyForecasts.get(seriesKey).push({ low, high });
+    });
+
+    const sortedMonths = [...months].sort();
+    const datasets = [];
+    seriesNames.forEach((commodity, index) => {
+        const color = colors[index % colors.length];
+        const observedValues = sortedMonths.map((key) => {
+            const values = monthlyHistorical.get(`${commodity}|${key}`);
+            return values?.length
+                ? values.reduce((total, value) => total + value, 0) / values.length
+                : null;
+        });
+        const forecastRows = sortedMonths.map((key) => monthlyForecasts.get(`${commodity}|${key}`) || []);
+        const lowValues = forecastRows.map((rows) => rows.length
+            ? rows.reduce((total, row) => total + row.low, 0) / rows.length
+            : null);
+        const highValues = forecastRows.map((rows) => rows.length
+            ? rows.reduce((total, row) => total + row.high, 0) / rows.length
+            : null);
+
+        datasets.push({
+            label: `${displayCommodityName(commodity)} observed`,
+            data: observedValues,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2.5,
+            pointRadius: observedValues.length > 18 ? 1 : 3,
+            pointHoverRadius: 5,
+            tension: 0.32,
+            spanGaps: false,
+            order: 3,
+        });
+        datasets.push({
+            label: `${displayCommodityName(commodity)} range lower`,
+            data: lowValues,
+            borderColor: color,
+            backgroundColor: "transparent",
+            borderWidth: 1,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            tension: 0.25,
+            spanGaps: false,
+            order: 1,
+        });
+        datasets.push({
+            label: `${displayCommodityName(commodity)} forecast range`,
+            data: highValues,
+            borderColor: color,
+            backgroundColor: `${color}26`,
+            borderWidth: 1.5,
+            pointRadius: highValues.length > 18 ? 0 : 2,
+            pointHoverRadius: 5,
+            tension: 0.25,
+            fill: "-1",
+            spanGaps: false,
+            order: 2,
+        });
+    });
+
+    const hasValues = datasets.some((dataset) => dataset.data.some((value) => value !== null));
+    if (emptyState) {
+        emptyState.hidden = hasValues;
+        emptyState.textContent = hasValues
+            ? ""
+            : "No observed prices or forecasts are available for this selection.";
+    }
+    if (priceChartInstance) {
+        priceChartInstance.destroy();
+        priceChartInstance = null;
+    }
+    if (!hasValues) return;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    priceChartInstance = new Chart(context, {
+        type: "line",
+        data: {
+            labels: sortedMonths.map(monthLabel),
+            datasets,
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            animation: { duration: 350 },
+            layout: { padding: { top: 4, right: 8, bottom: 0, left: 0 } },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#53615B",
+                        usePointStyle: true,
+                        pointStyle: "line",
+                        boxWidth: 18,
+                        padding: 16,
+                        font: { family: "Plus Jakarta Sans", size: 11, weight: "600" },
+                        filter: (item) => !item.text.includes("range lower"),
+                    },
+                },
+                tooltip: {
+                    backgroundColor: "rgba(14,27,22,.94)",
+                    padding: 11,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: (context) => context.raw == null
+                            ? `${context.dataset.label}: no data`
+                            : `${context.dataset.label}: ₱${Number(context.raw).toFixed(2)}/kg`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: "#718078", maxTicksLimit: 8, maxRotation: 0, font: { size: 10 } },
+                    border: { display: false },
+                },
+                y: {
+                    beginAtZero: false,
+                    suggestedMin: 0,
+                    grid: { color: "rgba(14,27,22,.07)" },
+                    ticks: {
+                        color: "#718078",
+                        callback: (value) => `₱${Number(value).toFixed(0)}`,
+                        font: { size: 10 },
+                    },
+                    border: { display: false },
+                },
+            },
+        },
+    });
+}
+
+function updateChart(commodity) {
+    const commoditySelect = document.getElementById("fairPriceCommodity");
+    if (!commoditySelect) return;
+    commoditySelect.value = commodity;
+    renderFairPriceDashboard();
 }
 
 console.log("Price Trend Chart functions loaded!");
@@ -8483,46 +8659,14 @@ async function loadMarketPriceDashboard() {
             if (!container) return;
 
             container.innerHTML = `
-                <div style="
-                    padding: 30px;
-                    text-align: center;
-                    color: #C0392B;
-                ">
-                    <div style="
-                        font-size: 35px;
-                        margin-bottom: 10px;
-                    ">
-                        ⚠️
+                <div class="market-data-error" role="alert">
+                    <span class="market-error-mark" aria-hidden="true">!</span>
+                    <div class="market-error-copy">
+                        <strong>Market data is temporarily unavailable</strong>
+                        <p>Check that the eSaka API is running, then retry.</p>
+                        <small>${escapeHtml(error.message || "Market data request failed.")}</small>
                     </div>
-
-                    <strong>
-                        Failed to load market price data.
-                    </strong>
-
-                    <br>
-
-                    <small style="color:#999;">
-                        ${escapeHtml(
-                            error.message || "Please check the FastAPI server."
-                        )}
-                    </small>
-
-                    <br><br>
-
-                    <button
-                        onclick="loadMarketPriceDashboard()"
-                        style="
-                            padding:8px 20px;
-                            background:#2E7D32;
-                            color:#fff;
-                            border:none;
-                            border-radius:6px;
-                            cursor:pointer;
-                            font-weight:600;
-                        "
-                    >
-                        🔄 Retry
-                    </button>
+                    <button class="btn-primary" type="button" onclick="loadMarketPriceDashboard()">Retry</button>
                 </div>
             `;
         });
@@ -8849,7 +8993,7 @@ function renderMarketForecastTable(container, forecasts, priceType) {
                 const bgColor = index % 2 === 0 ? "transparent" : "#F6F3EB";
 
                 html += `
-                            <tr style="
+                            <tr class="market-forecast-row" style="
                                 background:${bgColor};
                                 border-bottom:
                                     1px solid #F0EDE8;
@@ -8862,14 +9006,14 @@ function renderMarketForecastTable(container, forecasts, priceType) {
                                     ${escapeHtml(commodity)}
                                 </td>
 
-                                <td style="
+                                <td class="market-forecast-low" style="
                                     padding:8px 6px;
                                     text-align:center;
                                 ">
                                     ₱${low.toFixed(2)}
                                 </td>
 
-                                <td style="
+                                <td class="market-forecast-high" style="
                                     padding:8px 6px;
                                     text-align:center;
                                 ">
@@ -8881,9 +9025,7 @@ function renderMarketForecastTable(container, forecasts, priceType) {
                                     text-align:center;
                                 ">
 
-                                    <span style="
-                                        background:#2E7D32;
-                                        color:#fff;
+                                    <span class="market-forecast-range" style="
                                         padding:2px 12px;
                                         border-radius:12px;
                                         font-size:12px;

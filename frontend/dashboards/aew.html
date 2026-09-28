@@ -1508,8 +1508,16 @@ body .market-forecast-card {
 }
 body .summary-card:hover,
 body .market-forecast-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-body .summary-card:first-child { background: linear-gradient(135deg, #0F3D2E, #0A2B21); color: #fff; border-color: transparent; }
-body .summary-card:first-child .summary-label { color: rgba(255,255,255,.7); }
+body .summary-card.offtake-total { background: linear-gradient(135deg, #0F3D2E, #0A2B21); color: #fff; border-color: transparent; }
+body .summary-card.offtake-total .summary-info h3,
+body .summary-card.offtake-total .summary-count { color: #fff; }
+body .summary-card.offtake-total .summary-label { color: rgba(255,255,255,.78); }
+body .summary-card.offtake-total .summary-icon { background: rgba(255,255,255,.14); }
+body .summary-card.planting-draft { background: #F1F4F3; color: var(--ink); border-color: var(--border); border-left-color: #7A8580; }
+body .summary-card.planting-draft .summary-info h3,
+body .summary-card.planting-draft .summary-count { color: var(--ink); }
+body .summary-card.planting-draft .summary-label { color: var(--muted); }
+body .summary-card.planting-draft .summary-icon { background: #E1E7E4; }
 body .summary-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 body .summary-count { font-size: 36px; font-weight: 800; letter-spacing: 0; }
 body .summary-icon { border-radius: 14px; background: var(--green-light); }
@@ -1624,6 +1632,71 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .rs-progress b { color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .rs-bar { flex: 1; min-width: 40px; height: 8px; overflow: hidden; border-radius: 999px; background: var(--border-light); }
 .rs-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--amber)); transition: width .25s ease; }
+
+.fair-price-dashboard-container { display: grid; gap: 16px; }
+.fair-price-toolbar { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, .8fr) minmax(180px, .8fr) auto; gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.fair-price-control { display: grid; gap: 6px; min-width: 0; }
+.fair-price-control label, .fair-price-control > span:first-child { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.fair-price-control select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
+.fair-price-source { align-self: center; justify-self: end; padding: 8px 11px; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.fair-price-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.price-stat { min-width: 0; padding: 17px 18px; border: 1px solid var(--border); border-top: 3px solid #AEBBB5; border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
+.price-stat label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.price-stat strong { display: block; margin: 10px 0 4px; color: var(--ink); font-size: 25px; font-weight: 800; overflow-wrap: anywhere; }
+.price-stat small { color: var(--muted); font-size: 11px; }
+.price-stat.minimum { border-top-color: #4186B8; }
+.price-stat.average { border-color: transparent; border-top-color: var(--green); background: linear-gradient(145deg, #0F3D2E, #0A2B21); }
+.price-stat.average label, .price-stat.average strong { color: #fff; }
+.price-stat.average small { color: rgba(255,255,255,.72); }
+.price-stat.maximum { border-top-color: var(--amber); }
+.price-stat.forecast-count { border-top-color: #178A55; }
+.fair-price-analysis { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .8fr); gap: 14px; align-items: stretch; }
+.price-chart-panel, .forecast-insight, .forecast-schedule { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.price-chart-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.price-chart-heading h2, .forecast-insight h2, .forecast-schedule h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
+.price-chart-heading p, .forecast-schedule > p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.price-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; color: var(--muted); font-size: 11px; }
+.price-chart-legend span { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.price-chart-legend i { width: 15px; height: 3px; border-radius: 3px; background: var(--green); }
+.price-chart-legend .forecast-key { height: 8px; border: 1px solid #D98200; background: var(--amber-soft); }
+.price-chart-frame { position: relative; width: 100%; height: 320px; }
+.price-chart-frame canvas { width: 100% !important; height: 100% !important; }
+.price-chart-empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; padding: 20px; background: rgba(255,255,255,.94); color: var(--muted); text-align: center; font-size: 13px; }
+.price-chart-empty[hidden] { display: none; }
+.forecast-insight { display: flex; flex-direction: column; background: #FFF5E2; border-color: #F1D8A8; }
+.insight-eyebrow { margin-bottom: 8px; color: #94600B; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.forecast-insight h2 { font-size: 18px; line-height: 1.35; }
+.forecast-insight > p { color: #5F5849; font-size: 12px; line-height: 1.55; }
+.insight-range { display: grid; gap: 4px; padding: 13px; margin: 8px 0 12px; border-radius: 10px; background: rgba(255,255,255,.82); }
+.insight-range span { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.insight-range strong { color: var(--green); font-size: 21px; font-weight: 800; }
+.insight-note { margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(148,96,11,.18); color: #6C5B3C; font-size: 11px; line-height: 1.5; }
+.forecast-schedule { padding: 18px; }
+.forecast-schedule .forecast-year-header { background: var(--green) !important; border-radius: 9px !important; font-size: 13px !important; }
+.forecast-schedule .forecast-year-content { border-color: var(--border) !important; border-radius: 0 0 9px 9px !important; }
+.forecast-schedule .forecast-month-header { background: #F3F6F4 !important; color: var(--ink) !important; }
+.forecast-schedule .forecast-month-content { background: #FBFCFB !important; }
+.forecast-schedule .forecast-range-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.forecast-schedule .forecast-low-price { color: #2F6F9B; font-weight: 700; }
+.forecast-schedule .forecast-high-price { color: #9A5B00; font-weight: 700; }
+.forecast-schedule .forecast-results-count { color: var(--muted); }
+.market-forecast-card .forecast-year-header { background: linear-gradient(100deg, #0F3D2E, #176147) !important; border-radius: 9px !important; }
+.market-forecast-card .forecast-month-header { background: #F1F5F3 !important; color: var(--ink) !important; }
+.market-forecast-card .forecast-month-content { background: #FBFCFB !important; }
+.market-forecast-row:nth-child(even) { background: #F7FAF8 !important; border-color: var(--border-light) !important; }
+.market-forecast-low { color: #2F6F9B !important; font-weight: 700; }
+.market-forecast-high { color: #9A5B00 !important; font-weight: 700; }
+.market-forecast-range { background: var(--green-light) !important; color: var(--green) !important; border: 1px solid #C8E4D4; border-radius: 999px !important; font-weight: 800 !important; }
+.market-data-error { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid #F0D3CC; border-radius: 12px; background: #FFF7F4; color: var(--ink); text-align: left; }
+.market-error-mark { display: grid; place-items: center; flex: 0 0 34px; width: 34px; aspect-ratio: 1; border-radius: 50%; background: #FBE5DF; color: #B44432; font-size: 18px; font-weight: 800; }
+.market-error-copy { flex: 1; min-width: 0; }
+.market-error-copy strong { color: #8F3427; font-size: 13px; }
+.market-error-copy p { margin: 4px 0; color: var(--muted); font-size: 12px; }
+.market-error-copy small { color: #8A706B; font-size: 11px; overflow-wrap: anywhere; }
+.market-data-error .btn-primary { flex-shrink: 0; padding: 9px 14px; }
+.market-forecast-card .forecast-year-content table { width: 100%; }
+.fair-price-empty { padding: 24px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); text-align: center; font-size: 13px; }
+
 @media (max-width: 900px) { .fp-grid { grid-template-columns: 1fr; } }
 @media (max-width: 520px) {
   .fp-hero { align-items: flex-start; gap: 14px; padding: 16px; }
@@ -1635,6 +1708,21 @@ body .view.active-view { animation: esakaFade .35s ease; }
   .rs-progress b:first-child { flex: 1 1 100%; }
   .rs-bar { flex: 1; }
 }
+@media (max-width: 900px) {
+  .fair-price-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fair-price-source { justify-self: start; }
+  .fair-price-analysis { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .fair-price-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .price-stat { padding: 13px; }
+  .price-stat strong { font-size: 21px; }
+  .price-chart-panel { padding: 15px; }
+  .price-chart-heading { flex-direction: column; }
+  .price-chart-legend { justify-content: flex-start; }
+  .price-chart-frame { height: 260px; }
+}
+@media (max-width: 400px) { .fair-price-toolbar { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -1728,14 +1816,10 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="main-header">
                   <div class="header-left">
                       <h1>All Farmers Directory</h1>
-                      
                   </div>
                   <div class="header-actions">
                       <div class="search-box">
-                          <svg viewBox="0 0 24 24">
-                              <circle cx="11" cy="11" r="7"></circle>
-                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                          </svg>
+                          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                           <input type="text" id="searchFarmersInput" placeholder="Search farmers...">
                       </div>
                       <button class="btn-primary" id="addFarmerBtn" type="button">+ Add Farmer</button>
@@ -1743,15 +1827,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               </div>
               <div class="card">
                   <table>
-                      <thead>
-                          <tr>
-                              <th>Name</th>
-                              <th>RSBSA-ID</th>
-                              <th>Municipality</th>
-                              <th>Barangay</th>
-                              <th style="text-align:center;">Status</th>
-                          </tr>
-                      </thead>
+                      <thead><tr><th>Name</th><th>RSBSA-ID</th><th>Municipality</th><th>Barangay</th><th class="center-col">Status</th></tr></thead>
                       <tbody id="farmersTableBody"></tbody>
                   </table>
                   <div class="pagination-container">
@@ -1766,89 +1842,23 @@ body .view.active-view { animation: esakaFade .35s ease; }
           </div>
 
           <div id="registerFarmerSubview" class="hidden-element">
-              <div class="main-header">
-                  <div class="header-left">
-                      <h1>Register a Farmer</h1>
-                      <p>Create a verified entry linked to the Department of Agriculture database.</p>
-                  </div>
-              </div>
+              <div class="main-header"><div class="header-left"><h1>Register a Farmer</h1><p>Create a verified entry linked to the Department of Agriculture database.</p></div></div>
               <div class="card">
                   <form id="registerFarmerForm">
                       <div class="form-grid-two">
-                          <div class="form-field-item">
-                              <label>Farmer ID (RSBSA ID) <span class="req">*</span></label>
-                              <input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required>
-                          </div>
-                          <div class="form-field-item">
-        <label>Municipality <span class="req">*</span></label>
-        <select id="regMunicipality" required>
-            <option value="" disabled selected>Select Municipality</option>
-        </select>
-    </div>
-                          <div class="form-field-item">
-                              <label>First Name <span class="req">*</span></label>
-                              <input type="text" id="regFirstName" placeholder="Enter your first name" required>
-                          </div>
-                          <!-- BARANGAY (DROPDOWN) -->
-    <div class="form-field-item">
-        <label>Barangay <span class="req">*</span></label>
-        <select id="regBarangay" required disabled>
-            <option value="" disabled selected>Select Municipality first</option>
-        </select>
-    </div>
-                          <div class="form-field-item">
-                              <label>Middle Name</label>
-                              <input type="text" id="regMiddleName" placeholder="Enter your middle name">
-                          </div>
-                          <div class="form-field-item">
-                              <label>Last Name <span class="req">*</span></label>
-                              <input type="text" id="regLastName" placeholder="Enter your last name" required>
-                          </div>
-                          <div class="form-field-item">
-                              <label>Suffix</label>
-                              <input type="text" id="regSuffix" placeholder="Jr.">
-                          </div>
-                          <div class="form-field-item">
-    <label>Sex <span class="req">*</span></label>
-    <select id="regSex" required>
-        <option value="" disabled selected>Select Sex</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-    </select>
-</div>
-                          <div class="form-field-item">
-                              <label>Birthdate <span class="req">*</span></label>
-                              <input type="date" id="regBirthdate" required>
-                          </div>
-                          <div class="form-field-item">
-    <label>Phone Number <span class="req">*</span></label>
-    <input 
-        type="tel" 
-        id="regPhone" 
-        placeholder="09XXXXXXXXX" 
-        required
-        pattern="^09[0-9]{9}$"
-        maxlength="11"
-        title="Please enter a valid PH mobile number (11 digits, starting with 09). Example: 0999654399"
-        inputmode="numeric"
-    >
-</div>
-                         <div class="form-field-item"> 
-    <label>Email <span class="req">*</span></label> 
-    <input  
-        type="email"  
-        id="regEmail"  
-        placeholder="jackelyngomez212@gmail.com"  
-        required 
-        pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$" 
-        title="Please enter a valid Gmail address. Example: juan@gmail.com"
-    > 
-</div>
- </div> 
-                      <div class="actions-right-row">
-                          <button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button>
-                          <button class="btn-primary" type="submit">Submit</button>
+                          <div class="form-field-item"><label>Farmer ID (RSBSA ID) <span class="req">*</span></label><input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required></div>
+                          <div class="form-field-item"><label>Municipality <span class="req">*</span></label><select id="regMunicipality" required><option value="" disabled selected>Select Municipality</option></select></div>
+                          <div class="form-field-item"><label>First Name <span class="req">*</span></label><input type="text" id="regFirstName" placeholder="Enter your first name" required></div>
+                          <div class="form-field-item"><label>Barangay <span class="req">*</span></label><select id="regBarangay" required disabled><option value="" disabled selected>Select Municipality first</option></select></div>
+                          <div class="form-field-item"><label>Middle Name</label><input type="text" id="regMiddleName" placeholder="Enter your middle name"></div>
+                          <div class="form-field-item"><label>Last Name <span class="req">*</span></label><input type="text" id="regLastName" placeholder="Enter your last name" required></div>
+                          <div class="form-field-item"><label>Suffix</label><input type="text" id="regSuffix" placeholder="Jr."></div>
+                          <div class="form-field-item"><label>Sex <span class="req">*</span></label><select id="regSex" required><option value="" disabled selected>Select Sex</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                          <div class="form-field-item"><label>Birthdate <span class="req">*</span></label><input type="date" id="regBirthdate" required></div>
+                          <div class="form-field-item"><label>Phone Number <span class="req">*</span></label><input type="tel" id="regPhone" placeholder="09XXXXXXXXX" required pattern="^09[0-9]{9}$" maxlength="11" title="Please enter a valid PH mobile number (11 digits, starting with 09). Example: 0999654399" inputmode="numeric"></div>
+                          <div class="form-field-item"><label>Email <span class="req">*</span></label><input type="email" id="regEmail" placeholder="jackelyngomez212@gmail.com" required pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$" title="Please enter a valid Gmail address. Example: juan@gmail.com"></div>
                       </div>
+                      <div class="actions-right-row"><button class="btn-outline-report" id="cancelRegisterFarmerBtn" type="button">Cancel</button><button class="btn-primary" type="submit">Submit</button></div>
                   </form>
               </div>
           </div>
@@ -2672,61 +2682,68 @@ body .view.active-view { animation: esakaFade .35s ease; }
           VIEW 4: FAIR PRICES
       ============================================================ -->
       <section class="view" id="view-fair-prices">
-          <div class="main-header">
+            <div class="main-header">
               <div class="header-left">
-                  <h1>Fair Price Dashboard</h1>
-                  <p>Daily validated price ceilings and market averages based on DA-AMAD.</p>
+                <h1>Fair Price Dashboard</h1>
+                <p>Observed PSA farmgate prices and projected ranges for key commodities.</p>
               </div>
-          </div>
-          
-          <div class="fair-price-dashboard-container">
-              <div class="fair-price-top-card">
-                  <div class="fair-price-left-pane">
-                      <h2>Farmgate Price Intelligence</h2>
-                      <p>Quarterly forecasted farmgate prices based on historical PSA OpenSTAT data.</p>
+            </div>
 
-                      <div class="vegetable-collage-banner">
-                          <div class="vegetable-item">
-                              <img src="../images/tomato.jpg" alt="Tomato">
-                              <div class="vegetable-label">Tomato</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/squash.jpg" alt="Squash">
-                              <div class="vegetable-label">Squash</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/whiteonion.jpg" alt="White Onion">
-                              <div class="vegetable-label">White Onion</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/onion.jpg" alt="Red Onion">
-                              <div class="vegetable-label">Red Onion</div>
-                          </div>
-                      </div>
+            <div class="fair-price-dashboard-container">
+              <div class="fair-price-toolbar">
+                <div class="fair-price-control">
+                  <label for="fairPriceCommodity">Commodity</label>
+                  <select id="fairPriceCommodity"><option value="all">All commodities</option></select>
+                </div>
+                <div class="fair-price-control">
+                  <span>Price series</span>
+                  <div class="fair-price-source" id="fairPriceSource">PSA OpenSTAT · Farmgate</div>
+                </div>
+                <div class="fair-price-control">
+                  <label for="fairPricePeriod">Period</label>
+                  <select id="fairPricePeriod">
+                    <option value="all">All available</option>
+                    <option value="3y">Last 3 years</option>
+                    <option value="12m">Last 12 months</option>
+                  </select>
+                </div>
+                <span class="fair-price-source" id="fairPriceUpdated">Forecast series</span>
+              </div>
+
+              <div class="fair-price-kpis" aria-label="Price summary">
+                <article class="price-stat minimum"><label>Lowest observed</label><strong id="fairPriceMinimum">—</strong><small>Historical PSA record</small></article>
+                <article class="price-stat average"><label>Average observed</label><strong id="fairPriceAverage">—</strong><small>Selected price series</small></article>
+                <article class="price-stat maximum"><label>Highest observed</label><strong id="fairPriceMaximum">—</strong><small>Historical PSA record</small></article>
+                <article class="price-stat forecast-count"><label>Forecast points</label><strong id="fairPriceForecastCount">—</strong><small>Projected observations</small></article>
+              </div>
+
+              <div class="fair-price-analysis">
+                <section class="price-chart-panel">
+                  <div class="price-chart-heading">
+                    <div><h2>Price trend &amp; forecast</h2><p>Observed monthly prices with the forecast range shown ahead.</p></div>
+                    <div class="price-chart-legend" aria-label="Chart legend"><span><i></i>Observed</span><span><i class="forecast-key"></i>Forecast range</span></div>
                   </div>
-              </div>
-
-              <div class="market-forecast-card">
-                  <div id="forecastResultsContainer"></div>
-              </div>
-
-
-              <div class="market-forecast-card" style="margin-top: 20px;">
-                  <h3 class="forecast-title">Price Trend Analysis</h3>
-                  <p class="forecast-subtitle">Monthly price trends for selected commodities</p>
-                  <div style="position: relative; height: 300px; width: 100%;">
-                      <canvas id="priceTrendChart"></canvas>
+                  <div class="price-chart-frame">
+                    <canvas id="priceTrendChart" aria-label="Historical and forecast prices"></canvas>
+                    <div class="price-chart-empty" id="priceChartEmpty" hidden>No price points are available for this selection.</div>
                   </div>
-                  <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                      <button class="btn-outline-report" onclick="updateChart('all')" style="font-size: 12px; padding: 6px 14px;">All</button>
-                      <button class="btn-outline-report" onclick="updateChart('Tomato')" style="font-size: 12px; padding: 6px 14px;">Tomato</button>
-                      <button class="btn-outline-report" onclick="updateChart('Squash fruit')" style="font-size: 12px; padding: 6px 14px;">Squash</button>
-                      <button class="btn-outline-report" onclick="updateChart('Red Onion')" style="font-size: 12px; padding: 6px 14px;">Red Onion</button>
-                      <button class="btn-outline-report" onclick="updateChart('White Onion')" style="font-size: 12px; padding: 6px 14px;">White Onion</button>
-                  </div>
+                </section>
+                <aside class="forecast-insight" aria-live="polite">
+                  <span class="insight-eyebrow">Forecast outlook</span>
+                  <h2 id="priceInsightTitle">Waiting for forecast data</h2>
+                  <p id="priceInsightCopy">Select a commodity to review its observed history and projected range.</p>
+                  <div class="insight-range"><span>Latest projected range</span><strong><span id="priceInsightLow">—</span> to <span id="priceInsightHigh">—</span></strong></div>
+                  <div class="insight-note" id="priceInsightPeriod">Source: PSA OpenSTAT farmgate series.</div>
+                </aside>
               </div>
-          </div>
-      </section>
+
+              <section class="forecast-schedule">
+                <h2>Forecast schedule</h2>
+                <p>Monthly lower and upper estimates from the latest forecast run.</p>
+                <div id="forecastResultsContainer"></div>
+              </section>
+            </div>
+          </section>
           <!-- ============================================================
           VIEW 5: MARKET PRICES
       ============================================================ -->
