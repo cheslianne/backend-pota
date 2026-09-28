@@ -183,11 +183,6 @@ def read_users(
     response_model=list[UserResponse],
     dependencies=[Depends(require_role(Role.SYSTEM_ADMIN))]
 )
-@router.get(
-    "/archived",
-    response_model=list[UserResponse],
-    dependencies=[Depends(require_role(Role.SYSTEM_ADMIN))]
-)
 def read_archived_users(
     request: Request,
     current_user: User = Depends(get_current_user),
