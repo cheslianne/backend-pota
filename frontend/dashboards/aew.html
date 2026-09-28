@@ -1569,7 +1569,7 @@
     </div>
                           <div class="form-field-item">
                               <label>First Name <span class="req">*</span></label>
-                              <input type="text" id="regFirstName" placeholder="Pancho" required>
+                              <input type="text" id="regFirstName" placeholder="Enter your first name" required>
                           </div>
                           <!-- BARANGAY (DROPDOWN) -->
     <div class="form-field-item">
@@ -1580,23 +1580,24 @@
     </div>
                           <div class="form-field-item">
                               <label>Middle Name</label>
-                              <input type="text" id="regMiddleName" placeholder="Reyes">
+                              <input type="text" id="regMiddleName" placeholder="Enter your middle name">
                           </div>
                           <div class="form-field-item">
                               <label>Last Name <span class="req">*</span></label>
-                              <input type="text" id="regLastName" placeholder="De Jesus" required>
+                              <input type="text" id="regLastName" placeholder="Enter your last name" required>
                           </div>
                           <div class="form-field-item">
                               <label>Suffix</label>
                               <input type="text" id="regSuffix" placeholder="Jr.">
                           </div>
                           <div class="form-field-item">
-                              <label>Sex <span class="req">*</span></label>
-                              <select id="regSex" required>
-                                  <option value="Male">Male</option>
-                                  <option value="Female">Female</option>
-                              </select>
-                          </div>
+    <label>Sex <span class="req">*</span></label>
+    <select id="regSex" required>
+        <option value="" disabled selected>Select Sex</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>
+</div>
                           <div class="form-field-item">
                               <label>Birthdate <span class="req">*</span></label>
                               <input type="date" id="regBirthdate" required>

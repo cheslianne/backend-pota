@@ -478,6 +478,7 @@ if (nextBtn) {
    VIEW USER DETAILS (Manage Users)
 ============================================================ */
 function openUserDetails(user) {
+    window.__currentUserDetail = user; 
     const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
     const username = user.username || "—";
     const role = user.role || "—";
@@ -988,6 +989,11 @@ async function createAccount(event) {
         alert("Passwords do not match.");
         return;
     }
+    const passwordError = validatePassword(password);
+if (passwordError) {
+    alert(passwordError);
+    return;
+}
 
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -1359,6 +1365,288 @@ function initHoverSidebar() {
 }
 
 /* ============================================================
+   PASSWORD VALIDATION
+============================================================ */
+function validatePassword(password) {
+    if (!password) {
+        return "Password is required.";
+    }
+    if (password.length < 8 || password.length > 32) {
+        return "Password must be 8–32 characters long.";
+    }
+    if (!/[A-Z]/.test(password)) {
+        return "Password must contain at least 1 uppercase letter.";
+    }
+    if (!/[a-z]/.test(password)) {
+        return "Password must contain at least 1 lowercase letter.";
+    }
+    if (!/[0-9]/.test(password)) {
+        return "Password must contain at least 1 number.";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>_\-+=;'\[\]\\\/~`]/.test(password)) {
+        return "Password must contain at least 1 special character.";
+    }
+    return null; // valid
+}
+/* ============================================================
+   EDIT USER DETAILS (CRUD - Update)
+============================================================ */
+let currentEditingUserId = null;
+
+async function openEditUserForm(user) {
+    currentEditingUserId = user.user_id ?? user.id ?? null;
+    if (!currentEditingUserId) {
+        alert("Cannot edit: User ID not found.");
+        return;
+    }
+
+    // Fill text fields
+    document.getElementById("editFirstName").value = user.first_name || "";
+    document.getElementById("editLastName").value = user.last_name || "";
+    document.getElementById("editUsername").value = user.username || "";
+    document.getElementById("editEmail").value = user.email_address || user.email || "";
+    document.getElementById("editPhone").value = user.phone_number || user.phone || "";
+    document.getElementById("editRole").value = user.role || "";
+
+    // Toggle views
+    document.getElementById("modalUserContent").style.display = "none";
+    document.getElementById("userModalViewActions").style.display = "none";
+    document.getElementById("editUserForm").style.display = "block";
+
+    // ✅ Load location dropdowns and pre-select current values
+    await loadEditLocationDropdowns(user);
+}
+
+function closeEditUserForm() {
+    document.getElementById("editUserForm").style.display = "none";
+    document.getElementById("modalUserContent").style.display = "flex";
+    document.getElementById("userModalViewActions").style.display = "flex";
+    currentEditingUserId = null;
+
+    // ✅ Reset location dropdowns
+    const regionSelect = document.getElementById("editRegionSelect");
+    const provinceSelect = document.getElementById("editProvinceSelect");
+    const municipalitySelect = document.getElementById("editMunicipalitySelect");
+
+    if (regionSelect) regionSelect.selectedIndex = 0;
+    if (provinceSelect) {
+        provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+        provinceSelect.disabled = true;
+    }
+    if (municipalitySelect) {
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality</option>`;
+        municipalitySelect.disabled = true;
+    }
+}
+
+async function saveUserEdits(event) {
+    event.preventDefault();
+    if (!currentEditingUserId) return;
+
+    const firstName = document.getElementById("editFirstName").value.trim();
+    const lastName = document.getElementById("editLastName").value.trim();
+    const username = document.getElementById("editUsername").value.trim();
+    const email = document.getElementById("editEmail").value.trim();
+    const phone = document.getElementById("editPhone").value.trim();
+    const role = document.getElementById("editRole").value;
+
+    // ✅ Kunin ang NAME (hindi code) mula sa selected option
+    const regionSelect = document.getElementById("editRegionSelect");
+    const provinceSelect = document.getElementById("editProvinceSelect");
+    const municipalitySelect = document.getElementById("editMunicipalitySelect");
+
+    const region = regionSelect?.selectedOptions[0]?.dataset.name || regionSelect?.selectedOptions[0]?.textContent?.trim() || "";
+    const province = provinceSelect?.selectedOptions[0]?.dataset.name || provinceSelect?.selectedOptions[0]?.textContent?.trim() || "";
+    const municipality = municipalitySelect?.selectedOptions[0]?.dataset.name || municipalitySelect?.selectedOptions[0]?.textContent?.trim() || "";
+
+    // Validation
+    if (!firstName || !lastName || !username || !email || !phone || !role) {
+        alert("Please fill in all required fields.");
+        return;
+    }
+    if (!region || !municipality) {
+        alert("Please select Region and Municipality/City.");
+        return;
+    }
+    if (!/^\d{11}$/.test(phone)) {
+        alert("Phone number must be exactly 11 digits (numbers only).");
+        return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+        alert("Email must be a valid @gmail.com address.");
+        return;
+    }
+
+    const saveBtn = document.getElementById("saveEditUserBtn");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+        const payload = {
+            first_name: firstName,
+            last_name: lastName,
+            username: username,
+            email_address: email,
+            phone_number: phone,
+            role: role,
+            region: region,
+            province: province,
+            municipality: municipality
+        };
+
+        let response = await fetch(`${API_BASE_URL}/api/users/${currentEditingUserId}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+
+        // Fallback to PATCH if PUT is not supported
+        if (response.status === 405 || response.status === 404) {
+            response = await fetch(`${API_BASE_URL}/api/users/${currentEditingUserId}`, {
+                method: "PATCH",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+        }
+
+        let data = {};
+        try { data = await response.json(); } catch { data = {}; }
+
+        if (response.status === 401) { handleUnauthorized(); return; }
+        if (!response.ok) throw new Error(getErrorMessage(data, "Failed to update user."));
+
+        // Update cache
+        const idx = cachedUsers.findIndex(u => (u.user_id ?? u.id) == currentEditingUserId);
+        if (idx !== -1) {
+            cachedUsers[idx] = {
+                ...cachedUsers[idx],
+                ...data,
+                first_name: firstName,
+                last_name: lastName,
+                username,
+                email_address: email,
+                phone_number: phone,
+                role,
+                region,
+                province,
+                municipality
+            };
+        }
+
+        await loadUsers();
+        await loadAuditLogs();
+
+        closeEditUserForm();
+        document.getElementById("userDetailModal")?.classList.remove("show");
+
+        alert("User details updated successfully!");
+    } catch (error) {
+        alert(error.message || "Unable to update user details.");
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Changes";
+    }
+}
+/* ============================================================
+   EDIT USER — Location Dropdowns (Region / Province / Municipality)
+============================================================ */
+async function loadEditLocationDropdowns(user) {
+    const regionSelect = document.getElementById("editRegionSelect");
+    const provinceSelect = document.getElementById("editProvinceSelect");
+    const municipalitySelect = document.getElementById("editMunicipalitySelect");
+
+    if (!regionSelect || !provinceSelect || !municipalitySelect) return;
+
+    // Reset
+    regionSelect.innerHTML = `<option value="" disabled selected>Loading regions...</option>`;
+    regionSelect.disabled = true;
+    provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+    provinceSelect.disabled = true;
+    municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality</option>`;
+    municipalitySelect.disabled = true;
+
+    try {
+        // 1️⃣ Load all regions
+        const regions = await fetchRegions();
+        regionSelect.innerHTML = `<option value="" disabled selected>Select a region</option>`;
+        regions.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.code;
+            opt.textContent = r.name;
+            opt.dataset.name = r.name; // ✅ store name for later
+            regionSelect.appendChild(opt);
+        });
+        regionSelect.disabled = false;
+
+        // 2️⃣ Pre-select the user's region (match by name)
+        const userRegionName = user.region || "";
+        const matchedRegion = regions.find(r => r.name === userRegionName);
+        if (matchedRegion) {
+            regionSelect.value = matchedRegion.code;
+
+            // 3️⃣ Load provinces of that region
+            const provinces = await fetchProvinces(matchedRegion.code);
+            provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+            provinces.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.code;
+                opt.textContent = p.name;
+                opt.dataset.name = p.name;
+                provinceSelect.appendChild(opt);
+            });
+            provinceSelect.disabled = false;
+
+            // 4️⃣ Pre-select the user's province
+            const userProvinceName = user.province || "";
+            const matchedProvince = provinces.find(p => p.name === userProvinceName);
+
+            if (matchedProvince) {
+                provinceSelect.value = matchedProvince.code;
+
+                // 5️⃣ Load municipalities of that province
+                const municipalities = await fetchMunicipalities(matchedProvince.code);
+                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+                municipalities.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.code;
+                    opt.textContent = m.name;
+                    opt.dataset.name = m.name;
+                    municipalitySelect.appendChild(opt);
+                });
+                municipalitySelect.disabled = false;
+
+                // 6️⃣ Pre-select the user's municipality
+                const userMunicipalityName = user.municipality || "";
+                const matchedMunicipality = municipalities.find(m => m.name === userMunicipalityName);
+                if (matchedMunicipality) {
+                    municipalitySelect.value = matchedMunicipality.code;
+                }
+            } else if (provinces.length === 0) {
+                // Region has no provinces (e.g., NCR) — load municipalities directly
+                const municipalities = await fetchMunicipalitiesFromRegion(matchedRegion.code);
+                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+                municipalities.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.code;
+                    opt.textContent = m.name;
+                    opt.dataset.name = m.name;
+                    municipalitySelect.appendChild(opt);
+                });
+                municipalitySelect.disabled = false;
+
+                const userMunicipalityName = user.municipality || "";
+                const matchedMunicipality = municipalities.find(m => m.name === userMunicipalityName);
+                if (matchedMunicipality) {
+                    municipalitySelect.value = matchedMunicipality.code;
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Failed to load edit location dropdowns:", err);
+        regionSelect.innerHTML = `<option value="" disabled selected>Failed to load regions</option>`;
+    }
+}
+/* ============================================================
    PROFILE & AVATAR PERSISTENCE (System Admin)
 ============================================================ */
 
@@ -1482,6 +1770,114 @@ function initProfileModal() {
 document.addEventListener("DOMContentLoaded", () => {
     if (!initializeLoggedInUser()) return;
     if (!checkAdminRole()) return;
+
+    /* ============================================================
+   PASSWORD TOGGLE (Show/Hide)
+============================================================ */
+document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".toggle-password");
+    if (!btn) return;
+
+    e.preventDefault();
+    const input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+
+    const isHidden = input.type === "password";
+input.type = isHidden ? "text" : "password";
+
+const eyeOpen = btn.querySelector(".eye-open");
+const eyeClosed = btn.querySelector(".eye-closed");
+if (eyeOpen) eyeOpen.style.display = isHidden ? "block" : "none";
+if (eyeClosed) eyeClosed.style.display = isHidden ? "none" : "block";
+});
+    /* ============================================================
+   EDIT USER — Location Dropdown Change Listeners
+============================================================ */
+function initEditLocationDropdownListeners() {
+    const regionSelect = document.getElementById("editRegionSelect");
+    const provinceSelect = document.getElementById("editProvinceSelect");
+    const municipalitySelect = document.getElementById("editMunicipalitySelect");
+
+    if (!regionSelect || !provinceSelect || !municipalitySelect) return;
+
+    // Region change → load provinces
+    regionSelect.addEventListener("change", async () => {
+        const regionCode = regionSelect.value;
+        provinceSelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
+        provinceSelect.disabled = true;
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality</option>`;
+        municipalitySelect.disabled = true;
+
+        if (!regionCode) return;
+
+        try {
+            const provinces = await fetchProvinces(regionCode);
+            if (provinces.length === 0) {
+                // No provinces (e.g., NCR) → load municipalities directly
+                provinceSelect.innerHTML = `<option value="" disabled selected>N/A (no provinces)</option>`;
+                const municipalities = await fetchMunicipalitiesFromRegion(regionCode);
+                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+                municipalities.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.code;
+                    opt.textContent = m.name;
+                    opt.dataset.name = m.name;
+                    municipalitySelect.appendChild(opt);
+                });
+                municipalitySelect.disabled = false;
+                return;
+            }
+
+            provinceSelect.innerHTML = `<option value="" disabled selected>Select a province</option>`;
+            provinces.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.code;
+                opt.textContent = p.name;
+                opt.dataset.name = p.name;
+                provinceSelect.appendChild(opt);
+            });
+            provinceSelect.disabled = false;
+        } catch (err) {
+            provinceSelect.innerHTML = `<option value="" disabled selected>Failed to load</option>`;
+        }
+    });
+
+    // Province change → load municipalities
+    provinceSelect.addEventListener("change", async () => {
+        const provinceCode = provinceSelect.value;
+        municipalitySelect.innerHTML = `<option value="" disabled selected>Loading...</option>`;
+        municipalitySelect.disabled = true;
+
+        if (!provinceCode) return;
+
+        try {
+            const municipalities = await fetchMunicipalities(provinceCode);
+            municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
+            municipalities.forEach(m => {
+                const opt = document.createElement("option");
+                opt.value = m.code;
+                opt.textContent = m.name;
+                opt.dataset.name = m.name;
+                municipalitySelect.appendChild(opt);
+            });
+            municipalitySelect.disabled = false;
+        } catch (err) {
+            municipalitySelect.innerHTML = `<option value="" disabled selected>Failed to load</option>`;
+        }
+    });
+}
+/* EDIT USER - Wire up buttons */
+document.getElementById("editUserBtn")?.addEventListener("click", () => {
+    // Rebuild current user object from the modal's displayed content
+    // (openUserDetails already stored it — we need to store the user object)
+    if (window.__currentUserDetail) {
+        openEditUserForm(window.__currentUserDetail);
+    }
+});
+
+document.getElementById("cancelEditUserBtn")?.addEventListener("click", closeEditUserForm);
+
+document.getElementById("editUserForm")?.addEventListener("submit", saveUserEdits);
 
 
     if (typeof initViewSwitching === "function") initViewSwitching();

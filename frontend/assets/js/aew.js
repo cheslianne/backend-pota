@@ -1171,6 +1171,8 @@ function initFarmerSubviews() {
         });
     }
 
+    
+
     const regForm = document.getElementById("registerFarmerForm");
     if (regForm) {
         console.log("Register Farmer Form found");
