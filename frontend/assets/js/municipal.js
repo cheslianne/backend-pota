@@ -3343,6 +3343,24 @@ function initProfileModal() {
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("Municipal dashboard loaded.");
 
+    const role = localStorage.getItem("role");
+    if (role !== "Municipal Coordinator" && role !== "Municipal") {
+        const dashboards = {
+            "Agricultural Extension Worker": "aew.html",
+            "AEW": "aew.html",
+            "Provincial Coordinator": "provincial.html",
+            "Provincial": "provincial.html",
+            "DA-RFO Officer": "da.html",
+            "DA-RFO": "da.html",
+            "System Administrator": "system-admin.html",
+        };
+        const dashboard = dashboards[role];
+        if (dashboard) {
+            window.location.replace(dashboard);
+            return;
+        }
+    }
+
     initSidebar();
     initViewNavigation();
     initMap();
