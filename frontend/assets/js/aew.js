@@ -4200,10 +4200,16 @@ async function loadReports() {
 
         let submittedReports = [];
         try {
-            const [reportsResponse, revisionResponse] = await Promise.all([
-                apiRequest(`${API_BASE_URL}/api/raw-plant-reports/`, { method: "GET" }),
-                apiRequest(AEW_REVISION_ENDPOINT, { method: "GET" })
-            ]);
+            const reportsResponse = await apiRequest(
+                `${API_BASE_URL}/api/raw-plant-reports/`,
+                { method: "GET" }
+            );
+            let revisionResponse = [];
+            try {
+                revisionResponse = await apiRequest(AEW_REVISION_ENDPOINT, { method: "GET" });
+            } catch (revisionError) {
+                console.warn("Could not load dedicated revision reports; using the normal AEW report feed.", revisionError);
+            }
 
             const allReports = Array.isArray(reportsResponse)
                 ? reportsResponse
@@ -4244,6 +4250,21 @@ async function loadReports() {
                     intent_count: r.intent_count || 0
                 };
             });
+
+            const returnedReports = submittedReports.filter(function(report) {
+                const status = String(report.status || '').toUpperCase().split('.').pop();
+                return status === 'SUBMITTED_MUNICIPAL_FLAGGED' ||
+                       status === 'SUBMITTED_PROVINCIAL_FLAGGED' ||
+                       status === 'SUBMITTED_REGIONAL_FLAGGED' ||
+                       status === 'REVISION_REQUIRED';
+            });
+            if (returnedReports.length > 0) {
+                showSuccessModal({
+                    title: "Report Returned for Revision",
+                    message: `${returnedReports.length} report${returnedReports.length === 1 ? " has" : "s have"} been returned by the validator. Please review the remarks and resubmit.`,
+                    confirmText: "View Flagged Reports"
+                });
+            }
 
             console.log("Municipal-level submitted reports:", submittedReports.length);
 
