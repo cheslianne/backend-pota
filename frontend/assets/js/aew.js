@@ -8459,14 +8459,14 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
     }
     if (chartDescription) {
         chartDescription.textContent = selectedCommodity === "all"
-            ? "Solid lines show observed prices; shaded bands show Facebook Prophet forecast ranges."
-            : "Observed PSA prices connect to the dashed Prophet midpoint; the shaded band shows the projected range.";
+            ? "Solid = recorded PSA months; dashed bridges = months without a record; shaded bands = Prophet ranges."
+            : "Recorded PSA months are solid; dashed bridges mark missing months. The dashed Prophet midpoint connects to the forecast band.";
     }
     if (chartLegend) {
         const cropLegend = selectedCommodity === "all"
             ? seriesNames.map((commodity) => `<span><i class="crop-key" style="background:${colors[commodity] || "#167A58"}"></i>${escapeHtml(displayCommodityName(commodity))}</span>`).join("")
             : `<span><i class="projection-key" style="border-color:${colors[selectedCommodity] || "#167A58"}"></i>Prophet midpoint</span>`;
-        chartLegend.innerHTML = `<span><i class="observed-key"></i>Observed</span><span><i class="forecast-key"></i>Forecast range</span>${cropLegend}`;
+        chartLegend.innerHTML = `<span><i class="observed-key"></i>Observed / gap bridges</span><span><i class="forecast-key"></i>Forecast range</span>${cropLegend}`;
     }
     const months = new Set();
     const monthlyHistorical = new Map();
@@ -8526,8 +8526,11 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
             borderWidth: 2.5,
             pointRadius: observedValues.length > 18 ? 1 : 3,
             pointHoverRadius: 5,
-            tension: 0.32,
-            spanGaps: false,
+            tension: 0.38,
+            spanGaps: true,
+            segment: {
+                borderDash: (context) => context.p1DataIndex - context.p0DataIndex > 1 ? [4, 4] : [],
+            },
             order: 3,
         });
         datasets.push({
