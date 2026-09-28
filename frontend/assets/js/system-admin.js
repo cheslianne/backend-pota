@@ -1607,34 +1607,7 @@ async function loadEditLocationDropdowns(user) {
                 opt.dataset.name = p.name;
                 provinceSelect.appendChild(opt);
             });
-            provinceSelect.disabled = false;
-
-            // 4️⃣ Pre-select the user's province
-            const userProvinceName = user.province || "";
-            const matchedProvince = provinces.find(p => sameLocationName(p.name, userProvinceName));
-
-            if (matchedProvince) {
-                provinceSelect.value = matchedProvince.code;
-
-                // 5️⃣ Load municipalities of that province
-                const municipalities = await fetchMunicipalities(matchedProvince.code);
-                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
-                municipalities.forEach(m => {
-                    const opt = document.createElement("option");
-                    opt.value = m.code;
-                    opt.textContent = m.name;
-                    opt.dataset.name = m.name;
-                    municipalitySelect.appendChild(opt);
-                });
-                municipalitySelect.disabled = false;
-
-                // 6️⃣ Pre-select the user's municipality
-                const userMunicipalityName = user.municipality || "";
-                const matchedMunicipality = municipalities.find(m => sameLocationName(m.name, userMunicipalityName));
-                if (matchedMunicipality) {
-                    municipalitySelect.value = matchedMunicipality.code;
-                }
-            } else if (provinces.length === 0) {
+            if (provinces.length === 0) {
                 // Region has no provinces (e.g., NCR) — load municipalities directly
                 const municipalities = await fetchMunicipalitiesFromRegion(matchedRegion.code);
                 municipalitySelect.innerHTML = `<option value="" disabled selected>Select a municipality / city</option>`;
@@ -1646,12 +1619,14 @@ async function loadEditLocationDropdowns(user) {
                     municipalitySelect.appendChild(opt);
                 });
                 municipalitySelect.disabled = false;
-
-                const userMunicipalityName = user.municipality || "";
-                const matchedMunicipality = municipalities.find(m => sameLocationName(m.name, userMunicipalityName));
-                if (matchedMunicipality) {
-                    municipalitySelect.value = matchedMunicipality.code;
-                }
+                municipalitySelect.selectedIndex = 0;
+            } else {
+                provinceSelect.disabled = false;
+                // Province and municipality intentionally remain unselected.
+                // The editor must make an explicit location choice.
+                provinceSelect.selectedIndex = 0;
+                municipalitySelect.innerHTML = `<option value="" disabled selected>Select a province first</option>`;
+                municipalitySelect.disabled = true;
             }
         }
     } catch (err) {
