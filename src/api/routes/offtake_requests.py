@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -146,11 +146,16 @@ async def create_offtake_request(
     response_model=list[OfftakeRequestResponse]
 )
 def get_offtake_requests(
+    farmer_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db)
 ):
 
+    requests_query = db.query(OfftakeRequest)
+    if farmer_id is not None:
+        requests_query = requests_query.filter(OfftakeRequest.farmer_id == farmer_id)
+
     requests = (
-        db.query(OfftakeRequest)
+        requests_query
         .order_by(
             OfftakeRequest.offtake_request_id.desc()
         )

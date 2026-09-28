@@ -1581,6 +1581,60 @@ body .view.active-view { animation: esakaFade .35s ease; }
 @media (prefers-reduced-motion: reduce) {
   body *, body *::before, body *::after { animation: none !important; transition: none !important; }
 }
+
+.fp-panel { display: grid; gap: 16px; margin: 0 0 22px; }
+.fp-hero { display: flex; align-items: center; gap: 20px; padding: 22px; }
+.fp-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 72px;
+  width: 72px;
+  aspect-ratio: 1;
+  border-radius: 20px;
+  background: var(--green);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+}
+.fp-id h2 { margin: 0 0 8px; color: var(--ink); font-size: 24px; font-weight: 800; letter-spacing: 0; }
+.fp-id p { margin-top: 5px; color: var(--muted); font-size: 13px; }
+.fp-mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px !important; }
+.fp-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.fp-tag { padding: 4px 10px; border-radius: 999px; background: var(--border-light); color: var(--ink); font-size: 12px; font-weight: 700; }
+.fp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; }
+.fp-kpi { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.fp-kpi label { display: block; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.fp-kpi b { display: block; margin: 9px 0 4px; color: var(--ink); font-size: 25px; font-weight: 800; overflow-wrap: anywhere; }
+.fp-kpi b em { color: var(--muted); font-size: 13px; font-style: normal; font-weight: 600; }
+.fp-kpi small { color: var(--muted); font-size: 12px; }
+.fp-kpi.dark { border-color: transparent; background: linear-gradient(135deg, #0F3D2E, #0A2B21); }
+.fp-kpi.dark label, .fp-kpi.dark b, .fp-kpi.dark small { color: #fff; }
+.fp-kpi.dark small, .fp-kpi.dark b em { color: rgba(255,255,255,.72); }
+.fp-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); gap: 16px; }
+.fp-grid .card { min-width: 0; padding: 20px; }
+.fp-grid h3 { margin-bottom: 12px; color: var(--ink); font-size: 15px; font-weight: 800; }
+.fp-table-wrap { overflow-x: auto; }
+.fp-table-wrap table { min-width: 520px; }
+.fp-contract { display: flex; justify-content: space-between; gap: 12px; padding: 12px; margin-bottom: 8px; border-radius: 12px; background: var(--amber-soft); }
+.fp-contract span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.fp-contract-val { text-align: right; font-weight: 800; white-space: nowrap; }
+.fp-empty { padding: 8px 0; color: var(--muted); font-size: 13px; }
+.fp-error { color: var(--status-rejected); }
+.rs-progress { display: flex; align-items: center; gap: 14px; padding: 14px 18px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.rs-progress b { color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.rs-bar { flex: 1; min-width: 40px; height: 8px; overflow: hidden; border-radius: 999px; background: var(--border-light); }
+.rs-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--amber)); transition: width .25s ease; }
+@media (max-width: 900px) { .fp-grid { grid-template-columns: 1fr; } }
+@media (max-width: 520px) {
+  .fp-hero { align-items: flex-start; gap: 14px; padding: 16px; }
+  .fp-avatar { flex-basis: 56px; width: 56px; border-radius: 16px; font-size: 20px; }
+  .fp-id h2 { font-size: 19px; overflow-wrap: anywhere; }
+  .fp-contract { flex-wrap: wrap; }
+  .fp-contract-val { text-align: left; }
+  .rs-progress { flex-wrap: wrap; gap: 8px; }
+  .rs-progress b:first-child { flex: 1 1 100%; }
+  .rs-bar { flex: 1; }
+}
   </style>
 </head>
 <body>
@@ -3284,6 +3338,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/aew.js"></script>
+  <script src="../assets/js/aew-enhancements.js"></script>
   <script src="../assets/js/logout.js"></script>
 <!-- PROFILE SETTINGS MODAL -->
 <div class="modal-overlay" id="profileModal">

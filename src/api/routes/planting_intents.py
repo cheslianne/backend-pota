@@ -73,6 +73,7 @@ def get_planting_intents(
     status: str | None = Query(None, description="Filter by status (Draft, Submitted, Locked)"),
     commodity: str | None = Query(None, description="Filter by commodity"),
     search: str | None = Query(None, description="Search by farmer name"),
+    farmer_id: int | None = Query(None, ge=1, description="Filter by farmer"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -100,6 +101,9 @@ def get_planting_intents(
             (Farmer.first_name.ilike(f"%{search}%")) |
             (Farmer.last_name.ilike(f"%{search}%"))
         )
+
+    if farmer_id is not None:
+        query = query.filter(PlantingIntent.farmer_id == farmer_id)
     
     # Get total count for pagination
     total = query.count()
@@ -477,99 +481,6 @@ def get_planting_intent_attachment(
         filename=os.path.basename(file_path),
         content_disposition_type="inline"
     )
-
-
-# ============================================================
-# GET SINGLE PLANTING INTENT
-# ============================================================
-
-@router.get("/")
-def get_planting_intents(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-    status: str | None = Query(None),
-    commodity: str | None = Query(None),
-    search: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get planting intents with pagination.
-    """
-    
-    query = (
-        db.query(PlantingIntent)
-        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
-        # .filter(Farmer.aew_id == current_user.user_id)  # 
-    )
-    
-    # Apply filters
-    if status:
-        query = query.filter(PlantingIntent.status == status)
-    
-    if commodity:
-        query = query.filter(PlantingIntent.commodity.ilike(f"%{commodity}%"))
-    
-    if search:
-        query = query.filter(
-            (Farmer.first_name.ilike(f"%{search}%")) |
-            (Farmer.last_name.ilike(f"%{search}%"))
-        )
-    
-    # Get total count
-    total = query.count()
-    print(f"Total planting intents found: {total}")
-    
-    # Apply pagination
-    offset = (page - 1) * per_page
-    intents = (
-        query
-        .order_by(desc(PlantingIntent.created_at))
-        .offset(offset)
-        .limit(per_page)
-        .all()
-    )
-    
-    print(f"Intents returned: {len(intents)}")  
-    
-    # Build response
-    result = []
-    for intent in intents:
-        farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
-        if farmer:
-            result.append({
-            "planting_intent_id": intent.planting_intent_id,
-            "farmer_id": intent.farmer_id,
-            "farmer_name": f"{farmer.first_name} {farmer.last_name}",
-            "commodity": intent.commodity,
-            "volume": intent.volume,
-            "location": f"{farmer.barangay}, {farmer.municipality}",
-            "barangay": farmer.barangay,
-            "municipality": farmer.municipality,
-            "planting_date": intent.planting_date,
-            "harvest_date": intent.harvest_date,
-            "actual_planting_date": intent.actual_planting_date, 
-            "actual_harvest_date": intent.actual_harvest_date,  
-            "actual_harvest_volume": float(intent.actual_harvest_volume) if intent.actual_harvest_volume else None,
-            "status": intent.status or "Draft",
-            "finalized_status": intent.finalized_status or "NOT PLANTED",
-            "is_in_report": intent.is_in_report or False,
-            "created_at": intent.created_at,
-            "remarks": intent.remarks,
-        })
-
-    
-    return {
-        "data": result,
-        "pagination": {
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": (total + per_page - 1) // per_page if total > 0 else 1,
-            "has_next": page < ((total + per_page - 1) // per_page) if total > 0 else False,
-            "has_prev": page > 1,
-        }
-    }
 
 
 # ============================================================
