@@ -8383,7 +8383,12 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
         ...historical.map((row) => row.commodity),
         ...forecasts.map((row) => row.commodity),
     ].filter(Boolean))];
-    const colors = ["#167A58", "#D65B4A", "#D28A16", "#4385B7", "#735E9B", "#4C918A"];
+    const colors = {
+        Tomato: "#D65B4A",
+        "Squash fruit": "#D28A16",
+        "Red Onion": "#167A58",
+        "White Onion": "#4385B7",
+    };
     const months = new Set();
     const monthlyHistorical = new Map();
     const monthlyForecasts = new Map();
@@ -8410,8 +8415,8 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
 
     const sortedMonths = [...months].sort();
     const datasets = [];
-    seriesNames.forEach((commodity, index) => {
-        const color = colors[index % colors.length];
+    seriesNames.forEach((commodity) => {
+        const color = colors[commodity] || "#167A58";
         const observedValues = sortedMonths.map((key) => {
             const values = monthlyHistorical.get(`${commodity}|${key}`);
             return values?.length
@@ -8425,6 +8430,14 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
         const highValues = forecastRows.map((rows) => rows.length
             ? rows.reduce((total, row) => total + row.high, 0) / rows.length
             : null);
+        const lastObservedIndex = observedValues.map((value, valueIndex) => value === null ? -1 : valueIndex)
+            .reduce((lastIndex, valueIndex) => valueIndex > lastIndex ? valueIndex : lastIndex, -1);
+        const projectedValues = sortedMonths.map((key, valueIndex) => {
+            if (lastObservedIndex < 0 || valueIndex < lastObservedIndex) return null;
+            if (valueIndex === lastObservedIndex) return observedValues[lastObservedIndex];
+            if (lowValues[valueIndex] === null || highValues[valueIndex] === null) return null;
+            return (lowValues[valueIndex] + highValues[valueIndex]) / 2;
+        });
 
         datasets.push({
             label: `${displayCommodityName(commodity)} observed`,
@@ -8454,7 +8467,14 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
             label: `${displayCommodityName(commodity)} forecast range`,
             data: highValues,
             borderColor: color,
-            backgroundColor: `${color}26`,
+            backgroundColor(context) {
+                const chartArea = context.chart.chartArea;
+                if (!chartArea) return `${color}26`;
+                const gradient = context.chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, `${color}35`);
+                gradient.addColorStop(1, `${color}08`);
+                return gradient;
+            },
             borderWidth: 1.5,
             pointRadius: highValues.length > 18 ? 0 : 2,
             pointHoverRadius: 5,
@@ -8462,6 +8482,19 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
             fill: "-1",
             spanGaps: false,
             order: 2,
+        });
+        datasets.push({
+            label: `${displayCommodityName(commodity)} Prophet projection`,
+            data: projectedValues,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: projectedValues.length > 18 ? 0 : 2,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            spanGaps: false,
+            order: 4,
         });
     });
 
