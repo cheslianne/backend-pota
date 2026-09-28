@@ -1640,6 +1640,24 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .fair-price-control select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
 .fair-price-source { align-self: center; justify-self: end; padding: 8px 11px; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .fair-price-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.fair-price-commodity-card { display: flex; flex-direction: column; min-width: 0; width: 100%; padding: 14px; border: 1px solid var(--border); border-top: 3px solid #718078; border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); color: var(--ink); cursor: pointer; text-align: left; transition: border-color .18s, box-shadow .18s, transform .18s; }
+.fair-price-commodity-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.fair-price-commodity-card[aria-pressed="true"] { border-color: var(--green); border-top-color: var(--green); box-shadow: 0 0 0 2px rgba(15,61,46,.12), var(--shadow-sm); }
+.fair-price-commodity-card.tomato { border-top-color: #D65B4A; }
+.fair-price-commodity-card.squash { border-top-color: #D28A16; }
+.fair-price-commodity-card.red-onion { border-top-color: #167A58; }
+.fair-price-commodity-card.white-onion { border-top-color: #4385B7; }
+.fair-price-crop-heading { display: flex; align-items: center; gap: 10px; }
+.fair-price-crop-photo { flex: 0 0 48px; width: 48px; aspect-ratio: 1; overflow: hidden; border-radius: 11px; background: var(--border-light); }
+.fair-price-crop-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fair-price-crop-category { display: block; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.fair-price-crop-name { display: block; margin-top: 2px; color: var(--ink); font-size: 14px; font-weight: 800; }
+.fair-price-crop-price { display: block; margin-top: 11px; color: var(--ink); font-size: 22px; font-weight: 800; line-height: 1.15; }
+.fair-price-crop-price small { color: var(--muted); font-size: 10px; font-weight: 600; }
+.fair-price-crop-date { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.fair-price-crop-range { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: auto; padding-top: 9px; border-top: 1px solid var(--border-light); color: var(--muted); font-size: 10px; }
+.fair-price-crop-range strong { color: var(--green); font-size: 11px; font-weight: 800; text-align: right; }
+.fair-price-commodity-loading { grid-column: 1 / -1; padding: 18px; border: 1px dashed var(--border); border-radius: 11px; color: var(--muted); text-align: center; font-size: 13px; }
 .price-stat { min-width: 0; padding: 17px 18px; border: 1px solid var(--border); border-top: 3px solid #AEBBB5; border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
 .price-stat label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .price-stat strong { display: block; margin: 10px 0 4px; color: var(--ink); font-size: 25px; font-weight: 800; overflow-wrap: anywhere; }
@@ -1659,6 +1677,8 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .price-chart-legend span { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
 .price-chart-legend i { width: 15px; height: 3px; border-radius: 3px; background: var(--green); }
 .price-chart-legend .forecast-key { height: 8px; border: 1px solid #D98200; background: var(--amber-soft); }
+.price-chart-legend .projection-key { height: 0; border-top: 2px dashed #D65B4A; background: transparent; }
+.price-chart-legend .crop-key { width: 8px; height: 8px; border-radius: 50%; }
 .price-chart-frame { position: relative; width: 100%; height: 320px; }
 .price-chart-frame canvas { width: 100% !important; height: 100% !important; }
 .price-chart-empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; padding: 20px; background: rgba(255,255,255,.94); color: var(--muted); text-align: center; font-size: 13px; }
@@ -2779,7 +2799,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="fair-price-toolbar">
                 <div class="fair-price-control">
                   <label for="fairPriceCommodity">Commodity</label>
-                      <select id="fairPriceCommodity"><option value="Tomato" selected>Tomato</option><option value="all">Compare all</option></select>
+                      <select id="fairPriceCommodity"><option value="all" selected>All commodities</option><option value="Tomato">Tomato</option><option value="Squash fruit">Squash</option><option value="Red Onion">Red Onion</option><option value="White Onion">White Onion</option></select>
                 </div>
                 <div class="fair-price-control">
                   <span>Price series</span>
@@ -2796,18 +2816,15 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 <span class="fair-price-source" id="fairPriceUpdated">Forecast series</span>
               </div>
 
-              <div class="fair-price-kpis" aria-label="Price summary">
-                <article class="price-stat minimum"><label>Lowest observed</label><strong id="fairPriceMinimum">—</strong><small>Historical PSA record</small></article>
-                <article class="price-stat average"><label>Average observed</label><strong id="fairPriceAverage">—</strong><small>Selected price series</small></article>
-                <article class="price-stat maximum"><label>Highest observed</label><strong id="fairPriceMaximum">—</strong><small>Historical PSA record</small></article>
-                <article class="price-stat forecast-count"><label>Forecast points</label><strong id="fairPriceForecastCount">—</strong><small>Projected observations</small></article>
+                <div class="fair-price-kpis" id="fairPriceKpis" aria-label="Commodity farmgate price summary">
+                  <div class="fair-price-commodity-loading">Loading PSA farmgate prices…</div>
               </div>
 
               <div class="fair-price-analysis">
                 <section class="price-chart-panel">
                   <div class="price-chart-heading">
-                    <div><h2>Price trend &amp; forecast</h2><p>Observed monthly prices with the forecast range shown ahead.</p></div>
-                    <div class="price-chart-legend" aria-label="Chart legend"><span><i></i>Observed</span><span><i class="forecast-key"></i>Forecast range</span></div>
+                          <div><h2 id="priceTrendTitle">Price trend across all commodities</h2><p id="priceTrendDescription">Monthly PSA observations and Facebook Prophet forecast ranges.</p></div>
+                          <div class="price-chart-legend" id="fairPriceChartLegend" aria-label="Chart legend"></div>
                   </div>
                   <div class="price-chart-frame">
                     <canvas id="priceTrendChart" aria-label="Historical and forecast prices"></canvas>

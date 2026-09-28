@@ -7652,6 +7652,71 @@ function displayCommodityName(name) {
     return name === "Squash fruit" ? "Squash" : name;
 }
 
+function normalizeFairPriceCommodity(name) {
+    return name === "Squash" || name === "Squash fruit" ? "Squash fruit" : name;
+}
+
+const FAIR_PRICE_COMMODITIES = [
+    { name: "Tomato", category: "Solanaceae", image: "tomato.jpg", className: "tomato", color: "#D65B4A" },
+    { name: "Squash fruit", category: "Cucurbits", image: "squash.jpg", className: "squash", color: "#D28A16" },
+    { name: "Red Onion", category: "Alliums", image: "onion.jpg", className: "red-onion", color: "#167A58" },
+    { name: "White Onion", category: "Alliums", image: "whiteonion.jpg", className: "white-onion", color: "#4385B7" },
+];
+
+function renderFairPriceCommodityCards(selectedCommodity, selectedPeriod, cutoff) {
+    const host = document.getElementById("fairPriceKpis");
+    if (!host) return;
+
+    const formatPrice = (value) => Number.isFinite(value)
+        ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2 }).format(value)
+        : "—";
+    const inPeriod = (value) => {
+        if (selectedPeriod === "all") return true;
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= cutoff;
+    };
+
+    host.innerHTML = FAIR_PRICE_COMMODITIES.map((crop) => {
+        const observed = PRICE_DATA
+            .filter((row) => normalizeFairPriceCommodity(row.commodity) === crop.name && inPeriod(row.record_date))
+            .sort((left, right) => String(left.record_date).localeCompare(String(right.record_date)));
+        const projected = FORECASTS_DATA
+            .filter((row) => normalizeFairPriceCommodity(row.commodity) === crop.name && inPeriod(row.forecast_date))
+            .sort((left, right) => String(left.forecast_date).localeCompare(String(right.forecast_date)));
+        const latestObserved = observed.at(-1);
+        const nextForecastDate = monthKey(projected[0]?.forecast_date);
+        const nextForecastRows = projected.filter((row) => monthKey(row.forecast_date) === nextForecastDate);
+        const nextForecast = nextForecastRows.length ? {
+            forecast_price_low: nextForecastRows.reduce((total, row) => total + Number(row.forecast_price_low), 0) / nextForecastRows.length,
+            forecast_price_high: nextForecastRows.reduce((total, row) => total + Number(row.forecast_price_high), 0) / nextForecastRows.length,
+        } : null;
+        const name = displayCommodityName(crop.name);
+
+        return `
+            <button class="fair-price-commodity-card ${crop.className}" type="button" data-fair-price-commodity="${escapeHtml(crop.name)}" aria-pressed="${selectedCommodity === crop.name}">
+                <span class="fair-price-crop-heading">
+                    <span class="fair-price-crop-photo"><img src="../images/${crop.image}" alt="" loading="lazy"></span>
+                    <span><span class="fair-price-crop-category">${crop.category}</span><span class="fair-price-crop-name">${escapeHtml(name)}</span></span>
+                </span>
+                <strong class="fair-price-crop-price">${latestObserved ? formatPrice(Number(latestObserved.price_per_kg)) : "—"} <small>/kg</small></strong>
+                <span class="fair-price-crop-date">${latestObserved ? `Last observed ${marketRecordDate(latestObserved.record_date, { month: "short", year: "numeric" })}` : "No observation in this period"}</span>
+                <span class="fair-price-crop-range"><span>Next forecast</span><strong>${nextForecast ? `${formatPrice(Number(nextForecast.forecast_price_low))}–${formatPrice(Number(nextForecast.forecast_price_high))}` : "No forecast"}</strong></span>
+            </button>`;
+    }).join("");
+
+    if (!host.dataset.bound) {
+        host.addEventListener("click", function(event) {
+            const card = event.target.closest("[data-fair-price-commodity]");
+            if (!card) return;
+            const select = document.getElementById("fairPriceCommodity");
+            if (!select) return;
+            select.value = card.dataset.fairPriceCommodity;
+            renderFairPriceDashboard();
+        });
+        host.dataset.bound = "true";
+    }
+}
+
 function initFairPriceControls() {
     const commoditySelect = document.getElementById("fairPriceCommodity");
     const periodSelect = document.getElementById("fairPricePeriod");
@@ -7674,11 +7739,11 @@ function renderFairPriceDashboard() {
     const periodSelect = document.getElementById("fairPricePeriod");
     if (!commoditySelect || !periodSelect) return;
 
-    const previousSelection = commoditySelect.value || "all";
+    const previousSelection = normalizeFairPriceCommodity(commoditySelect.value || "all");
     const availableCommodities = [...new Set([
         ...PRICE_DATA.map((row) => row.commodity),
         ...FORECASTS_DATA.map((row) => row.commodity),
-    ].filter(Boolean))].sort((a, b) => displayCommodityName(a).localeCompare(displayCommodityName(b)));
+    ].filter(Boolean).map(normalizeFairPriceCommodity))].sort((a, b) => displayCommodityName(a).localeCompare(displayCommodityName(b)));
 
     const optionSignature = availableCommodities.join("|");
     if (commoditySelect.dataset.options !== optionSignature) {
@@ -7703,24 +7768,13 @@ function renderFairPriceDashboard() {
         const date = new Date(value);
         return !Number.isNaN(date.getTime()) && date >= cutoff;
     };
-    const matchesCommodity = (row) => selectedCommodity === "all" || row.commodity === selectedCommodity;
+    const matchesCommodity = (row) => selectedCommodity === "all" || normalizeFairPriceCommodity(row.commodity) === selectedCommodity;
     const historical = PRICE_DATA.filter((row) => matchesCommodity(row) && isInPeriod(row.record_date));
     const forecasts = FORECASTS_DATA.filter((row) => matchesCommodity(row) && isInPeriod(row.forecast_date));
-    const observedValues = historical.map((row) => Number(row.price_per_kg)).filter(Number.isFinite);
     const formatPrice = (value) => Number.isFinite(value)
         ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2 }).format(value)
         : "—";
-
-    const minimum = document.getElementById("fairPriceMinimum");
-    const average = document.getElementById("fairPriceAverage");
-    const maximum = document.getElementById("fairPriceMaximum");
-    const forecastCount = document.getElementById("fairPriceForecastCount");
-    if (minimum) minimum.textContent = observedValues.length ? formatPrice(Math.min(...observedValues)) : "—";
-    if (average) average.textContent = observedValues.length
-        ? formatPrice(observedValues.reduce((total, value) => total + value, 0) / observedValues.length)
-        : "—";
-    if (maximum) maximum.textContent = observedValues.length ? formatPrice(Math.max(...observedValues)) : "—";
-    if (forecastCount) forecastCount.textContent = new Intl.NumberFormat("en-PH").format(forecasts.length);
+    renderFairPriceCommodityCards(selectedCommodity, selectedPeriod, cutoff);
 
     const latestForecast = forecasts.slice().sort((left, right) =>
         String(left.forecast_date).localeCompare(String(right.forecast_date))
@@ -7730,7 +7784,13 @@ function renderFairPriceDashboard() {
     const insightLow = document.getElementById("priceInsightLow");
     const insightHigh = document.getElementById("priceInsightHigh");
     const insightPeriod = document.getElementById("priceInsightPeriod");
-    if (latestForecast) {
+    if (selectedCommodity === "all") {
+        if (insightTitle) insightTitle.textContent = "Four-crop forecast overview";
+        if (insightCopy) insightCopy.textContent = "The chart compares PSA observations and forecast ranges for all monitored crops. Select a crop card to focus the chart.";
+        if (insightLow) insightLow.textContent = "Multiple";
+        if (insightHigh) insightHigh.textContent = "ranges";
+        if (insightPeriod) insightPeriod.textContent = `${forecasts.length} forecast points · Facebook Prophet · PSA OpenSTAT`;
+    } else if (latestForecast) {
         const commodityName = displayCommodityName(latestForecast.commodity || selectedCommodity);
         const forecastDate = new Date(`${monthKey(latestForecast.forecast_date)}-01T00:00:00`);
         if (insightTitle) insightTitle.textContent = `${commodityName} outlook`;
@@ -8376,19 +8436,38 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
         const date = new Date(value);
         return !Number.isNaN(date.getTime()) && date >= cutoff;
     };
-    const matchesCommodity = (row) => selectedCommodity === "all" || row.commodity === selectedCommodity;
+    const matchesCommodity = (row) => selectedCommodity === "all" || normalizeFairPriceCommodity(row.commodity) === selectedCommodity;
     const historical = PRICE_DATA.filter((row) => matchesCommodity(row) && inPeriod(row.record_date));
     const forecasts = FORECASTS_DATA.filter((row) => matchesCommodity(row) && inPeriod(row.forecast_date));
     const seriesNames = [...new Set([
         ...historical.map((row) => row.commodity),
         ...forecasts.map((row) => row.commodity),
-    ].filter(Boolean))];
+    ].filter(Boolean).map(normalizeFairPriceCommodity))];
     const colors = {
         Tomato: "#D65B4A",
         "Squash fruit": "#D28A16",
         "Red Onion": "#167A58",
         "White Onion": "#4385B7",
     };
+    const chartTitle = document.getElementById("priceTrendTitle");
+    const chartDescription = document.getElementById("priceTrendDescription");
+    const chartLegend = document.getElementById("fairPriceChartLegend");
+    if (chartTitle) {
+        chartTitle.textContent = selectedCommodity === "all"
+            ? "Farmgate price trends across all crops"
+            : `${displayCommodityName(selectedCommodity)} farmgate price trend`;
+    }
+    if (chartDescription) {
+        chartDescription.textContent = selectedCommodity === "all"
+            ? "Solid lines show observed prices; shaded bands show Facebook Prophet forecast ranges."
+            : "Observed PSA prices connect to the dashed Prophet midpoint; the shaded band shows the projected range.";
+    }
+    if (chartLegend) {
+        const cropLegend = selectedCommodity === "all"
+            ? seriesNames.map((commodity) => `<span><i class="crop-key" style="background:${colors[commodity] || "#167A58"}"></i>${escapeHtml(displayCommodityName(commodity))}</span>`).join("")
+            : `<span><i class="projection-key" style="border-color:${colors[selectedCommodity] || "#167A58"}"></i>Prophet midpoint</span>`;
+        chartLegend.innerHTML = `<span><i class="observed-key"></i>Observed</span><span><i class="forecast-key"></i>Forecast range</span>${cropLegend}`;
+    }
     const months = new Set();
     const monthlyHistorical = new Map();
     const monthlyForecasts = new Map();
@@ -8398,7 +8477,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
         const value = Number(row.price_per_kg);
         if (!key || !Number.isFinite(value)) return;
         months.add(key);
-        const seriesKey = `${row.commodity}|${key}`;
+        const seriesKey = `${normalizeFairPriceCommodity(row.commodity)}|${key}`;
         if (!monthlyHistorical.has(seriesKey)) monthlyHistorical.set(seriesKey, []);
         monthlyHistorical.get(seriesKey).push(value);
     });
@@ -8408,7 +8487,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
         const high = Number(row.forecast_price_high);
         if (!key || !Number.isFinite(low) || !Number.isFinite(high)) return;
         months.add(key);
-        const seriesKey = `${row.commodity}|${key}`;
+        const seriesKey = `${normalizeFairPriceCommodity(row.commodity)}|${key}`;
         if (!monthlyForecasts.has(seriesKey)) monthlyForecasts.set(seriesKey, []);
         monthlyForecasts.get(seriesKey).push({ low, high });
     });
@@ -8483,19 +8562,21 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
             spanGaps: false,
             order: 2,
         });
-        datasets.push({
-            label: `${displayCommodityName(commodity)} Prophet projection`,
-            data: projectedValues,
-            borderColor: color,
-            backgroundColor: color,
-            borderWidth: 2,
-            borderDash: [6, 4],
-            pointRadius: projectedValues.length > 18 ? 0 : 2,
-            pointHoverRadius: 5,
-            tension: 0.3,
-            spanGaps: false,
-            order: 4,
-        });
+        if (selectedCommodity !== "all") {
+            datasets.push({
+                label: `${displayCommodityName(commodity)} Prophet midpoint`,
+                data: projectedValues,
+                borderColor: color,
+                backgroundColor: color,
+                borderWidth: 2,
+                borderDash: [6, 4],
+                pointRadius: projectedValues.length > 18 ? 0 : 2,
+                pointHoverRadius: 5,
+                tension: 0.3,
+                spanGaps: false,
+                order: 4,
+            });
+        }
     });
 
     const hasValues = datasets.some((dataset) => dataset.data.some((value) => value !== null));
@@ -8527,16 +8608,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod) {
             layout: { padding: { top: 4, right: 8, bottom: 0, left: 0 } },
             plugins: {
                 legend: {
-                    position: "bottom",
-                    labels: {
-                        color: "#53615B",
-                        usePointStyle: true,
-                        pointStyle: "line",
-                        boxWidth: 18,
-                        padding: 16,
-                        font: { family: "Plus Jakarta Sans", size: 11, weight: "600" },
-                        filter: (item) => !item.text.includes("range lower"),
-                    },
+                    display: false,
                 },
                 tooltip: {
                     backgroundColor: "rgba(14,27,22,.94)",
