@@ -4209,10 +4209,12 @@ async function loadReports() {
 
             // ✅ Only show reports at Municipal level OR final approved
             submittedReports = allReports.filter(function(r) {
-                const status = String(r.status || '').toUpperCase();
+                const status = String(r.status || '').toUpperCase().split('.').pop();
                 return (
                     status === 'SUBMITTED_MUNICIPAL_PENDING' ||
+                    status === 'FOR_MUNICIPAL_VALIDATION' ||
                     status === 'SUBMITTED_MUNICIPAL_FLAGGED' ||
+                    status === 'REVISION_REQUIRED' ||
                     status === 'SUBMITTED_REGIONAL_APPROVED'
                 );
             }).map(function(r) {
@@ -5277,17 +5279,18 @@ function renderSubmittedReports(reports) {
     const approved = [];
 
     (reports || []).forEach(r => {
-        const s = String(r.status || "").toUpperCase();
+        const s = String(r.status || "").toUpperCase().split(".").pop();
 
         if (s === "SUBMITTED_MUNICIPAL_PENDING" ||
+            s === "FOR_MUNICIPAL_VALIDATION" ||
             s === "SUBMITTED_PROVINCIAL_PENDING" ||
             s === "SUBMITTED_REGIONAL_PENDING") {
             pending.push(r);
         }
         else if (s === "SUBMITTED_MUNICIPAL_FLAGGED" ||
+             s === "REVISION_REQUIRED" ||
                  s === "SUBMITTED_PROVINCIAL_FLAGGED" ||
-                 s === "SUBMITTED_REGIONAL_FLAGGED" ||
-                 s === "REVISION_REQUIRED") {
+             s === "SUBMITTED_REGIONAL_FLAGGED") {
             flagged.push(r);
         }
         else if (s === "SUBMITTED_REGIONAL_APPROVED" ||

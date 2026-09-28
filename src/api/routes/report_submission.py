@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -889,7 +889,10 @@ def get_awaiting_aew_revision(
     )
 
     if current_user.role == "Municipal Coordinator":
-        query = query.filter(RawPlantReport.municipality == current_user.municipality)
+        query = query.filter(
+            func.lower(func.trim(RawPlantReport.municipality)) ==
+            func.lower(func.trim(current_user.municipality))
+        )
 
     reports = query.order_by(ReportSubmission.submitted_at.desc()).all()
 

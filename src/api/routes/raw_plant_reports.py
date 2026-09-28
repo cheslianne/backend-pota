@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from datetime import datetime
 
 from src.core.database import get_db
@@ -58,7 +58,8 @@ def get_raw_plant_reports(
         if not current_user.municipality:
             return []
         query = query.filter(
-            RawPlantReport.municipality == current_user.municipality
+            func.lower(func.trim(RawPlantReport.municipality)) ==
+            func.lower(func.trim(current_user.municipality))
         )
     
     elif current_user.role in (
@@ -110,7 +111,9 @@ def get_raw_plant_reports(
             "revision_count": submission.revision_count if submission else 0,            # ✅
             "notes": getattr(report, 'notes', ""),
             "created_at": report.created_at,
-            "submitted_at": report.created_at,
+            "submitted_at": submission.submitted_at if submission else report.created_at,
+            "approved_at": submission.approved_at if submission else None,
+            "flagged_at": submission.flagged_at if submission else None,
             "farmer_names": ", ".join(farmer_names),
             "intent_ids": intent_ids,
             "intent_count": len(intents),
@@ -227,9 +230,18 @@ def create_report_from_intents(
     submission = ReportSubmission(
         report_id=db_report.report_id,
         status=status,  # DRAFT or SUBMITTED_MUNICIPAL_PENDING
-        current_validator_id=None,
+        current_validator_id=(
+            municipal_coordinator.user_id
+            if status == ReportStatus.SUBMITTED_MUNICIPAL_PENDING.value and municipal_coordinator
+            else None
+        ),
         current_validator_role="municipal_coordinator" if status == "SUBMITTED_MUNICIPAL_PENDING" else None,
         revision_count=0,
+        submitted_at=(
+            datetime.utcnow()
+            if status == ReportStatus.SUBMITTED_MUNICIPAL_PENDING.value
+            else None
+        ),
     )
     db.add(submission)
 
