@@ -1634,7 +1634,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .rs-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--amber)); transition: width .25s ease; }
 
 .fair-price-dashboard-container { display: grid; gap: 16px; }
-.fair-price-toolbar { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, .8fr) minmax(180px, .8fr) auto; gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.fair-price-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
 .fair-price-control { display: grid; gap: 6px; min-width: 0; }
 .fair-price-control label, .fair-price-control > span:first-child { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .fair-price-control select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
@@ -1655,6 +1655,8 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .fair-price-crop-price { display: block; margin-top: 11px; color: var(--ink); font-size: 22px; font-weight: 800; line-height: 1.15; }
 .fair-price-crop-price small { color: var(--muted); font-size: 10px; font-weight: 600; }
 .fair-price-crop-date { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.fair-price-crop-coverage { display: block; margin-top: 4px; color: #68766F; font-size: 10px; line-height: 1.4; }
+.fair-price-crop-base { color: #526159; font-weight: 700; }
 .fair-price-crop-range { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-top: auto; padding-top: 9px; border-top: 1px solid var(--border-light); color: var(--muted); font-size: 10px; }
 .fair-price-crop-range strong { color: var(--green); font-size: 11px; font-weight: 800; text-align: right; }
 .fair-price-commodity-loading { grid-column: 1 / -1; padding: 18px; border: 1px dashed var(--border); border-radius: 11px; color: var(--muted); text-align: center; font-size: 13px; }
@@ -1676,7 +1678,9 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .price-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; color: var(--muted); font-size: 11px; }
 .price-chart-legend span { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
 .price-chart-legend i { width: 15px; height: 3px; border-radius: 3px; background: var(--green); }
+.price-chart-legend .observed-key { background: #69766F; }
 .price-chart-legend .forecast-key { height: 8px; border: 1px solid #D98200; background: var(--amber-soft); }
+.price-chart-legend .gap-key { height: 0; border-top: 2px dashed #89948E; background: transparent; }
 .price-chart-legend .projection-key { height: 0; border-top: 2px dashed #D65B4A; background: transparent; }
 .price-chart-legend .crop-key { width: 8px; height: 8px; border-radius: 50%; }
 .price-chart-frame { position: relative; width: 100%; height: 320px; }
@@ -2800,6 +2804,15 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 <div class="fair-price-control">
                   <label for="fairPriceCommodity">Commodity</label>
                       <select id="fairPriceCommodity"><option value="all" selected>All commodities</option><option value="Tomato">Tomato</option><option value="Squash fruit">Squash</option><option value="Red Onion">Red Onion</option><option value="White Onion">White Onion</option></select>
+                </div>
+                <div class="fair-price-control">
+                  <label for="fairPriceForecastFocus">Forecast band</label>
+                  <select id="fairPriceForecastFocus">
+                    <option value="Tomato" selected>Tomato</option>
+                    <option value="Squash fruit">Squash</option>
+                    <option value="Red Onion">Red Onion</option>
+                    <option value="White Onion">White Onion</option>
+                  </select>
                 </div>
                 <div class="fair-price-control">
                   <span>Price series</span>
