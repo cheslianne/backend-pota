@@ -1881,6 +1881,7 @@ document.getElementById("editUserForm")?.addEventListener("submit", saveUserEdit
     loadAuditLogs();
     loadArchivedUsers();
     initializeLocationDropdowns();
+    initEditLocationDropdownListeners();
     initProfileModal(); 
         /* ============================================================
        USER DETAIL MODAL — Close Handlers
