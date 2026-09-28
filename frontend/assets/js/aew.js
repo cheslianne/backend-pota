@@ -86,6 +86,8 @@ const PRICE_DATA_ENDPOINT = `${API_BASE_URL}/api/price-data/`;
 let MARKET_PRICES_DATA = [];
 let MARKET_PRICE_FORECASTS_DATA = [];
 let marketPriceChartInstance = null;
+let isMarketPriceLoading = false;
+let marketPriceFiltersBound = false;
 
 const MARKET_PRICES_ENDPOINT = `${API_BASE_URL}/api/market-prices/`;
 const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/`;
@@ -8551,56 +8553,28 @@ console.log("Price Trend Chart functions loaded!");
 ============================================================ */
 
 function initMarketPriceDashboard() {
-    console.log("Initializing Market Price Dashboard...");
-
     const marketView = document.getElementById("view-market-prices");
+    if (!marketView) return;
 
-    if (!marketView) {
-        console.warn("view-market-prices not found.");
-        return;
-    }
-
-    if (
-        marketView.classList.contains("active-view") ||
-        marketView.classList.contains("active")
-    ) {
-        loadMarketPriceDashboard();
-    }
-
-    const observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-            if (
-                mutation.type === "attributes" &&
-                mutation.attributeName === "class"
-            ) {
-                if (
-                    marketView.classList.contains("active-view") ||
-                    marketView.classList.contains("active")
-                ) {
-                    console.log("Market Prices view became active.");
-                    loadMarketPriceDashboard();
-                }
-            }
-        });
+    const loadWhenVisible = function () {
+        if (marketView.classList.contains("active-view") || marketView.classList.contains("active")) {
+            loadMarketPriceDashboard();
+        }
+    };
+    const observer = new MutationObserver(loadWhenVisible);
+    observer.observe(marketView, { attributes: true, attributeFilter: ["class"] });
+    document.querySelector('.nav-item[data-view="market-prices"]')?.addEventListener("click", function () {
+        window.setTimeout(loadWhenVisible, 100);
     });
 
-    observer.observe(marketView, {
-        attributes: true,
-    });
-
-    const marketNav = document.querySelector(
-        '.nav-item[data-view="market-prices"]'
-    );
-
-    if (marketNav) {
-        marketNav.addEventListener("click", function () {
-            console.log("Market Prices navigation clicked.");
-
-            setTimeout(function () {
-                loadMarketPriceDashboard();
-            }, 200);
+    if (!marketPriceFiltersBound) {
+        ["marketCommodityFilter", "marketPriceTypeFilter", "marketPricePeriodFilter"].forEach(function (id) {
+            document.getElementById(id)?.addEventListener("change", renderMarketPriceDashboard);
         });
+        marketPriceFiltersBound = true;
     }
+
+    loadWhenVisible();
 }
 
 /* ============================================================
@@ -8608,20 +8582,14 @@ function initMarketPriceDashboard() {
 ============================================================ */
 
 async function loadMarketPriceDashboard() {
-    console.log("Loading DA-AMAD market price dashboard...");
+    if (isMarketPriceLoading) return;
+    isMarketPriceLoading = true;
 
     try {
-        console.log("Fetching:", MARKET_PRICES_ENDPOINT);
-
-        const marketPrices = await apiRequest(MARKET_PRICES_ENDPOINT, {
-            method: "GET",
-        });
-
-        console.log("Fetching:", MARKET_PRICE_FORECASTS_ENDPOINT);
-
-        const forecasts = await apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, {
-            method: "GET",
-        });
+        const [marketPrices, forecasts] = await Promise.all([
+            apiRequest(MARKET_PRICES_ENDPOINT, { method: "GET" }),
+            apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, { method: "GET" }),
+        ]);
 
         if (!Array.isArray(marketPrices)) {
             throw new Error("Invalid market price response.");
@@ -8634,18 +8602,14 @@ async function loadMarketPriceDashboard() {
         MARKET_PRICES_DATA = marketPrices;
         MARKET_PRICE_FORECASTS_DATA = forecasts;
 
-        console.log("Historical market prices:", MARKET_PRICES_DATA.length);
-        console.log("Market price forecasts:", MARKET_PRICE_FORECASTS_DATA.length);
-
         renderWholesaleForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderRetailForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderHistoricalMarketPrices(MARKET_PRICES_DATA);
-
-        setTimeout(function () {
-            initMarketPriceChart();
-        }, 300);
+        renderMarketPriceDashboard();
     } catch (error) {
         console.error("Failed to load Market Price Dashboard:", error);
+        MARKET_PRICES_DATA = [];
+        MARKET_PRICE_FORECASTS_DATA = [];
 
         const containers = [
             "wholesaleForecastResultsContainer",
@@ -8670,6 +8634,9 @@ async function loadMarketPriceDashboard() {
                 </div>
             `;
         });
+        renderMarketPriceDashboard();
+    } finally {
+        isMarketPriceLoading = false;
     }
 }
 
@@ -9361,6 +9328,99 @@ function renderHistoricalMarketPrices(prices) {
     container.appendChild(countDiv);
 }
 
+function marketPriceValue(record, priceType) {
+    return Number(priceType === "RETAIL"
+        ? record.retail_price_per_kg
+        : record.wholesale_price_per_kg);
+}
+
+function formatMarketCurrency(value) {
+    if (!Number.isFinite(value)) return "—";
+    return new Intl.NumberFormat("en-PH", {
+        style: "currency",
+        currency: "PHP",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
+}
+
+function marketRecordDate(value, options = { month: "short", year: "numeric" }) {
+    if (!value) return "Date unavailable";
+    const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString("en-PH", options);
+}
+
+function renderMarketPriceSummary() {
+    const host = document.getElementById("marketPriceSummaryCards");
+    if (!host) return;
+
+    const priceType = document.getElementById("marketPriceTypeFilter")?.value || "WHOLESALE";
+    const commodities = [...new Set(MARKET_PRICES_DATA.map((record) => record.commodity).filter(Boolean))].sort();
+    if (!commodities.length) {
+        host.innerHTML = `<div class="market-summary-empty">No market-price observations are available.</div>`;
+        return;
+    }
+
+    const displayNames = { "Squash fruit": "Squash" };
+    const categories = { Tomato: "SOLANACEAE", Squash: "CUCURBITS", "Squash fruit": "CUCURBITS", "White Onion": "ALLIUMS", "Red Onion": "ALLIUMS" };
+    const icons = { Tomato: "●", Squash: "✿", "Squash fruit": "✿", "White Onion": "◉", "Red Onion": "◉" };
+    const cardClasses = { Tomato: "tomato", Squash: "squash", "Squash fruit": "squash", "White Onion": "white-onion", "Red Onion": "red-onion" };
+
+    host.innerHTML = commodities.map((commodity) => {
+        const records = MARKET_PRICES_DATA
+            .filter((record) => record.commodity === commodity && Number.isFinite(marketPriceValue(record, priceType)))
+            .sort((left, right) => String(left.record_date).localeCompare(String(right.record_date)));
+        const latest = records.at(-1);
+        const previous = records.at(-2);
+        if (!latest) return "";
+
+        const latestValue = marketPriceValue(latest, priceType);
+        const previousValue = previous ? marketPriceValue(previous, priceType) : null;
+        const percentageChange = previousValue && Number.isFinite(previousValue)
+            ? ((latestValue - previousValue) / previousValue) * 100
+            : null;
+        const direction = percentageChange === null ? "unknown" : percentageChange > 0.05 ? "up" : percentageChange < -0.05 ? "down" : "flat";
+        const movement = percentageChange === null
+            ? "No prior record"
+            : `${percentageChange > 0 ? "+" : ""}${Math.abs(percentageChange).toFixed(1)}% vs prior record`;
+        const name = displayNames[commodity] || commodity;
+
+        return `
+            <article class="commodity-price-card ${cardClasses[commodity] || ""}">
+                <div class="commodity-price-top">
+                    <div><span class="commodity-price-category">${escapeHtml(categories[commodity] || "COMMODITY")}</span><h3>${escapeHtml(name)}</h3></div>
+                    <span class="commodity-price-icon" aria-hidden="true">${icons[commodity] || "◌"}</span>
+                </div>
+                <strong class="commodity-price-value">${formatMarketCurrency(latestValue)} <span class="commodity-price-unit">/kg</span></strong>
+                <span class="commodity-price-change ${direction}">${direction === "up" ? "↑" : direction === "down" ? "↓" : direction === "flat" ? "→" : "•"} ${movement}</span>
+                <div class="commodity-price-footer"><span>Previous</span><strong>${previous ? formatMarketCurrency(previousValue) : "—"}</strong></div>
+                <div class="commodity-price-footer"><span>Recorded</span><strong>${marketRecordDate(latest.record_date, { month: "short", day: "numeric", year: "numeric" })}</strong></div>
+            </article>`;
+    }).join("");
+
+    const updated = document.getElementById("marketSummaryUpdated");
+    if (updated) {
+        const latestRecord = MARKET_PRICES_DATA.map((record) => record.record_date).filter(Boolean).sort().at(-1);
+        updated.textContent = `${priceType === "RETAIL" ? "Retail" : "Wholesale"} · ${MARKET_PRICES_DATA.length} observations · latest ${marketRecordDate(latestRecord)}`;
+    }
+}
+
+function renderMarketPriceDashboard() {
+    const commodity = document.getElementById("marketCommodityFilter")?.value || "all";
+    const priceType = document.getElementById("marketPriceTypeFilter")?.value || "WHOLESALE";
+    const period = document.getElementById("marketPricePeriodFilter")?.value || "all";
+    const level = priceType === "RETAIL" ? "Retail" : "Wholesale";
+    const commodityName = commodity === "all" ? "All commodities" : commodity;
+    const title = document.getElementById("marketTrendTitle");
+    const description = document.getElementById("marketTrendDescription");
+    if (title) title.textContent = `${commodityName} ${level.toLowerCase()} price trend`;
+    if (description) description.textContent = "Recorded monthly prices with the Prophet forecast range shown ahead.";
+
+    renderMarketPriceSummary();
+    renderMarketOutlook(commodity, priceType, period);
+    renderMarketPriceChart(MARKET_PRICES_DATA, MARKET_PRICE_FORECASTS_DATA, commodity, priceType, period);
+}
+
 /* ============================================================
    MARKET PRICE CHART
 ============================================================ */
@@ -9392,258 +9452,244 @@ function initMarketPriceChart() {
         return;
     }
 
-    renderMarketPriceChart(
-        MARKET_PRICES_DATA,
-        MARKET_PRICE_FORECASTS_DATA,
-        "all"
-    );
+    renderMarketPriceDashboard();
 }
 
 /* ============================================================
    MARKET PRICE CHART
 ============================================================ */
 
-function renderMarketPriceChart(historical, forecasts, commodityFilter) {
+function renderMarketOutlook(commodity, priceType, period) {
+    const forecastDateKey = (value) => String(value || "").slice(0, 7);
+    const cutoff = new Date();
+    if (period === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
+    if (period === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+    const forecasts = MARKET_PRICE_FORECASTS_DATA.filter((forecast) => {
+        if (String(forecast.price_type).toUpperCase() !== priceType) return false;
+        if (commodity !== "all" && forecast.commodity !== commodity) return false;
+        if (period === "all") return true;
+        const date = new Date(forecast.forecast_date);
+        return !Number.isNaN(date.getTime()) && date >= cutoff;
+    }).sort((left, right) => String(left.forecast_date).localeCompare(String(right.forecast_date)));
+
+    const title = document.getElementById("marketOutlookTitle");
+    const copy = document.getElementById("marketOutlookCopy");
+    const low = document.getElementById("marketOutlookLow");
+    const high = document.getElementById("marketOutlookHigh");
+    const date = document.getElementById("marketOutlookDate");
+    if (!forecasts.length) {
+        if (title) title.textContent = "No forecast for this selection";
+        if (copy) copy.textContent = "Try another commodity, price level, or time period.";
+        if (low) low.textContent = "—";
+        if (high) high.textContent = "—";
+        if (date) date.textContent = "";
+        return;
+    }
+
+    const nextDate = forecastDateKey(forecasts[0].forecast_date);
+    const nextWindow = forecasts.filter((forecast) => forecastDateKey(forecast.forecast_date) === nextDate);
+    const level = priceType === "RETAIL" ? "retail" : "wholesale";
+    if (commodity === "all") {
+        if (title) title.textContent = "Next forecast window";
+        if (copy) copy.textContent = `${new Set(nextWindow.map((forecast) => forecast.commodity)).size} commodities · ${level}. Select one commodity to inspect its range.`;
+        if (low) low.textContent = "Varies";
+        if (high) high.textContent = "by crop";
+        if (date) date.textContent = marketRecordDate(nextWindow[0].forecast_date);
+        return;
+    }
+
+    const next = forecasts.find((forecast) => forecastDateKey(forecast.forecast_date) >= nextDate);
+    if (title) title.textContent = `${commodity} outlook`;
+    if (copy) copy.textContent = `Projected ${level} range from the Facebook Prophet model.`;
+    if (low) low.textContent = formatMarketCurrency(Number(next.forecast_price_low));
+    if (high) high.textContent = formatMarketCurrency(Number(next.forecast_price_high));
+    if (date) date.textContent = marketRecordDate(next.forecast_date);
+}
+
+function renderMarketPriceChart(historical, forecasts, commodityFilter, priceType, period) {
     const canvas = document.getElementById("marketPriceTrendChart");
+    const emptyState = document.getElementById("marketPriceChartEmpty");
+    if (!canvas || typeof Chart === "undefined") return;
 
-    if (!canvas) return;
+    const cutoff = new Date();
+    if (period === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
+    if (period === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+    const inPeriod = (value) => {
+        if (period === "all") return true;
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= cutoff;
+    };
+    const matchesCommodity = (row) => commodityFilter === "all" || row.commodity === commodityFilter;
+    const filteredHistory = historical.filter((row) => matchesCommodity(row) && inPeriod(row.record_date));
+    const filteredForecasts = forecasts.filter((row) =>
+        matchesCommodity(row) && String(row.price_type).toUpperCase() === priceType && inPeriod(row.forecast_date)
+    );
+    const seriesNames = [...new Set([
+        ...filteredHistory.map((row) => row.commodity),
+        ...filteredForecasts.map((row) => row.commodity),
+    ].filter(Boolean))];
+    const colors = {
+        Tomato: "#D65B4A",
+        Squash: "#D28A16",
+        "Squash fruit": "#D28A16",
+        "White Onion": "#4385B7",
+        "Red Onion": "#167A58",
+    };
+    const monthKeys = new Set();
+    const historyByMonth = new Map();
+    const forecastByMonth = new Map();
 
+    filteredHistory.forEach((row) => {
+        const key = monthKey(row.record_date);
+        const value = marketPriceValue(row, priceType);
+        if (!key || !Number.isFinite(value)) return;
+        monthKeys.add(key);
+        const index = `${row.commodity}|${key}`;
+        if (!historyByMonth.has(index)) historyByMonth.set(index, []);
+        historyByMonth.get(index).push(value);
+    });
+    filteredForecasts.forEach((row) => {
+        const key = monthKey(row.forecast_date);
+        const low = Number(row.forecast_price_low);
+        const high = Number(row.forecast_price_high);
+        if (!key || !Number.isFinite(low) || !Number.isFinite(high)) return;
+        monthKeys.add(key);
+        const index = `${row.commodity}|${key}`;
+        if (!forecastByMonth.has(index)) forecastByMonth.set(index, []);
+        forecastByMonth.get(index).push({ low, high });
+    });
+
+    const sortedMonths = [...monthKeys].sort();
+    const datasets = [];
+    seriesNames.forEach((name, index) => {
+        const color = colors[name] || ["#167A58", "#D65B4A", "#D28A16", "#4385B7"][index % 4];
+        const actual = sortedMonths.map((key) => {
+            const values = historyByMonth.get(`${name}|${key}`);
+            return values?.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        });
+        const bounds = sortedMonths.map((key) => forecastByMonth.get(`${name}|${key}`) || []);
+        const lowValues = bounds.map((values) => values.length
+            ? values.reduce((sum, value) => sum + value.low, 0) / values.length
+            : null);
+        const highValues = bounds.map((values) => values.length
+            ? values.reduce((sum, value) => sum + value.high, 0) / values.length
+            : null);
+
+        datasets.push({
+            label: `${name} observed`,
+            data: actual,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2.5,
+            pointRadius: sortedMonths.length > 24 ? 1 : 2.5,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            spanGaps: false,
+            order: 3,
+        });
+        datasets.push({
+            label: `${name} forecast lower`,
+            data: lowValues,
+            borderColor: color,
+            backgroundColor: "transparent",
+            borderWidth: 1,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            tension: 0.25,
+            spanGaps: false,
+            order: 1,
+        });
+        datasets.push({
+            label: `${name} forecast range`,
+            data: highValues,
+            borderColor: color,
+            backgroundColor: `${color}26`,
+            borderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.25,
+            fill: "-1",
+            spanGaps: false,
+            order: 2,
+        });
+    });
+
+    const hasData = datasets.some((dataset) => dataset.data.some((value) => value !== null));
+    if (emptyState) {
+        emptyState.hidden = hasData;
+        emptyState.textContent = "No market price observations or forecasts match these filters.";
+    }
     if (marketPriceChartInstance) {
         marketPriceChartInstance.destroy();
-
         marketPriceChartInstance = null;
     }
+    if (!hasData) return;
 
-    let filteredHistorical = historical;
-
-    if (commodityFilter !== "all") {
-        filteredHistorical = historical.filter(function (price) {
-            return price.commodity === commodityFilter;
-        });
-    }
-
-    let filteredForecasts = forecasts;
-
-    if (commodityFilter !== "all") {
-        filteredForecasts = forecasts.filter(function (forecast) {
-            return forecast.commodity === commodityFilter;
-        });
-    }
-
-    const wholesaleHistorical = filteredHistorical.slice();
-
-    const wholesaleForecasts = filteredForecasts.filter(function (f) {
-        return String(f.price_type).toUpperCase() === "WHOLESALE";
-    });
-
-    const dateMap = {};
-
-    wholesaleHistorical.forEach(function (price) {
-        const date = new Date(price.record_date);
-
-        if (isNaN(date.getTime())) return;
-
-        const key = date.toISOString().slice(0, 10);
-
-        dateMap[key] = true;
-    });
-
-    wholesaleForecasts.forEach(function (forecast) {
-        const date = new Date(forecast.forecast_date);
-
-        if (isNaN(date.getTime())) return;
-
-        const key = date.toISOString().slice(0, 10);
-
-        dateMap[key] = true;
-    });
-
-    const dateKeys = Object.keys(dateMap).sort();
-
-    const labels = dateKeys.map(function (key) {
-        return new Date(key).toLocaleDateString("en-US", {
-            month: "short",
-            year: "numeric",
-        });
-    });
-
-    const historicalData = dateKeys.map(function (key) {
-        const found = wholesaleHistorical.find(function (price) {
-            return (
-                new Date(price.record_date).toISOString().slice(0, 10) === key
-            );
-        });
-
-        if (!found) return null;
-
-        return Number(found.wholesale_price_per_kg);
-    });
-
-    const forecastLow = dateKeys.map(function (key) {
-        const found = wholesaleForecasts.find(function (forecast) {
-            return (
-                new Date(forecast.forecast_date).toISOString().slice(0, 10) ===
-                key
-            );
-        });
-
-        if (!found) return null;
-
-        return Number(found.forecast_price_low);
-    });
-
-    const forecastHigh = dateKeys.map(function (key) {
-        const found = wholesaleForecasts.find(function (forecast) {
-            return (
-                new Date(forecast.forecast_date).toISOString().slice(0, 10) ===
-                key
-            );
-        });
-
-        if (!found) return null;
-
-        return Number(found.forecast_price_high);
-    });
-
-    const datasets = [];
-
-    datasets.push({
-        label:
-            commodityFilter === "all"
-                ? "Wholesale Historical"
-                : commodityFilter + " Wholesale Historical",
-
-        data: historicalData,
-
-        borderColor: "#2E7D32",
-
-        backgroundColor: "rgba(46,125,50,0.10)",
-
-        borderWidth: 3,
-
-        pointRadius: 3,
-
-        tension: 0.3,
-
-        fill: false,
-
-        spanGaps: false,
-    });
-
-    datasets.push({
-        label: "Wholesale Forecast Low",
-
-        data: forecastLow,
-
-        borderColor: "#F39C12",
-
-        backgroundColor: "rgba(243,156,18,0.10)",
-
-        borderWidth: 2,
-
-        borderDash: [6, 4],
-
-        pointRadius: 4,
-
-        tension: 0.3,
-
-        fill: false,
-
-        spanGaps: false,
-    });
-
-    datasets.push({
-        label: "Wholesale Forecast High",
-
-        data: forecastHigh,
-
-        borderColor: "#E67E22",
-
-        backgroundColor: "transparent",
-
-        borderWidth: 2,
-
-        borderDash: [6, 4],
-
-        pointRadius: 4,
-
-        tension: 0.3,
-
-        fill: false,
-
-        spanGaps: false,
-    });
-
-    const ctx = canvas.getContext("2d");
-
-    marketPriceChartInstance = new Chart(ctx, {
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const commodityNames = { "Squash fruit": "Squash" };
+    marketPriceChartInstance = new Chart(context, {
         type: "line",
-
         data: {
-            labels: labels,
-            datasets: datasets,
+            labels: sortedMonths.map(monthLabel),
+            datasets,
         },
-
         options: {
             responsive: true,
-
             maintainAspectRatio: false,
-
-            interaction: {
-                mode: "index",
-                intersect: false,
-            },
-
+            interaction: { mode: "index", intersect: false },
+            animation: { duration: 350 },
             plugins: {
                 legend: {
-                    position: "top",
+                    position: "bottom",
+                    labels: {
+                        color: "#53615B",
+                        usePointStyle: true,
+                        pointStyle: "line",
+                        boxWidth: 18,
+                        padding: 12,
+                        font: { family: "Plus Jakarta Sans", size: 10, weight: "600" },
+                        filter: (item) => !item.text.includes("forecast lower"),
+                        generateLabels(chart) {
+                            return chart.data.datasets.map((dataset, datasetIndex) => ({
+                                text: dataset.label.replace(" forecast range", " forecast range").replace(" observed", " observed"),
+                                strokeStyle: dataset.borderColor,
+                                fillStyle: dataset.backgroundColor,
+                                lineWidth: dataset.borderWidth || 2,
+                                lineDash: dataset.borderDash || [],
+                                pointStyle: "line",
+                                hidden: !chart.isDatasetVisible(datasetIndex),
+                                datasetIndex,
+                            })).filter((item) => !item.text.includes("forecast lower"));
+                        },
+                    },
                 },
-
                 tooltip: {
+                    backgroundColor: "rgba(14,27,22,.94)",
+                    padding: 10,
+                    cornerRadius: 8,
                     callbacks: {
-                        label: function (context) {
+                        label(context) {
                             const value = context.raw;
-
-                            if (value === null || value === undefined) {
-                                return context.dataset.label + ": No data";
-                            }
-
-                            return (
-                                context.dataset.label +
-                                ": ₱" +
-                                Number(value).toFixed(2) +
-                                "/kg"
-                            );
+                            if (value == null) return `${context.dataset.label}: no data`;
+                            const name = context.dataset.label.replace(" forecast lower", " range lower");
+                            return `${name}: ${formatMarketCurrency(Number(value))}/kg`;
                         },
                     },
                 },
             },
-
             scales: {
                 x: {
-                    grid: {
-                        display: false,
-                    },
-
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 30,
-                    },
+                    grid: { display: false },
+                    ticks: { color: "#718078", maxTicksLimit: 9, maxRotation: 0, font: { size: 10 } },
+                    border: { display: false },
                 },
-
                 y: {
                     beginAtZero: false,
-
-                    title: {
-                        display: true,
-                        text: "Price (₱/kg)",
-                    },
-
-                    ticks: {
-                        callback: function (value) {
-                            return "₱" + Number(value).toFixed(0);
-                        },
-                    },
+                    grid: { color: "rgba(14,27,22,.07)" },
+                    ticks: { color: "#718078", callback: (value) => `₱${Number(value).toFixed(0)}`, font: { size: 10 } },
+                    title: { display: true, text: `${priceType === "RETAIL" ? "Retail" : "Wholesale"} price (₱/kg)`, color: "#53615B", font: { size: 11, weight: "600" } },
+                    border: { display: false },
                 },
             },
         },
@@ -9655,45 +9701,10 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter) {
 ============================================================ */
 
 function updateMarketPriceChart(commodity) {
-    console.log("Market chart filter:", commodity);
-
-    if (
-        MARKET_PRICES_DATA.length === 0 &&
-        MARKET_PRICE_FORECASTS_DATA.length === 0
-    ) {
-        console.warn("No market price data.");
-
-        return;
-    }
-
-    document
-        .querySelectorAll("#view-market-prices .market-chart-btn")
-        .forEach(function (btn) {
-            const text = btn.textContent.trim();
-
-            if (
-                text === commodity ||
-                (commodity === "all" && text === "All")
-            ) {
-                btn.style.background = "#2E7D32";
-
-                btn.style.color = "#fff";
-
-                btn.style.borderColor = "#2E7D32";
-            } else {
-                btn.style.background = "#FFFFFF";
-
-                btn.style.color = "var(--ink)";
-
-                btn.style.borderColor = "var(--border)";
-            }
-        });
-
-    renderMarketPriceChart(
-        MARKET_PRICES_DATA,
-        MARKET_PRICE_FORECASTS_DATA,
-        commodity
-    );
+    const select = document.getElementById("marketCommodityFilter");
+    if (!select) return;
+    select.value = commodity;
+    renderMarketPriceDashboard();
 }
 
 console.log("Market Price Dashboard functions loaded!");

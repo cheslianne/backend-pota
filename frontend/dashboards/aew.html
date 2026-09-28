@@ -1695,6 +1695,90 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .market-error-copy small { color: #8A706B; font-size: 11px; overflow-wrap: anywhere; }
 .market-data-error .btn-primary { flex-shrink: 0; padding: 9px 14px; }
 .market-forecast-card .forecast-year-content table { width: 100%; }
+.market-dashboard { display: grid; gap: 16px; }
+.market-filter-bar { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(170px, .8fr) minmax(170px, .8fr) auto; gap: 12px; align-items: end; padding: 15px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
+.market-filter { display: grid; gap: 6px; min-width: 0; }
+.market-filter > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.market-filter select { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
+.market-model-badge { display: inline-flex; align-items: center; gap: 7px; justify-self: end; padding: 8px 11px; border-radius: 999px; background: #E8EFFD; color: #2F55B3; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.model-dot { width: 7px; height: 7px; border-radius: 50%; background: #2F55B3; }
+.market-summary-section { display: grid; gap: 11px; }
+.market-section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.market-section-heading h2, .market-outlook h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
+.market-section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.market-section-heading > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.market-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.commodity-price-card { min-width: 0; padding: 15px 16px; border: 1px solid var(--border); border-top: 3px solid #718078; border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); }
+.commodity-price-card.tomato { border-top-color: #D65B4A; }
+.commodity-price-card.squash { border-top-color: #D28A16; }
+.commodity-price-card.white-onion { border-top-color: #4385B7; }
+.commodity-price-card.red-onion { border-top-color: #167A58; }
+.commodity-price-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.commodity-price-category { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.commodity-price-card h3 { margin: 3px 0 0; color: var(--ink); font-size: 17px; font-weight: 700; }
+.commodity-price-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; aspect-ratio: 1; border-radius: 10px; background: var(--green-light); color: var(--green); font-size: 17px; }
+.commodity-price-card.tomato .commodity-price-icon { background: #FCE9E6; color: #B44432; }
+.commodity-price-card.squash .commodity-price-icon { background: #FFF0D8; color: #94600B; }
+.commodity-price-card.white-onion .commodity-price-icon { background: #E8EFFD; color: #2F55B3; }
+.commodity-price-value { display: block; margin: 13px 0 3px; color: var(--ink); font-size: 26px; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+.commodity-price-unit { color: var(--muted); font-size: 11px; font-weight: 600; }
+.commodity-price-change { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; font-size: 11px; font-weight: 700; }
+.commodity-price-change.up { color: #B44432; }
+.commodity-price-change.down { color: #14734F; }
+.commodity-price-change.flat, .commodity-price-change.unknown { color: var(--muted); }
+.commodity-price-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 9px; border-top: 1px solid var(--border-light); color: var(--muted); font-size: 10px; }
+.commodity-price-footer strong { color: var(--ink); font-weight: 700; }
+.market-summary-loading, .market-summary-empty { grid-column: 1 / -1; padding: 18px; border: 1px dashed var(--border); border-radius: 11px; color: var(--muted); text-align: center; font-size: 13px; }
+.market-chart-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .75fr); gap: 14px; align-items: stretch; }
+.market-chart-panel, .market-outlook { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
+.market-chart-heading { margin-bottom: 12px; }
+.market-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; color: var(--muted); font-size: 10px; }
+.market-chart-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.market-chart-legend i { width: 16px; height: 3px; border-radius: 3px; background: #167A58; }
+.market-chart-legend .legend-forecast { height: 8px; border: 1px solid #D28A16; background: #FFF0D8; }
+.market-chart-frame { position: relative; width: 100%; height: 300px; }
+.market-chart-frame canvas { width: 100% !important; height: 100% !important; }
+.market-chart-empty { position: absolute; inset: 0; display: grid; place-content: center; padding: 18px; background: rgba(255,255,255,.94); color: var(--muted); text-align: center; font-size: 13px; }
+.market-chart-empty[hidden] { display: none; }
+.market-outlook { display: flex; flex-direction: column; background: #FFF5E2; border-color: #F1D8A8; }
+.market-outlook-eyebrow { margin-bottom: 7px; color: #94600B; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.market-outlook h2 { font-size: 18px; line-height: 1.35; }
+.market-outlook > p { color: #5F5849; font-size: 12px; line-height: 1.5; }
+.market-outlook-range, .market-outlook-model { display: grid; gap: 4px; padding: 11px; border-radius: 9px; background: rgba(255,255,255,.82); }
+.market-outlook-range span, .market-outlook-model > span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.market-outlook-range strong { color: var(--green); font-size: 20px; font-weight: 800; }
+.market-outlook-range small, .market-outlook-model small { color: var(--muted); font-size: 10px; }
+.market-outlook-model { margin-top: 9px; }
+.market-outlook-model strong { color: #2F55B3; font-size: 12px; }
+.market-forecast-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.market-forecast-card { min-width: 0; padding: 17px; }
+.market-forecast-card .market-section-heading { margin-bottom: 12px; }
+.market-forecast-card .market-section-heading h2 { font-size: 14px; }
+.market-forecast-card .market-model-badge { align-self: flex-start; padding: 6px 9px; font-size: 10px; }
+.market-history-details { padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); }
+.market-history-details summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 58px; cursor: pointer; list-style: none; }
+.market-history-details summary::-webkit-details-marker { display: none; }
+.market-history-details summary > span:first-child { display: grid; gap: 3px; }
+.market-history-details summary strong { color: var(--ink); font-size: 13px; }
+.market-history-details summary small { color: var(--muted); font-size: 11px; }
+.history-toggle { color: var(--green); font-size: 11px; font-weight: 700; }
+.market-history-details[open] #marketHistoricalResultsContainer { padding-bottom: 14px; }
+@media (max-width: 1000px) {
+  .market-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-model-badge { justify-self: start; }
+  .market-chart-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .market-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .market-forecast-grid { grid-template-columns: 1fr; }
+  .market-chart-panel, .market-outlook { padding: 14px; }
+  .market-section-heading { flex-direction: column; }
+  .market-chart-legend { justify-content: flex-start; }
+  .market-chart-frame { height: 260px; }
+  .commodity-price-card { padding: 12px; }
+  .commodity-price-value { font-size: 22px; }
+}
+@media (max-width: 420px) { .market-filter-bar { grid-template-columns: 1fr; } }
 .fair-price-empty { padding: 24px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); text-align: center; font-size: 13px; }
 
 @media (max-width: 900px) { .fp-grid { grid-template-columns: 1fr; } }
@@ -2751,54 +2835,82 @@ body .view.active-view { animation: esakaFade .35s ease; }
           <div class="main-header">
               <div class="header-left">
                   <h1>Market Price Dashboard</h1>
-                  <p>Historical and forecasted wholesale and retail market prices based on DA-AMAD.</p>
+                <p>Market observations and six-month projections for monitored commodities.</p>
               </div>
           </div>
 
-          <div class="fair-price-dashboard-container">
-              <!-- TOP CARD -->
-              <div class="fair-price-top-card">
-                  <div class="fair-price-left-pane">
-                      <h2>Market Price Intelligence</h2>
-                      <p>Monitor historical wholesale and retail prices and projected market prices for selected commodities.</p>
-                      <div class="vegetable-collage-banner">
-                          <div class="vegetable-item">
-                              <img src="../images/tomato.jpg" alt="Tomato">
-                              <div class="vegetable-label">Tomato</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/squash.jpg" alt="Squash">
-                              <div class="vegetable-label">Squash</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/whiteonion.jpg" alt="White Onion">
-                              <div class="vegetable-label">White Onion</div>
-                          </div>
-                          <div class="vegetable-item">
-                              <img src="../images/onion.jpg" alt="Red Onion">
-                              <div class="vegetable-label">Red Onion</div>
-                          </div>
-                      </div>
-                  </div>
+            <div class="market-dashboard">
+              <div class="market-filter-bar">
+                <label class="market-filter"><span>Commodity</span>
+                  <select id="marketCommodityFilter">
+                    <option value="all">All commodities</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Squash">Squash</option>
+                    <option value="White Onion">White Onion</option>
+                    <option value="Red Onion">Red Onion</option>
+                  </select>
+                </label>
+                <label class="market-filter"><span>Market level</span>
+                  <select id="marketPriceTypeFilter">
+                    <option value="WHOLESALE">Wholesale</option>
+                    <option value="RETAIL">Retail</option>
+                  </select>
+                </label>
+                <label class="market-filter"><span>Period</span>
+                  <select id="marketPricePeriodFilter">
+                    <option value="all">All available</option>
+                    <option value="12m">Last 12 months</option>
+                    <option value="3y">Last 3 years</option>
+                  </select>
+                </label>
+                <span class="market-model-badge"><span class="model-dot"></span>Facebook Prophet · 6-month horizon</span>
               </div>
 
-              <!-- WHOLESALE FORECAST -->
-              <div class="market-forecast-card">
-                  <h3 class="forecast-title">Wholesale Market Price Forecast</h3>
-                  <p class="forecast-subtitle">Projected wholesale prices for selected commodities.</p>
-                  <div id="wholesaleForecastResultsContainer">
-                      Loading wholesale forecasts...
+              <section class="market-summary-section">
+                <div class="market-section-heading">
+                  <div><h2>Latest price summary</h2><p>Most recent recorded values compared with the previous record.</p></div>
+                  <span id="marketSummaryUpdated">Loading market observations…</span>
+                </div>
+                <div class="market-summary-grid" id="marketPriceSummaryCards" aria-live="polite">
+                  <div class="market-summary-loading">Loading commodity prices…</div>
+                </div>
+              </section>
+
+              <div class="market-chart-layout">
+                <section class="market-chart-panel">
+                  <div class="market-section-heading market-chart-heading">
+                    <div><h2 id="marketTrendTitle">Price trend &amp; forecast</h2><p id="marketTrendDescription">Observed monthly prices with the forecast range shown ahead.</p></div>
+                    <div class="market-chart-legend"><span><i class="legend-observed"></i>Observed</span><span><i class="legend-forecast"></i>Forecast range</span></div>
                   </div>
+                  <div class="market-chart-frame">
+                    <canvas id="marketPriceTrendChart" aria-label="Historical and forecast wholesale market prices"></canvas>
+                    <div class="market-chart-empty" id="marketPriceChartEmpty" hidden>No market price observations or forecast points match these filters.</div>
+                  </div>
+                </section>
+                <aside class="market-outlook" aria-live="polite">
+                  <span class="market-outlook-eyebrow">Model outlook</span>
+                  <h2 id="marketOutlookTitle">Waiting for forecast data</h2>
+                  <p id="marketOutlookCopy">Choose a commodity and market level to inspect its projected range.</p>
+                  <div class="market-outlook-range"><span>Next projected range</span><strong><span id="marketOutlookLow">—</span> to <span id="marketOutlookHigh">—</span></strong><small id="marketOutlookDate">—</small></div>
+                  <div class="market-outlook-model"><span>Forecast model</span><strong>Facebook Prophet</strong><small>Range reflects the model’s lower and upper estimates.</small></div>
+                </aside>
               </div>
 
-              <!-- RETAIL FORECAST -->
-              <div class="market-forecast-card" style="margin-top:20px;">
-                  <h3 class="forecast-title">Retail Market Price Forecast</h3>
-                  <p class="forecast-subtitle">Projected retail prices for selected commodities.</p>
-                  <div id="retailForecastResultsContainer">
-                      Loading retail forecasts...
-                  </div>
+              <div class="market-forecast-grid">
+                <section class="market-forecast-card">
+                  <div class="market-section-heading"><div><h2>Wholesale projections</h2><p>Forecast range by commodity and month.</p></div><span class="market-model-badge">Facebook Prophet</span></div>
+                  <div id="wholesaleForecastResultsContainer">Loading wholesale forecasts…</div>
+                </section>
+                <section class="market-forecast-card">
+                  <div class="market-section-heading"><div><h2>Retail projections</h2><p>Forecast range by commodity and month.</p></div><span class="market-model-badge">Facebook Prophet</span></div>
+                  <div id="retailForecastResultsContainer">Loading retail forecasts…</div>
+                </section>
               </div>
+
+              <details class="market-history-details">
+                <summary><span><strong>Historical price records</strong><small>Source rows from the market-price API</small></span><span class="history-toggle">View records</span></summary>
+                <div id="marketHistoricalResultsContainer"></div>
+              </details>
           </div>
       </section>
 
