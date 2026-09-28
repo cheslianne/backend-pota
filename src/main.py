@@ -26,6 +26,7 @@ from src.api.routes import (
     report_submission,
     audit_logs,
     email,
+    public_stats,
 )
 
 
@@ -143,6 +144,12 @@ app.include_router(
     email.router,
     prefix="/api/email",
     tags=["Email"]
+)
+
+app.include_router(
+    public_stats.router,
+    prefix="/api/public",
+    tags=["Public"]
 )
 
 app.include_router(
