@@ -198,32 +198,45 @@ function renderPagination(totalItems, itemsPerPage, currentPage, onPageChange) {
 ============================================================ */
 const PSGC_API = "https://psgc.cloud/api";
 
+function psgcList(payload) {
+    if (Array.isArray(payload)) return payload;
+    for (const key of ["data", "items", "results"]) {
+        if (Array.isArray(payload?.[key])) return payload[key];
+    }
+    return [];
+}
+
+function sameLocationName(left, right) {
+    return String(left || "").trim().replace(/\s+/g, " ").toLowerCase() ===
+        String(right || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 
 async function fetchRegions() {
     const res = await fetch(`${PSGC_API}/regions`);
     if (!res.ok) throw new Error("Failed to load regions");
-    return res.json();
+    return psgcList(await res.json());
 }
 
 
 async function fetchProvinces(regionCode) {
     const res = await fetch(`${PSGC_API}/regions/${regionCode}/provinces`);
     if (!res.ok) throw new Error("Failed to load provinces");
-    return res.json();
+    return psgcList(await res.json());
 }
 
 
 async function fetchMunicipalities(provinceCode) {
     const res = await fetch(`${PSGC_API}/provinces/${provinceCode}/cities-municipalities`);
     if (!res.ok) throw new Error("Failed to load municipalities");
-    return res.json();
+    return psgcList(await res.json());
 }
 
 
 async function fetchMunicipalitiesFromRegion(regionCode) {
     const res = await fetch(`${PSGC_API}/regions/${regionCode}/cities-municipalities`);
     if (!res.ok) throw new Error("Failed to load municipalities");
-    return res.json();
+    return psgcList(await res.json());
 }
 
 
@@ -1580,7 +1593,7 @@ async function loadEditLocationDropdowns(user) {
 
         // 2️⃣ Pre-select the user's region (match by name)
         const userRegionName = user.region || "";
-        const matchedRegion = regions.find(r => r.name === userRegionName);
+        const matchedRegion = regions.find(r => sameLocationName(r.name, userRegionName));
         if (matchedRegion) {
             regionSelect.value = matchedRegion.code;
 
@@ -1598,7 +1611,7 @@ async function loadEditLocationDropdowns(user) {
 
             // 4️⃣ Pre-select the user's province
             const userProvinceName = user.province || "";
-            const matchedProvince = provinces.find(p => p.name === userProvinceName);
+            const matchedProvince = provinces.find(p => sameLocationName(p.name, userProvinceName));
 
             if (matchedProvince) {
                 provinceSelect.value = matchedProvince.code;
@@ -1617,7 +1630,7 @@ async function loadEditLocationDropdowns(user) {
 
                 // 6️⃣ Pre-select the user's municipality
                 const userMunicipalityName = user.municipality || "";
-                const matchedMunicipality = municipalities.find(m => m.name === userMunicipalityName);
+                const matchedMunicipality = municipalities.find(m => sameLocationName(m.name, userMunicipalityName));
                 if (matchedMunicipality) {
                     municipalitySelect.value = matchedMunicipality.code;
                 }
@@ -1635,7 +1648,7 @@ async function loadEditLocationDropdowns(user) {
                 municipalitySelect.disabled = false;
 
                 const userMunicipalityName = user.municipality || "";
-                const matchedMunicipality = municipalities.find(m => m.name === userMunicipalityName);
+                const matchedMunicipality = municipalities.find(m => sameLocationName(m.name, userMunicipalityName));
                 if (matchedMunicipality) {
                     municipalitySelect.value = matchedMunicipality.code;
                 }
@@ -1643,7 +1656,12 @@ async function loadEditLocationDropdowns(user) {
         }
     } catch (err) {
         console.error("Failed to load edit location dropdowns:", err);
-        regionSelect.innerHTML = `<option value="" disabled selected>Failed to load regions</option>`;
+        regionSelect.innerHTML = `<option value="" selected>Location service unavailable — retry</option>`;
+        regionSelect.disabled = false;
+        provinceSelect.innerHTML = `<option value="" selected>Choose a region first</option>`;
+        provinceSelect.disabled = true;
+        municipalitySelect.innerHTML = `<option value="" selected>Choose a province first</option>`;
+        municipalitySelect.disabled = true;
     }
 }
 /* ============================================================

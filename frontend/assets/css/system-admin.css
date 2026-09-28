@@ -129,6 +129,7 @@ body .btn-secondary:hover, body .btn-outline-report:hover { background: var(--ad
 body .search-box { min-height: 40px; border: 1px solid var(--admin-line); border-radius: 10px; background: #fff; }
 body .search-box:focus-within, body input:focus, body select:focus, body textarea:focus { border-color: var(--admin-forest-2); box-shadow: 0 0 0 3px rgba(15,77,58,.12); outline: none; }
 body input, body select, body textarea { border-radius: 10px; border-color: var(--admin-line); background: #fff; }
+body select:disabled, body input:disabled, body textarea:disabled { background: #fff !important; color: var(--admin-muted) !important; opacity: .72; }
 body .form-section, body .form-field { border-color: var(--admin-line); }
 
 body .modal-overlay { background: rgba(6,43,32,.55); backdrop-filter: blur(4px); }
