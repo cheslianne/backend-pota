@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from src.core.database import get_db
 from src.models.users import User
 from src.models.audit_logs import AuditLog
+from src.models.farmers import Farmer
+from src.models.raw_plant_reports import RawPlantReport
+from src.models.report_submission import ReportSubmission
+from src.models.report_validation_history import ReportValidationHistory
 
 from src.api.schemas.users import (
     UserCreate,
@@ -22,6 +27,19 @@ from src.core.auth import get_current_user
 
 
 router = APIRouter()
+
+ROLE_ALIASES = {
+    "AEW": Role.AEW.value,
+    "DA-RFO": Role.DA_RFO_OFFICER.value,
+}
+VALID_ROLES = {role.value for role in Role}
+
+
+def normalize_role(role: str) -> str:
+    normalized = ROLE_ALIASES.get((role or "").strip(), (role or "").strip())
+    if normalized not in VALID_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
+    return normalized
 
 
 # ============================================================
@@ -80,6 +98,7 @@ def create_user(
 
     user_data = user.dict()
     user_data["password"] = hashed_password
+    user_data["role"] = normalize_role(user_data["role"])
     user_data["is_active"] = True
 
     # CREATE USER
@@ -395,6 +414,47 @@ def update_user(
             detail="Only System Administrators can change user roles"
         )
 
+    if "role" in update_data:
+        update_data["role"] = normalize_role(update_data["role"])
+        role_is_changing = update_data["role"] != db_user.role
+
+        if role_is_changing and db_user.user_id == current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot change your own role"
+            )
+
+        if role_is_changing and db_user.role == Role.SYSTEM_ADMIN:
+            other_admins = (
+                db.query(User)
+                .filter(
+                    User.role == Role.SYSTEM_ADMIN,
+                    User.is_active.is_(True),
+                    User.is_archived.is_(False),
+                    User.user_id != db_user.user_id,
+                )
+                .count()
+            )
+            if other_admins == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot change the role of the last active System Administrator"
+                )
+
+    if update_data.get("username") not in (None, db_user.username):
+        if db.query(User).filter(
+            User.username == update_data["username"],
+            User.user_id != db_user.user_id,
+        ).first():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+
+    if update_data.get("email_address") not in (None, db_user.email_address):
+        if db.query(User).filter(
+            User.email_address == update_data["email_address"],
+            User.user_id != db_user.user_id,
+        ).first():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email address already exists")
+
     # HASH NEW PASSWORD
     if "password" in update_data:
         update_data["password"] = hash_password(
@@ -706,6 +766,30 @@ def delete_user(
             detail="User not found"
         )
 
+    if db_user.user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account"
+        )
+
+    linked = {
+        "farmers": db.query(Farmer).filter(Farmer.aew_id == user_id).count(),
+        "plant reports": db.query(RawPlantReport).filter(RawPlantReport.encoded_by == user_id).count(),
+        "report submissions": db.query(ReportSubmission).filter(ReportSubmission.current_validator_id == user_id).count(),
+        "validation records": db.query(ReportValidationHistory).filter(ReportValidationHistory.performed_by == user_id).count(),
+        "audit log entries": db.query(AuditLog).filter(AuditLog.user_id == user_id).count(),
+    }
+    linked = {label: count for label, count in linked.items() if count}
+    if linked:
+        summary = ", ".join(f"{count} {label}" for label, count in linked.items())
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"This user has linked records ({summary}) and cannot be deleted. "
+                "Archive the account instead to keep those records intact."
+            )
+        )
+
     # PREVENT DELETING LAST ADMIN
     if db_user.role == Role.SYSTEM_ADMIN:
         admin_count = (
@@ -753,7 +837,17 @@ def delete_user(
 
     db.delete(db_user)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This user is referenced by other records and cannot be deleted. "
+                "Archive the account instead."
+            )
+        )
 
     return {
         "detail": "User deleted successfully"
