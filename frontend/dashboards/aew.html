@@ -1418,6 +1418,169 @@
 .summary-cards .summary-card.planting-planted .summary-icon     { background: #FDF3E0; }
 .summary-cards .summary-card.planting-harvested .summary-icon   { background: #E6F4EA; }
 .summary-cards .summary-card.planting-mediating .summary-icon   { background: #E3F2FD; }
+
+/* eSaka AEW corporate theme */
+body {
+  --cream: #F5F7F9;
+  --white: #FFFFFF;
+  --ink: #0E1B16;
+  --muted: #5F6B66;
+  --border: #E3E8E5;
+  --border-light: #EEF1EF;
+  --green: #0F3D2E;
+  --green-dark: #0A2B21;
+  --green-light: #E6F2EC;
+  --amber: #FFAB2E;
+  --amber-soft: #FFF3DD;
+  --blue-soft: #E8EFFD;
+  --brown: #B7791F;
+  --gold: #FFAB2E;
+  --status-confirmed: #178A55;
+  --status-submitted: #D98200;
+  --status-rejected: #D64545;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --shadow-sm: 0 1px 2px rgba(14,27,22,.05), 0 1px 3px rgba(14,27,22,.06);
+  --shadow-md: 0 8px 24px rgba(14,27,22,.08);
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+body .topbar {
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+body .user-info { padding: 6px 12px; border-radius: 999px; transition: background .2s; }
+body .user-info:hover { background: var(--border-light); }
+body .user-name { font-weight: 700; letter-spacing: 0; }
+body .user-role { color: var(--muted); font-size: 12px; }
+
+body .sidebar {
+  background: linear-gradient(180deg, #0F3D2E 0%, #0A2B21 100%);
+  border-right: none;
+  box-shadow: 4px 0 24px rgba(10,43,33,.18);
+}
+body .nav-list { padding: 14px 12px; gap: 4px; }
+body .nav-item {
+  color: rgba(255,255,255,.72);
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  transition: all .2s ease;
+}
+body .nav-item svg { opacity: .85; transition: transform .2s; }
+body .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+body .nav-item:hover svg { transform: translateX(2px); }
+body .nav-item.active {
+  background: var(--amber);
+  color: #3A2600;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(255,171,46,.35);
+}
+body .nav-item.active svg { opacity: 1; }
+
+body .main-header { margin-bottom: 22px; }
+body .header-left h1 { font-size: 32px; font-weight: 800; letter-spacing: 0; color: var(--ink); }
+body .header-left h1::before {
+  content: "FIELD CONSOLE";
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  color: var(--brown);
+  margin-bottom: 6px;
+}
+body .header-left p { color: var(--muted); font-size: 14.5px; line-height: 1.55; max-width: 640px; }
+
+body .card,
+body .summary-card,
+body .market-forecast-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+body .summary-card:hover,
+body .market-forecast-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+body .summary-card:first-child { background: linear-gradient(135deg, #0F3D2E, #0A2B21); color: #fff; border-color: transparent; }
+body .summary-card:first-child .summary-label { color: rgba(255,255,255,.7); }
+body .summary-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+body .summary-count { font-size: 36px; font-weight: 800; letter-spacing: 0; }
+body .summary-icon { border-radius: 14px; background: var(--green-light); }
+body .text-section-title,
+body .forecast-title { font-weight: 800; letter-spacing: 0; }
+
+body .btn-primary {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 11px 20px;
+  box-shadow: 0 4px 12px rgba(15,61,46,.25);
+  transition: all .2s;
+}
+body .btn-primary:hover:not(:disabled) {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15,61,46,.3);
+}
+body .btn-outline-report { background: #fff; color: var(--ink); border: 1px solid var(--border); border-radius: 12px; font-weight: 600; transition: all .2s; }
+body .btn-outline-report:hover:not(:disabled) { background: var(--green-light); border-color: var(--green); color: var(--green); }
+body .btn-danger { background: var(--status-rejected) !important; border-radius: 12px; font-weight: 700; }
+
+body .search-box,
+body input,
+body select,
+body textarea { border-radius: 12px; }
+body .search-box { background: #F0F3F5; border: 1px solid transparent; }
+body .search-box:focus-within,
+body input:focus,
+body select:focus,
+body textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 4px rgba(15,61,46,.1);
+  outline: none;
+  background: #fff;
+}
+body .form-field-item label { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+body .input-readonly { background: #F5F7F9; }
+
+body table { border-collapse: separate; border-spacing: 0; }
+body thead th { background: #F7F9F8; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+body tbody td { border-bottom: 1px solid var(--border-light); }
+body tbody tr { transition: background .15s; }
+body tbody tr:hover td { background: #F7FBF9; }
+
+body .status-pill { border-radius: 999px; font-weight: 700; font-size: 12px; padding: 5px 12px; text-shadow: none; }
+body .status-pill.approved,
+body .status-pill.approved-status { background: #DDF3E8 !important; color: #12704A !important; }
+body .status-pill.pending,
+body .status-pill.pending-status { background: var(--amber-soft) !important; color: #9A5B00 !important; }
+body .status-pill.flagged { background: #FDE4E4 !important; color: #B02A2A !important; }
+body .status-pill.draft,
+body .status-pill.draft-status { background: var(--blue-soft) !important; color: #2F55B3 !important; }
+body .filter-pill,
+body .count-badge { border-radius: 999px; font-weight: 700; }
+body .sub-tab-btn { font-weight: 700; border-radius: 999px; padding: 8px 16px; transition: all .2s; }
+body .sub-tab-btn.active { background: var(--green); color: #fff; }
+body .btn-page { border-radius: 10px; font-weight: 700; }
+body .btn-page.active { background: var(--green); color: #fff; }
+
+body .modal-overlay { backdrop-filter: blur(4px); background: rgba(10,27,22,.55); }
+body .modal-box { border-radius: 20px; border: none; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+body .modal-btn-confirm { background: var(--green); border-radius: 12px; font-weight: 700; }
+body .view.active-view { animation: esakaFade .35s ease; }
+@keyframes esakaFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  body *, body *::before, body *::after { animation: none !important; transition: none !important; }
+}
   </style>
 </head>
 <body>
