@@ -880,6 +880,11 @@ def get_awaiting_aew_revision(
             SUBMITTED_PROVINCIAL_FLAGGED,
             SUBMITTED_REGIONAL_FLAGGED,
         ],
+        "AEW": [
+            SUBMITTED_MUNICIPAL_FLAGGED,
+            SUBMITTED_PROVINCIAL_FLAGGED,
+            SUBMITTED_REGIONAL_FLAGGED,
+        ],
     }
 
     allowed_status = role_status_map.get(current_user.role)
@@ -902,7 +907,7 @@ def get_awaiting_aew_revision(
             func.lower(func.trim(RawPlantReport.municipality)) ==
             func.lower(func.trim(current_user.municipality))
         )
-    elif current_user.role == "Agricultural Extension Worker":
+    elif current_user.role in ("Agricultural Extension Worker", "AEW"):
         query = query.filter(RawPlantReport.encoded_by == current_user.user_id)
 
     reports = query.order_by(ReportSubmission.submitted_at.desc()).all()

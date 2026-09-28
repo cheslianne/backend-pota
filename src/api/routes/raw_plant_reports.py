@@ -49,7 +49,7 @@ def get_raw_plant_reports(
     # Role-based filtering
     query = db.query(RawPlantReport)
     
-    if current_user.role == "Agricultural Extension Worker":
+    if current_user.role in ("Agricultural Extension Worker", "AEW"):
         query = query.filter(
             RawPlantReport.encoded_by == current_user.user_id
         )
@@ -426,7 +426,7 @@ def get_raw_plant_report(
     if not report:
         raise HTTPException(404, "Report not found.")
     
-    if current_user.role == "Agricultural Extension Worker":
+    if current_user.role in ("Agricultural Extension Worker", "AEW"):
         if report.encoded_by != current_user.user_id:
             raise HTTPException(403, "Access denied.")
     
@@ -832,7 +832,7 @@ async def upload_report_attachment(
         raise HTTPException(404, "Report not found.")
     
     # ✅ Access check
-    if current_user.role == "Agricultural Extension Worker":
+    if current_user.role in ("Agricultural Extension Worker", "AEW"):
         if report.encoded_by != current_user.user_id:
             raise HTTPException(403, "Access denied.")
     
