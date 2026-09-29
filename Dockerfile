@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Prophet 1.1.5 ships an incomplete CmdStan directory that takes precedence
+# over the fully compiled installation below.
+RUN rm -rf /usr/local/lib/python3.11/site-packages/prophet/stan_model/cmdstan-2.33.1
 
 # Manual ETL runs execute in this API container, so it needs the same
 # compiled Prophet backend as the dedicated scheduler worker.

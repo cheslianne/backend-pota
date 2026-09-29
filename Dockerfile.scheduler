@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Prophet 1.1.5 ships an incomplete CmdStan directory that takes precedence
+# over the fully compiled installation below.
+RUN rm -rf /usr/local/lib/python3.11/site-packages/prophet/stan_model/cmdstan-2.33.1
 
 # Prophet needs a real CmdStan installation at runtime. Install a fixed,
 # known-compatible version into an image path and fail the build if it is absent.
