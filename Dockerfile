@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Manual ETL runs execute in this API container, so it needs the same
 # compiled Prophet backend as the dedicated scheduler worker.
 RUN python -c "from pathlib import Path; import cmdstanpy; ok=cmdstanpy.install_cmdstan(version='2.33.1', dir='/opt/cmdstan', verbose=True); path=Path('/opt/cmdstan/cmdstan-2.33.1'); assert ok and (path/'bin'/'cmdstan').exists(), f'Incomplete CmdStan installation at {path}'; print(path)"
+RUN python -c "import cmdstanpy; cmdstanpy.set_cmdstan_path('/opt/cmdstan/cmdstan-2.33.1'); from prophet import Prophet; Prophet(stan_backend='CMDSTANPY', yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False); print('Prophet CmdStan backend ready')"
 
 COPY src ./src
 COPY init_db.py start.sh ./

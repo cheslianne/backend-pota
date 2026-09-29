@@ -111,6 +111,7 @@ def generate_forecast(commodity):
     # ========================================================
 
     model = Prophet(
+        stan_backend="CMDSTANPY",
         yearly_seasonality=False,
         weekly_seasonality=False,
         daily_seasonality=False,
