@@ -1,6 +1,7 @@
 import sys
 import importlib
 import pkgutil
+import os
 from pathlib import Path
 
 # ============================================================
@@ -39,6 +40,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 def ensure_forecast_runtime():
     """Verify Prophet's CmdStan backend before any ETL model is fitted."""
     import cmdstanpy
+
+    configured_path = os.getenv("CMDSTAN")
+    if configured_path and Path(configured_path).exists():
+        cmdstanpy.set_cmdstan_path(configured_path)
 
     try:
         path = cmdstanpy.cmdstan_path()
