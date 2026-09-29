@@ -406,10 +406,17 @@ def get_municipality_map_data(
                 "commodities": [],
             }
 
+        surplus_deficit = total_supply - base_demand
+        capacity_pct = round((total_supply / base_demand) * 100, 1) if base_demand else None
+
         municipality_data[municipality]["commodities"].append({
             "commodity": commodity,
             "status": status,
             "estimated": True,
+            "total_supply": total_supply,
+            "base_demand": base_demand,
+            "surplus_deficit": surplus_deficit,
+            "capacity_pct": capacity_pct,
         })
 
     return {

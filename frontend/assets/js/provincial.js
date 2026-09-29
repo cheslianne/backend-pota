@@ -308,10 +308,10 @@ async function loadMunicipalityMapData() {
         if (!result.data || !Array.isArray(result.data)) return;
 
         MUNICIPALITY_MAP_RAW_DATA = result.data;
-        renderFilteredMapMarkers();
+        pcMapRefresh();
 
-        document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
-        document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
+        document.getElementById('filterCommodity')?.addEventListener('change', pcMapRefresh);
+        document.getElementById('filterStatus')?.addEventListener('change', pcMapRefresh);
 
     } catch (err) {
         console.error("Map load error:", err);
@@ -362,7 +362,7 @@ function renderFilteredMapMarkers() {
 
             if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
                 markerColor = "#C0392B"; // Red
-            } else if (status.includes("BALANCED")) {
+            } else if (status.includes("BALANCE")) {
                 markerColor = "#2E7D32"; // Green
             } else if (status.includes("DEFICIT")) {
                 markerColor = "#D97706"; // Amber
@@ -383,12 +383,13 @@ function renderFilteredMapMarkers() {
             });
 
             const popupContent = `
-                <div style="min-width:180px;">
+                <div style="min-width:200px;">
                     <strong>Municipality:</strong> ${escapeHtml(md.municipality)}
                     <br><br>
                     <strong>Commodity:</strong> ${escapeHtml(commodity)}
                     <br>
                     <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
+                    ${pcPopupVolumeLines(item)}
                 </div>
             `;
 
@@ -3461,3 +3462,178 @@ function renderOverview() {
 
 // Wire the "Open Reports →" / "View All →" links once the DOM is ready.
 document.addEventListener("DOMContentLoaded", initOverviewLinks);
+
+
+/* ============================================================
+   REPORTS FILTER PILLS + MAP SIDE PANEL
+============================================================ */
+
+/* ---------- Reports Workflow: quick-filter pills ---------- */
+
+function initReportsQuickFilters() {
+    const bar = document.getElementById("reportsQuickFilters");
+    if (!bar) return;
+
+    const sections = {
+        all: ["pendingReportsView", "returnedToMunicipalView", "sentToRegionalView"],
+        pending: ["pendingReportsView"],
+        returned: ["returnedToMunicipalView"],
+        sent: ["sentToRegionalView"],
+    };
+
+    bar.querySelectorAll(".filter-pill").forEach(btn => {
+        btn.addEventListener("click", () => {
+            bar.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const key = btn.dataset.reportsFilter;
+            const toShow = new Set(sections[key] || sections.all);
+
+            ["pendingReportsView", "returnedToMunicipalView", "sentToRegionalView"].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = toShow.has(id) ? "block" : "none";
+            });
+        });
+    });
+}
+
+/* ---------- Regional Field Map: side panel ---------- */
+
+const PC_STATUS_META = {
+    OVERSUPPLY: { label: "Oversupply", cls: "surplus" },
+    SURPLUS:    { label: "Surplus",    cls: "surplus" },
+    BALANCE:    { label: "Balanced",   cls: "balanced" },
+    DEFICIT:    { label: "Deficit",    cls: "deficit" },
+};
+
+function pcStatusMeta(rawStatus) {
+    const s = (rawStatus || "").toUpperCase();
+    return PC_STATUS_META[s] || { label: "No Data", cls: "nodata" };
+}
+
+/**
+ * Builds the extra popup lines for supply vs. demand. Falls back to an
+ * empty string if the backend didn't include these fields.
+ */
+function pcPopupVolumeLines(item) {
+    if (typeof item.total_supply !== "number" || typeof item.base_demand !== "number") {
+        return "";
+    }
+    const diff = typeof item.surplus_deficit === "number"
+        ? item.surplus_deficit
+        : (item.total_supply - item.base_demand);
+    const diffLabel = diff > 0 ? "over demand" : (diff < 0 ? "under demand" : "on target");
+    const diffColor = diff > 0 ? "#C0392B" : (diff < 0 ? "#D97706" : "#2E7D32");
+    const capText = (typeof item.capacity_pct === "number") ? `${item.capacity_pct}% of demand` : "—";
+
+    return `
+        <br>
+        <strong>Submitted supply:</strong> ${formatKg(item.total_supply)}
+        <br>
+        <strong>Base demand:</strong> ${formatKg(item.base_demand)}
+        <br>
+        <strong>Balance:</strong> <span style="color:${diffColor}; font-weight:700;">
+            ${diff > 0 ? "+" : ""}${formatKg(diff)} ${diffLabel}
+        </span>
+        <br>
+        <strong>Capacity:</strong> ${capText}
+    `;
+}
+
+/**
+ * Renders the status-count chips + municipality list in the map's
+ * side panel, using MUNICIPALITY_MAP_RAW_DATA (already fetched by
+ * loadMunicipalityMapData()) filtered by whatever the commodity/status
+ * dropdowns currently say — so it always matches what's on the map.
+ */
+function renderMapSidePanel() {
+    const chipRow  = document.getElementById("mapStatusSummary");
+    const muniList = document.getElementById("mapMunicipalityList");
+    if (!chipRow || !muniList) return;
+
+    const data = Array.isArray(MUNICIPALITY_MAP_RAW_DATA) ? MUNICIPALITY_MAP_RAW_DATA : [];
+
+    if (!data.length) {
+        chipRow.innerHTML  = `<div class="pc-empty">No planting-intent data submitted yet.</div>`;
+        muniList.innerHTML = `<div class="pc-empty">Nothing to show yet.</div>`;
+        return;
+    }
+
+    const selectedCommodity = document.getElementById("filterCommodity")?.value || "all";
+    const selectedStatus    = document.getElementById("filterStatus")?.value || "all";
+
+    const counts = { surplus: 0, balanced: 0, deficit: 0, nodata: 0 };
+    const rows = [];
+
+    data.forEach(md => {
+        const commodities = Array.isArray(md.commodities) ? md.commodities : [];
+
+        const filtered = commodities.filter(item => {
+            const commodityMatch = selectedCommodity === "all" ||
+                (item.commodity || "").toLowerCase() === selectedCommodity.toLowerCase();
+            const statusVal = (item.status || "").toUpperCase();
+            const statusMatch = selectedStatus === "all" || statusVal.includes(selectedStatus);
+            return commodityMatch && statusMatch;
+        });
+
+        if (!filtered.length) return;
+
+        const tags = filtered.map(item => {
+            const meta = pcStatusMeta(item.status);
+            counts[meta.cls] += 1;
+
+            const hasVolume = typeof item.surplus_deficit === "number";
+            const volumeNote = hasVolume
+                ? ` (${item.surplus_deficit > 0 ? "+" : ""}${formatKg(item.surplus_deficit)})`
+                : "";
+
+            return `<span class="pc-tag ${meta.cls}">${escapeHtml(item.commodity || "—")} · ${meta.label}${volumeNote}</span>`;
+        }).join("");
+
+        rows.push(`
+            <div class="pc-muni-row">
+                <div class="pc-muni-name">${escapeHtml(md.municipality || "—")}</div>
+                <div class="pc-muni-tags">${tags}</div>
+            </div>
+        `);
+    });
+
+    chipRow.innerHTML = `
+        <div class="pc-status-chip surplus"><span class="dot"></span>Surplus/Oversupply <span class="count">${counts.surplus}</span></div>
+        <div class="pc-status-chip balanced"><span class="dot"></span>Balanced <span class="count">${counts.balanced}</span></div>
+        <div class="pc-status-chip deficit"><span class="dot"></span>Deficit <span class="count">${counts.deficit}</span></div>
+        <div class="pc-status-chip nodata"><span class="dot"></span>No Data <span class="count">${counts.nodata}</span></div>
+    `;
+
+    muniList.innerHTML = rows.length
+        ? rows.join("")
+        : `<div class="pc-empty">No municipalities match the current filters.</div>`;
+}
+
+/** Re-draws the Leaflet markers (existing function) AND the side panel (new). */
+function pcMapRefresh() {
+    if (typeof renderFilteredMapMarkers === "function") {
+        renderFilteredMapMarkers();
+    }
+    renderMapSidePanel();
+}
+
+/* ---------- init ---------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+    initReportsQuickFilters();
+
+    // Covers the case where the map data hasn't loaded yet: poll briefly
+    // for it to arrive, then draw the side panel once.
+    let tries = 0;
+    const waitForMapData = setInterval(() => {
+        tries += 1;
+        if (Array.isArray(MUNICIPALITY_MAP_RAW_DATA) && MUNICIPALITY_MAP_RAW_DATA.length) {
+            renderMapSidePanel();
+            clearInterval(waitForMapData);
+        } else if (tries > 20) { // ~10s
+            clearInterval(waitForMapData);
+        }
+    }, 500);
+});

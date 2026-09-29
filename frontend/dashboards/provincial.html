@@ -1457,6 +1457,12 @@
   </div>
 
         <!-- PENDING REPORTS -->
+        <div class="pc-reports-filters" id="reportsQuickFilters">
+          <button class="filter-pill active" type="button" data-reports-filter="all">All Reports</button>
+          <button class="filter-pill" type="button" data-reports-filter="pending">Pending Provincial</button>
+          <button class="filter-pill" type="button" data-reports-filter="returned">Returned for Revision</button>
+          <button class="filter-pill" type="button" data-reports-filter="sent">Sent to Regional</button>
+        </div>
         <div id="pendingReportsView">
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
@@ -1772,43 +1778,74 @@
     </div>
   </div>
 
-  <div class="card">
-    <!-- MAP TITLE + LEGEND -->
-    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-      <span>Field Monitoring &amp; Geographic Clusters</span>
-      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center; text-transform: none; letter-spacing: 0;">
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span>
-          Surplus
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span>
-          Balanced
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span>
-          Deficit
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span>
-          No Data
-        </span>
+  <div class="pc-map-layout">
+
+    <!-- LEFT: map card -->
+    <div class="card">
+      <div class="map-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <span>Field Monitoring &amp; Geographic Clusters</span>
+        <div style="display:flex; gap:12px; font-size:11.5px; font-weight:600; align-items:center; text-transform:none; letter-spacing:0;">
+          <span style="display:flex; align-items:center; gap:4px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#C0392B; display:inline-block;"></span> Surplus
+          </span>
+          <span style="display:flex; align-items:center; gap:4px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#2E7D32; display:inline-block;"></span> Balanced
+          </span>
+          <span style="display:flex; align-items:center; gap:4px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#D97706; display:inline-block;"></span> Deficit
+          </span>
+          <span style="display:flex; align-items:center; gap:4px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#6c757d; display:inline-block;"></span> No Data
+          </span>
+        </div>
+      </div>
+
+      <div class="pc-map-filters">
+        <select id="filterCommodity">
+          <option value="all">All Commodities</option>
+          <option value="Tomato">Tomato</option>
+          <option value="Squash">Squash</option>
+          <option value="Red Onion">Red Onion</option>
+          <option value="White Onion">White Onion</option>
+        </select>
+
+        <select id="filterStatus">
+          <option value="all">All Statuses</option>
+          <option value="OVERSUPPLY">Oversupply</option>
+          <option value="SURPLUS">Surplus</option>
+          <option value="BALANCE">Balanced</option>
+          <option value="DEFICIT">Deficit</option>
+        </select>
+      </div>
+
+      <div id="map"></div>
+    </div>
+
+    <!-- RIGHT: side panel — real data only, no fabricated telemetry -->
+    <div class="card">
+      <div class="pc-panel-head" style="margin-bottom:10px;">
+        <div>
+          <h2 style="font-size:14px;">Municipal Supply Signals</h2>
+          <p>Counts reflect the currently filtered markers.</p>
+        </div>
+      </div>
+
+      <div class="pc-status-chip-row" id="mapStatusSummary">
+        <div class="pc-empty">Loading&hellip;</div>
+      </div>
+
+      <div class="pc-panel-head" style="margin-bottom:10px;">
+        <div>
+          <h2 style="font-size:14px;">Monitored Municipalities</h2>
+          <p>Commodity status by municipality.</p>
+        </div>
+      </div>
+
+      <div class="pc-muni-list" id="mapMunicipalityList">
+        <div class="pc-empty">Loading&hellip;</div>
       </div>
     </div>
 
-    <!-- FILTERS -->
-    <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
-      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
-        <option value="all">All Commodities</option>
-        <option value="Tomato">Tomato</option>
-        <option value="Squash">Squash</option>
-        <option value="Red Onion">Red Onion</option>
-        <option value="White Onion">White Onion</option>
-      </select>
-
-      
-
-    <div id="map"></div>
   </div>
 </section>
 
