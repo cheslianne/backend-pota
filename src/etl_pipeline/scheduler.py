@@ -1,6 +1,7 @@
 import sys
 import importlib
 import pkgutil
+from pathlib import Path
 
 # ============================================================
 # LOAD ALL SQLALCHEMY MODELS
@@ -33,6 +34,24 @@ if hasattr(sys.stdout, "reconfigure"):
 # ============================================================
 
 from apscheduler.schedulers.blocking import BlockingScheduler
+
+
+def ensure_forecast_runtime():
+    """Verify Prophet's CmdStan backend before any ETL model is fitted."""
+    import cmdstanpy
+
+    try:
+        path = cmdstanpy.cmdstan_path()
+    except ValueError as error:
+        raise RuntimeError(
+            "CmdStan is not installed; rebuild the scheduler image with "
+            "Dockerfile.scheduler before running forecast ETL."
+        ) from error
+
+    if not Path(path).exists():
+        raise RuntimeError(f"CmdStan path does not exist: {path}")
+
+    print(f"Forecast runtime ready: CmdStan {path}")
 
 from src.etl_pipeline.psa_testfile import main as run_psa
 from src.etl_pipeline.forecast import main as run_forecast
@@ -130,6 +149,8 @@ def run_etl_step(data_source, etl_function):
 # ============================================================
 
 def run_pipeline():
+
+    ensure_forecast_runtime()
 
     print()
     print("=" * 60)
@@ -282,6 +303,8 @@ scheduler.add_job(
 # ============================================================
 
 def start_scheduler():
+
+    ensure_forecast_runtime()
 
     print()
     print("=" * 60)
