@@ -53,8 +53,12 @@ def ensure_forecast_runtime():
             "Dockerfile.scheduler before running forecast ETL."
         ) from error
 
-    if not Path(path).exists():
-        raise RuntimeError(f"CmdStan path does not exist: {path}")
+    cmdstan_binary = Path(path) / "bin" / "cmdstan"
+    if not cmdstan_binary.exists():
+        raise RuntimeError(
+            f"CmdStan installation is incomplete: missing executable {cmdstan_binary}. "
+            "Rebuild Dockerfile.scheduler with a working C++ toolchain."
+        )
 
     print(f"Forecast runtime ready: CmdStan {path}")
 
