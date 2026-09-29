@@ -1,10 +1,21 @@
 import os
+import shutil
 from pathlib import Path
+
+import prophet
 
 
 def ensure_forecast_runtime():
     """Select and validate CmdStan before constructing a Prophet model."""
     import cmdstanpy
+
+    bundled_cmdstan_path = (
+        Path(prophet.__file__).resolve().parent
+        / "stan_model"
+        / "cmdstan-2.33.1"
+    )
+    if bundled_cmdstan_path.exists() and not (bundled_cmdstan_path / "makefile").is_file():
+        shutil.rmtree(bundled_cmdstan_path)
 
     configured_path = os.getenv("CMDSTAN")
     if configured_path and Path(configured_path).exists():
