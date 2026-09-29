@@ -12,6 +12,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
 <link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/provincial-theme.css">
 
 <style>
   :root {
@@ -1265,7 +1266,7 @@
 
 </style>
 </head>
-<body>
+<body class="pc-modern">
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -1297,10 +1298,20 @@
   <!-- LAYOUT -->
   <div class="layout">
     <nav class="sidebar" id="sidebar">
+      <div class="sidebar-role">
+        <div class="role-title"><span class="dot"></span> Provincial Coordinator</div>
+        <div class="role-sub" id="sidebarProvinceLabel">Pampanga &middot; Region III</div>
+      </div>
+
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="reports">
+        <button class="nav-item active" type="button" data-view="overview">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Overview
+        </button>
+        <button class="nav-item" type="button" data-view="reports">
           <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
           View Reports
+          <span class="nav-badge" id="sidebarPendingBadge" style="display:none;">0</span>
         </button>
         <button class="nav-item" type="button" data-view="summary">
           <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -1320,8 +1331,84 @@
 
     <main class="main">
 
+      <!-- ===================== VIEW: Overview ===================== -->
+      <section class="view active-view" id="view-overview">
+        <div class="main-header">
+          <div class="header-left">
+            <h1>Reports Review &amp; Regional Routing</h1>
+            <p>A snapshot of what needs your attention across Pampanga's municipalities.</p>
+          </div>
+        </div>
+
+        <div class="pc-kpi-grid" id="overviewKpiGrid">
+          <div class="pc-kpi-card">
+            <div class="pc-kpi-label">
+              Pending Provincial
+              <span class="pc-kpi-icon">📝</span>
+            </div>
+            <div class="pc-kpi-value" id="ovKpiPending">—</div>
+            <div class="pc-kpi-sub" id="ovKpiPendingSub">Awaiting your review</div>
+          </div>
+
+          <div class="pc-kpi-card teal">
+            <div class="pc-kpi-label">
+              Returned to Municipal
+              <span class="pc-kpi-icon">↩️</span>
+            </div>
+            <div class="pc-kpi-value" id="ovKpiReturned">—</div>
+            <div class="pc-kpi-sub" id="ovKpiReturnedSub">Sent back for revision</div>
+          </div>
+
+          <div class="pc-kpi-card amber">
+            <div class="pc-kpi-label">
+              Forwarded to DA-RFO III
+              <span class="pc-kpi-icon">📤</span>
+            </div>
+            <div class="pc-kpi-value" id="ovKpiForwarded">—</div>
+            <div class="pc-kpi-sub" id="ovKpiForwardedSub">Sent to Regional</div>
+          </div>
+
+          <div class="pc-kpi-card coral">
+            <div class="pc-kpi-label">
+              Avg. Review Time
+              <span class="pc-kpi-icon">⏱️</span>
+            </div>
+            <div class="pc-kpi-value" id="ovKpiReviewTime">—</div>
+            <div class="pc-kpi-sub" id="ovKpiReviewTimeSub">From submission to forwarding</div>
+          </div>
+        </div>
+
+        <div class="pc-overview-grid">
+          <div class="pc-panel">
+            <div class="pc-panel-head">
+              <div>
+                <h2>Pending Review &amp; Dispatch</h2>
+                <p>Municipal reports awaiting your sign-off before forwarding to DA-RFO III.</p>
+              </div>
+              <a href="#" class="pc-panel-link" data-view-link="reports">Open Reports &rarr;</a>
+            </div>
+            <div id="overviewPendingList">
+              <div class="pc-empty">Loading pending reports&hellip;</div>
+            </div>
+          </div>
+
+          <div class="pc-panel">
+            <div class="pc-panel-head">
+              <div>
+                <h2>Recent Submissions to Regional</h2>
+                <p>Forwarded to DA-RFO III.</p>
+              </div>
+              <a href="#" class="pc-panel-link" data-view-link="reports">View All &rarr;</a>
+            </div>
+            <div id="overviewRecentFeed">
+              <div class="pc-empty">Loading recent submissions&hellip;</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ===================== VIEW: Reports ===================== -->
-      <section class="view active-view" id="view-reports">
+      <section class="view" id="view-reports">
         <div class="main-header" id="reportsMainHeader">
           <div class="header-left">
             <h1>Reports</h1>

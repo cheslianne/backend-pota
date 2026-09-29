@@ -518,7 +518,8 @@ async function loadPendingReports() {
 
         renderPendingReports();
         updateBulkApproveButton();
-        updateReportSummaryCards();  
+        updateReportSummaryCards();
+        renderOverview();
 
     } catch (err) {
         console.error("Load pending error:", err);
@@ -632,6 +633,7 @@ async function loadReturnedToMunicipal() {
         returnedToMunicipalReports = Array.isArray(data) ? data : [];
         renderReturnedToMunicipal();
         updateReportSummaryCards();
+        renderOverview();
 
     } catch (err) {
         console.error("Load returned error:", err);
@@ -701,6 +703,7 @@ async function loadSentToRegional() {
         sentReports = Array.isArray(data) ? data : [];
         renderSentReports();
         updateReportSummaryCards();
+        renderOverview();
 
     } catch (err) {
         console.error("Load sent error:", err);
@@ -3277,7 +3280,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadReturnedToMunicipal(),
         loadSentToRegional()
     ]);
-    
+    renderOverview();
+
     // Load summary if the summary view is active
     const summaryView = document.getElementById("view-summary");
     if (summaryView && summaryView.classList.contains("active-view")) {
@@ -3295,3 +3299,165 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 });
+
+
+/* ============================================================
+   OVERVIEW TAB
+   Reuses the arrays already loaded for the Reports tab
+   (pendingReports, returnedToMunicipalReports, sentReports) —
+   no new backend endpoint is called, so the Overview numbers
+   can never drift from the Reports tab.
+============================================================ */
+
+function initOverviewLinks() {
+    document.querySelectorAll("[data-view-link]").forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            const key = link.dataset.viewLink;
+            const navBtn = document.querySelector(`.nav-item[data-view="${key}"]`);
+            if (navBtn) navBtn.click();
+        });
+    });
+}
+
+/**
+ * Average number of days between a report's submitted_at and approved_at,
+ * computed only over reports that actually have both timestamps
+ * (i.e. reports already forwarded to Regional). Returns null if there is
+ * not enough data yet — the UI shows "—" rather than a fabricated number.
+ */
+function computeAvgReviewDays(reports) {
+    const durations = (reports || [])
+        .filter(r => r.submitted_at && r.approved_at)
+        .map(r => (new Date(r.approved_at) - new Date(r.submitted_at)) / 86400000)
+        .filter(d => Number.isFinite(d) && d >= 0);
+
+    if (!durations.length) return null;
+    const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+    return avg;
+}
+
+function renderOverviewKpis() {
+    const pendingEl   = document.getElementById("ovKpiPending");
+    const returnedEl  = document.getElementById("ovKpiReturned");
+    const forwardedEl = document.getElementById("ovKpiForwarded");
+    const reviewEl    = document.getElementById("ovKpiReviewTime");
+    const reviewSubEl = document.getElementById("ovKpiReviewTimeSub");
+    if (!pendingEl) return; // Overview markup not present on this page yet
+
+    const pendingCount   = (pendingReports || []).length;
+    const returnedCount  = (returnedToMunicipalReports || []).length;
+    const forwardedCount = (sentReports || []).length;
+
+    pendingEl.textContent   = pendingCount;
+    returnedEl.textContent  = returnedCount;
+    forwardedEl.textContent = forwardedCount;
+
+    const avgDays = computeAvgReviewDays(sentReports);
+    if (avgDays === null) {
+        reviewEl.textContent = "—";
+        reviewSubEl.textContent = "Not enough data yet";
+    } else {
+        reviewEl.textContent = avgDays.toFixed(1) + "d";
+        reviewSubEl.textContent = "Submission → forwarding, avg. of " +
+            (sentReports || []).filter(r => r.submitted_at && r.approved_at).length + " report(s)";
+    }
+
+    // Sidebar badge on the "View Reports" nav item
+    const badge = document.getElementById("sidebarPendingBadge");
+    if (badge) {
+        if (pendingCount > 0) {
+            badge.textContent = pendingCount;
+            badge.style.display = "inline-block";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+}
+
+function renderOverviewPendingList() {
+    const container = document.getElementById("overviewPendingList");
+    if (!container) return;
+
+    const items = (pendingReports || []).slice(0, 5);
+
+    if (!items.length) {
+        container.innerHTML = `<div class="pc-empty">No reports are waiting on you right now.</div>`;
+        return;
+    }
+
+    container.innerHTML = items.map(r => {
+        const title = r.title || `${r.commodity || "Crop"} Harvest Report`;
+        const submitted = r.submitted_at ? formatRelativeOrDate(r.submitted_at) : "—";
+        return `
+            <div class="pc-feed-item">
+                <div>
+                    <div class="pc-feed-title">${escapeHtml(title)}</div>
+                    <div class="pc-feed-meta">
+                        ${escapeHtml(r.municipality || "—")} &middot; ${escapeHtml(r.commodity || "—")} &middot; Submitted ${submitted}
+                    </div>
+                </div>
+                <span class="pc-feed-tag pending">Pending</span>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderOverviewRecentFeed() {
+    const container = document.getElementById("overviewRecentFeed");
+    if (!container) return;
+
+    const items = (sentReports || []).slice(0, 5);
+
+    if (!items.length) {
+        container.innerHTML = `<div class="pc-empty">Nothing has been forwarded to Regional yet.</div>`;
+        return;
+    }
+
+    container.innerHTML = items.map(r => {
+        const title = r.title || `${r.commodity || "Crop"} Harvest Report`;
+        const when = r.approved_at || r.submitted_at;
+        const whenStr = when ? formatRelativeOrDate(when) : "—";
+        const status = (r.status || "").toUpperCase();
+        const tagClass = status.includes("FLAG") ? "flag" : (status.includes("APPROV") ? "ok" : "pending");
+        const tagLabel = status.includes("FLAG") ? "Flagged" : (status.includes("APPROV") ? "Endorsed" : "In Review");
+
+        return `
+            <div class="pc-feed-item">
+                <div>
+                    <div class="pc-feed-title">${escapeHtml(title)}</div>
+                    <div class="pc-feed-meta">
+                        ${escapeHtml(r.municipality || "—")} &middot; Dispatched ${whenStr}
+                    </div>
+                </div>
+                <span class="pc-feed-tag ${tagClass}">${tagLabel}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+/** Small date helper for the Overview tab feeds. */
+function formatRelativeOrDate(isoString) {
+    try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return "—";
+        const diffMs = Date.now() - d.getTime();
+        const diffHrs = diffMs / 3600000;
+        if (diffHrs < 24) {
+            const h = Math.max(1, Math.round(diffHrs));
+            return `${h}h ago`;
+        }
+        return d.toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+    } catch {
+        return "—";
+    }
+}
+
+function renderOverview() {
+    renderOverviewKpis();
+    renderOverviewPendingList();
+    renderOverviewRecentFeed();
+}
+
+// Wire the "Open Reports →" / "View All →" links once the DOM is ready.
+document.addEventListener("DOMContentLoaded", initOverviewLinks);
