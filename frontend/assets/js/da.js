@@ -3653,6 +3653,19 @@ async function manualRunETL() {
     manualRunBtn.textContent = "Running ETL...";
 
     try {
+        const beforeResponse = await fetch(
+            `${API_BASE_URL}/api/etl-run-log/`,
+            { method: "GET", headers: getAuthHeaders() }
+        );
+        const beforeData = await beforeResponse.json().catch(() => []);
+        const beforeLogs = Array.isArray(beforeData)
+            ? beforeData
+            : (beforeData.logs || beforeData.data || []);
+        const baselineLogId = beforeLogs.reduce(
+            (highest, log) => Math.max(highest, Number(log.etl_log_id ?? log.id ?? 0)),
+            0
+        );
+
         const response = await fetch(
             `${API_BASE_URL}/api/etl-run-log/manual-run`,
             { method: "POST", headers: getAuthHeaders() }
@@ -3679,13 +3692,15 @@ async function manualRunETL() {
 
         console.log("ETL pipeline started. Waiting for completion...");
 
-        await waitForETLCompletion();
+        const result = await waitForETLCompletion(baselineLogId);
 
         // Go back to the first page so the newest logs are visible
         currentEtlPage = 1;
         await loadETLRunLogs();
 
-        alert("ETL Pipeline Completed Successfully!");
+        alert(result.hasFailed
+            ? "ETL Pipeline finished with failed steps. Check the latest logs."
+            : "ETL Pipeline Completed Successfully!");
 
     } catch (error) {
         console.error("Manual ETL run error:", error);
@@ -3703,7 +3718,7 @@ async function manualRunETL() {
    WAIT FOR ETL COMPLETION
 ============================================================ */
 
-async function waitForETLCompletion() {
+async function waitForETLCompletion(baselineLogId = 0) {
     const maxAttempts = 60;
     const interval = 3000;
     const expectedStepCount = 9;
@@ -3734,8 +3749,12 @@ async function waitForETLCompletion() {
             else if (Array.isArray(data.logs)) logs = data.logs;
             else if (Array.isArray(data.data)) logs = data.data;
 
-            if (logs.length >= expectedStepCount) {
-                const latestLogs = logs.slice(0, expectedStepCount);
+            const newLogs = logs.filter(log =>
+                Number(log.etl_log_id ?? log.id ?? 0) > baselineLogId
+            );
+
+            if (newLogs.length >= expectedStepCount) {
+                const latestLogs = newLogs.slice(0, expectedStepCount);
 
                 const allFinished = latestLogs.every(log =>
                     log.status &&
@@ -3750,11 +3769,11 @@ async function waitForETLCompletion() {
                     );
 
                     if (hasFailed) {
-                        throw new Error("One or more ETL steps failed.");
+                        return { hasFailed: true, logs: latestLogs };
                     }
 
                     console.log(`All ${expectedStepCount} ETL steps completed successfully.`);
-                    return true;
+                    return { hasFailed: false, logs: latestLogs };
                 }
             }
         } catch (error) {
