@@ -3794,7 +3794,8 @@ async function waitForETLCompletion(baselineLogId = 0) {
 function formatAuditDate(dateString) {
     if (!dateString) return "—";
 
-    const d = new Date(dateString);
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(dateString);
+    const d = new Date(hasTimezone ? dateString : `${dateString}Z`);
 
     if (isNaN(d.getTime())) {
         return dateString;
