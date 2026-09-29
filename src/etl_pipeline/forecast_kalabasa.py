@@ -6,6 +6,7 @@ from prophet import Prophet
 from sqlalchemy import select
 
 from src.core.database import SessionLocal
+from src.etl_pipeline.forecast_runtime import ensure_forecast_runtime
 from src.models.price_data import PriceData
 from src.models.forecasts import Forecast
 
@@ -113,6 +114,7 @@ def generate_forecast():
     # CREATE PROPHET MODEL
     # ========================================================
 
+    ensure_forecast_runtime()
     model = Prophet(
         stan_backend="CMDSTANPY",
         yearly_seasonality=False,
