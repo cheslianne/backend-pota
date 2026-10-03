@@ -3549,77 +3549,7 @@ function pcPopupVolumeLines(item) {
     `;
 }
 
-/**
- * Renders the status-count chips + municipality list in the map's
- * side panel, using MUNICIPALITY_MAP_RAW_DATA (already fetched by
- * loadMunicipalityMapData()) filtered by whatever the commodity/status
- * dropdowns currently say — so it always matches what's on the map.
- */
-function renderMapSidePanel() {
-    const chipRow  = document.getElementById("mapStatusSummary");
-    const muniList = document.getElementById("mapMunicipalityList");
-    if (!chipRow || !muniList) return;
-
-    const data = Array.isArray(MUNICIPALITY_MAP_RAW_DATA) ? MUNICIPALITY_MAP_RAW_DATA : [];
-
-    if (!data.length) {
-        chipRow.innerHTML  = `<div class="pc-empty">No planting-intent data submitted yet.</div>`;
-        muniList.innerHTML = `<div class="pc-empty">Nothing to show yet.</div>`;
-        return;
-    }
-
-    const selectedCommodity = document.getElementById("filterCommodity")?.value || "all";
-    const selectedStatus    = document.getElementById("filterStatus")?.value || "all";
-
-    const counts = { surplus: 0, balanced: 0, deficit: 0, nodata: 0 };
-    const rows = [];
-
-    data.forEach(md => {
-        const commodities = Array.isArray(md.commodities) ? md.commodities : [];
-
-        const filtered = commodities.filter(item => {
-            const commodityMatch = selectedCommodity === "all" ||
-                (item.commodity || "").toLowerCase() === selectedCommodity.toLowerCase();
-            const statusVal = (item.status || "").toUpperCase();
-            const statusMatch = selectedStatus === "all" || statusVal.includes(selectedStatus);
-            return commodityMatch && statusMatch;
-        });
-
-        if (!filtered.length) return;
-
-        const tags = filtered.map(item => {
-            const meta = pcStatusMeta(item.status);
-            counts[meta.cls] += 1;
-
-            const hasVolume = typeof item.surplus_deficit === "number";
-            const volumeNote = hasVolume
-                ? ` (${item.surplus_deficit > 0 ? "+" : ""}${formatKg(item.surplus_deficit)})`
-                : "";
-
-            return `<span class="pc-tag ${meta.cls}">${escapeHtml(item.commodity || "—")} · ${meta.label}${volumeNote}</span>`;
-        }).join("");
-
-        rows.push(`
-            <div class="pc-muni-row">
-                <div class="pc-muni-name">${escapeHtml(md.municipality || "—")}</div>
-                <div class="pc-muni-tags">${tags}</div>
-            </div>
-        `);
-    });
-
-    chipRow.innerHTML = `
-        <div class="pc-status-chip surplus"><span class="dot"></span>Surplus/Oversupply <span class="count">${counts.surplus}</span></div>
-        <div class="pc-status-chip balanced"><span class="dot"></span>Balanced <span class="count">${counts.balanced}</span></div>
-        <div class="pc-status-chip deficit"><span class="dot"></span>Deficit <span class="count">${counts.deficit}</span></div>
-        <div class="pc-status-chip nodata"><span class="dot"></span>No Data <span class="count">${counts.nodata}</span></div>
-    `;
-
-    muniList.innerHTML = rows.length
-        ? rows.join("")
-        : `<div class="pc-empty">No municipalities match the current filters.</div>`;
-}
-
-/** Re-draws the Leaflet markers (existing function) AND the side panel (new). */
+/** Re-draws the Leaflet markers and the shared marker-aware side panel. */
 function pcMapRefresh() {
     if (typeof renderFilteredMapMarkers === "function") {
         renderFilteredMapMarkers();
@@ -3630,17 +3560,4 @@ function pcMapRefresh() {
 
 document.addEventListener("DOMContentLoaded", () => {
     initReportsQuickFilters();
-
-    // Covers the case where the map data hasn't loaded yet: poll briefly
-    // for it to arrive, then draw the side panel once.
-    let tries = 0;
-    const waitForMapData = setInterval(() => {
-        tries += 1;
-        if (Array.isArray(MUNICIPALITY_MAP_RAW_DATA) && MUNICIPALITY_MAP_RAW_DATA.length) {
-            renderMapSidePanel();
-            clearInterval(waitForMapData);
-        } else if (tries > 20) { // ~10s
-            clearInterval(waitForMapData);
-        }
-    }, 500);
 });
