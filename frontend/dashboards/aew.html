@@ -1962,7 +1962,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="card">
                   <form id="registerFarmerForm">
                       <div class="form-grid-two">
-                          <div class="form-field-item"><label>Farmer ID (RSBSA ID) <span class="req">*</span></label><input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required></div>
+                          <div class="form-field-item"><label>Farmer ID (RSBSA ID) <span class="req">*</span></label><input type="text" id="regFarmerId" placeholder="e.g. RSBSA-03-2026-001" required maxlength="17" title="RSBSA ID must be 17 characters or fewer"></div>
                           <div class="form-field-item"><label>Municipality <span class="req">*</span></label><select id="regMunicipality" required><option value="" disabled selected>Select Municipality</option></select></div>
                           <div class="form-field-item"><label>First Name <span class="req">*</span></label><input type="text" id="regFirstName" placeholder="Enter your first name" required></div>
                           <div class="form-field-item"><label>Barangay <span class="req">*</span></label><select id="regBarangay" required disabled><option value="" disabled selected>Select Municipality first</option></select></div>
@@ -2232,7 +2232,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <!-- ===== PLANTING INTENTS SUMMARY CARDS ===== -->
     <div class="summary-cards planting-summary" id="plantingSummaryCards">
       <div class="summary-card planting-draft" data-intent-filter="draft" role="button" tabindex="0">
-        <div class="summary-icon">📝</div>
         <div class="summary-info">
           <h3>Draft Intents</h3>
           <p class="summary-count" id="plantingCountDraft">0</p>
@@ -2241,7 +2240,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card planting-finalized" data-intent-filter="all" role="button" tabindex="0">
-        <div class="summary-icon">✅</div>
         <div class="summary-info">
           <h3>Finalized Intents</h3>
           <p class="summary-count" id="plantingCountFinalized">0</p>
@@ -2250,7 +2248,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card planting-not-planted" data-intent-filter="NOT PLANTED" role="button" tabindex="0">
-        <div class="summary-icon">🌱</div>
         <div class="summary-info">
           <h3>Not Planted</h3>
           <p class="summary-count" id="plantingCountNotPlanted">0</p>
@@ -2259,7 +2256,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card planting-planted" data-intent-filter="PLANTED" role="button" tabindex="0">
-        <div class="summary-icon">🌾</div>
         <div class="summary-info">
           <h3>Planted</h3>
           <p class="summary-count" id="plantingCountPlanted">0</p>
@@ -2268,7 +2264,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card planting-harvested" data-intent-filter="HARVESTED" role="button" tabindex="0">
-        <div class="summary-icon">🎉</div>
         <div class="summary-info">
           <h3>Harvested</h3>
           <p class="summary-count" id="plantingCountHarvested">0</p>
@@ -2277,7 +2272,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card planting-mediating" data-intent-filter="MEDIATING" role="button" tabindex="0">
-        <div class="summary-icon">⚖️</div>
         <div class="summary-info">
           <h3>Mediating</h3>
           <p class="summary-count" id="plantingCountMediating">0</p>
@@ -2607,7 +2601,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                <!-- ===== OFFTAKE SUMMARY CARDS ===== -->
     <div class="summary-cards offtake-summary" id="offtakeSummaryCards">
       <div class="summary-card offtake-total">
-        <div class="summary-icon">📋</div>
         <div class="summary-info">
           <h3>Total Offtake</h3>
           <p class="summary-count" id="offtakeCountTotal">0</p>
@@ -2616,7 +2609,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card offtake-tomato">
-        <div class="summary-icon">🍅</div>
         <div class="summary-info">
           <h3>Tomato</h3>
           <p class="summary-count" id="offtakeCountTomato">0</p>
@@ -2625,7 +2617,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card offtake-red-onion">
-        <div class="summary-icon">🧅</div>
         <div class="summary-info">
           <h3>Red Onion</h3>
           <p class="summary-count" id="offtakeCountRedOnion">0</p>
@@ -2634,7 +2625,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card offtake-white-onion">
-        <div class="summary-icon">🧅</div>
         <div class="summary-info">
           <h3>White Onion</h3>
           <p class="summary-count" id="offtakeCountWhiteOnion">0</p>
@@ -2643,7 +2633,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
       </div>
 
       <div class="summary-card offtake-squash">
-        <div class="summary-icon">🎃</div>
         <div class="summary-info">
           <h3>Squash</h3>
           <p class="summary-count" id="offtakeCountSquash">0</p>

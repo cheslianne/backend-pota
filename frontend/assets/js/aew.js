@@ -1222,6 +1222,10 @@ function initFarmerSubviews() {
                 alert("Please complete all required fields.");
                 return;
             }
+            if (rsbsaId.length > 17) {
+                alert("Farmer ID (RSBSA ID) must be 17 characters or fewer.");
+                return;
+            }
 
             const farmerData = {
                 rsbsa_id: rsbsaId,
