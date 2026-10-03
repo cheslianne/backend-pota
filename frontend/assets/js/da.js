@@ -2353,12 +2353,12 @@ function renderReportSummaryCard(intents, meta) {
                 <div class="summary-kpi-subtext">Included in this report</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-label">Total Volume</div>
                 <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
                 <div class="summary-kpi-subtext">Across ${selectedCount} intent${selectedCount !== 1 ? "s" : ""}</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-label">Unique Farmers</div>
                 <div class="summary-kpi-value">${uniqueFarmerCount}</div>
                 <div class="summary-kpi-subtext">Beneficiaries in this report</div>
             </div>
@@ -2368,19 +2368,19 @@ function renderReportSummaryCard(intents, meta) {
     html += `
         <div class="summary-kpi-grid">
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">⏳ Pending Reports</div>
+                <div class="summary-kpi-label">Pending Reports</div>
                 <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">${pendingCount}</div>
                 <div class="summary-kpi-subtext">
                     ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
                 </div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-label">Harvested Volume</div>
                 <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
                 <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-label">Harvest Rate</div>
                 <div class="summary-kpi-value" style="color:${
                     harvestRate === 100 ? "#2E7D32"
                     : harvestRate > 0 ? "#D97706"
@@ -2395,7 +2395,7 @@ function renderReportSummaryCard(intents, meta) {
 
     html += `
         <div>
-            <div class="summary-breakdown-title">🌾 By Commodity</div>
+            <div class="summary-breakdown-title">By Commodity</div>
             <div class="summary-breakdown-body">
     `;
     const commodityEntries = Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume);
@@ -2481,7 +2481,7 @@ function renderReportSummaryCard(intents, meta) {
             text-transform: uppercase; letter-spacing: 0.06em;
             margin-bottom: 10px; padding-bottom: 6px;
             border-bottom: 1px solid var(--border-light);
-        ">📊 Yield Performance</div>
+        ">Yield Performance</div>
     `;
     if (hasActualData) {
         let varianceColor = "#2E7D32";
@@ -2563,7 +2563,7 @@ function renderReportSummaryCard(intents, meta) {
                     border-top: 1px dashed var(--border-light);
                 ">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: var(--muted);">🌾 Harvest earliest:</span>
+                        <span style="color: var(--muted);">Harvest earliest:</span>
                         <b>${formatDateLong(earliestH)}</b>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
@@ -3283,7 +3283,6 @@ function renderRegionalSummary(data) {
     if (intents.length === 0) {
         container.innerHTML = `
             <div style="padding: 60px 40px; text-align: center; color: var(--muted);">
-                <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;">📊</div>
                 <div style="font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
                     No reports found for this period
                 </div>
@@ -3394,7 +3393,7 @@ function renderRegionalSummary(data) {
     html += `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1.5px solid var(--border-light); flex-wrap: wrap; gap: 12px;">
             <div>
-                <div style="font-size: 14px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.06em;">📊 Regional Summary</div>
+                <div style="font-size: 14px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.06em;">Regional Summary</div>
                 <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Pampanga • Coverage: ${escapeHtml(periodLabel)}</div>
             </div>
             <div style="font-size: 11px; font-weight: 700; color: var(--green-dark); background: var(--green-light); padding: 5px 12px; border-radius: 999px;">
@@ -3411,12 +3410,12 @@ function renderRegionalSummary(data) {
                 <div class="summary-kpi-subtext">Across ${reportCount} report${reportCount !== 1 ? "s" : ""}</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">📦 Total Volume</div>
+                <div class="summary-kpi-label">Total Volume</div>
                 <div class="summary-kpi-value">${formatKg(totalVolume)}</div>
                 <div class="summary-kpi-subtext">Planned estimate</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">👥 Unique Farmers</div>
+                <div class="summary-kpi-label">Unique Farmers</div>
                 <div class="summary-kpi-value">${uniqueFarmerCount}</div>
                 <div class="summary-kpi-subtext">Beneficiaries in period</div>
             </div>
@@ -3426,19 +3425,19 @@ function renderRegionalSummary(data) {
     html += `
         <div class="summary-kpi-grid">
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">⏳ Pending Reports</div>
+                <div class="summary-kpi-label">Pending Reports</div>
                 <div class="summary-kpi-value" style="color:${pendingCount > 0 ? "#D97706" : "#2E7D32"};">${pendingCount}</div>
                 <div class="summary-kpi-subtext">
                     ${pendingCount === 1 ? "report awaiting your review" : "reports awaiting your review"}
                 </div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">🌾 Harvested Volume</div>
+                <div class="summary-kpi-label">Harvested Volume</div>
                 <div class="summary-kpi-value" style="color:#2E7D32;">${formatKg(harvestedVolume)}</div>
                 <div class="summary-kpi-subtext">${harvestedIntents.length} of ${selectedCount} harvested</div>
             </div>
             <div class="summary-kpi-card">
-                <div class="summary-kpi-label">🌾 Harvest Rate</div>
+                <div class="summary-kpi-label">Harvest Rate</div>
                 <div class="summary-kpi-value" style="color:${harvestRate === 100 ? "#2E7D32" : harvestRate > 0 ? "#D97706" : "#6c757d"};">${harvestRate}%</div>
                 <div class="summary-kpi-subtext">Completion ratio</div>
             </div>
@@ -3447,7 +3446,7 @@ function renderRegionalSummary(data) {
 
     html += `<div class="summary-breakdown-grid">`;
 
-    html += `<div><div class="summary-breakdown-title">🌾 By Commodity</div><div class="summary-breakdown-body">`;
+    html += `<div><div class="summary-breakdown-title">By Commodity</div><div class="summary-breakdown-body">`;
     Object.entries(byCommodity).sort((a, b) => b[1].volume - a[1].volume).forEach(([name, d]) => {
         html += `<div class="summary-breakdown-row"><span style="font-weight: 600;">${escapeHtml(name)}</span><span style="font-size:12px; color:var(--muted); font-variant-numeric: tabular-nums;">${d.count} · <b style="color:var(--green-dark);">${formatKg(d.volume)}</b></span></div>`;
     });
@@ -3471,7 +3470,7 @@ function renderRegionalSummary(data) {
     html += `<div class="summary-insight-grid">`;
 
     html += `<div class="summary-insight-card green">
-        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light);">📊 Yield Performance</div>`;
+        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light);">Yield Performance</div>`;
     if (hasActualData) {
         let varianceColor = variancePct < 0 ? "#C0392B" : variancePct > 0 ? "#2E7D32" : "#6c757d";
         let varianceIcon = variancePct < 0 ? "↓" : variancePct > 0 ? "↑" : "→";
@@ -4194,7 +4193,7 @@ async function uploadMarketFile() {
     uploadBtn.disabled = true;
     uploadBtn.textContent = "Uploading...";
 
-    showMarketStatus("info", "⏳ Uploading file... Please wait.");
+    showMarketStatus("info", "Uploading file... Please wait.");
 
     try {
         const formData = new FormData();
@@ -4217,7 +4216,7 @@ async function uploadMarketFile() {
 
         showMarketStatus(
             "success",
-            `✅ <strong>File received.</strong><br>` +
+            `<strong>File received.</strong><br>` +
             `ETL pipeline and forecast are running in the background.<br>` +
             `Refreshing ETL logs in <b>30 seconds...</b>`
         );
@@ -4240,7 +4239,7 @@ async function uploadMarketFile() {
 
                 showMarketStatus(
                     "success",
-                    `✅ <strong>File processed.</strong><br>` +
+                    `<strong>File processed.</strong><br>` +
                     `ETL logs refreshed. Check the <strong>Monitor ETL Pipeline</strong> tab for new entries.<br>` +
                     `Forecasts will appear on the AEW dashboard shortly.`
                 );
