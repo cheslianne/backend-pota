@@ -8016,6 +8016,17 @@ function toggleForecastMonth(headerElement) {
 window.toggleForecastYear = toggleForecastYear;
 window.toggleForecastMonth = toggleForecastMonth;
 
+function bindForecastToggleHandlers(container, yearHandler, monthHandler) {
+    container?.querySelectorAll(".forecast-year-header").forEach((header) => {
+        header.removeAttribute("onclick");
+        header.addEventListener("click", () => yearHandler(header));
+    });
+    container?.querySelectorAll(".forecast-month-header").forEach((header) => {
+        header.removeAttribute("onclick");
+        header.addEventListener("click", () => monthHandler(header));
+    });
+}
+
 const style = document.createElement('style');
 style.textContent = `
     @keyframes spin {
@@ -8178,6 +8189,7 @@ function renderForecastResults(forecasts) {
     });
 
     container.innerHTML = html;
+    bindForecastToggleHandlers(container, toggleForecastYear, toggleForecastMonth);
 
     const firstYearContent = container.querySelector('.forecast-year-content');
     if (firstYearContent) {
@@ -9288,6 +9300,7 @@ function renderMarketForecastTable(container, forecasts, priceType) {
     });
 
     container.innerHTML = html;
+    bindForecastToggleHandlers(container, toggleMarketForecastYear, toggleMarketForecastMonth);
 
     const firstYear = container.querySelector(".forecast-year-content");
 
@@ -9364,6 +9377,8 @@ function toggleMarketForecastMonth(headerElement) {
             arrow.style.transform = "rotate(0deg)";
         }
     }
+
+    window.toggleMarketForecastMonth = toggleMarketForecastMonth;
 }
 
 /* ============================================================
