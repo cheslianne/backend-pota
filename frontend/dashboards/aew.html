@@ -2224,7 +2224,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
 
               <!-- ===== PLANTING INTENTS SUMMARY CARDS ===== -->
     <div class="summary-cards planting-summary" id="plantingSummaryCards">
-      <div class="summary-card planting-draft">
+      <div class="summary-card planting-draft" data-intent-filter="draft" role="button" tabindex="0">
         <div class="summary-icon">📝</div>
         <div class="summary-info">
           <h3>Draft Intents</h3>
@@ -2233,7 +2233,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
         </div>
       </div>
 
-      <div class="summary-card planting-finalized">
+      <div class="summary-card planting-finalized" data-intent-filter="all" role="button" tabindex="0">
         <div class="summary-icon">✅</div>
         <div class="summary-info">
           <h3>Finalized Intents</h3>
@@ -2242,7 +2242,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
         </div>
       </div>
 
-      <div class="summary-card planting-not-planted">
+      <div class="summary-card planting-not-planted" data-intent-filter="NOT PLANTED" role="button" tabindex="0">
         <div class="summary-icon">🌱</div>
         <div class="summary-info">
           <h3>Not Planted</h3>
@@ -2251,7 +2251,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
         </div>
       </div>
 
-      <div class="summary-card planting-planted">
+      <div class="summary-card planting-planted" data-intent-filter="PLANTED" role="button" tabindex="0">
         <div class="summary-icon">🌾</div>
         <div class="summary-info">
           <h3>Planted</h3>
@@ -2260,7 +2260,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
         </div>
       </div>
 
-      <div class="summary-card planting-harvested">
+      <div class="summary-card planting-harvested" data-intent-filter="HARVESTED" role="button" tabindex="0">
         <div class="summary-icon">🎉</div>
         <div class="summary-info">
           <h3>Harvested</h3>
@@ -2269,7 +2269,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
         </div>
       </div>
 
-      <div class="summary-card planting-mediating">
+      <div class="summary-card planting-mediating" data-intent-filter="MEDIATING" role="button" tabindex="0">
         <div class="summary-icon">⚖️</div>
         <div class="summary-info">
           <h3>Mediating</h3>

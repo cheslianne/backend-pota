@@ -1614,6 +1614,29 @@ function initFinalizedIntentsFilter() {
     });
 }
 
+function initPlantingSummaryCardFilters() {
+    document.querySelectorAll("#plantingSummaryCards [data-intent-filter]").forEach((card) => {
+        const applyFilter = () => {
+            const filter = card.dataset.intentFilter || "all";
+            const tab = document.querySelector(`.sub-tab-btn[data-tab="${filter === "draft" ? "draft" : "submitted"}"]`);
+            tab?.click();
+
+            if (filter !== "draft") {
+                const pill = document.querySelector(`#finalizedIntentsFilterPills .filter-pill[data-filter="${filter}"]`);
+                pill?.click();
+            }
+        };
+
+        card.addEventListener("click", applyFilter);
+        card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                applyFilter();
+            }
+        });
+    });
+}
+
 /* ============================================================
    INITIALIZE PLANTING INTENT
 ============================================================ */
@@ -1624,6 +1647,7 @@ function initPlantingIntent() {
     const modal = document.getElementById("plantIntentSubmittedModal");
 
     initPlantingIntentTabs();
+    initPlantingSummaryCardFilters();
 
     document.getElementById("addPlantIntentBtn")?.addEventListener("click", function() {
         const form = document.getElementById("submitPlantIntentForm");

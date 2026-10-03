@@ -136,6 +136,11 @@ body.pc-modern .summary-card{
   transition:transform .15s ease, box-shadow .15s ease;
 }
 body.pc-modern .summary-card:hover{ transform:translateY(-2px); box-shadow:var(--pc-card-shadow-hover); }
+body.pc-modern #plantingSummaryCards .summary-card{ cursor:pointer; }
+body.pc-modern #plantingSummaryCards .summary-card:focus-visible{
+  outline:2px solid var(--pc-primary);
+  outline-offset:2px;
+}
 body.pc-modern .summary-card::before{
   content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
   background:var(--pc-primary);
