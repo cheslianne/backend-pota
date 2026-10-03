@@ -4615,7 +4615,7 @@ function renderReportAttachments(report) {
                             text-decoration: none;
                             font-size: 13.5px;
                             display: block;
-                            overflow: hidden;
+                            overflow: visible;
                             text-overflow: ellipsis;
                             white-space: nowrap;
                         "
@@ -7932,13 +7932,11 @@ function toggleForecastYear(headerElement) {
 
     if (!content) return;
 
-    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-        content.style.maxHeight = '0px';
+    if (content.style.display !== 'none') {
         content.style.display = 'none';
         if (arrow) arrow.style.transform = 'rotate(0deg)';
     } else {
         content.style.display = 'block';
-        content.style.maxHeight = content.scrollHeight + 'px';
         if (arrow) arrow.style.transform = 'rotate(180deg)';
     }
 }
@@ -7956,6 +7954,7 @@ function toggleForecastMonth(headerElement) {
         content.style.display = 'none';
         if (arrow) arrow.style.transform = 'rotate(0deg)';
     }
+
 }
 
 window.toggleForecastYear = toggleForecastYear;
@@ -8041,8 +8040,7 @@ function renderForecastResults(forecasts) {
                     border-radius: 0 0 8px 8px;
                     padding: 8px 12px;
                     margin-top: 0;
-                    overflow: hidden;
-                    transition: max-height 0.3s ease;
+                    overflow: visible;
                 ">
         `;
 
@@ -8135,11 +8133,6 @@ function renderForecastResults(forecasts) {
 
     container.innerHTML = html;
     bindForecastToggleHandlers(container, toggleForecastYear, toggleForecastMonth);
-
-    const firstYearContent = container.querySelector('.forecast-year-content');
-    if (firstYearContent) {
-        firstYearContent.style.maxHeight = firstYearContent.scrollHeight + 'px';
-    }
 
     const countDiv = document.createElement('div');
     countDiv.className = "forecast-results-count";
