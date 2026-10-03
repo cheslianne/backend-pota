@@ -208,7 +208,7 @@ body.pc-modern .summary-insight-card.orange{ border-left:4px solid var(--pc-tert
 ================================================================ */
 .pc-map-layout{
   display:grid;
-  grid-template-columns:1.6fr 1fr;
+  grid-template-columns:1fr;
   gap:18px;
   align-items:start;
 }
