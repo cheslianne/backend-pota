@@ -5,6 +5,7 @@ from datetime import datetime
 class ETLRunLogBase(BaseModel):
     data_source: str
     status: str
+    error_message: str | None = None
 
 
 class ETLRunLogCreate(ETLRunLogBase):

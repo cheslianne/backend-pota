@@ -3,6 +3,7 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    Text,
     text
 )
 
@@ -32,4 +33,9 @@ class ETLRunLog(Base):
     status = Column(
         String(20),
         nullable=False
+    )
+
+    error_message = Column(
+        Text,
+        nullable=True
     )

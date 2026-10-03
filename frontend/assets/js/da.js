@@ -3515,7 +3515,7 @@ async function loadETLRunLogs() {
 
     etlRows.innerHTML = `
         <tr>
-            <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
+            <td colspan="4" style="text-align:center; padding:24px; color:var(--muted);">
                 Loading ETL logs...
             </td>
         </tr>
@@ -3542,7 +3542,7 @@ async function loadETLRunLogs() {
         if (response.status === 403) {
             etlRows.innerHTML = `
                 <tr>
-                    <td colspan="3" style="text-align:center; padding:24px; color:#C0392B;">
+                    <td colspan="4" style="text-align:center; padding:24px; color:#C0392B;">
                         You do not have permission to view ETL logs.
                     </td>
                 </tr>
@@ -3567,7 +3567,7 @@ async function loadETLRunLogs() {
         console.error("Load ETL run logs error:", error);
         etlRows.innerHTML = `
             <tr>
-                <td colspan="3" style="text-align:center; padding:24px; color:#C0392B;">
+                <td colspan="4" style="text-align:center; padding:24px; color:#C0392B;">
                     Failed to load ETL logs.<br><br>${escapeHtml(error.message)}
                 </td>
             </tr>
@@ -3586,7 +3586,8 @@ function renderETLLogs() {
         const haystack = [
             formatAuditDate(log.run_date_time),
             log.data_source || "",
-            log.status || ""
+            log.status || "",
+            log.error_message || ""
         ].join(" ").toLowerCase();
         return haystack.includes(etlSearchTerm);
     });
@@ -3596,7 +3597,7 @@ function renderETLLogs() {
     if (logs.length === 0) {
         etlRows.innerHTML = `
             <tr>
-                <td colspan="3" style="text-align:center; padding:24px; color:var(--muted);">
+                <td colspan="4" style="text-align:center; padding:24px; color:var(--muted);">
                     ${etlSearchTerm ? "No ETL logs match your search." : "No ETL logs available."}
                 </td>
             </tr>
@@ -3618,11 +3619,17 @@ function renderETLLogs() {
         const runDateTime = formatAuditDate(log.run_date_time);
         const dataSource  = log.data_source || "—";
         const status      = log.status || "—";
+        const errorMessage = log.error_message || "";
 
         const statusColor =
             status.toLowerCase() === "success" ? "#2E7D32" :
             status.toLowerCase() === "failed"  ? "#C0392B" :
             "#6c757d";
+        const failureDetails = status.toLowerCase() === "failed"
+            ? (errorMessage
+                ? `<details><summary>View reason</summary><div>${escapeHtml(errorMessage)}</div></details>`
+                : `<span>No details recorded for this run.</span>`)
+            : "—";
 
         row.innerHTML = `
             <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light);">
@@ -3642,6 +3649,9 @@ function renderETLLogs() {
                     background-color:${statusColor};
                     text-transform:uppercase;
                 ">${escapeHtml(status)}</span>
+            </td>
+            <td style="text-align:left; padding:13px 14px; border-bottom:1px solid var(--border-light); max-width:420px; overflow-wrap:anywhere;">
+                ${failureDetails}
             </td>
         `;
 
@@ -3720,9 +3730,15 @@ async function manualRunETL() {
         currentEtlPage = 1;
         await loadETLRunLogs();
 
-        alert(result.hasFailed
-            ? "ETL Pipeline finished with failed steps. Check the latest logs."
-            : "ETL Pipeline Completed Successfully!");
+        if (result.hasFailed) {
+            const failureSummary = result.logs
+                .filter(log => String(log.status).toLowerCase() === "failed")
+                .map(log => `${log.data_source || "ETL step"}: ${log.error_message || "No failure details were recorded."}`)
+                .join("\n");
+            alert(`ETL pipeline finished with failed steps.\n\n${failureSummary}`);
+        } else {
+            alert("ETL Pipeline Completed Successfully!");
+        }
 
     } catch (error) {
         console.error("Manual ETL run error:", error);

@@ -91,7 +91,8 @@ def run_etl_step(data_source, etl_function):
         print(f"{data_source} -> FAILED")
         print("=" * 60)
 
-        print(f"ERROR: {error}")
+        error_message = f"{type(error).__name__}: {error}"
+        print(f"ERROR: {error_message}")
 
         # ----------------------------------------------------
         # ROLLBACK ANY DATABASE TRANSACTION
@@ -107,7 +108,8 @@ def run_etl_step(data_source, etl_function):
 
             log = ETLRunLog(
                 data_source=data_source,
-                status="FAILED"
+                status="FAILED",
+                error_message=error_message,
             )
 
             db.add(log)

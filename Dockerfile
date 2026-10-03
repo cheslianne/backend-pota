@@ -22,6 +22,7 @@ RUN python -c "from pathlib import Path; import cmdstanpy; ok=cmdstanpy.install_
 RUN python -c "import cmdstanpy; cmdstanpy.set_cmdstan_path('/opt/cmdstan/cmdstan-2.33.1'); from prophet import Prophet; Prophet(stan_backend='CMDSTANPY', yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False); print('Prophet CmdStan backend ready')"
 
 COPY src ./src
+COPY data ./data
 COPY init_db.py start.sh ./
 COPY seed_admin.py seed_aew.py seed_alert_thresholds.py seed_buyers.py seed_darfo.py seed_farmers.py seed_municipal.py seed_planting_intents.py seed_provincial.py ./
 COPY uploads ./uploads

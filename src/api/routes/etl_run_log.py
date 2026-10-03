@@ -27,7 +27,8 @@ def create_etl_run_log(
 
     db_log = ETLRunLog(
         data_source=log.data_source,
-        status=log.status
+        status=log.status,
+        error_message=log.error_message,
     )
 
     db.add(db_log)

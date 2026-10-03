@@ -48,6 +48,7 @@ MISSING_COLUMNS = [
     ("planting_intents", "attachment_path", "VARCHAR(500)"),
     ("planting_intents", "finalized_status", "VARCHAR NOT NULL DEFAULT 'NOT PLANTED'"),
     ("planting_intents", "is_in_report", "BOOLEAN NOT NULL DEFAULT false"),
+    ("etl_run_log", "error_message", "TEXT"),
 ]
 
 

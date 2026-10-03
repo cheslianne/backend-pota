@@ -34,7 +34,7 @@ router = APIRouter(
 # ETL LOGGING HELPER
 # ============================================================
 
-def _log_etl_step(data_source: str, status: str):
+def _log_etl_step(data_source: str, status: str, error_message: str | None = None):
     """
     Record an ETL step in the etl_run_log table.
 
@@ -48,6 +48,7 @@ def _log_etl_step(data_source: str, status: str):
             run_date_time=datetime.now(),
             data_source=data_source,
             status=status,
+            error_message=error_message,
         )
         db.add(log)
         db.commit()
@@ -134,7 +135,11 @@ def _process_uploaded_file(file_path: Path):
             _log_etl_step("Market Price Upload — ETL", "SUCCESS")
             print(f">>> ETL done. Records loaded: {loaded}")
         except Exception as e:
-            _log_etl_step("Market Price Upload — ETL", "FAILED")
+            _log_etl_step(
+                "Market Price Upload — ETL",
+                "FAILED",
+                f"{type(e).__name__}: {e}",
+            )
             raise
 
         # ----------------------------------------------------
@@ -149,7 +154,11 @@ def _process_uploaded_file(file_path: Path):
             _log_etl_step("Market Price Upload — Forecast", "SUCCESS")
             print(f">>> Forecast done. {summary}")
         except Exception as e:
-            _log_etl_step("Market Price Upload — Forecast", "FAILED")
+            _log_etl_step(
+                "Market Price Upload — Forecast",
+                "FAILED",
+                f"{type(e).__name__}: {e}",
+            )
             raise
 
         print()
