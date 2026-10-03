@@ -912,7 +912,7 @@ function openBuyerReview(buyer) {
     renderReviewCommodities(buyer);
 
     const messageTextarea = document.querySelector("#buyerReviewDetails textarea");
-    if (messageTextarea) messageTextarea.value = buyer.message || "No message provided.";
+    if (messageTextarea) messageTextarea.value = getBuyerMessage(buyer);
 
     buyerRegistryList?.classList.add("hidden-element");
     buyerReviewDetails?.classList.remove("hidden-element");
@@ -944,10 +944,30 @@ function renderReviewCommodities(buyer) {
 
 function getCommodityArray(buyer) {
     if (!buyer) return [];
-    if (Array.isArray(buyer.commodities)) return buyer.commodities.map(i => String(i).trim()).filter(Boolean);
-    if (typeof buyer.commodities === "string") return buyer.commodities.split(",").map(i => i.trim()).filter(Boolean);
+    if (Array.isArray(buyer.commodities)) {
+        const commodities = buyer.commodities.map(i => String(i).trim()).filter(Boolean);
+        if (commodities.length) return commodities;
+    }
+    if (typeof buyer.commodities === "string" && buyer.commodities.trim()) {
+        return buyer.commodities.split(",").map(i => i.trim()).filter(Boolean);
+    }
     if (buyer.commodity) return [String(buyer.commodity).trim()];
-    return [];
+
+    const commodityMatch = typeof buyer.message === "string"
+        ? buyer.message.match(/^Commodities of interest:[ \t]*([^\r\n]*)/im)
+        : null;
+    return commodityMatch
+        ? commodityMatch[1].split(",").map(commodity => commodity.trim()).filter(Boolean)
+        : [];
+}
+
+function getBuyerMessage(buyer) {
+    const message = typeof buyer?.message === "string" ? buyer.message : "";
+    const cleanMessage = message.replace(
+        /^Commodities of interest:[^\r\n]*(?:\r?\n(?:[ \t]*\r?\n)?|$)/i,
+        ""
+    ).trim();
+    return cleanMessage || "No message provided.";
 }
 
 function showBuyerList() {
