@@ -8647,7 +8647,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         });
         if (selectedCommodity !== "all") {
             datasets.push({
-                label: `${displayCommodityName(commodity)} Prophet midpoint`,
+                label: `${displayCommodityName(commodity)} forecast midpoint`,
                 data: projectedValues,
                 borderColor: color,
                 backgroundColor: color,
@@ -9690,9 +9690,7 @@ function renderMarketPriceDashboard() {
     const level = priceType === "RETAIL" ? "Retail" : "Wholesale";
     const commodityName = commodity === "all" ? "All commodities" : commodity;
     const title = document.getElementById("marketTrendTitle");
-    const description = document.getElementById("marketTrendDescription");
     if (title) title.textContent = `${commodityName} ${level.toLowerCase()} price trend`;
-    if (description) description.textContent = "Recorded monthly prices with the Prophet forecast range shown ahead.";
 
     renderMarketPriceChart(MARKET_PRICE_FORECASTS_DATA, commodity, priceType, period);
 }
