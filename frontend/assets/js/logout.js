@@ -21,8 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
       display: flex !important;
     }
     .esaka-logout-box {
-      background: #F2EDE1;
-      border: 1.5px solid #DFD8C6;
+      background: #FFFFFF;
+      border: 1.5px solid #D9E4DE;
       border-radius: 16px;
       padding: 34px 44px 30px;
       text-align: center;
@@ -35,13 +35,13 @@ document.addEventListener("DOMContentLoaded", function () {
     .esaka-logout-box h2 {
       font-size: 22px;
       font-weight: 800;
-      color: #5B6B4F;
+      color: #0B382A;
       margin-top: 0;
       margin-bottom: 12px;
     }
     .esaka-logout-box p {
       font-size: 14.5px;
-      color: #2E2A22;
+      color: #202824;
       margin-bottom: 24px;
       line-height: 1.5;
     }
@@ -57,14 +57,14 @@ document.addEventListener("DOMContentLoaded", function () {
       padding: 10px 24px;
       border-radius: 8px;
       cursor: pointer;
-      border: 1.5px solid #DFD8C6;
+      border: 1.5px solid #D9E4DE;
       background: #FFFFFF;
-      color: #2E2A22;
+      color: #202824;
       transition: all 0.2s ease;
     }
     .esaka-logout-btn-cancel:hover {
-      background: #E7EDDF;
-      border-color: #5B6B4F;
+      background: #E3ECE8;
+      border-color: #0B382A;
     }
     .esaka-logout-btn-confirm {
       font-family: inherit;
@@ -74,12 +74,12 @@ document.addEventListener("DOMContentLoaded", function () {
       border-radius: 8px;
       cursor: pointer;
       border: none;
-      background: #A51D24;
+      background: #C0392B;
       color: #FFFFFF;
       transition: all 0.2s ease;
     }
     .esaka-logout-btn-confirm:hover {
-      background: #84151b;
+      background: #A93226;
       transform: translateY(-1px);
     }
   `;
@@ -191,5 +191,4 @@ true);
 
 
 });
-
 
