@@ -1683,7 +1683,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .price-stat.average small { color: rgba(255,255,255,.72); }
 .price-stat.maximum { border-top-color: var(--amber); }
 .price-stat.forecast-count { border-top-color: #178A55; }
-.fair-price-analysis { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .8fr); gap: 14px; align-items: stretch; }
+.fair-price-analysis { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: stretch; }
 .price-chart-panel, .forecast-insight, .forecast-schedule { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
 .price-chart-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
 .price-chart-heading h2, .forecast-insight h2, .forecast-schedule h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
@@ -2830,15 +2830,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                   <span>Price series</span>
                   <div class="fair-price-source" id="fairPriceSource">PSA OpenSTAT · Farmgate</div>
                 </div>
-                <div class="fair-price-control">
-                  <label for="fairPricePeriod">Period</label>
-                  <select id="fairPricePeriod">
-                    <option value="all">All available</option>
-                    <option value="3y">Last 3 years</option>
-                    <option value="12m">Last 12 months</option>
-                  </select>
-                </div>
-                <span class="fair-price-source" id="fairPriceUpdated">Forecast series</span>
               </div>
 
                 <div class="fair-price-kpis" id="fairPriceKpis" aria-label="Commodity farmgate price summary">
@@ -2856,13 +2847,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                     <div class="price-chart-empty" id="priceChartEmpty" hidden>No price points are available for this selection.</div>
                   </div>
                 </section>
-                <aside class="forecast-insight" aria-live="polite">
-                  <span class="insight-eyebrow">Forecast outlook</span>
-                  <h2 id="priceInsightTitle">Waiting for forecast data</h2>
-                  <p id="priceInsightCopy">Select a commodity to review its observed history and projected range.</p>
-                  <div class="insight-range"><span>Latest projected range</span><strong><span id="priceInsightLow">—</span> to <span id="priceInsightHigh">—</span></strong></div>
-                  <div class="insight-note" id="priceInsightPeriod">Source: PSA OpenSTAT farmgate series.</div>
-                </aside>
               </div>
 
               <section class="forecast-schedule">

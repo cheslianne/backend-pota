@@ -7781,14 +7781,6 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
         return !Number.isNaN(date.getTime()) && date >= cutoff;
     };
     const sharedForecastStart = getSharedForecastStartMonth();
-    const observedMonths = [...new Set(PRICE_DATA.map((row) => monthKey(row.record_date)).filter((key) => key && inPeriod(`${key}-01`)))].sort();
-    const windowStart = selectedPeriod === "all" ? "2024-01" : ["2024-01", monthKey(cutoff.toISOString())].sort().at(-1);
-    const windowEnd = observedMonths.at(-1) || windowStart;
-    const monthNumber = (key) => {
-        const [year, month] = key.split("-").map(Number);
-        return year * 12 + month;
-    };
-    const windowMonthCount = windowEnd >= windowStart ? monthNumber(windowEnd) - monthNumber(windowStart) + 1 : 0;
 
     host.innerHTML = FAIR_PRICE_COMMODITIES.map((crop) => {
         const observed = PRICE_DATA
@@ -7798,13 +7790,6 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
             .filter((row) => normalizeFairPriceCommodity(row.commodity) === crop.name && inPeriod(row.forecast_date) && (!sharedForecastStart || monthKey(row.forecast_date) >= sharedForecastStart))
             .sort((left, right) => String(left.forecast_date).localeCompare(String(right.forecast_date)));
         const latestObserved = observed.at(-1);
-        const observedMonthKeys = new Set(observed.map((row) => monthKey(row.record_date)).filter(Boolean));
-        const missingMonths = Math.max(0, windowMonthCount - observedMonthKeys.size);
-        const allObserved = PRICE_DATA
-            .filter((row) => normalizeFairPriceCommodity(row.commodity) === crop.name)
-            .sort((left, right) => String(left.record_date).localeCompare(String(right.record_date)));
-        const januaryBase = allObserved.find((row) => monthKey(row.record_date) === "2024-01");
-        const baseline = januaryBase || allObserved[0];
         const nextForecastDate = monthKey(projected[0]?.forecast_date);
         const nextForecastRows = projected.filter((row) => monthKey(row.forecast_date) === nextForecastDate);
         const nextForecast = nextForecastRows.length ? {
@@ -7812,9 +7797,6 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
             forecast_price_high: nextForecastRows.reduce((total, row) => total + Number(row.forecast_price_high), 0) / nextForecastRows.length,
         } : null;
         const name = displayCommodityName(crop.name);
-        const baselineMonth = baseline ? marketRecordDate(baseline.record_date, { month: "short", year: "numeric" }) : "No baseline";
-        const baselineLabel = januaryBase ? "Jan 2024 = 100" : `Base ${baselineMonth} = 100`;
-
         return `
             <button class="fair-price-commodity-card ${crop.className}" type="button" data-fair-price-commodity="${escapeHtml(crop.name)}" aria-pressed="${selectedCommodity === crop.name || (selectedCommodity === "all" && forecastFocus === crop.name)}">
                 <span class="fair-price-crop-heading">
@@ -7823,8 +7805,6 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
                 </span>
                 <strong class="fair-price-crop-price">${latestObserved ? formatPrice(Number(latestObserved.price_per_kg)) : "—"} <small>/kg</small></strong>
                 <span class="fair-price-crop-date">${latestObserved ? `Last observed ${marketRecordDate(latestObserved.record_date, { month: "short", year: "numeric" })}` : "No observation in this period"}</span>
-                <span class="fair-price-crop-coverage">${observedMonthKeys.size} of ${windowMonthCount} months observed · ${missingMonths} missing</span>
-                <span class="fair-price-crop-base">Index base: ${baselineLabel}</span>
                 <span class="fair-price-crop-range"><span>${nextForecastDate ? `Forecast · ${monthLabel(nextForecastDate)}` : "Forecast range"}</span><strong>${nextForecast ? `${formatPrice(Number(nextForecast.forecast_price_low))}–${formatPrice(Number(nextForecast.forecast_price_high))}` : "No forecast"}</strong></span>
             </button>`;
     }).join("");
@@ -7847,7 +7827,6 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
 function initFairPriceControls() {
     const commoditySelect = document.getElementById("fairPriceCommodity");
     const focusSelect = document.getElementById("fairPriceForecastFocus");
-    const periodSelect = document.getElementById("fairPricePeriod");
     if (commoditySelect && !commoditySelect.dataset.bound) {
         commoditySelect.addEventListener("change", function() {
             if (commoditySelect.value !== "all" && focusSelect) focusSelect.value = commoditySelect.value;
@@ -7859,19 +7838,12 @@ function initFairPriceControls() {
         focusSelect.addEventListener("change", renderFairPriceDashboard);
         focusSelect.dataset.bound = "true";
     }
-    if (periodSelect && !periodSelect.dataset.bound) {
-        periodSelect.addEventListener("change", function() {
-            renderFairPriceDashboard();
-        });
-        periodSelect.dataset.bound = "true";
-    }
 }
 
 function renderFairPriceDashboard() {
     const commoditySelect = document.getElementById("fairPriceCommodity");
     const focusSelect = document.getElementById("fairPriceForecastFocus");
-    const periodSelect = document.getElementById("fairPricePeriod");
-    if (!commoditySelect || !focusSelect || !periodSelect) return;
+    if (!commoditySelect || !focusSelect) return;
 
     const previousSelection = normalizeFairPriceCommodity(commoditySelect.value || "all");
     const availableCommodities = [...new Set([
@@ -7895,7 +7867,7 @@ function renderFairPriceDashboard() {
     if (selectedCommodity !== "all") focusSelect.value = selectedCommodity;
     focusSelect.disabled = selectedCommodity !== "all";
     const forecastFocus = focusSelect.value || "Tomato";
-    const selectedPeriod = periodSelect.value || "all";
+    const selectedPeriod = "all";
     const cutoff = new Date();
     if (selectedPeriod === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
     if (selectedPeriod === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
@@ -7913,38 +7885,6 @@ function renderFairPriceDashboard() {
         ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2 }).format(value)
         : "—";
     renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selectedPeriod, cutoff);
-
-    const outlookCommodity = selectedCommodity === "all" ? forecastFocus : selectedCommodity;
-    const outlookForecasts = forecasts.filter((row) => normalizeFairPriceCommodity(row.commodity) === outlookCommodity);
-    const latestForecast = outlookForecasts.slice().sort((left, right) =>
-        String(left.forecast_date).localeCompare(String(right.forecast_date))
-    )[0];
-    const insightTitle = document.getElementById("priceInsightTitle");
-    const insightCopy = document.getElementById("priceInsightCopy");
-    const insightLow = document.getElementById("priceInsightLow");
-    const insightHigh = document.getElementById("priceInsightHigh");
-    const insightPeriod = document.getElementById("priceInsightPeriod");
-    if (selectedCommodity === "all") {
-        if (insightTitle) insightTitle.textContent = `${displayCommodityName(forecastFocus)} forecast band`;
-        if (insightCopy) insightCopy.textContent = `The chart compares indexed PSA observations. Forecasts align from ${sharedForecastStart ? monthLabel(sharedForecastStart) : "the next available month"}; only the chosen crop’s range is shown.`;
-        if (insightLow) insightLow.textContent = latestForecast ? formatPrice(Number(latestForecast.forecast_price_low)) : "—";
-        if (insightHigh) insightHigh.textContent = latestForecast ? formatPrice(Number(latestForecast.forecast_price_high)) : "—";
-        if (insightPeriod) insightPeriod.textContent = `${outlookForecasts.length} forecast points · Facebook Prophet · PSA OpenSTAT`;
-    } else if (latestForecast) {
-        const commodityName = displayCommodityName(latestForecast.commodity || selectedCommodity);
-        const forecastDate = new Date(`${monthKey(latestForecast.forecast_date)}-01T00:00:00`);
-        if (insightTitle) insightTitle.textContent = `${commodityName} outlook`;
-        if (insightCopy) insightCopy.textContent = `Projected farmgate range for ${forecastDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}. Estimates are modeled ranges, not guaranteed transaction prices.`;
-        if (insightLow) insightLow.textContent = formatPrice(Number(latestForecast.forecast_price_low));
-        if (insightHigh) insightHigh.textContent = formatPrice(Number(latestForecast.forecast_price_high));
-        if (insightPeriod) insightPeriod.textContent = `${forecasts.length} forecast points · ${latestForecast.data_source || "PSA OpenSTAT"}`;
-    } else {
-        if (insightTitle) insightTitle.textContent = "No forecast in this range";
-        if (insightCopy) insightCopy.textContent = "Historical observations remain available where recorded. Choose another commodity or period to review projections.";
-        if (insightLow) insightLow.textContent = "—";
-        if (insightHigh) insightHigh.textContent = "—";
-        if (insightPeriod) insightPeriod.textContent = "Source: PSA OpenSTAT farmgate series.";
-    }
 
     renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus);
 }
