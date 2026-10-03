@@ -8042,7 +8042,7 @@ function renderForecastResults(forecasts) {
                     font-size: 16px;
                     transition: background 0.2s;
                 " onclick="toggleForecastYear(this)">
-                    <span> ${year} Projections</span>
+                    <span>${year}</span>
                     <span style="font-size: 20px; transition: transform 0.3s;">▼</span>
                 </div>
                 <div class="forecast-year-content" style="
@@ -8089,7 +8089,7 @@ function renderForecastResults(forecasts) {
                         font-size: 14px;
                         transition: background 0.2s;
                     " onclick="toggleForecastMonth(this)">
-                        <span> ${month} ${year}</span>
+                        <span>${month} ${year}</span>
                         <span style="font-size: 16px; transition: transform 0.3s; transform: ${arrowRotation};">▶</span>
                     </div>
                     <div class="forecast-month-content" style="
@@ -8101,10 +8101,10 @@ function renderForecastResults(forecasts) {
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                             <thead>
                                 <tr style="border-bottom: 2px solid #DEDDDC;">
-                                    <th style="text-align: left; padding: 8px 6px; font-weight: 600; color: #333;">Commodity</th>
-                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Lower Price (₱)</th>
-                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Upper Price (₱)</th>
-                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #333;">Range</th>
+                                    <th style="text-align: left; padding: 8px 6px; font-weight: 600; color: #0F3D2E;">Commodity</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #0F3D2E;">Lower Price (₱)</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #0F3D2E;">Upper Price (₱)</th>
+                                    <th style="text-align: center; padding: 8px 6px; font-weight: 600; color: #0F3D2E;">Range</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -8549,10 +8549,10 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         ...forecasts.map((row) => row.commodity),
     ].filter(Boolean).map(normalizeFairPriceCommodity))];
     const colors = {
-        Tomato: "#2E7D32",
-        "Squash fruit": "#388E3C",
-        "Red Onion": "#1B5E20",
-        "White Onion": "#66BB6A",
+        Tomato: "#B64A3A",
+        "Squash fruit": "#B8790A",
+        "Red Onion": "#176B4D",
+        "White Onion": "#356F9E",
     };
     const forecastMonths = new Set();
     const monthlyHistorical = new Map();
@@ -8707,6 +8707,8 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
                 },
                 tooltip: {
                     backgroundColor: "rgba(14,27,22,.94)",
+                    titleColor: "#DCEBDD",
+                    bodyColor: "#F3FAF3",
                     padding: 11,
                     cornerRadius: 8,
                     callbacks: {
@@ -8719,7 +8721,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: "#718078", maxTicksLimit: 8, maxRotation: 0, font: { size: 10 } },
+                    ticks: { color: "#0F3D2E", maxTicksLimit: 8, maxRotation: 0, font: { size: 10, weight: "600" } },
                     border: { display: false },
                 },
                 y: {
@@ -8727,15 +8729,15 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
                     suggestedMin: 0,
                     grid: { color: "rgba(14,27,22,.07)" },
                     ticks: {
-                        color: "#718078",
+                        color: "#0F3D2E",
                         callback: (value) => `₱${Number(value).toFixed(0)}`,
-                        font: { size: 10 },
+                        font: { size: 10, weight: "600" },
                     },
                     title: {
                         display: true,
                         text: "Price (₱/kg)",
-                        color: "#718078",
-                        font: { size: 10, weight: "600" },
+                        color: "#0F3D2E",
+                        font: { size: 10, weight: "700" },
                     },
                     border: { display: false },
                 },
@@ -9874,6 +9876,8 @@ function renderMarketPriceChart(forecasts, commodityFilter, priceType, period) {
                 },
                 tooltip: {
                     backgroundColor: "rgba(14,27,22,.94)",
+                    titleColor: "#DCEBDD",
+                    bodyColor: "#F3FAF3",
                     padding: 10,
                     cornerRadius: 8,
                     callbacks: {
@@ -9889,14 +9893,14 @@ function renderMarketPriceChart(forecasts, commodityFilter, priceType, period) {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: "#718078", maxTicksLimit: 9, maxRotation: 0, font: { size: 10 } },
+                    ticks: { color: "#0F3D2E", maxTicksLimit: 9, maxRotation: 0, font: { size: 10, weight: "600" } },
                     border: { display: false },
                 },
                 y: {
                     beginAtZero: false,
                     grid: { color: "rgba(14,27,22,.07)" },
-                    ticks: { color: "#718078", callback: (value) => `₱${Number(value).toFixed(0)}`, font: { size: 10 } },
-                    title: { display: true, text: `${priceType === "RETAIL" ? "Retail" : "Wholesale"} price (₱/kg)`, color: "#53615B", font: { size: 11, weight: "600" } },
+                    ticks: { color: "#0F3D2E", callback: (value) => `₱${Number(value).toFixed(0)}`, font: { size: 10, weight: "600" } },
+                    title: { display: true, text: `${priceType === "RETAIL" ? "Retail" : "Wholesale"} price (₱/kg)`, color: "#0F3D2E", font: { size: 11, weight: "700" } },
                     border: { display: false },
                 },
             },
