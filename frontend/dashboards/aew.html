@@ -2812,10 +2812,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                     <option value="White Onion">White Onion</option>
                   </select>
                 </div>
-                <div class="fair-price-control">
-                  <span>Price series</span>
-                  <div class="fair-price-source" id="fairPriceSource">PSA OpenSTAT · Farmgate</div>
-                </div>
               </div>
 
                 <div class="fair-price-kpis" id="fairPriceKpis" aria-label="Commodity farmgate price summary">
@@ -2825,8 +2821,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="fair-price-analysis">
                 <section class="price-chart-panel">
                   <div class="price-chart-heading">
-                          <div><h2 id="priceTrendTitle">Price trend across all commodities</h2><p id="priceTrendDescription">Monthly forecast ranges.</p></div>
-                          <div class="price-chart-legend" id="fairPriceChartLegend" aria-label="Chart legend"></div>
+                          <div><h2 id="priceTrendTitle">Farmgate Forecast Visualization</h2></div>
                   </div>
                   <div class="price-chart-frame">
                     <canvas id="priceTrendChart" aria-label="Historical and forecast prices"></canvas>
@@ -2835,11 +2830,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 </section>
               </div>
 
-              <section class="forecast-schedule">
-                <h2>Forecast schedule</h2>
-                <p>Monthly lower and upper estimates from the latest forecast run.</p>
-                <div id="forecastResultsContainer"></div>
-              </section>
             </div>
           </section>
           <!-- ============================================================

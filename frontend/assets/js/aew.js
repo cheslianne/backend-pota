@@ -7674,12 +7674,14 @@ function initForecastResults() {
 
 async function loadForecastResults() {
     const container = document.getElementById("forecastResultsContainer");
-    if (!container || isForecastLoading) return;
+    if (isForecastLoading) return;
     isForecastLoading = true;
 
-    container.innerHTML = `
-        <div class="fair-price-empty" role="status">Loading forecast data...</div>
-    `;
+    if (container) {
+        container.innerHTML = `
+            <div class="fair-price-empty" role="status">Loading forecast data...</div>
+        `;
+    }
 
     try {
         const [forecastResult, priceResult] = await Promise.allSettled([
@@ -7708,7 +7710,9 @@ async function loadForecastResults() {
         console.error("Failed to load forecast results:", error);
         FORECASTS_DATA = [];
         PRICE_DATA = [];
-        container.innerHTML = `<div class="fair-price-empty" role="alert">Forecast data could not be loaded. <button class="btn-outline-report" type="button" onclick="loadForecastResults()">Retry</button></div>`;
+        if (container) {
+            container.innerHTML = `<div class="fair-price-empty" role="alert">Forecast data could not be loaded. <button class="btn-outline-report" type="button" onclick="loadForecastResults()">Retry</button></div>`;
+        }
         renderFairPriceDashboard();
     } finally {
         isForecastLoading = false;
@@ -8549,27 +8553,6 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         "Red Onion": "#167A58",
         "White Onion": "#4385B7",
     };
-    const chartTitle = document.getElementById("priceTrendTitle");
-    const chartDescription = document.getElementById("priceTrendDescription");
-    const chartLegend = document.getElementById("fairPriceChartLegend");
-    if (chartTitle) {
-        chartTitle.textContent = selectedCommodity === "all"
-            ? "Farmgate price trends across all crops"
-            : `${displayCommodityName(selectedCommodity)} farmgate price trend`;
-    }
-    if (chartDescription) {
-        chartDescription.textContent = selectedCommodity === "all"
-            ? "Crop colors show prices indexed to 100 at each stated baseline. Dots are PSA records; faint dashed connectors are missing months."
-            : "Prices in ₱/kg. Dots are PSA records; faint dashed connectors are missing months; the selected crop’s band is the Prophet range.";
-    }
-    if (chartLegend) {
-        const cropLegend = selectedCommodity === "all"
-            ? seriesNames.map((commodity) => `<span><i class="crop-key" style="background:${colors[commodity] || "#167A58"}"></i>${escapeHtml(displayCommodityName(commodity))}</span>`).join("")
-            : `<span><i class="projection-key" style="border-color:${colors[selectedCommodity] || "#167A58"}"></i>Prophet midpoint</span>`;
-        const forecastLabel = `${displayCommodityName(forecastFocus)} forecast range`;
-        const forecastColor = colors[normalizeFairPriceCommodity(forecastFocus)] || "#167A58";
-        chartLegend.innerHTML = `<span><i class="observed-key"></i>Observed points</span><span><i class="gap-key"></i>Missing months</span><span><i class="forecast-key" style="background:${forecastColor}26;border-color:${forecastColor}"></i>${escapeHtml(forecastLabel)}</span>${cropLegend}`;
-    }
     const months = new Set();
     const monthlyHistorical = new Map();
     const monthlyForecasts = new Map();
