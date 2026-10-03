@@ -22,6 +22,31 @@
         return { key: "nodata", label: "No Data", color: "#202824" };
     }
 
+    function matchesStatus(status, selectedStatus) {
+        const value = String(status || "").toUpperCase();
+        if (selectedStatus === "all") return true;
+        if (selectedStatus === "SURPLUS") {
+            return value.includes("SURPLUS") || value.includes("OVERSUPPLY");
+        }
+        if (selectedStatus === "NODATA") {
+            return !value || value === "NO DATA";
+        }
+        return value.includes(selectedStatus);
+    }
+
+    window.mapStatusMatches = matchesStatus;
+
+    window.setMapStatusFilter = function (status) {
+        const select = document.getElementById("filterStatus");
+        window.mapPanelStatusFilter = status;
+        if (select && Array.from(select.options).some((option) => option.value === status)) {
+            select.value = status;
+            select.dispatchEvent(new Event("change"));
+        } else {
+            window.renderFilteredMapMarkers?.();
+        }
+    };
+
     function formatVolume(value) {
         const number = Number(value);
         return Number.isFinite(number)
@@ -53,7 +78,10 @@
         if (!chipRow || !municipalityList) return;
 
         const commodity = document.getElementById("filterCommodity")?.value || "all";
-        const selectedStatus = document.getElementById("filterStatus")?.value || "all";
+        const statusSelect = document.getElementById("filterStatus");
+        const selectedStatus = statusSelect?.value && statusSelect.value !== "all"
+            ? statusSelect.value
+            : window.mapPanelStatusFilter || statusSelect?.value || "all";
         const counts = { surplus: 0, balanced: 0, deficit: 0, nodata: 0 };
         const rows = [];
 
@@ -64,8 +92,7 @@
             ).filter((item) => {
                 const commodityMatch = commodity === "all"
                     || String(item.commodity || "").toLowerCase() === commodity.toLowerCase();
-                const statusMatch = selectedStatus === "all"
-                    || String(item.status || "").toUpperCase().includes(selectedStatus);
+                const statusMatch = matchesStatus(item.status, selectedStatus);
                 return commodityMatch && statusMatch;
             });
 
@@ -89,10 +116,10 @@
         });
 
         chipRow.innerHTML = `
-            <div class="pc-status-chip surplus"><span class="dot"></span>Surplus/Oversupply <span class="count">${counts.surplus}</span></div>
-            <div class="pc-status-chip balanced"><span class="dot"></span>Balanced <span class="count">${counts.balanced}</span></div>
-            <div class="pc-status-chip deficit"><span class="dot"></span>Deficit <span class="count">${counts.deficit}</span></div>
-            <div class="pc-status-chip nodata"><span class="dot"></span>No Data <span class="count">${counts.nodata}</span></div>
+            <button type="button" class="pc-status-chip surplus" data-status-filter="SURPLUS"><span class="dot"></span>Surplus/Oversupply <span class="count">${counts.surplus}</span></button>
+            <button type="button" class="pc-status-chip balanced" data-status-filter="BALANCED"><span class="dot"></span>Balanced <span class="count">${counts.balanced}</span></button>
+            <button type="button" class="pc-status-chip deficit" data-status-filter="DEFICIT"><span class="dot"></span>Deficit <span class="count">${counts.deficit}</span></button>
+            <button type="button" class="pc-status-chip nodata" data-status-filter="NODATA"><span class="dot"></span>No Data <span class="count">${counts.nodata}</span></button>
         `;
         municipalityList.innerHTML = rows.length
             ? rows.join("")
@@ -105,6 +132,15 @@
                 if (!target || !map) return;
                 map.setView(target.marker.getLatLng(), 14, { animate: true });
                 target.marker.openPopup();
+            });
+        });
+        chipRow.querySelectorAll("[data-status-filter]").forEach((chip) => {
+            chip.addEventListener("click", () => {
+                const status = chip.dataset.statusFilter;
+                const current = window.mapPanelStatusFilter
+                    || document.getElementById("filterStatus")?.value
+                    || "all";
+                window.setMapStatusFilter?.(current === status ? "all" : status);
             });
         });
     };

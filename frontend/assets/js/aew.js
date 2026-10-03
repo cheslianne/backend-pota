@@ -852,7 +852,9 @@ function renderFilteredMapMarkers() {
     const markerIndex = {};
 
     const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
-    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
+    const selectedStatus = document.getElementById('filterStatus')?.value
+        || window.mapPanelStatusFilter
+        || 'all';
 
     MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
         const municipality = municipalityData.municipality;
@@ -867,7 +869,8 @@ function renderFilteredMapMarkers() {
 
             let statusMatch = true;
             if (selectedStatus !== 'all') {
-                statusMatch = statusVal.includes(selectedStatus);
+                statusMatch = window.mapStatusMatches?.(statusVal, selectedStatus)
+                    ?? statusVal.includes(selectedStatus);
             }
 
             return commodityMatch && statusMatch;

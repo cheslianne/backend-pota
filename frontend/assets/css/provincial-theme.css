@@ -228,6 +228,15 @@ body.pc-modern #map{ height:520px !important; }
   font-size:12px; font-weight:700;
   border:1px solid var(--border-light, var(--border));
   background:var(--white);
+  color:var(--pc-neutral);
+  cursor:pointer;
+  font-family:inherit;
+}
+.pc-status-chip:hover,
+.pc-status-chip:focus-visible{
+  border-color:var(--pc-primary);
+  box-shadow:0 2px 8px rgba(11,56,42,.12);
+  outline:none;
 }
 .pc-status-chip .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .pc-status-chip.surplus .dot{ background:var(--status-rejected); }
