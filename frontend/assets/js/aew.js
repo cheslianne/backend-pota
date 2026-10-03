@@ -7869,7 +7869,7 @@ function renderFairPriceDashboard() {
     const selectedCommodity = commoditySelect.value || "all";
     if (selectedCommodity !== "all") focusSelect.value = selectedCommodity;
     focusSelect.disabled = selectedCommodity !== "all";
-    const forecastFocus = focusSelect.value || "Tomato";
+    const forecastFocus = focusSelect.value || "all";
     const selectedPeriod = "all";
     const cutoff = new Date();
     if (selectedPeriod === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
@@ -8540,17 +8540,19 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
     const matchesCommodity = (row) => selectedCommodity === "all" || normalizeFairPriceCommodity(row.commodity) === selectedCommodity;
     const historical = PRICE_DATA.filter((row) => matchesCommodity(row) && inPeriod(row.record_date));
     const forecasts = FORECASTS_DATA.filter((row) =>
-        normalizeFairPriceCommodity(row.commodity) === normalizeFairPriceCommodity(forecastFocus) && inPeriod(row.forecast_date) && (!sharedForecastStart || monthKey(row.forecast_date) >= sharedForecastStart)
+        (forecastFocus === "all" || normalizeFairPriceCommodity(row.commodity) === normalizeFairPriceCommodity(forecastFocus))
+        && inPeriod(row.forecast_date)
+        && (!sharedForecastStart || monthKey(row.forecast_date) >= sharedForecastStart)
     );
     const seriesNames = [...new Set([
         ...historical.map((row) => row.commodity),
         ...forecasts.map((row) => row.commodity),
     ].filter(Boolean).map(normalizeFairPriceCommodity))];
     const colors = {
-        Tomato: "#D65B4A",
-        "Squash fruit": "#D28A16",
-        "Red Onion": "#167A58",
-        "White Onion": "#4385B7",
+        Tomato: "#2E7D32",
+        "Squash fruit": "#388E3C",
+        "Red Onion": "#1B5E20",
+        "White Onion": "#66BB6A",
     };
     const forecastMonths = new Set();
     const monthlyHistorical = new Map();
