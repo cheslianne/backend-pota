@@ -439,23 +439,185 @@
       height: 280px;
     }
   }
+
+  :root {
+    --forest: #0B382A;
+    --forest-deep: #08291F;
+    --forest-soft: #14532D;
+    --gold: #EAB308;
+    --cream: #F6F5EF;
+    --white: #FFFFFF;
+    --ink: #202824;
+    --muted: #69736C;
+    --border: #DCE4DC;
+    --border-light: #E9EEE9;
+    --green: #0B382A;
+    --green-dark: #08291F;
+    --green-light: #E8F0E9;
+    --radius-sm: 7px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+  }
+
+  html, body {
+    min-height: 100%;
+    height: auto;
+    display: block;
+    padding: 0;
+    background: linear-gradient(145deg, var(--forest-deep), var(--forest) 56%, #194B34);
+    color: var(--ink);
+  }
+  body { min-height: 100vh; }
+  .topbar {
+    min-height: 68px;
+    padding: 12px max(24px, calc((100vw - 900px) / 2));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    color: #fff;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; margin: 0; text-decoration: none; }
+  .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; background: var(--gold); color: var(--forest-deep); font-size: 15px; font-weight: 800; }
+  .brand-copy { display: grid; gap: 2px; }
+  .brand-name { color: #fff; font-size: 17px; font-weight: 800; line-height: 1.1; }
+  .brand-sub { color: rgba(255,255,255,.66); font-size: 11px; }
+  .topbar-link { color: rgba(255,255,255,.84); font-size: 12px; font-weight: 600; text-decoration: none; }
+  .topbar-link:hover { color: var(--gold); }
+  .frame { width: min(100% - 32px, 900px); max-width: 900px; margin: 0 auto; padding: 30px 0 40px; display: block; }
+  .page-inner { width: 100%; padding: 0; background: transparent; border: 0; border-radius: 0; box-shadow: none; animation: fadeIn .3s ease-in-out; }
+  .page-heading { margin: 0 0 17px; }
+  .crumbs { margin-bottom: 8px; color: rgba(255,255,255,.58); font-size: 11px; }
+  .crumbs span { color: var(--gold); }
+  .heading-row { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+  .page-heading h1 { color: #fff; font-size: clamp(23px, 4vw, 30px); font-weight: 800; line-height: 1.2; }
+  .secure-note { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 7px; color: rgba(255,255,255,.8); font-size: 10px; white-space: nowrap; }
+  .secure-note span { color: var(--gold); }
+
+  .progress-card { margin-bottom: 14px; padding: 17px 20px 14px; border-radius: var(--radius-md); background: var(--cream); box-shadow: 0 14px 36px rgba(0,0,0,.16); }
+  .step-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .step-indicator { display: flex; align-items: center; gap: 10px; color: #879087; }
+  .step-number { display: grid; place-items: center; width: 29px; height: 29px; flex: 0 0 29px; border: 1px solid var(--border); border-radius: 50%; background: #fff; font-size: 12px; font-weight: 800; }
+  .step-indicator.active { color: var(--forest); }
+  .step-indicator.active .step-number { border-color: var(--gold); background: var(--gold); color: var(--forest-deep); }
+  .step-indicator.done .step-number { border-color: var(--forest); background: var(--forest); color: #fff; }
+  .step-label { font-size: 12px; font-weight: 700; }
+  .step-caption { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+  .progress-track { height: 3px; margin-top: 13px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .progress-fill { width: 50%; height: 100%; background: linear-gradient(90deg, var(--forest), var(--gold)); transition: width .25s ease; }
+
+  .card { padding: 30px 32px 25px; border: 0; border-radius: var(--radius-lg); background: var(--white); box-shadow: 0 18px 45px rgba(0,0,0,.2); }
+  .card-heading { padding-bottom: 18px; border-bottom: 1px solid var(--border-light); }
+  .card-heading h2 { color: var(--ink); font-size: 20px; font-weight: 800; line-height: 1.3; }
+  .card-heading p { max-width: 620px; margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+  .required-note { display: inline-flex; gap: 6px; margin-top: 10px; color: #80600A; font-size: 10px; font-weight: 700; }
+  .required-note span { color: #C0392B; }
+  .step { padding-top: 20px; }
+  .form-grid { gap: 19px 20px; }
+  .field label { margin-bottom: 7px; color: #3F4A42; font-size: 10px; letter-spacing: .04em; }
+  .field input, .field textarea { min-height: 43px; padding: 10px 12px; border-color: var(--border); border-radius: 8px; font-size: 13px; }
+  .field input:focus, .field textarea:focus { border-color: var(--forest-soft); box-shadow: 0 0 0 3px rgba(20,83,45,.1); }
+  .field-hint, .file-hint { margin-top: 5px; color: #7A847C; font-size: 10px; line-height: 1.45; }
+  .commodity-field { grid-column: 1 / -1; }
+  .commodity-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .commodity-chip { min-height: 35px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 18px; background: #fff; color: #3F4A42; font: 600 11px 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+  .commodity-chip:hover { border-color: var(--forest-soft); }
+  .commodity-chip[aria-pressed="true"] { border-color: var(--forest); background: var(--forest); color: #fff; }
+  .commodity-chip:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgba(234,179,8,.65); outline-offset: 2px; }
+  .upload-box { gap: 9px; }
+  .upload-box input[type="text"] { min-height: 43px; }
+  .select-file-btn, .remove-file-btn { padding: 9px 14px; border-radius: 7px; font-size: 12px; }
+  .select-file-btn:hover { background: var(--forest); }
+  .file-preview { height: 290px; border-radius: 8px; }
+  .form-error { margin: 0 0 14px; padding: 10px 12px; border-radius: 7px; font-size: 12px; }
+  .card-footer { justify-content: space-between; margin-top: 23px; padding-top: 17px; border-top: 1px solid var(--border-light); }
+  .btn-outline, .btn-filled, .modal-ok { min-height: 40px; padding: 9px 17px; border-radius: 7px; font-size: 12px; }
+  .btn-outline { border-color: var(--border); }
+  .btn-outline:hover { background: var(--cream); }
+  .btn-filled, .modal-ok { background: var(--forest); }
+  .btn-filled:hover, .modal-ok:hover { background: var(--forest-deep); }
+  .btn-filled:disabled { transform: none; }
+  .trust-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 13px 16px; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; color: rgba(255,255,255,.84); }
+  .trust-line strong { display: block; font-size: 11px; }
+  .trust-line p { margin-top: 3px; color: rgba(255,255,255,.58); font-size: 10px; }
+  .trust-tag { color: var(--gold); font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .site-footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 25px; color: rgba(255,255,255,.45); font-size: 9px; }
+  .modal-box { border: 0; border-radius: 12px; background: #fff; }
+  .modal-box h2 { color: var(--forest); }
+  .modal-ok { min-width: 100px; }
+
+  @media (max-width: 640px) {
+    .topbar { min-height: 60px; padding: 10px 16px; }
+    .brand-sub { font-size: 9px; }
+    .frame { width: calc(100% - 24px); padding: 23px 0 28px; }
+    .heading-row { align-items: flex-start; flex-direction: column; gap: 9px; }
+    .secure-note { font-size: 9px; }
+    .progress-card { padding: 14px 13px 12px; }
+    .step-list { gap: 6px; }
+    .step-indicator { align-items: flex-start; gap: 7px; }
+    .step-number { width: 25px; height: 25px; flex-basis: 25px; }
+    .step-label { font-size: 10px; }
+    .step-caption { font-size: 9px; }
+    .card { padding: 22px 16px 18px; }
+    .card-heading h2 { font-size: 17px; }
+    .form-grid { gap: 15px; }
+    .card-footer { gap: 9px; }
+    .btn-outline, .btn-filled { padding-inline: 12px; }
+    .trust-line { align-items: flex-start; flex-direction: column; }
+    .site-footer { flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 
 <body>
 
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="eSaka home">
+    <span class="brand-mark" aria-hidden="true">eS</span>
+    <span class="brand-copy">
+      <span class="brand-name">eSaka</span>
+      <span class="brand-sub">Agricultural marketplace</span>
+    </span>
+  </a>
+  <a class="topbar-link" href="index.html">Back to home</a>
+</header>
+
 <div class="frame">
   <div class="page-inner">
 
-    <!-- BRAND LOGOS -->
-    <div class="brand">
-      <img src="images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
-      <img src="images/esakaname.png" alt="eSaka" class="brand-name-img">
+    <div class="page-heading">
+      <div class="crumbs">Marketplace <span>›</span> Buyer onboarding <span>›</span> Registry</div>
+      <div class="heading-row">
+        <h1>Institutional Buyer Registry</h1>
+        <div class="secure-note"><span aria-hidden="true">●</span> Buyer application portal</div>
+      </div>
     </div>
+
+    <section class="progress-card" aria-label="Registration progress">
+      <div class="step-list">
+        <div class="step-indicator active" data-progress-step="1">
+          <span class="step-number">1</span>
+          <span><span class="step-label">Business &amp; Contact</span><span class="step-caption">Organization details</span></span>
+        </div>
+        <div class="step-indicator" data-progress-step="2">
+          <span class="step-number">2</span>
+          <span><span class="step-label">Supporting Document</span><span class="step-caption">Message and upload</span></span>
+        </div>
+      </div>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+    </section>
 
     <!-- CARD -->
     <div class="card">
-      <h1>Buyer Registry Form</h1>
+      <div class="card-heading">
+        <h2>Organization Profile &amp; Authorized Buyer</h2>
+        <p>Register your organization to connect with producers and agricultural suppliers through eSaka.</p>
+        <span class="required-note"><span>*</span> Required information</span>
+      </div>
 
       <form id="registryForm" onsubmit="return false;">
 
@@ -529,6 +691,17 @@
                 placeholder="e.g. Brgy. Sta. Barbara, San Jose City"
                 required
               >
+              <p class="field-hint">Include barangay, city or municipality, and province.</p>
+            </div>
+
+            <div class="field commodity-field">
+              <label>COMMODITIES OF INTEREST</label>
+              <div class="commodity-list" id="commodityList" aria-label="Choose commodities">
+                <button class="commodity-chip" type="button" data-commodity="Tomato" aria-pressed="false">Tomato</button>
+                <button class="commodity-chip" type="button" data-commodity="Red Onion" aria-pressed="false">Red Onion</button>
+                <button class="commodity-chip" type="button" data-commodity="White Onion" aria-pressed="false">White Onion</button>
+                <button class="commodity-chip" type="button" data-commodity="Squash" aria-pressed="false">Squash</button>
+              </div>
             </div>
           </div>
 
@@ -546,7 +719,7 @@
               class="btn-filled"
               id="toStep2"
             >
-              Next
+              Continue
             </button>
           </div>
         </div>
@@ -565,8 +738,9 @@
               <textarea
                 id="message"
                 rows="6"
-                placeholder="Add any specific volume requirements or questions..."
+                placeholder="Add any specific requirements or questions..."
               ></textarea>
+              <p class="field-hint">Optional. Selected commodities will be included with your application.</p>
             </div>
 
             <div class="field">
@@ -626,7 +800,7 @@
                 </button>
 
                 <div class="file-hint">
-                  Accepted file types: JPEG / JPG and PDF only. One attachment only.
+                  Accepted file types: JPEG / JPG and PDF. One attachment only.
                 </div>
 
               </div>
@@ -654,6 +828,19 @@
 
       </form>
     </div>
+
+    <aside class="trust-line">
+      <div>
+        <strong>eSaka Buyer Registry</strong>
+        <p>Applications are submitted for review by the eSaka team.</p>
+      </div>
+      <span class="trust-tag">AGRICULTURAL MARKETPLACE</span>
+    </aside>
+
+    <footer class="site-footer">
+      <span>© 2026 eSaka Agro-Digital Logistics Network</span>
+      <a class="topbar-link" href="index.html">Return to eSaka</a>
+    </footer>
 
   </div>
 </div>
@@ -727,13 +914,31 @@ const confirmProceedBtn = document.getElementById("confirmProceedBtn");
 const submittedModal = document.getElementById("submittedModal");
 const errorModal = document.getElementById("errorModal");
 const errorModalMessage = document.getElementById("errorModalMessage");
+const progressFill = document.getElementById("progressFill");
+
+function updateProgress(activeStep) {
+  document.querySelectorAll("[data-progress-step]").forEach(function(indicator) {
+    const stepNumber = Number(indicator.dataset.progressStep);
+    indicator.classList.toggle("active", stepNumber === activeStep);
+    indicator.classList.toggle("done", stepNumber < activeStep);
+  });
+  progressFill.style.width = activeStep === 1 ? "50%" : "100%";
+}
 
 function showStep(step) {
   [step1, step2].forEach(function(s) {
     s.classList.remove("active-step");
   });
   step.classList.add("active-step");
+  updateProgress(step === step1 ? 1 : 2);
 }
+
+document.querySelectorAll(".commodity-chip").forEach(function(chip) {
+  chip.addEventListener("click", function() {
+    const isSelected = chip.getAttribute("aria-pressed") === "true";
+    chip.setAttribute("aria-pressed", String(!isSelected));
+  });
+});
 
 document.getElementById("cancelStep1").addEventListener("click", function() {
   window.location.href = "index.html";
@@ -755,13 +960,6 @@ document.getElementById("toStep2").addEventListener("click", function() {
   // ✅ PHONE NUMBER VALIDATION — 11 digits only
   if (!/^09\d{9}$/.test(phoneNumber)) {
     step1Error.textContent = "Please enter a valid Philippine phone number with 11 digits (e.g., 09171234567).";
-    step1Error.classList.add("show");
-    return;
-  }
-
-  // ✅ EMAIL VALIDATION — must end with @gmail.com
-  if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(buyerEmail)) {
-    step1Error.textContent = "Email must be a valid @gmail.com address (e.g., buyer@gmail.com).";
     step1Error.classList.add("show");
     return;
   }
@@ -919,7 +1117,15 @@ async function executeSubmission() {
   formData.append("phone_number", document.getElementById("phoneNumber").value.trim());
   formData.append("email_address", document.getElementById("buyerEmail").value.trim());
   formData.append("address", document.getElementById("address").value.trim());
-  formData.append("message", document.getElementById("message").value.trim());
+  const selectedCommodities = Array.from(document.querySelectorAll('.commodity-chip[aria-pressed="true"]'))
+    .map(function(chip) { return chip.dataset.commodity; });
+  const buyerMessage = document.getElementById("message").value.trim();
+  const messageParts = [];
+  if (selectedCommodities.length) {
+    messageParts.push("Commodities of interest: " + selectedCommodities.join(", "));
+  }
+  if (buyerMessage) messageParts.push(buyerMessage);
+  formData.append("message", messageParts.join("\n\n"));
   formData.append("document", file);
 
   submitBtn.disabled = true;
