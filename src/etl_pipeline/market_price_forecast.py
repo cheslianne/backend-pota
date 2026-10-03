@@ -273,7 +273,16 @@ def save_forecasts(results, commodity, price_type):
 # RUN ALL MARKET PRICE FORECASTS
 # ============================================================
 
-def main():
+def run_forecast():
+    """
+    Run the full market price forecasting pipeline.
+
+    Returns:
+        dict: Summary containing:
+            - total_loaded (int): total forecast records saved
+            - commodities (list): commodities processed
+            - price_types (list): price types processed
+    """
 
     print()
     print("=" * 60)
@@ -334,10 +343,34 @@ def main():
 
     print(f"Total forecast records loaded: {total_loaded}")
 
+    # --------------------------------------------------------
+    # RETURN SUMMARY (for API / caller use)
+    # --------------------------------------------------------
+
+    return {
+        "total_loaded": total_loaded,
+        "commodities": commodities,
+        "price_types": price_types,
+    }
+
+
+# ============================================================
+# LEGACY ALIAS (backward compatibility)
+# ============================================================
+
+def main():
+    """
+    Legacy entry point. Calls run_forecast().
+
+    Kept for backward compatibility with any existing
+    callers that still use main().
+    """
+    return run_forecast()
+
 
 # ============================================================
 # RUN
 # ============================================================
 
 if __name__ == "__main__":
-    main()
+    run_forecast()

@@ -267,6 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSummaryPeriodPicker();
     loadUserInformation();
     initProfileModal();
+     initMarketUploadSection();
 
     // ETL Pipeline
     initializeETLSearch();
@@ -428,6 +429,7 @@ function initViewNavigation() {
             if (targetViewKey === "reports") loadReports();
             if (targetViewKey === "summary") loadRegionalSummary();
             if (targetViewKey === "etl") loadETLRunLogs();
+            if (targetViewKey === "market-price");
         });
     });
 }
@@ -4055,7 +4057,180 @@ function showSuccessModal({
 
     modal.classList.add("show");
 }
+/* ============================================================
+   MARKET DATA UPLOAD — TRIGGERS ETL + FORECAST
+============================================================ */
 
+let mpSelectedFile = null;
+
+function initMarketUploadSection() {
+    const uploadArea = document.getElementById("mpUploadArea");
+    const fileInput  = document.getElementById("mpFileInput");
+    const uploadBtn  = document.getElementById("mpUploadBtn");
+    const clearBtn   = document.getElementById("mpClearFileBtn");
+
+    if (!uploadArea || !fileInput) return;
+
+    // Click to browse
+    uploadArea.addEventListener("click", () => fileInput.click());
+
+    // Drag over
+    uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = "var(--primary)";
+        uploadArea.style.background  = "#F0F5F2";
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+        uploadArea.style.borderColor = "var(--border)";
+        uploadArea.style.background  = "#FAFBF9";
+    });
+
+    // Drop
+    uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = "var(--border)";
+        uploadArea.style.background  = "#FAFBF9";
+        const file = e.dataTransfer.files[0];
+        if (file) handleMarketFile(file);
+    });
+
+    // File selected
+    fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) handleMarketFile(file);
+    });
+
+    // Clear button
+    clearBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resetMarketUpload();
+    });
+
+    // Upload button
+    uploadBtn?.addEventListener("click", uploadMarketFile);
+}
+
+function handleMarketFile(file) {
+    const validExt = /\.(xlsx|xls)$/i.test(file.name);
+    if (!validExt) {
+        showMarketStatus("error", "❌ Only .xlsx or .xls files are allowed.");
+        return;
+    }
+
+    mpSelectedFile = file;
+
+    document.getElementById("mpFileName").textContent = file.name;
+    document.getElementById("mpFileSize").textContent = `${(file.size / 1024).toFixed(1)} KB`;
+    document.getElementById("mpFilePreview").style.display = "flex";
+    document.getElementById("mpUploadBtn").disabled = false;
+
+    clearMarketStatus();
+}
+
+function resetMarketUpload() {
+    mpSelectedFile = null;
+    const fileInput = document.getElementById("mpFileInput");
+    if (fileInput) fileInput.value = "";
+    document.getElementById("mpFilePreview").style.display = "none";
+    document.getElementById("mpUploadBtn").disabled = true;
+    clearMarketStatus();
+}
+
+function showMarketStatus(type, message) {
+    const el = document.getElementById("mpStatus");
+    if (!el) return;
+
+    const colors = {
+        info:    { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
+        success: { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
+        error:   { bg: "#FEF2F2", color: "#991B1B", border: "#FECACA" }
+    };
+    const c = colors[type] || colors.info;
+
+    el.style.background = c.bg;
+    el.style.color = c.color;
+    el.style.border = `1px solid ${c.border}`;
+    el.innerHTML = message;
+    el.style.display = "block";
+}
+
+function clearMarketStatus() {
+    const el = document.getElementById("mpStatus");
+    if (el) el.style.display = "none";
+}
+
+async function uploadMarketFile() {
+    if (!mpSelectedFile) return;
+
+    const uploadBtn = document.getElementById("mpUploadBtn");
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = "Uploading...";
+
+    showMarketStatus("info", "⏳ Uploading file... Please wait.");
+
+    try {
+        const formData = new FormData();
+        formData.append("file", mpSelectedFile);
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/market-prices/upload`,
+            {
+                method: "POST",
+                headers: getAuthHeaders(false),
+                body: formData
+            }
+        );
+
+        const data = await parseResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Upload failed.");
+        }
+
+        showMarketStatus(
+            "success",
+            `✅ <strong>File received.</strong><br>` +
+            `ETL pipeline and forecast are running in the background.<br>` +
+            `Refreshing ETL logs in <b>30 seconds...</b>`
+        );
+
+        // Reset the file selection after successful upload
+        mpSelectedFile = null;
+        document.getElementById("mpFileInput").value = "";
+        document.getElementById("mpFilePreview").style.display = "none";
+
+        // ----------------------------------------------
+        // AUTO-REFRESH ETL LOGS AFTER 30 SECONDS
+        // ----------------------------------------------
+        setTimeout(async () => {
+            try {
+                // Only refresh if ETL view exists in DOM
+                if (document.getElementById("etlRows")) {
+                    currentEtlPage = 1; // reset to page 1
+                    await loadETLRunLogs();
+                }
+
+                showMarketStatus(
+                    "success",
+                    `✅ <strong>File processed.</strong><br>` +
+                    `ETL logs refreshed. Check the <strong>Monitor ETL Pipeline</strong> tab for new entries.<br>` +
+                    `Forecasts will appear on the AEW dashboard shortly.`
+                );
+            } catch (err) {
+                console.error("Post-upload refresh error:", err);
+            }
+        }, 30000); // 30 seconds
+
+    } catch (error) {
+        console.error("Upload error:", error);
+        showMarketStatus("error", `❌ ${error.message}`);
+        uploadBtn.disabled = false;
+    } finally {
+        uploadBtn.textContent = "Upload & Trigger Forecast";
+        if (mpSelectedFile) uploadBtn.disabled = false;
+    }
+}
 /* ============================================================
    END OF da.js
 ============================================================ */
