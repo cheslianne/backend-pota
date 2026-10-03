@@ -8542,7 +8542,6 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
     const forecasts = FORECASTS_DATA.filter((row) =>
         normalizeFairPriceCommodity(row.commodity) === normalizeFairPriceCommodity(forecastFocus) && inPeriod(row.forecast_date) && (!sharedForecastStart || monthKey(row.forecast_date) >= sharedForecastStart)
     );
-    const isComparison = selectedCommodity === "all";
     const seriesNames = [...new Set([
         ...historical.map((row) => row.commodity),
         ...forecasts.map((row) => row.commodity),
@@ -8579,29 +8578,15 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
 
     const sortedMonths = [...months].sort();
     const datasets = [];
-    const baselineByCommodity = new Map();
-    seriesNames.forEach((commodity) => {
-        const allObservations = PRICE_DATA
-            .filter((row) => normalizeFairPriceCommodity(row.commodity) === commodity)
-            .sort((left, right) => String(left.record_date).localeCompare(String(right.record_date)));
-        const januaryObservation = allObservations.find((row) => monthKey(row.record_date) === "2024-01");
-        const baseline = januaryObservation || allObservations[0];
-        const value = baseline ? Number(baseline.price_per_kg) : NaN;
-        if (Number.isFinite(value) && value > 0) {
-            baselineByCommodity.set(commodity, { value, month: monthKey(baseline.record_date) });
-        }
-    });
-
     seriesNames.forEach((commodity) => {
         const color = colors[commodity] || "#167A58";
-        const baseline = baselineByCommodity.get(commodity);
         const scaleValue = (value) => {
             if (!Number.isFinite(value)) return null;
-            return isComparison && baseline ? (value / baseline.value) * 100 : value;
+            return value;
         };
         const observedValues = sortedMonths.map((key) => {
             const values = monthlyHistorical.get(`${commodity}|${key}`);
-            return values?.length && baseline
+            return values?.length
                 ? scaleValue(values.reduce((total, value) => total + value, 0) / values.length)
                 : null;
         });
@@ -8726,7 +8711,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
                     callbacks: {
                         label: (context) => context.raw == null
                             ? `${context.dataset.label}: no data`
-                            : `${context.dataset.label}: ${isComparison ? `${Number(context.raw).toFixed(1)} index` : `₱${Number(context.raw).toFixed(2)}/kg`}`,
+                            : `${context.dataset.label}: ₱${Number(context.raw).toFixed(2)}/kg`,
                     },
                 },
             },
@@ -8738,16 +8723,16 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
                 },
                 y: {
                     beginAtZero: false,
-                    suggestedMin: isComparison ? undefined : 0,
+                    suggestedMin: 0,
                     grid: { color: "rgba(14,27,22,.07)" },
                     ticks: {
                         color: "#718078",
-                        callback: (value) => isComparison ? Number(value).toFixed(0) : `₱${Number(value).toFixed(0)}`,
+                        callback: (value) => `₱${Number(value).toFixed(0)}`,
                         font: { size: 10 },
                     },
                     title: {
                         display: true,
-                        text: isComparison ? "Indexed price · baseline = 100" : "Price (₱/kg)",
+                        text: "Price (₱/kg)",
                         color: "#718078",
                         font: { size: 10, weight: "600" },
                     },
