@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
 <link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/provincial-theme.css">
 
 <style>
 
@@ -1452,7 +1453,7 @@ input[type="checkbox"] {
 }
 </style>
 </head>
-<body>
+<body class="pc-modern">
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -1546,6 +1547,7 @@ input[type="checkbox"] {
       </div>
 
       <div class="ov-panels">
+        <div class="pc-map-layout">
         <div class="card">
           <div class="ov-panel-head">
             <div>
@@ -1911,6 +1913,17 @@ input[type="checkbox"] {
 
         <div id="map"></div>
       </div>
+      <div class="card">
+        <div class="pc-panel-head" style="margin-bottom:10px;">
+          <div><h2 style="font-size:14px;">Municipal Supply Signals</h2><p>Counts reflect the currently filtered markers.</p></div>
+        </div>
+        <div class="pc-status-chip-row" id="mapStatusSummary"><div class="pc-empty">Loading&hellip;</div></div>
+        <div class="pc-panel-head" style="margin-bottom:10px;">
+          <div><h2 style="font-size:14px;">Monitored Municipalities</h2><p>Commodity status by municipality.</p></div>
+        </div>
+        <div class="pc-muni-list" id="mapMunicipalityList"><div class="pc-empty">Loading&hellip;</div></div>
+      </div>
+      </div>
     </section>
 
   </main>
@@ -2015,6 +2028,7 @@ input[type="checkbox"] {
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="../assets/js/map-panel.js"></script>
 <script src="../assets/js/municipal.js"></script>
 <script src="../assets/js/logout.js"></script>
 
