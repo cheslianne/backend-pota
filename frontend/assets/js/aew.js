@@ -132,7 +132,13 @@ function initProfileModal() {
         customAlertModal?.classList.remove("show");
     });
 
-    let currentSelectedSrc = localStorage.getItem("user_avatar_src") || "../images/1.png";
+    const availableAvatarSources = Array.from(avatarOptions)
+        .map((option) => option.dataset.avatarImg)
+        .filter(Boolean);
+    const savedAvatarSource = localStorage.getItem("user_avatar_src");
+    let currentSelectedSrc = availableAvatarSources.includes(savedAvatarSource)
+        ? savedAvatarSource
+        : "../images/1.png";
 
     function loadSavedProfile() {
         // Load saved display name
@@ -143,7 +149,9 @@ function initProfileModal() {
         }
 
         // Load saved avatar
-        const savedAvatar = localStorage.getItem("user_avatar_src");
+        const savedAvatar = availableAvatarSources.includes(localStorage.getItem("user_avatar_src"))
+            ? localStorage.getItem("user_avatar_src")
+            : currentSelectedSrc;
         if (savedAvatar) {
             currentSelectedSrc = savedAvatar;
             const avatarBox = document.querySelector(".user-info .avatar");
@@ -172,7 +180,7 @@ function initProfileModal() {
             profileBirthdate.value = localStorage.getItem("user_birthdate") || "1990-01-15";
         }
 
-        avatarOptions.forEach(opt => {
+        avatarOptions.forEach((opt) => {
             opt.classList.toggle("selected", opt.dataset.avatarImg === currentSelectedSrc);
         });
 
@@ -303,6 +311,9 @@ function setupUserProfile() {
 
     const storedRole = localStorage.getItem("role");
     const storedAvatar = localStorage.getItem("user_avatar_src");
+    const validAvatar = /^..\/images\/(?:[1-9]|1[0-2])\.png$/.test(storedAvatar || "")
+        ? storedAvatar
+        : "../images/1.png";
 
     const nameEl = document.getElementById("userDisplayName");
     const roleEl = document.getElementById("userDisplayRole");
@@ -314,7 +325,7 @@ function setupUserProfile() {
     // Show avatar image if saved, otherwise show initials
     if (initEl) {
         if (storedAvatar) {
-            initEl.innerHTML = `<img src="${storedAvatar}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            initEl.innerHTML = `<img src="${validAvatar}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             initEl.style.background = "transparent";
         } else {
             initEl.textContent = getInitials(storedName || storedRole);
