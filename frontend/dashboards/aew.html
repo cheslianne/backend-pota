@@ -1733,15 +1733,13 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .market-data-error .btn-primary { flex-shrink: 0; padding: 9px 14px; }
 .market-forecast-card .forecast-year-content table { width: 100%; }
 .market-dashboard { display: grid; gap: 16px; }
-.market-filter-bar { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(170px, .8fr) minmax(170px, .8fr) auto; gap: 12px; align-items: end; padding: 15px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
+.market-filter-bar { display: grid; grid-template-columns: repeat(2, minmax(170px, 1fr)); gap: 12px; align-items: end; padding: 15px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
 .market-filter { display: grid; gap: 6px; min-width: 0; }
 .market-filter > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .market-filter select { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
-.market-model-badge { display: inline-flex; align-items: center; gap: 7px; justify-self: end; padding: 8px 11px; border-radius: 999px; background: #E8EFFD; color: #2F55B3; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.model-dot { width: 7px; height: 7px; border-radius: 50%; background: #2F55B3; }
 .market-summary-section { display: grid; gap: 11px; }
 .market-section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.market-section-heading h2, .market-outlook h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
+.market-section-heading h2 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 800; }
 .market-section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .market-section-heading > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .market-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -1767,8 +1765,8 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .commodity-price-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 9px; border-top: 1px solid var(--border-light); color: var(--muted); font-size: 10px; }
 .commodity-price-footer strong { color: var(--ink); font-weight: 700; }
 .market-summary-loading, .market-summary-empty { grid-column: 1 / -1; padding: 18px; border: 1px dashed var(--border); border-radius: 11px; color: var(--muted); text-align: center; font-size: 13px; }
-.market-chart-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .75fr); gap: 14px; align-items: stretch; }
-.market-chart-panel, .market-outlook { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
+.market-chart-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.market-chart-panel { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
 .market-chart-heading { margin-bottom: 12px; }
 .market-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; color: var(--muted); font-size: 10px; }
 .market-chart-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -1778,16 +1776,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .market-chart-frame canvas { width: 100% !important; height: 100% !important; }
 .market-chart-empty { position: absolute; inset: 0; display: grid; place-content: center; padding: 18px; background: rgba(255,255,255,.94); color: var(--muted); text-align: center; font-size: 13px; }
 .market-chart-empty[hidden] { display: none; }
-.market-outlook { display: flex; flex-direction: column; background: #FFF5E2; border-color: #F1D8A8; }
-.market-outlook-eyebrow { margin-bottom: 7px; color: #94600B; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-.market-outlook h2 { font-size: 18px; line-height: 1.35; }
-.market-outlook > p { color: #5F5849; font-size: 12px; line-height: 1.5; }
-.market-outlook-range, .market-outlook-model { display: grid; gap: 4px; padding: 11px; border-radius: 9px; background: rgba(255,255,255,.82); }
-.market-outlook-range span, .market-outlook-model > span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.market-outlook-range strong { color: var(--green); font-size: 20px; font-weight: 800; }
-.market-outlook-range small, .market-outlook-model small { color: var(--muted); font-size: 10px; }
-.market-outlook-model { margin-top: 9px; }
-.market-outlook-model strong { color: #2F55B3; font-size: 12px; }
 .market-forecast-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .market-forecast-card { min-width: 0; padding: 17px; }
 .market-forecast-card .market-section-heading { margin-bottom: 12px; }
@@ -1802,13 +1790,12 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .history-toggle { color: var(--green); font-size: 11px; font-weight: 700; }
 @media (max-width: 1000px) {
   .market-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .market-model-badge { justify-self: start; }
   .market-chart-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .market-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .market-forecast-grid { grid-template-columns: 1fr; }
-  .market-chart-panel, .market-outlook { padding: 14px; }
+  .market-chart-panel { padding: 14px; }
   .market-section-heading { flex-direction: column; }
   .market-chart-legend { justify-content: flex-start; }
   .market-chart-frame { height: 260px; }
@@ -2884,14 +2871,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                     <option value="RETAIL">Retail</option>
                   </select>
                 </label>
-                <label class="market-filter"><span>Period</span>
-                  <select id="marketPricePeriodFilter">
-                    <option value="all">All available</option>
-                    <option value="12m">Last 12 months</option>
-                    <option value="3y">Last 3 years</option>
-                  </select>
-                </label>
-                <span class="market-model-badge"><span class="model-dot"></span>Facebook Prophet · 6-month horizon</span>
               </div>
 
               <div class="market-chart-layout">
@@ -2905,13 +2884,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                     <div class="market-chart-empty" id="marketPriceChartEmpty" hidden>No forecast points match these filters.</div>
                   </div>
                 </section>
-                <aside class="market-outlook" aria-live="polite">
-                  <span class="market-outlook-eyebrow">Model outlook</span>
-                  <h2 id="marketOutlookTitle">Waiting for forecast data</h2>
-                  <p id="marketOutlookCopy">Choose a commodity and market level to inspect its projected range.</p>
-                  <div class="market-outlook-range"><span>Next projected range</span><strong><span id="marketOutlookLow">—</span> to <span id="marketOutlookHigh">—</span></strong><small id="marketOutlookDate">—</small></div>
-                  <div class="market-outlook-model"><span>Forecast model</span><strong>Facebook Prophet</strong><small>Range reflects the model’s lower and upper estimates.</small></div>
-                </aside>
               </div>
 
               <div class="market-forecast-grid">

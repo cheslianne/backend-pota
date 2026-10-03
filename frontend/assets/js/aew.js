@@ -8805,7 +8805,7 @@ function initMarketPriceDashboard() {
     });
 
     if (!marketPriceFiltersBound) {
-        ["marketCommodityFilter", "marketPriceTypeFilter", "marketPricePeriodFilter"].forEach(function (id) {
+        ["marketCommodityFilter", "marketPriceTypeFilter"].forEach(function (id) {
             document.getElementById(id)?.addEventListener("change", renderMarketPriceDashboard);
         });
         marketPriceFiltersBound = true;
@@ -9726,7 +9726,7 @@ function renderMarketPriceSummary() {
 function renderMarketPriceDashboard() {
     const commodity = document.getElementById("marketCommodityFilter")?.value || "all";
     const priceType = document.getElementById("marketPriceTypeFilter")?.value || "WHOLESALE";
-    const period = document.getElementById("marketPricePeriodFilter")?.value || "all";
+    const period = "all";
     const level = priceType === "RETAIL" ? "Retail" : "Wholesale";
     const commodityName = commodity === "all" ? "All commodities" : commodity;
     const title = document.getElementById("marketTrendTitle");
@@ -9734,7 +9734,6 @@ function renderMarketPriceDashboard() {
     if (title) title.textContent = `${commodityName} ${level.toLowerCase()} price trend`;
     if (description) description.textContent = "Recorded monthly prices with the Prophet forecast range shown ahead.";
 
-    renderMarketOutlook(commodity, priceType, period);
     renderMarketPriceChart(MARKET_PRICE_FORECASTS_DATA, commodity, priceType, period);
 }
 
@@ -9775,53 +9774,6 @@ function initMarketPriceChart() {
 /* ============================================================
    MARKET PRICE CHART
 ============================================================ */
-
-function renderMarketOutlook(commodity, priceType, period) {
-    const forecastDateKey = (value) => String(value || "").slice(0, 7);
-    const cutoff = new Date();
-    if (period === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
-    if (period === "3y") cutoff.setFullYear(cutoff.getFullYear() - 3);
-    const forecasts = MARKET_PRICE_FORECASTS_DATA.filter((forecast) => {
-        if (String(forecast.price_type).toUpperCase() !== priceType) return false;
-        if (commodity !== "all" && forecast.commodity !== commodity) return false;
-        if (period === "all") return true;
-        const date = new Date(forecast.forecast_date);
-        return !Number.isNaN(date.getTime()) && date >= cutoff;
-    }).sort((left, right) => String(left.forecast_date).localeCompare(String(right.forecast_date)));
-
-    const title = document.getElementById("marketOutlookTitle");
-    const copy = document.getElementById("marketOutlookCopy");
-    const low = document.getElementById("marketOutlookLow");
-    const high = document.getElementById("marketOutlookHigh");
-    const date = document.getElementById("marketOutlookDate");
-    if (!forecasts.length) {
-        if (title) title.textContent = "No forecast for this selection";
-        if (copy) copy.textContent = "Try another commodity, price level, or time period.";
-        if (low) low.textContent = "—";
-        if (high) high.textContent = "—";
-        if (date) date.textContent = "";
-        return;
-    }
-
-    const nextDate = forecastDateKey(forecasts[0].forecast_date);
-    const nextWindow = forecasts.filter((forecast) => forecastDateKey(forecast.forecast_date) === nextDate);
-    const level = priceType === "RETAIL" ? "retail" : "wholesale";
-    if (commodity === "all") {
-        if (title) title.textContent = "Next forecast window";
-        if (copy) copy.textContent = `${new Set(nextWindow.map((forecast) => forecast.commodity)).size} commodities · ${level}. Select one commodity to inspect its range.`;
-        if (low) low.textContent = "Varies";
-        if (high) high.textContent = "by crop";
-        if (date) date.textContent = marketRecordDate(nextWindow[0].forecast_date);
-        return;
-    }
-
-    const next = forecasts.find((forecast) => forecastDateKey(forecast.forecast_date) >= nextDate);
-    if (title) title.textContent = `${commodity} outlook`;
-    if (copy) copy.textContent = `Projected ${level} range from the Facebook Prophet model.`;
-    if (low) low.textContent = formatMarketCurrency(Number(next.forecast_price_low));
-    if (high) high.textContent = formatMarketCurrency(Number(next.forecast_price_high));
-    if (date) date.textContent = marketRecordDate(next.forecast_date);
-}
 
 function renderMarketPriceChart(forecasts, commodityFilter, priceType, period) {
     const canvas = document.getElementById("marketPriceTrendChart");
