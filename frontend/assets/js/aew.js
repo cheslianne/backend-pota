@@ -8552,7 +8552,7 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         "Red Onion": "#167A58",
         "White Onion": "#4385B7",
     };
-    const months = new Set();
+    const forecastMonths = new Set();
     const monthlyHistorical = new Map();
     const monthlyForecasts = new Map();
 
@@ -8560,7 +8560,6 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         const key = monthKey(row.record_date);
         const value = Number(row.price_per_kg);
         if (!key || !Number.isFinite(value)) return;
-        months.add(key);
         const seriesKey = `${normalizeFairPriceCommodity(row.commodity)}|${key}`;
         if (!monthlyHistorical.has(seriesKey)) monthlyHistorical.set(seriesKey, []);
         monthlyHistorical.get(seriesKey).push(value);
@@ -8570,13 +8569,13 @@ function renderFairPriceChart(selectedCommodity, selectedPeriod, forecastFocus) 
         const low = Number(row.forecast_price_low);
         const high = Number(row.forecast_price_high);
         if (!key || !Number.isFinite(low) || !Number.isFinite(high)) return;
-        months.add(key);
+        forecastMonths.add(key);
         const seriesKey = `${normalizeFairPriceCommodity(row.commodity)}|${key}`;
         if (!monthlyForecasts.has(seriesKey)) monthlyForecasts.set(seriesKey, []);
         monthlyForecasts.get(seriesKey).push({ low, high });
     });
 
-    const sortedMonths = [...months].sort();
+    const sortedMonths = [...forecastMonths].sort();
     const datasets = [];
     seriesNames.forEach((commodity) => {
         const color = colors[commodity] || "#167A58";
