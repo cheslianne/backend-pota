@@ -1066,6 +1066,10 @@ input[type="checkbox"]{ accent-color:var(--primary); }
           <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg>
           Monitor ETL Pipeline
         </button>
+        <button class="nav-item" type="button" data-view="market-price">
+  <svg viewBox="0 0 24 24"><path d="M3 17h2v-7H3v7zm4 0h2V5H7v12zm4 0h2v-9h-2v9zm4 0h2V7h-2v10zm4 0h2v-5h-2v5zM2 19h20v2H2z"/></svg>
+  Upload Market Data
+</button>
         <button class="nav-item" type="button" data-view="summary">
           <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
           Summary
@@ -1668,6 +1672,76 @@ input[type="checkbox"]{ accent-color:var(--primary); }
           </div>
         </div>
       </section>
+
+      <!-- VIEW: Upload Market Data -->
+<section class="view" id="view-market-price">
+  <div class="main-header">
+    <div class="header-left">
+      <span class="eyebrow">Field Console</span>
+      <h1>Upload Market Data</h1>
+      <p>Upload an Excel file containing wholesale and retail prices. This will trigger the ETL pipeline and regenerate forecasts for all commodities.</p>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:720px;">
+    <div style="font-size:15px; font-weight:800; color:var(--green); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.03em;">
+      📁 Upload Excel File
+    </div>
+
+    <!-- DROP ZONE -->
+    <div id="mpUploadArea" style="
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 50px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #FAFBF9;
+    ">
+      <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
+      <div style="font-size: 15px; font-weight: 700; color: var(--green-dark); margin-bottom: 6px;">
+        Drag & drop your Excel file here
+      </div>
+      <div style="font-size: 12.5px; color: var(--muted);">
+        or click to browse (.xlsx or .xls only)
+      </div>
+      <input type="file" id="mpFileInput" accept=".xlsx,.xls" style="display:none;">
+    </div>
+
+    <!-- FILE PREVIEW -->
+    <div id="mpFilePreview" style="display:none; margin-top:16px; padding:14px 18px; background:#F0F5F2; border-radius:8px; align-items:center; gap:12px;">
+      <div style="font-size:24px;">📄</div>
+      <div style="flex:1; min-width:0;">
+        <div id="mpFileName" style="font-weight:700; font-size:13.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+        <div id="mpFileSize" style="font-size:11.5px; color:var(--muted); margin-top:2px;"></div>
+      </div>
+      <button id="mpClearFileBtn" type="button" style="border:none; background:transparent; color:#C0392B; font-weight:700; cursor:pointer; font-size:22px; line-height:1;">×</button>
+    </div>
+
+    <!-- UPLOAD BUTTON -->
+    <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+      <button class="btn-primary" id="mpUploadBtn" type="button" disabled>
+        Upload & Trigger Forecast
+      </button>
+    </div>
+
+    <!-- STATUS -->
+    <div id="mpStatus" style="display:none; margin-top:16px; padding:14px 18px; border-radius:8px; font-size:13.5px; line-height:1.5;"></div>
+
+    <!-- FORMAT INFO -->
+    <div style="margin-top:24px; padding:16px 18px; background:#F8FAF7; border-radius:8px; border-left:3px solid var(--green); font-size:12.5px; color:var(--muted); line-height:1.7;">
+      <div style="font-weight:700; color:var(--green-dark); margin-bottom:6px;">📋 Required Excel Format</div>
+      <div>The file should contain a sheet with these columns:</div>
+      <ul style="margin:6px 0 0 18px; padding:0;">
+        <li><code>commodity</code></li>
+        <li><code>wholesale_price_per_kg</code></li>
+        <li><code>retail_price_per_kg</code></li>
+        <li><code>record_date</code> (YYYY-MM-DD)</li>
+      </ul>
+      <div style="margin-top:8px;">Sheet name is auto-detected — no need to rename.</div>
+    </div>
+  </div>
+</section>
 
     </main>
   </div>

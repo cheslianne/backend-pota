@@ -40,32 +40,93 @@ def get_last_completed_week():
 
 
 # ============================================================
-# EXTRACT FROM SEED EXCEL FILE
+# RESOLVE SHEET NAME (AUTO-DETECT)
 # ============================================================
 
-def extract_seed_data():
+def _resolve_sheet_name(file_path: Path) -> str:
+    """
+    Determine which sheet to read from the Excel file.
+
+    Priority:
+        1. Sheet named "market_prices" (if it exists)
+        2. Otherwise, the first sheet in the workbook
+
+    Returns:
+        str: The sheet name to read.
+    """
+
+    xls = pd.ExcelFile(file_path)
+    sheet_names = xls.sheet_names
+
+    if "market_prices" in sheet_names:
+        print(f"Found sheet: 'market_prices'")
+        return "market_prices"
+
+    first_sheet = sheet_names[0]
+    print(
+        f"Sheet 'market_prices' not found. "
+        f"Using first sheet: '{first_sheet}'"
+    )
+    print(f"Available sheets: {sheet_names}")
+
+    return first_sheet
+
+
+# ============================================================
+# EXTRACT FROM EXCEL FILE
+# ============================================================
+
+def extract_seed_data(excel_path: Path = None):
+    """
+    Extract market price records from an Excel file.
+
+    The sheet to read is auto-detected:
+        - Prefers a sheet named "market_prices"
+        - Falls back to the first sheet if not found
+
+    Args:
+        excel_path: Optional path to an Excel file.
+                    If None, uses SEED_EXCEL_PATH (default seed file).
+
+    Returns:
+        List of record dicts.
+    """
 
     records = []
 
     cutoff_date = get_last_completed_week()
+
+    # --------------------------------------------------------
+    # Determine which file to read
+    # --------------------------------------------------------
+
+    file_path = excel_path if excel_path is not None else SEED_EXCEL_PATH
 
     print(
         f"Historical data cutoff: "
         f"{cutoff_date.strftime('%B %d, %Y')} (Monday)"
     )
 
-    if not SEED_EXCEL_PATH.exists():
+    if not file_path.exists():
         raise FileNotFoundError(
-            f"Seed Excel not found: {SEED_EXCEL_PATH}"
+            f"Excel file not found: {file_path}"
         )
+
+    print(f"Reading Excel file: {file_path}")
+
+    # --------------------------------------------------------
+    # Resolve sheet name (auto-detect)
+    # --------------------------------------------------------
+
+    sheet_name = _resolve_sheet_name(file_path)
 
     # --------------------------------------------------------
     # Read Excel
     # --------------------------------------------------------
 
     df = pd.read_excel(
-        SEED_EXCEL_PATH,
-        sheet_name="market_prices"
+        file_path,
+        sheet_name=sheet_name
     )
 
     # --------------------------------------------------------
@@ -146,7 +207,17 @@ def transform_market_prices(records):
 # ETL PIPELINE
 # ============================================================
 
-def run_market_price_etl():
+def run_market_price_etl(excel_path: Path = None):
+    """
+    Run the full Market Price ETL pipeline.
+
+    Args:
+        excel_path: Optional path to an Excel file.
+                    If None, uses SEED_EXCEL_PATH (default seed file).
+
+    Returns:
+        int: Number of records loaded (inserted + updated).
+    """
 
     print()
     print("=" * 60)
@@ -168,7 +239,7 @@ def run_market_price_etl():
         f"{cutoff_date.strftime('%B %d, %Y')}"
     )
 
-    extracted_records = extract_seed_data()
+    extracted_records = extract_seed_data(excel_path=excel_path)
 
     print(f"Records extracted: {len(extracted_records)}")
 
@@ -208,6 +279,8 @@ def run_market_price_etl():
         f"Historical data through: "
         f"{cutoff_date.strftime('%B %d, %Y')}"
     )
+
+    return loaded_records
 
 
 # ============================================================
