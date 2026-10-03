@@ -224,7 +224,7 @@ function initProfileModal() {
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("eSaka AEW Dashboard loaded.");
 
-    initSidebar();
+    initAewSidebar();
     initViewNavigation();
     initMap();
     loadMunicipalityMapData();
@@ -369,39 +369,41 @@ function handleAuthError(error) {
    SIDEBAR
 ============================================================ */
 
-function initSidebar() {
-    const hamburgerBtn = document.getElementById("hamburgerBtn");
+function initAewSidebar() {
+    const hamburgerBtn = document.getElementById("sidebarToggle");
     const sidebar = document.getElementById("sidebar");
 
     if (!hamburgerBtn || !sidebar) return;
 
     let hoverTimer = null;
 
-    hamburgerBtn.addEventListener("mouseenter", function() {
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
-        setTimeout(function() {
-            sidebar.classList.add("open");
+    if (window.matchMedia("(min-width: 961px)").matches) {
+        hamburgerBtn.addEventListener("mouseenter", function() {
+            if (hoverTimer) {
+                clearTimeout(hoverTimer);
+                hoverTimer = null;
+            }
             setTimeout(function() {
-                if (mapInstance) mapInstance.invalidateSize();
-            }, 300);
-        }, 100);
-    });
+                sidebar.classList.add("open");
+                setTimeout(function() {
+                    if (mapInstance) mapInstance.invalidateSize();
+                }, 300);
+            }, 100);
+        });
 
-    sidebar.addEventListener("mouseleave", function() {
-        hoverTimer = setTimeout(function() {
-            sidebar.classList.remove("open");
-        }, 200);
-    });
+        sidebar.addEventListener("mouseleave", function() {
+            hoverTimer = setTimeout(function() {
+                sidebar.classList.remove("open");
+            }, 200);
+        });
 
-    sidebar.addEventListener("mouseenter", function() {
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
-    });
+        sidebar.addEventListener("mouseenter", function() {
+            if (hoverTimer) {
+                clearTimeout(hoverTimer);
+                hoverTimer = null;
+            }
+        });
+    }
 
     document.addEventListener("click", function(event) {
         const isClickInsideSidebar = sidebar.contains(event.target);
@@ -461,6 +463,8 @@ function initViewNavigation() {
                     mapInstance.invalidateSize();
                 }, 100);
             }
+
+            document.getElementById("sidebar")?.classList.remove("open");
         });
     });
 }

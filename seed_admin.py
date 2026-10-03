@@ -1,19 +1,23 @@
 import sys
 import os
+import importlib
+import pkgutil
 
 # Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.core.database import SessionLocal
+import src.models as models_pkg
+
+for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
+    importlib.import_module(f"src.models.{module_name}")
+
+from src.core.database import SessionLocal, engine, Base
 
 # Import all related models so SQLAlchemy can resolve relationships
 from src.models.users import User
-from src.models.audit_logs import AuditLog
-from src.models.raw_plant_reports import RawPlantReport
-from src.models.report_submission import ReportSubmission
-from src.models.report_validation_history import ReportValidationHistory
-
 from src.core.security import hash_password
+
+Base.metadata.create_all(bind=engine)
 
 
 def create_admin():
@@ -118,3 +122,16 @@ def create_admin():
 
 if __name__ == "__main__":
  create_admin() 
+from src.models.farmers import Farmer
+from src.models.buyers import Buyer
+from src.models.buyer_registry import BuyerRegistry
+from src.models.buyer_status import BuyerStatus
+from src.models.alert_threshold_configs import AlertThresholdConfig
+from src.models.etl_run_log import ETLRunLog
+from src.models.forecasts import Forecast
+from src.models.market_price import MarketPrice
+from src.models.market_price_forecast import MarketPriceForecast
+from src.models.offtake_requests import OfftakeRequest
+from src.models.planting_intents import PlantingIntent
+from src.models.price_data import PriceData
+from src.models.report_planting_intents import ReportPlantingIntent

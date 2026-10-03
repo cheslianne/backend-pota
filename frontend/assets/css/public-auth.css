@@ -1,0 +1,427 @@
+body.page-index,
+body.page-login,
+body.page-forgot-password,
+body.page-reset-password,
+body.page-buyer-registry,
+body.page-home {
+  color: var(--ink);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.page-index button,
+body.page-index input,
+body.page-index select,
+body.page-index textarea,
+body.page-login button,
+body.page-login input,
+body.page-login select,
+body.page-login textarea,
+body.page-forgot-password button,
+body.page-forgot-password input,
+body.page-forgot-password select,
+body.page-forgot-password textarea,
+body.page-reset-password button,
+body.page-reset-password input,
+body.page-reset-password select,
+body.page-reset-password textarea,
+body.page-buyer-registry button,
+body.page-buyer-registry input,
+body.page-buyer-registry select,
+body.page-buyer-registry textarea,
+body.page-home button,
+body.page-home input,
+body.page-home select,
+body.page-home textarea {
+  font-family: inherit;
+}
+
+body.page-index a,
+body.page-login a,
+body.page-forgot-password a,
+body.page-reset-password a,
+body.page-buyer-registry a,
+body.page-home a {
+  text-underline-offset: 0.18em;
+}
+
+body.page-index :is(a, button, input, select, textarea):focus-visible,
+body.page-login :is(a, button, input, select, textarea):focus-visible,
+body.page-forgot-password :is(a, button, input, select, textarea):focus-visible,
+body.page-reset-password :is(a, button, input, select, textarea):focus-visible,
+body.page-buyer-registry :is(a, button, input, select, textarea):focus-visible,
+body.page-home :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--green-dark);
+  outline-offset: 2px;
+}
+
+body.page-index :is(a, button, input, select, textarea):focus-visible,
+body.page-home :is(a, button, input, select, textarea):focus-visible {
+  outline-color: var(--white);
+}
+
+body.page-index .landing-card-layout,
+body.page-login .login-card,
+body.page-forgot-password .landing-card-layout,
+body.page-buyer-registry .page-inner,
+body.page-home .feature-card,
+body.page-home .step-card {
+  border: 1px solid var(--border);
+  box-shadow:
+    0 24px 60px rgba(46, 42, 34, 0.18),
+    0 6px 18px rgba(73, 90, 63, 0.10);
+}
+
+body.page-index .landing-card-layout,
+body.page-forgot-password .landing-card-layout,
+body.page-login .login-card,
+body.page-reset-password .card,
+body.page-buyer-registry .card {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.page-index .btn,
+body.page-login .btn-login,
+body.page-login .login-btn,
+body.page-forgot-password .btn-back,
+body.page-forgot-password .btn-send,
+body.page-forgot-password .modal-ok,
+body.page-reset-password .btn-reset,
+body.page-buyer-registry .btn-outline,
+body.page-buyer-registry .btn-filled,
+body.page-buyer-registry .select-file-btn,
+body.page-buyer-registry .remove-file-btn,
+body.page-buyer-registry .modal-ok,
+body.page-home .back-btn,
+body.page-home .nav-arrow {
+  transition:
+    transform 0.22s ease,
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+body.page-index .hero-header,
+body.page-forgot-password .hero-header {
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+}
+
+body.page-index .landing-card-layout,
+body.page-forgot-password .landing-card-layout {
+  background: rgba(242, 237, 225, 0.78);
+}
+
+body.page-index .hero-title,
+body.page-forgot-password .hero-title,
+body.page-home .slide-header h1 {
+  letter-spacing: -0.03em;
+}
+
+body.page-index .hero-desc,
+body.page-forgot-password .hero-desc {
+  color: var(--white);
+}
+
+body.page-index .btn {
+  border-color: var(--white);
+  background: rgba(242, 237, 225, 0.08);
+}
+
+body.page-index .btn:hover,
+body.page-index .btn:focus-visible {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--green-dark);
+  box-shadow: 0 10px 24px rgba(46, 42, 34, 0.20);
+}
+
+body.page-index .vertical-card {
+  border-color: var(--white);
+  box-shadow: 0 18px 34px rgba(46, 42, 34, 0.18);
+}
+
+body.page-index .vertical-card:hover {
+  box-shadow: 0 24px 42px rgba(46, 42, 34, 0.24);
+}
+
+body.page-index .layout-footer {
+  background: rgba(242, 237, 225, 0.82);
+  border-top-color: var(--border);
+}
+
+body.page-login .vignette {
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(242, 237, 225, 0.24) 0%,
+      rgba(242, 237, 225, 0.36) 36%,
+      rgba(73, 90, 63, 0.28) 100%
+    );
+}
+
+body.page-login .center-light {
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(251, 248, 241, 0.38) 0%,
+      rgba(251, 248, 241, 0.12) 44%,
+      transparent 72%
+    );
+}
+
+body.page-login .login-card {
+  background: rgba(242, 237, 225, 0.92);
+  border-color: var(--border);
+  border-radius: 20px;
+}
+
+body.page-login .header h1,
+body.page-reset-password .card h1,
+body.page-buyer-registry .card h1 {
+  color: var(--green);
+}
+
+body.page-login .header p,
+body.page-login .home-row a,
+body.page-login .forgot-row a,
+body.page-reset-password .card .sub,
+body.page-buyer-registry .file-hint,
+body.page-home footer {
+  color: var(--muted);
+}
+
+body.page-login .field label,
+body.page-forgot-password .field label,
+body.page-buyer-registry .field label {
+  color: var(--ink);
+}
+
+body.page-login .field input,
+body.page-forgot-password .field input,
+body.page-reset-password .field input,
+body.page-buyer-registry .field input,
+body.page-buyer-registry .field textarea,
+body.page-buyer-registry .upload-box input[type="text"] {
+  background: rgba(251, 248, 241, 0.92);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+body.page-login .field input::placeholder,
+body.page-forgot-password .field input::placeholder,
+body.page-reset-password .field input::placeholder,
+body.page-buyer-registry .field input::placeholder,
+body.page-buyer-registry .field textarea::placeholder {
+  color: var(--muted);
+}
+
+body.page-login .field input:focus,
+body.page-forgot-password .field input:focus,
+body.page-reset-password .field input:focus,
+body.page-buyer-registry .field input:focus,
+body.page-buyer-registry .field textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 4px rgba(91, 107, 79, 0.18);
+}
+
+body.page-login .btn-login,
+body.page-login .login-btn,
+body.page-reset-password .btn-reset,
+body.page-buyer-registry .btn-filled,
+body.page-buyer-registry .modal-ok {
+  background: var(--green);
+  color: var(--white);
+}
+
+body.page-login .btn-login:hover,
+body.page-login .login-btn:hover,
+body.page-reset-password .btn-reset:hover,
+body.page-buyer-registry .btn-filled:hover,
+body.page-buyer-registry .modal-ok:hover {
+  background: var(--green-dark);
+  box-shadow: 0 10px 22px rgba(73, 90, 63, 0.24);
+}
+
+body.page-login .branding .name {
+  color: var(--cream);
+  text-shadow: 0 6px 18px rgba(46, 42, 34, 0.20);
+}
+
+body.page-login .branding .tagline {
+  color: var(--cream);
+}
+
+body.page-forgot-password .form-card,
+body.page-reset-password .card,
+body.page-buyer-registry .card,
+body.page-forgot-password .modal-box,
+body.page-buyer-registry .modal-box {
+  background: rgba(251, 248, 241, 0.94);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 38px rgba(46, 42, 34, 0.14);
+}
+
+body.page-forgot-password .btn-back,
+body.page-buyer-registry .btn-outline,
+body.page-buyer-registry .select-file-btn {
+  background: var(--white);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+body.page-forgot-password .btn-send,
+body.page-forgot-password .modal-ok {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--white);
+}
+
+body.page-forgot-password .btn-back:hover,
+body.page-buyer-registry .btn-outline:hover,
+body.page-buyer-registry .select-file-btn:hover {
+  background: var(--cream);
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 10px 20px rgba(46, 42, 34, 0.12);
+}
+
+body.page-forgot-password .btn-send:hover,
+body.page-forgot-password .modal-ok:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+  color: var(--white);
+  box-shadow: 0 12px 24px rgba(73, 90, 63, 0.22);
+}
+
+body.page-reset-password .frame {
+  background: linear-gradient(180deg, var(--green), var(--green-dark));
+}
+
+body.page-reset-password .page-inner {
+  background: var(--cream);
+  border-radius: 24px;
+}
+
+body.page-reset-password .card {
+  background: rgba(251, 248, 241, 0.84);
+  border-radius: 18px;
+}
+
+body.page-reset-password .brand-word {
+  color: var(--green);
+}
+
+body.page-reset-password .message.success {
+  background: rgba(91, 107, 79, 0.12);
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  color: var(--green);
+  padding: 10px 14px;
+}
+
+body.page-reset-password .message.error,
+body.page-login .form-status.error {
+  background: var(--pastel-red-bg);
+  color: var(--status-rejected);
+  border-color: var(--status-rejected);
+}
+
+body.page-forgot-password .field input.invalid,
+body.page-reset-password .field input.invalid {
+  border-color: var(--status-rejected);
+}
+
+body.page-buyer-registry .card h1 {
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+
+body.page-buyer-registry .field label .req,
+body.page-buyer-registry .remove-file-btn {
+  color: var(--status-rejected);
+}
+
+body.page-buyer-registry .file-preview,
+body.page-buyer-registry .pdf-preview,
+body.page-buyer-registry .image-preview {
+  background: var(--cream);
+}
+
+body.page-buyer-registry .form-error {
+  background: var(--pastel-red-bg);
+  border-color: var(--status-rejected);
+  color: var(--status-rejected);
+}
+
+body.page-home .slide-header p {
+  color: var(--white);
+}
+
+body.page-home .back-btn,
+body.page-home .nav-arrow {
+  background: rgba(251, 248, 241, 0.96);
+  border-color: var(--border);
+}
+
+body.page-home .back-btn:hover,
+body.page-home .nav-arrow:hover {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 12px 24px rgba(73, 90, 63, 0.24);
+}
+
+body.page-home .back-btn:hover svg,
+body.page-home .nav-arrow:hover svg {
+  stroke: var(--white);
+}
+
+body.page-home .feature-card,
+body.page-home .step-card {
+  background: linear-gradient(180deg, var(--white), var(--cream));
+}
+
+body.page-home .feature-icon {
+  background: var(--cream);
+}
+
+body.page-home .step-icon {
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+}
+
+body.page-home .step-title-sub {
+  color: var(--gold);
+}
+
+body.page-home .dot.active {
+  background: var(--gold);
+}
+
+body.page-home footer .footer-highlight {
+  color: var(--white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body.page-index,
+  body.page-login,
+  body.page-forgot-password,
+  body.page-reset-password,
+  body.page-buyer-registry,
+  body.page-home {
+    scroll-behavior: auto !important;
+  }
+
+  body.page-index *,
+  body.page-login *,
+  body.page-forgot-password *,
+  body.page-reset-password *,
+  body.page-buyer-registry *,
+  body.page-home * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

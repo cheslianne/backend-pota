@@ -1,0 +1,80 @@
+/* ==========================================================
+   eSaka Design Tokens (v2)
+   Load this before components.css on every migrated page.
+   ========================================================== */
+
+:root {
+  /* Brand */
+  --green: #1F5A3A;
+  --green-hover: #2C7A50;
+  --green-pressed: #123D26;
+  --gold: #C9A34E;
+  --gold-tint: #FAF1DE;
+
+  /* Neutrals */
+  --text: #0F172A;
+  --text-muted: #475569;
+  --text-faint: #94A3B8;
+  --border: #E2E8F0;
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+
+  /* Semantic */
+  --success: #16A34A;
+  --success-tint: #DCFCE7;
+  --warning: #F59E0B;
+  --warning-tint: #FEF3C7;
+  --danger: #DC2626;
+  --danger-tint: #FEE2E2;
+  --info: #2563EB;
+  --info-tint: #DBEAFE;
+  --neutral: #64748B;
+  --neutral-tint: #F1F5F9;
+
+  /* Type scale */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  /* Radius */
+  --radius-card: 10px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+
+  /* Shadow */
+  --shadow-rest: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.12);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration: 180ms;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 76px;
+  --topbar-height: 64px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .heading {
+  font-family: 'Inter Tight', sans-serif;
+  color: var(--text);
+  font-weight: 700;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: 'Inter', sans-serif; }

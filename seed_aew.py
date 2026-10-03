@@ -1,11 +1,20 @@
 import sys
 import os
+import importlib
+import pkgutil
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.core.database import SessionLocal
+import src.models as models_pkg
+
+for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
+    importlib.import_module(f"src.models.{module_name}")
+
+from src.core.database import SessionLocal, engine, Base
 from src.models.users import User
 from src.core.security import hash_password
+
+Base.metadata.create_all(bind=engine)
 
 
 def seed_aew():
