@@ -84,7 +84,7 @@ let MARKET_PRICE_FORECASTS_DATA = [];
 let marketPriceChartInstance = null;
 
 const MARKET_PRICES_ENDPOINT = `${API_BASE_URL}/api/market-prices/`;
-const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/`;
+const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/monthly`;
 
 // Reporting
 let allIndividualReports = [];
@@ -5462,6 +5462,12 @@ async function saveReport(status) {
         return;
     }
 
+    // ✅ KUNIN ANG MGA FILES BAGO MAG-SAVE
+    const fileInput = document.getElementById("reportFileInput");
+    const filesToUpload = fileInput?.files ? Array.from(fileInput.files) : [];
+
+    console.log(`📎 Files to upload: ${filesToUpload.length}`, filesToUpload.map(f => f.name));
+
     const editingReportId = window.currentEditingReportId;
 
     if (editingReportId) {
@@ -5521,7 +5527,7 @@ async function saveReport(status) {
                 method: "PATCH",
                 body: JSON.stringify({
                     status: "SUBMITTED_MUNICIPAL_PENDING",
-                    resubmit_notes: notes || null    // ← ipasa ang notes as resubmit notes
+                    resubmit_notes: notes || null
                 })
             });
 
@@ -5541,14 +5547,42 @@ async function saveReport(status) {
                 || null;
         }
 
-        if (savedReportId) {
-            const fileInput = document.getElementById("reportFileInput");
-            if (fileInput) fileInput.value = "";
-            const fileNameInput = document.getElementById("reportDocFilename");
-            if (fileNameInput) fileNameInput.value = "";
-            const filesList = document.getElementById("selectedFilesList");
-            if (filesList) filesList.innerHTML = "";
+        // ============================================================
+        // ✅ I-UPLOAD ANG MGA ATTACHMENTS PAGKATAPOS MA-SAVE ANG REPORT
+        // ============================================================
+        if (savedReportId && filesToUpload.length > 0) {
+            console.log(`📤 Uploading ${filesToUpload.length} attachment(s) to report #${savedReportId}...`);
+
+            const uploadErrors = [];
+
+            for (const file of filesToUpload) {
+                try {
+                    const result = await uploadReportAttachment(savedReportId, file);
+                    console.log(`✅ Uploaded: ${file.name}`, result);
+                } catch (err) {
+                    console.error(`❌ Upload failed for ${file.name}:`, err);
+                    uploadErrors.push(`${file.name}: ${err.message}`);
+                }
+            }
+
+            if (uploadErrors.length > 0) {
+                console.warn("Some uploads failed:", uploadErrors);
+                setTimeout(() => {
+                    alert(
+                        "Report saved, but some attachments failed to upload:\n\n" +
+                        uploadErrors.join("\n") +
+                        "\n\nYou can re-upload them from the report details page."
+                    );
+                }, 500);
+            }
         }
+
+        // ✅ I-CLEAR ANG FILE INPUT PAGKATAPOS I-UPLOAD
+        if (fileInput) fileInput.value = "";
+        const fileNameInput = document.getElementById("reportDocFilename");
+        if (fileNameInput) fileNameInput.value = "";
+        const filesList = document.getElementById("selectedFilesList");
+        if (filesList) filesList.innerHTML = "";
 
         // ============================================================
         // ✅ FORCE RETURN TO REPORTS MAIN LIST
@@ -8500,13 +8534,9 @@ function groupMarketForecastsByYear(forecasts) {
     const grouped = {};
 
     forecasts.forEach(function (forecast) {
-        if (!forecast.forecast_date) return;
-
-        const date = new Date(forecast.forecast_date);
-
-        if (isNaN(date.getTime())) return;
-
-        const year = date.getFullYear();
+        // Ang bagong endpoint ay may "year" at "month" fields
+        const year = forecast.year;
+        if (!year) return;
 
         if (!grouped[year]) {
             grouped[year] = [];
@@ -8525,16 +8555,17 @@ function groupMarketForecastsByYear(forecasts) {
 function groupMarketForecastsByMonth(forecasts) {
     const grouped = {};
 
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
     forecasts.forEach(function (forecast) {
-        if (!forecast.forecast_date) return;
+        const monthNum = forecast.month;
+        if (!monthNum) return;
 
-        const date = new Date(forecast.forecast_date);
-
-        if (isNaN(date.getTime())) return;
-
-        const month = date.toLocaleString("en-US", {
-            month: "long",
-        });
+        const month = monthNames[monthNum - 1];
+        if (!month) return;
 
         if (!grouped[month]) {
             grouped[month] = [];
