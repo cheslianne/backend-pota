@@ -393,7 +393,6 @@ function renderFilteredMapMarkers() {
                     <strong>Commodity:</strong> ${escapeHtml(commodity)}
                     <br>
                     <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
-                    ${pcPopupVolumeLines(item)}
                 </div>
             `;
 
@@ -3521,35 +3520,6 @@ const PC_STATUS_META = {
 function pcStatusMeta(rawStatus) {
     const s = (rawStatus || "").toUpperCase();
     return PC_STATUS_META[s] || { label: "No Data", cls: "nodata" };
-}
-
-/**
- * Builds the extra popup lines for supply vs. demand. Falls back to an
- * empty string if the backend didn't include these fields.
- */
-function pcPopupVolumeLines(item) {
-    if (typeof item.total_supply !== "number" || typeof item.base_demand !== "number") {
-        return "";
-    }
-    const diff = typeof item.surplus_deficit === "number"
-        ? item.surplus_deficit
-        : (item.total_supply - item.base_demand);
-    const diffLabel = diff > 0 ? "over demand" : (diff < 0 ? "under demand" : "on target");
-    const diffColor = diff > 0 ? "#C0392B" : (diff < 0 ? "#D97706" : "#2E7D32");
-    const capText = (typeof item.capacity_pct === "number") ? `${item.capacity_pct}% of demand` : "—";
-
-    return `
-        <br>
-        <strong>Submitted supply:</strong> ${formatKg(item.total_supply)}
-        <br>
-        <strong>Base demand:</strong> ${formatKg(item.base_demand)}
-        <br>
-        <strong>Balance:</strong> <span style="color:${diffColor}; font-weight:700;">
-            ${diff > 0 ? "+" : ""}${formatKg(diff)} ${diffLabel}
-        </span>
-        <br>
-        <strong>Capacity:</strong> ${capText}
-    `;
 }
 
 /** Re-draws the Leaflet markers and the shared marker-aware side panel. */

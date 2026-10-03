@@ -917,7 +917,6 @@ function renderFilteredMapMarkers() {
                     <strong>Commodity:</strong> ${escapeHtml(commodity)}
                     <br>
                     <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
-                    ${window.mapPopupVolumeLines?.(item) || ""}
                 </div>
             `;
 
