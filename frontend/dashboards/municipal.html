@@ -193,34 +193,6 @@ select:focus-visible {
 .sidebar.open {
   left:0
 }
-.sidebar-profile {
-  background:rgba(255,255,255,.08);
-  border-radius:12px;
-  padding:14px 16px;
-  margin-bottom:18px
-}
-.sp-role {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:15px;
-  font-weight:800;
-  color:#fff;
-  line-height:1.25
-}
-.sp-dot {
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--tertiary);
-  flex-shrink:0
-}
-.sp-place {
-  margin-top:4px;
-  font-size:12px;
-  font-weight:500;
-  color:rgba(255,255,255,.65)
-}
 .nav-list {
   display:flex;
   flex-direction:column;
@@ -380,7 +352,7 @@ select:focus-visible {
   background:#7A857E
 }
 
-/* ===== KPI CARDS (Reports + Overview) ===== */
+/* ===== KPI CARDS (Reports) ===== */
 .summary-cards {
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -1483,17 +1455,8 @@ input[type="checkbox"] {
 <div class="layout">
   <nav class="sidebar" id="sidebar">
     <div>
-      <div class="sidebar-profile">
-        <div class="sp-role"><span class="sp-dot"></span> Municipal Coordinator</div>
-        <div class="sp-place" id="sidebarPlace">Pampanga · Region III</div>
-      </div>
-
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="overview">
-          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-          Overview
-        </button>
-        <button class="nav-item" type="button" data-view="reports">
+        <button class="nav-item active" type="button" data-view="reports">
           <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
           View Reports <span class="nav-badge" id="navPendingBadge"></span>
         </button>
@@ -1516,64 +1479,8 @@ input[type="checkbox"] {
 
   <main class="main">
 
-    <!-- ===================== VIEW: Overview ===================== -->
-    <section class="view active-view" id="view-overview">
-      <div class="main-header">
-        <div class="header-left">
-          <h1>Reports Review &amp; Provincial Routing</h1>
-          <p>A snapshot of what needs your attention across your municipality.</p>
-        </div>
-      </div>
-
-      <div class="ov-kpis">
-        <div class="ov-kpi">
-          <span class="ico">📝</span>
-          <h3>Pending Municipal</h3>
-          <div class="num" id="ovPending">0</div>
-          <div class="sub">Awaiting your review</div>
-        </div>
-        <div class="ov-kpi yellow">
-          <span class="ico">🔄</span>
-          <h3>Returned to AEW</h3>
-          <div class="num" id="ovRevision">0</div>
-          <div class="sub">Sent back for revision</div>
-        </div>
-        <div class="ov-kpi green">
-          <span class="ico">📤</span>
-          <h3>Forwarded to Provincial</h3>
-          <div class="num" id="ovSent">0</div>
-          <div class="sub">Sent to Provincial</div>
-        </div>
-      </div>
-
-      <div class="ov-panels">
-        <div class="pc-map-layout">
-        <div class="card">
-          <div class="ov-panel-head">
-            <div>
-              <h2>Pending Review &amp; Dispatch</h2>
-              <p>AEW reports awaiting your sign-off before forwarding to Provincial.</p>
-            </div>
-            <button class="ov-link" type="button" data-goto="reports">Open Reports →</button>
-          </div>
-          <div id="ovPendingList"><div class="ov-empty">No pending reports.</div></div>
-        </div>
-
-        <div class="card">
-          <div class="ov-panel-head">
-            <div>
-              <h2>Recent Submissions to Provincial</h2>
-              <p>Forwarded to the Provincial Coordinator.</p>
-            </div>
-            <button class="ov-link" type="button" data-goto="reports">View All →</button>
-          </div>
-          <div id="ovSentList"><div class="ov-empty">Nothing forwarded yet.</div></div>
-        </div>
-      </div>
-    </section>
-
     <!-- ===================== VIEW: Reports ===================== -->
-    <section class="view" id="view-reports">
+    <section class="view active-view" id="view-reports">
       <div class="main-header" id="reportsMainHeader">
         <div class="header-left">
           <h1>Reports</h1>
@@ -2047,81 +1954,6 @@ input[type="checkbox"] {
   });
 })();
 </script>
-
-<!-- OVERVIEW: nav switching + mirrors data from the Reports tables/counters -->
-<script>
-(function(){
-  const $ = id => document.getElementById(id);
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const txt = td => td ? td.innerText.trim() : '';
-
-  /* ---- view switching (safe alongside municipal.js) ---- */
-  function showView(name){
-    const target = $('view-' + name);
-    if (!target) return;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-    target.classList.add('active-view');
-    document.querySelectorAll('.nav-item[data-view]').forEach(b =>
-      b.classList.toggle('active', b.dataset.view === name));
-    if (name === 'map' && window.map && typeof window.map.invalidateSize === 'function') {
-      setTimeout(() => window.map.invalidateSize(), 120);
-    }
-  }
-  document.querySelectorAll('.nav-item[data-view]').forEach(b =>
-    b.addEventListener('click', () => showView(b.dataset.view)));
-  document.querySelectorAll('[data-goto]').forEach(b =>
-    b.addEventListener('click', () => showView(b.dataset.goto)));
-
-  /* ---- counters ---- */
-  function syncCounts(){
-    $('ovPending').textContent  = txt($('reportCountPending'))  || '0';
-    $('ovRevision').textContent = txt($('reportCountRevision')) || '0';
-    $('ovSent').textContent     = txt($('reportCountProvincial')) || '0';
-    const n = parseInt(txt($('reportCountPending')), 10) || 0;
-    $('navPendingBadge').textContent = n > 0 ? n : '';
-  }
-
-  /* ---- recent lists ---- */
-  function realRows(tbodyId){
-    const tb = $(tbodyId);
-    if (!tb) return [];
-    return [...tb.querySelectorAll('tr')].filter(r => !r.querySelector('td[colspan]')).slice(0, 3);
-  }
-
-  function buildLists(){
-    const p = realRows('pendingReportsBody');
-    $('ovPendingList').innerHTML = p.length ? p.map(r => {
-      const c = r.children;
-      return '<div class="ov-row"><div><div class="t">' + esc(txt(c[2])) + '</div>' +
-             '<div class="m">' + esc(txt(c[4])) + ' · ' + esc(txt(c[3])) + ' · Planting ' + esc(txt(c[5])) + '</div></div>' +
-             '<span class="status-pill pending">Pending</span></div>';
-    }).join('') : '<div class="ov-empty">No pending reports.</div>';
-
-    const s = realRows('sentToProvincialBody');
-    $('ovSentList').innerHTML = s.length ? s.map(r => {
-      const c = r.children;
-      const pill = c[5] ? c[5].innerHTML : '';
-      return '<div class="ov-row"><div><div class="t">' + esc(txt(c[1])) + '</div>' +
-             '<div class="m">' + esc(txt(c[3])) + ' · ' + esc(txt(c[2])) + ' · ' + esc(txt(c[4])) + '</div></div>' +
-             '<span>' + pill + '</span></div>';
-    }).join('') : '<div class="ov-empty">Nothing forwarded yet.</div>';
-  }
-
-  function refresh(){ syncCounts(); buildLists(); }
-
-  ['reportCountPending','reportCountRevision','reportCountProvincial'].forEach(id => {
-    const el = $(id);
-    if (el) new MutationObserver(syncCounts).observe(el, {childList:true, characterData:true, subtree:true});
-  });
-  ['pendingReportsBody','sentToProvincialBody'].forEach(id => {
-    const el = $(id);
-    if (el) new MutationObserver(buildLists).observe(el, {childList:true});
-  });
-
-  refresh();
-})();
-</script>
-
 
 <!-- PROFILE PILL: never show "Loading..." (even if municipal.js sets it) -->
 <script>
