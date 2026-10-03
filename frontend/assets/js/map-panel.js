@@ -84,21 +84,24 @@
         const rows = [];
 
         (Array.isArray(data) ? data : []).forEach((municipalityData) => {
-            const items = (Array.isArray(municipalityData.commodities)
+            const commodityItems = (Array.isArray(municipalityData.commodities)
                 ? municipalityData.commodities
                 : []
             ).filter((item) => {
                 const commodityMatch = commodity === "all"
                     || String(item.commodity || "").toLowerCase() === commodity.toLowerCase();
-                const statusMatch = matchesStatus(item.status, selectedStatus);
-                return commodityMatch && statusMatch;
+                return commodityMatch;
             });
 
+            commodityItems.forEach((item) => {
+                counts[statusMeta(item.status).key] += 1;
+            });
+
+            const items = commodityItems.filter((item) => matchesStatus(item.status, selectedStatus));
             if (!items.length) return;
 
             const tags = items.map((item) => {
                 const meta = statusMeta(item.status);
-                counts[meta.key] += 1;
                 const volume = typeof item.surplus_deficit === "number"
                     ? ` (${formatVolume(item.surplus_deficit)})`
                     : "";
