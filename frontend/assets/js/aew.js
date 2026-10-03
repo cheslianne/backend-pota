@@ -7991,8 +7991,10 @@ function toggleForecastYear(headerElement) {
 
     if (content.style.maxHeight && content.style.maxHeight !== '0px') {
         content.style.maxHeight = '0px';
+        content.style.display = 'none';
         if (arrow) arrow.style.transform = 'rotate(0deg)';
     } else {
+        content.style.display = 'block';
         content.style.maxHeight = content.scrollHeight + 'px';
         if (arrow) arrow.style.transform = 'rotate(180deg)';
     }
@@ -9337,11 +9339,13 @@ function toggleMarketForecastYear(headerElement) {
 
     if (content.style.maxHeight && content.style.maxHeight !== '0px') {
         content.style.maxHeight = '0px';
+        content.style.display = 'none';
 
         if (arrow) {
             arrow.style.transform = "rotate(0deg)";
         }
     } else {
+        content.style.display = 'block';
         content.style.maxHeight = content.scrollHeight + "px";
 
         if (arrow) {
