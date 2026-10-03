@@ -79,9 +79,7 @@
 
         const commodity = document.getElementById("filterCommodity")?.value || "all";
         const statusSelect = document.getElementById("filterStatus");
-        const selectedStatus = statusSelect?.value && statusSelect.value !== "all"
-            ? statusSelect.value
-            : window.mapPanelStatusFilter || statusSelect?.value || "all";
+        const selectedStatus = statusSelect?.value || window.mapPanelStatusFilter || "all";
         const counts = { surplus: 0, balanced: 0, deficit: 0, nodata: 0 };
         const rows = [];
 
@@ -137,8 +135,8 @@
         chipRow.querySelectorAll("[data-status-filter]").forEach((chip) => {
             chip.addEventListener("click", () => {
                 const status = chip.dataset.statusFilter;
-                const current = window.mapPanelStatusFilter
-                    || document.getElementById("filterStatus")?.value
+                const current = document.getElementById("filterStatus")?.value
+                    || window.mapPanelStatusFilter
                     || "all";
                 window.setMapStatusFilter?.(current === status ? "all" : status);
             });
