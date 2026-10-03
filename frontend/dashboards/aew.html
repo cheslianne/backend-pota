@@ -1647,7 +1647,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .rs-bar i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--amber)); transition: width .25s ease; }
 
 .fair-price-dashboard-container { display: grid; gap: 16px; }
-.fair-price-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
+.fair-price-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: var(--shadow-sm); }
 .fair-price-control { display: grid; gap: 6px; min-width: 0; }
 .fair-price-control label, .fair-price-control > span:first-child { color: var(--green-dark); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .fair-price-control select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; }
@@ -1817,7 +1817,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
   .rs-bar { flex: 1; }
 }
 @media (max-width: 900px) {
-  .fair-price-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fair-price-toolbar { grid-template-columns: minmax(0, 1fr); }
   .fair-price-source { justify-self: start; }
   .fair-price-analysis { grid-template-columns: 1fr; }
 }
@@ -2802,16 +2802,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 <div class="fair-price-control">
                   <label for="fairPriceCommodity">Commodity</label>
                       <select id="fairPriceCommodity"><option value="all" selected>All commodities</option><option value="Tomato">Tomato</option><option value="Squash fruit">Squash</option><option value="Red Onion">Red Onion</option><option value="White Onion">White Onion</option></select>
-                </div>
-                <div class="fair-price-control">
-                  <label for="fairPriceForecastFocus">Forecast band</label>
-                  <select id="fairPriceForecastFocus">
-                    <option value="all" selected>All commodities</option>
-                    <option value="Tomato">Tomato</option>
-                    <option value="Squash fruit">Squash</option>
-                    <option value="Red Onion">Red Onion</option>
-                    <option value="White Onion">White Onion</option>
-                  </select>
                 </div>
               </div>
 

@@ -7817,10 +7817,8 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
             const card = event.target.closest("[data-fair-price-commodity]");
             if (!card) return;
             const select = document.getElementById("fairPriceCommodity");
-            const focusSelect = document.getElementById("fairPriceForecastFocus");
-            if (!select || !focusSelect) return;
+            if (!select) return;
             select.value = card.dataset.fairPriceCommodity;
-            focusSelect.value = card.dataset.fairPriceCommodity;
             renderFairPriceDashboard();
         });
         host.dataset.bound = "true";
@@ -7829,24 +7827,17 @@ function renderFairPriceCommodityCards(selectedCommodity, forecastFocus, selecte
 
 function initFairPriceControls() {
     const commoditySelect = document.getElementById("fairPriceCommodity");
-    const focusSelect = document.getElementById("fairPriceForecastFocus");
     if (commoditySelect && !commoditySelect.dataset.bound) {
         commoditySelect.addEventListener("change", function() {
-            if (commoditySelect.value !== "all" && focusSelect) focusSelect.value = commoditySelect.value;
             renderFairPriceDashboard();
         });
         commoditySelect.dataset.bound = "true";
-    }
-    if (focusSelect && !focusSelect.dataset.bound) {
-        focusSelect.addEventListener("change", renderFairPriceDashboard);
-        focusSelect.dataset.bound = "true";
     }
 }
 
 function renderFairPriceDashboard() {
     const commoditySelect = document.getElementById("fairPriceCommodity");
-    const focusSelect = document.getElementById("fairPriceForecastFocus");
-    if (!commoditySelect || !focusSelect) return;
+    if (!commoditySelect) return;
 
     const previousSelection = normalizeFairPriceCommodity(commoditySelect.value || "all");
     const availableCommodities = [...new Set([
@@ -7867,9 +7858,7 @@ function renderFairPriceDashboard() {
     }
 
     const selectedCommodity = commoditySelect.value || "all";
-    if (selectedCommodity !== "all") focusSelect.value = selectedCommodity;
-    focusSelect.disabled = selectedCommodity !== "all";
-    const forecastFocus = focusSelect.value || "all";
+    const forecastFocus = selectedCommodity;
     const selectedPeriod = "all";
     const cutoff = new Date();
     if (selectedPeriod === "12m") cutoff.setMonth(cutoff.getMonth() - 12);
