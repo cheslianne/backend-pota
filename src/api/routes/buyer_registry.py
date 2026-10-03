@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import FileResponse
@@ -23,9 +24,15 @@ router = APIRouter()
 # UPLOAD CONFIGURATION
 # ============================================================
 
-UPLOAD_DIR = "uploads/buyer_registry"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+UPLOAD_DIR = PROJECT_ROOT / "uploads" / "buyer_registry"
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def resolve_document_path(document: str | os.PathLike[str]) -> Path:
+    path = Path(document)
+    return path if path.is_absolute() else PROJECT_ROOT / path
 
 ALLOWED_EXTENSIONS = {
     ".jpg",
@@ -94,10 +101,7 @@ async def create_buyer_registry(
         f"{uuid.uuid4().hex}{file_extension}"
     )
 
-    file_path = os.path.join(
-        UPLOAD_DIR,
-        unique_filename
-    )
+    file_path = UPLOAD_DIR / unique_filename
 
     # ========================================================
     # SAVE ACTUAL FILE
@@ -130,7 +134,7 @@ async def create_buyer_registry(
         message=message,
 
         # Save path/reference to the actual uploaded file
-        document=file_path,
+        document=str(file_path.relative_to(PROJECT_ROOT)),
     )
 
     try:
@@ -282,7 +286,7 @@ def view_buyer_registry_attachment(
             detail="No attachment found for this buyer registry."
         )
 
-    file_path = os.path.abspath(db_buyer.document)
+    file_path = resolve_document_path(db_buyer.document)
 
     if not os.path.exists(file_path):
         raise HTTPException(
@@ -392,10 +396,7 @@ async def update_buyer_registry(
             f"{uuid.uuid4().hex}{file_extension}"
         )
 
-        new_file_path = os.path.join(
-            UPLOAD_DIR,
-            unique_filename
-        )
+        new_file_path = UPLOAD_DIR / unique_filename
 
         file_content = await document.read()
 
@@ -405,11 +406,11 @@ async def update_buyer_registry(
         # Delete old file
         if (
             db_buyer.document
-            and os.path.exists(db_buyer.document)
+            and resolve_document_path(db_buyer.document).exists()
         ):
-            os.remove(db_buyer.document)
+            resolve_document_path(db_buyer.document).unlink()
 
-        db_buyer.document = new_file_path
+        db_buyer.document = str(new_file_path.relative_to(PROJECT_ROOT))
 
     db.commit()
 
@@ -450,9 +451,9 @@ def delete_buyer_registry(
 
     if (
         db_buyer.document
-        and os.path.exists(db_buyer.document)
+        and resolve_document_path(db_buyer.document).exists()
     ):
-        os.remove(db_buyer.document)
+        resolve_document_path(db_buyer.document).unlink()
 
     db.delete(db_buyer)
 
