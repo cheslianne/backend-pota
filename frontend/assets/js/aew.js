@@ -7989,8 +7989,8 @@ function toggleForecastYear(headerElement) {
 
     if (!content) return;
 
-    if (content.style.maxHeight) {
-        content.style.maxHeight = null;
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        content.style.maxHeight = '0px';
         if (arrow) arrow.style.transform = 'rotate(0deg)';
     } else {
         content.style.maxHeight = content.scrollHeight + 'px';
@@ -9335,8 +9335,8 @@ function toggleMarketForecastYear(headerElement) {
 
     if (!content) return;
 
-    if (content.style.maxHeight) {
-        content.style.maxHeight = null;
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        content.style.maxHeight = '0px';
 
         if (arrow) {
             arrow.style.transform = "rotate(0deg)";
