@@ -8013,6 +8013,9 @@ function toggleForecastMonth(headerElement) {
     }
 }
 
+window.toggleForecastYear = toggleForecastYear;
+window.toggleForecastMonth = toggleForecastMonth;
+
 const style = document.createElement('style');
 style.textContent = `
     @keyframes spin {
@@ -9332,7 +9335,10 @@ function toggleMarketForecastYear(headerElement) {
             arrow.style.transform = "rotate(180deg)";
         }
     }
+
 }
+
+window.toggleMarketForecastYear = toggleMarketForecastYear;
 
 /* ============================================================
    TOGGLE MONTH
