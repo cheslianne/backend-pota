@@ -31,7 +31,11 @@
   --pc-card-shadow-hover:0 4px 10px rgba(11,56,42,.08), 0 16px 30px -14px rgba(11,56,42,.24);
 }
 
-body.pc-modern{ background:#F2F1EC; }
+body.pc-modern{
+  --white:#FFFFFF;
+  --cream:#FFFFFF;
+  background:#FFFFFF;
+}
 
 /* ================================================================
    TOPBAR / SIDEBAR
