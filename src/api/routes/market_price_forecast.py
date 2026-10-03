@@ -7,7 +7,8 @@ from src.models.market_price_forecast import (
 )
 from src.api.schemas.market_price_forecast import (
     MarketPriceForecastCreate,
-    MarketPriceForecastResponse
+    MarketPriceForecastResponse,
+    MonthlyMarketPriceForecastResponse
 )
 
 
@@ -32,6 +33,93 @@ def get_market_price_forecasts(
         )
         .all()
     )
+
+
+# ============================================================
+# NEW: MONTHLY AGGREGATED FORECASTS
+# ============================================================
+
+@router.get(
+    "/monthly",
+    response_model=list[MonthlyMarketPriceForecastResponse]
+)
+def get_monthly_market_price_forecasts(
+    db: Session = Depends(get_db)
+):
+    """
+    Weekly forecasts aggregated to monthly.
+
+    For each (commodity, price_type, year, month):
+    - forecast_price_low = minimum of all weekly lows
+    - forecast_price_high = maximum of all weekly highs
+    """
+
+    # --------------------------------------------------------
+    # Get all forecasts
+    # --------------------------------------------------------
+
+    forecasts = (
+        db.query(MarketPriceForecast)
+        .order_by(
+            MarketPriceForecast.forecast_date.asc()
+        )
+        .all()
+    )
+
+    # --------------------------------------------------------
+    # Group by (commodity, price_type, year, month)
+    # --------------------------------------------------------
+
+    grouped = {}
+
+    for f in forecasts:
+
+        key = (
+            f.commodity,
+            f.price_type,
+            f.forecast_date.year,
+            f.forecast_date.month,
+        )
+
+        if key not in grouped:
+            grouped[key] = {
+                "commodity": f.commodity,
+                "price_type": f.price_type,
+                "data_source": f.data_source,
+                "etl_cadence": f.etl_cadence,
+                "year": f.forecast_date.year,
+                "month": f.forecast_date.month,
+                "forecast_price_low": f.forecast_price_low,
+                "forecast_price_high": f.forecast_price_high,
+            }
+        else:
+            if f.forecast_price_low < grouped[key]["forecast_price_low"]:
+                grouped[key]["forecast_price_low"] = (
+                    f.forecast_price_low
+                )
+
+            if f.forecast_price_high > grouped[key]["forecast_price_high"]:
+                grouped[key]["forecast_price_high"] = (
+                    f.forecast_price_high
+                )
+
+    # --------------------------------------------------------
+    # Sort by (year, month, commodity, price_type)
+    # --------------------------------------------------------
+
+    result = sorted(
+        grouped.values(),
+        key=lambda x: (
+            x["year"],
+            x["month"],
+            x["commodity"],
+            x["price_type"],
+        )
+    )
+
+    return result
+
+
 
 
 @router.post(
