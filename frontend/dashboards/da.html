@@ -686,6 +686,7 @@ html,body{ font-family:'Plus Jakarta Sans', sans-serif; background:var(--cream);
   background:linear-gradient(180deg, #0B382A 0%, #0E3F2E 100%);
   padding:22px 14px;
   justify-content:flex-start;
+  overflow-y:auto;
 }
 .nav-list{ gap:6px; }
 .nav-item{
@@ -703,7 +704,8 @@ html,body{ font-family:'Plus Jakarta Sans', sans-serif; background:var(--cream);
 .signout{
   color:#F4B9C2; font-weight:700; border-radius:14px;
   background:rgba(0,0,0,0.18);
-  margin-top:96px;
+  margin-top:64px;
+  flex-shrink:0;
 }
 .signout svg{ fill:#F4B9C2; }
 
