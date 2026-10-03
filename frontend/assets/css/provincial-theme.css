@@ -217,6 +217,7 @@ body.pc-modern .summary-insight-card.orange{ border-left:4px solid var(--pc-tert
   overflow:hidden;
   border:1px solid var(--border-light, var(--border));
 }
+body.pc-modern #map{ height:520px !important; }
 
 .pc-map-filters{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
 
@@ -240,8 +241,17 @@ body.pc-modern .summary-insight-card.orange{ border-left:4px solid var(--pc-tert
   border:1px solid var(--border-light, var(--border));
   border-radius:10px;
   padding:12px 14px;
+  width:100%;
+  background:var(--white);
+  text-align:left;
+  cursor:pointer;
+  font:inherit;
 }
-.pc-muni-name{ font-weight:700; font-size:13.5px; margin-bottom:8px; color:var(--pc-neutral); }
+.pc-muni-row:hover{
+  border-color:var(--pc-primary);
+  box-shadow:0 4px 12px rgba(11,56,42,.08);
+}
+.pc-muni-name{ display:block; font-weight:700; font-size:13.5px; margin-bottom:8px; color:var(--pc-neutral); }
 .pc-muni-tags{ display:flex; gap:6px; flex-wrap:wrap; }
 .pc-tag{
   font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px;
@@ -289,4 +299,3 @@ body.pc-modern .summary-insight-card.orange{ border-left:4px solid var(--pc-tert
 .pc-feed-tag.ok{ background:var(--pc-secondary-soft); color:var(--pc-secondary); }
 .pc-feed-tag.pending{ background:var(--pc-tertiary-soft); color:var(--pc-tertiary-dark); }
 .pc-feed-tag.flag{ background:var(--pastel-red-bg, #F1D9D5); color:var(--pastel-red-text, #a1382b); }
-

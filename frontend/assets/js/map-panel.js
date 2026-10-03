@@ -29,6 +29,24 @@
             : "";
     }
 
+    window.mapPopupVolumeLines = function (item) {
+        if (typeof item?.total_supply !== "number" || typeof item?.base_demand !== "number") {
+            return "";
+        }
+        const balance = typeof item.surplus_deficit === "number"
+            ? item.surplus_deficit
+            : item.total_supply - item.base_demand;
+        const label = balance > 0 ? "over demand" : balance < 0 ? "under demand" : "on target";
+        const color = balance > 0 ? "#C0392B" : balance < 0 ? "#A16207" : "#14532D";
+        const capacity = typeof item.capacity_pct === "number" ? `${item.capacity_pct}% of demand` : "—";
+        return `
+            <br><strong>Submitted supply:</strong> ${formatVolume(item.total_supply)}
+            <br><strong>Base demand:</strong> ${formatVolume(item.base_demand)}
+            <br><strong>Balance:</strong> <span style="color:${color};font-weight:700;">${formatVolume(balance)} ${label}</span>
+            <br><strong>Capacity:</strong> ${escapeText(capacity)}
+        `;
+    };
+
     window.renderMunicipalityMapPanel = function ({ data, markers, map }) {
         const chipRow = document.getElementById("mapStatusSummary");
         const municipalityList = document.getElementById("mapMunicipalityList");

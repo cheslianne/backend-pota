@@ -849,6 +849,7 @@ function renderFilteredMapMarkers() {
     }
 
     mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+    const markerIndex = {};
 
     const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
     const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
@@ -913,13 +914,21 @@ function renderFilteredMapMarkers() {
                     <strong>Commodity:</strong> ${escapeHtml(commodity)}
                     <br>
                     <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${escapeHtml(status || 'NO DATA')}</span>
+                    ${window.mapPopupVolumeLines?.(item) || ""}
                 </div>
             `;
 
-            L.marker(markerCoordinates, { icon: customIcon })
+            const marker = L.marker(markerCoordinates, { icon: customIcon })
                 .addTo(mapMarkersLayer)
                 .bindPopup(popupContent);
+            if (!markerIndex[municipality]) markerIndex[municipality] = [];
+            markerIndex[municipality].push({ marker, item });
         });
+    });
+    window.renderMunicipalityMapPanel?.({
+        data: MUNICIPALITY_MAP_RAW_DATA,
+        markers: markerIndex,
+        map: mapInstance,
     });
 }
 

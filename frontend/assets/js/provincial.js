@@ -327,6 +327,7 @@ function renderFilteredMapMarkers() {
     }
 
     mapMarkersLayer = L.layerGroup().addTo(window.leafletMap);
+    const markerIndex = {};
 
     const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
     const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
@@ -393,10 +394,17 @@ function renderFilteredMapMarkers() {
                 </div>
             `;
 
-            L.marker(markerCoordinates, { icon: customIcon })
+            const marker = L.marker(markerCoordinates, { icon: customIcon })
                 .addTo(mapMarkersLayer)
                 .bindPopup(popupContent);
+            if (!markerIndex[md.municipality]) markerIndex[md.municipality] = [];
+            markerIndex[md.municipality].push({ marker, item });
         });
+    });
+    window.renderMunicipalityMapPanel?.({
+        data: MUNICIPALITY_MAP_RAW_DATA,
+        markers: markerIndex,
+        map: window.leafletMap,
     });
 }
 
@@ -3616,7 +3624,6 @@ function pcMapRefresh() {
     if (typeof renderFilteredMapMarkers === "function") {
         renderFilteredMapMarkers();
     }
-    renderMapSidePanel();
 }
 
 /* ---------- init ---------- */
