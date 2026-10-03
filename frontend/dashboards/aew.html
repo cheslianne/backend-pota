@@ -1711,7 +1711,13 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .insight-range span { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .insight-range strong { color: var(--green); font-size: 21px; font-weight: 800; }
 .insight-note { margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(148,96,11,.18); color: #6C5B3C; font-size: 11px; line-height: 1.5; }
-.forecast-schedule { padding: 18px; }
+.forecast-schedule {
+  padding: 18px;
+  height: calc(100vh - var(--topbar-height) - 120px);
+  min-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .forecast-schedule .forecast-year-header { background: var(--green) !important; border-radius: 9px !important; font-size: 13px !important; }
 .forecast-schedule .forecast-year-content { border-color: var(--border) !important; border-radius: 0 0 9px 9px !important; }
 .forecast-schedule .forecast-month-header { background: var(--green-light) !important; color: var(--green-dark) !important; }
