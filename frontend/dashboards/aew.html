@@ -1020,6 +1020,18 @@
     
     .hidden-element { display: none !important; }
 
+    /* Keep dashboard subviews measurable when switching between list/forms. */
+    .main > .view {
+      width: 100%;
+      min-height: calc(100vh - var(--topbar-height) - 64px);
+    }
+
+    .main > .view.active-view > [id$="Subview"]:not(.hidden-element) {
+      display: block;
+      width: 100%;
+      min-height: 240px;
+    }
+
     .map-title {
       font-size: 14.5px;
       font-weight: 700;
@@ -1949,6 +1961,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
                       </div>
                   </div>
               </div>
+          </div>
 
           <div id="registerFarmerSubview" class="hidden-element">
               <div class="main-header"><div class="header-left"><h1>Register a Farmer</h1><p>Create a verified entry linked to the Department of Agriculture database.</p></div></div>
