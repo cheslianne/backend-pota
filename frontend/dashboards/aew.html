@@ -1787,7 +1787,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .market-history-details summary strong { color: var(--ink); font-size: 13px; }
 .market-history-details summary small { color: var(--muted); font-size: 11px; }
 .history-toggle { color: var(--green); font-size: 11px; font-weight: 700; }
-.market-history-details[open] #marketHistoricalResultsContainer { padding-bottom: 14px; }
 @media (max-width: 1000px) {
   .market-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .market-model-badge { justify-self: start; }
@@ -2867,7 +2866,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
           <div class="main-header">
               <div class="header-left">
                   <h1>Market Price Dashboard</h1>
-                <p>Market observations and six-month projections for monitored commodities.</p>
+                <p>Six-month market price projections for monitored commodities.</p>
               </div>
           </div>
 
@@ -2898,25 +2897,15 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 <span class="market-model-badge"><span class="model-dot"></span>Facebook Prophet · 6-month horizon</span>
               </div>
 
-              <section class="market-summary-section">
-                <div class="market-section-heading">
-                  <div><h2>Latest price summary</h2><p>Most recent recorded values compared with the previous record.</p></div>
-                  <span id="marketSummaryUpdated">Loading market observations…</span>
-                </div>
-                <div class="market-summary-grid" id="marketPriceSummaryCards" aria-live="polite">
-                  <div class="market-summary-loading">Loading commodity prices…</div>
-                </div>
-              </section>
-
               <div class="market-chart-layout">
                 <section class="market-chart-panel">
                   <div class="market-section-heading market-chart-heading">
-                    <div><h2 id="marketTrendTitle">Price trend &amp; forecast</h2><p id="marketTrendDescription">Observed monthly prices with the forecast range shown ahead.</p></div>
-                    <div class="market-chart-legend"><span><i class="legend-observed"></i>Observed</span><span><i class="legend-forecast"></i>Forecast range</span></div>
+                    <div><h2 id="marketTrendTitle">Price forecast</h2><p id="marketTrendDescription">Forecast ranges from the latest Prophet forecast run.</p></div>
+                    <div class="market-chart-legend"><span><i class="legend-forecast"></i>Forecast range</span></div>
                   </div>
                   <div class="market-chart-frame">
-                    <canvas id="marketPriceTrendChart" aria-label="Historical and forecast wholesale market prices"></canvas>
-                    <div class="market-chart-empty" id="marketPriceChartEmpty" hidden>No market price observations or forecast points match these filters.</div>
+                    <canvas id="marketPriceTrendChart" aria-label="Forecast wholesale market prices"></canvas>
+                    <div class="market-chart-empty" id="marketPriceChartEmpty" hidden>No forecast points match these filters.</div>
                   </div>
                 </section>
                 <aside class="market-outlook" aria-live="polite">
@@ -2939,10 +2928,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
                 </section>
               </div>
 
-              <details class="market-history-details">
-                <summary><span><strong>Historical price records</strong><small>Source rows from the market-price API</small></span><span class="history-toggle">View records</span></summary>
-                <div id="marketHistoricalResultsContainer"></div>
-              </details>
           </div>
       </section>
 
@@ -3564,4 +3549,3 @@ body .view.active-view { animation: esakaFade .35s ease; }
 </div>
 </body>
 </html>
-

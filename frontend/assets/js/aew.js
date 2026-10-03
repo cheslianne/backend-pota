@@ -8820,25 +8820,17 @@ async function loadMarketPriceDashboard() {
     isMarketPriceLoading = true;
 
     try {
-        const [marketPrices, forecasts] = await Promise.all([
-            apiRequest(MARKET_PRICES_ENDPOINT, { method: "GET" }),
-            apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, { method: "GET" }),
-        ]);
-
-        if (!Array.isArray(marketPrices)) {
-            throw new Error("Invalid market price response.");
-        }
+        const forecasts = await apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, { method: "GET" });
 
         if (!Array.isArray(forecasts)) {
             throw new Error("Invalid market forecast response.");
         }
 
-        MARKET_PRICES_DATA = marketPrices;
+        MARKET_PRICES_DATA = [];
         MARKET_PRICE_FORECASTS_DATA = forecasts;
 
         renderWholesaleForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderRetailForecasts(MARKET_PRICE_FORECASTS_DATA);
-        renderHistoricalMarketPrices(MARKET_PRICES_DATA);
         renderMarketPriceDashboard();
     } catch (error) {
         console.error("Failed to load Market Price Dashboard:", error);
@@ -8848,7 +8840,6 @@ async function loadMarketPriceDashboard() {
         const containers = [
             "wholesaleForecastResultsContainer",
             "retailForecastResultsContainer",
-            "marketHistoricalResultsContainer",
         ];
 
         containers.forEach(function (id) {
@@ -9375,6 +9366,13 @@ function renderHistoricalMarketPrices(prices) {
     });
 
     const sortedYears = Object.keys(grouped).sort().reverse();
+    const role = localStorage.getItem("role");
+    const canRemoveMarketPrices = [
+        "System Administrator",
+        "System Admin",
+        "DA-RFO Officer",
+        "DA-RFO",
+    ].includes(role);
 
     let html = "";
 
@@ -9454,6 +9452,13 @@ function renderHistoricalMarketPrices(prices) {
                                     Source
                                 </th>
 
+                                ${canRemoveMarketPrices ? `<th style="
+                                    text-align:center;
+                                    padding:8px 6px;
+                                ">
+                                    Action
+                                </th>` : ""}
+
                             </tr>
 
                         </thead>
@@ -9526,6 +9531,21 @@ function renderHistoricalMarketPrices(prices) {
                             </span>
                         </td>
 
+                        ${canRemoveMarketPrices ? `<td style="
+                            padding:8px 6px;
+                            text-align:center;
+                        ">
+                            <button
+                                type="button"
+                                class="btn-outline-report market-price-delete-btn"
+                                data-market-price-id="${price.market_price_id}"
+                                data-market-price-label="${escapeHtml(`${price.commodity || "market price"} · ${month} ${year}`)}"
+                                style="padding:5px 9px; font-size:11px;"
+                            >
+                                Remove
+                            </button>
+                        </td>` : ""}
+
                     </tr>
                 `;
         });
@@ -9557,6 +9577,44 @@ function renderHistoricalMarketPrices(prices) {
     countDiv.textContent = `Total: ${prices.length} historical market price record(s) found.`;
 
     container.appendChild(countDiv);
+
+    container.querySelectorAll(".market-price-delete-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+            deleteHistoricalMarketPrice(
+                button.dataset.marketPriceId,
+                button.dataset.marketPriceLabel,
+                button
+            );
+        });
+    });
+}
+
+async function deleteHistoricalMarketPrice(marketPriceId, label, button) {
+    if (!marketPriceId) return;
+
+    const confirmed = window.confirm(
+        `Remove ${label || "this historical market price record"}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Removing...";
+    }
+
+    try {
+        await apiRequest(`${MARKET_PRICES_ENDPOINT}${encodeURIComponent(marketPriceId)}`, {
+            method: "DELETE",
+        });
+        await loadMarketPriceDashboard();
+    } catch (error) {
+        console.error("Failed to remove historical market price:", error);
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Remove";
+        }
+        window.alert(`Could not remove the record: ${error.message}`);
+    }
 }
 
 function marketPriceValue(record, priceType) {
@@ -9649,9 +9707,8 @@ function renderMarketPriceDashboard() {
     if (title) title.textContent = `${commodityName} ${level.toLowerCase()} price trend`;
     if (description) description.textContent = "Recorded monthly prices with the Prophet forecast range shown ahead.";
 
-    renderMarketPriceSummary();
     renderMarketOutlook(commodity, priceType, period);
-    renderMarketPriceChart(MARKET_PRICES_DATA, MARKET_PRICE_FORECASTS_DATA, commodity, priceType, period);
+    renderMarketPriceChart(MARKET_PRICE_FORECASTS_DATA, commodity, priceType, period);
 }
 
 /* ============================================================
@@ -9739,7 +9796,7 @@ function renderMarketOutlook(commodity, priceType, period) {
     if (date) date.textContent = marketRecordDate(next.forecast_date);
 }
 
-function renderMarketPriceChart(historical, forecasts, commodityFilter, priceType, period) {
+function renderMarketPriceChart(forecasts, commodityFilter, priceType, period) {
     const canvas = document.getElementById("marketPriceTrendChart");
     const emptyState = document.getElementById("marketPriceChartEmpty");
     if (!canvas || typeof Chart === "undefined") return;
@@ -9753,14 +9810,10 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter, priceTyp
         return !Number.isNaN(date.getTime()) && date >= cutoff;
     };
     const matchesCommodity = (row) => commodityFilter === "all" || row.commodity === commodityFilter;
-    const filteredHistory = historical.filter((row) => matchesCommodity(row) && inPeriod(row.record_date));
     const filteredForecasts = forecasts.filter((row) =>
         matchesCommodity(row) && String(row.price_type).toUpperCase() === priceType && inPeriod(row.forecast_date)
     );
-    const seriesNames = [...new Set([
-        ...filteredHistory.map((row) => row.commodity),
-        ...filteredForecasts.map((row) => row.commodity),
-    ].filter(Boolean))];
+    const seriesNames = [...new Set(filteredForecasts.map((row) => row.commodity).filter(Boolean))];
     const colors = {
         Tomato: "#D65B4A",
         Squash: "#D28A16",
@@ -9769,18 +9822,8 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter, priceTyp
         "Red Onion": "#167A58",
     };
     const monthKeys = new Set();
-    const historyByMonth = new Map();
     const forecastByMonth = new Map();
 
-    filteredHistory.forEach((row) => {
-        const key = monthKey(row.record_date);
-        const value = marketPriceValue(row, priceType);
-        if (!key || !Number.isFinite(value)) return;
-        monthKeys.add(key);
-        const index = `${row.commodity}|${key}`;
-        if (!historyByMonth.has(index)) historyByMonth.set(index, []);
-        historyByMonth.get(index).push(value);
-    });
     filteredForecasts.forEach((row) => {
         const key = monthKey(row.forecast_date);
         const low = Number(row.forecast_price_low);
@@ -9796,10 +9839,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter, priceTyp
     const datasets = [];
     seriesNames.forEach((name, index) => {
         const color = colors[name] || ["#167A58", "#D65B4A", "#D28A16", "#4385B7"][index % 4];
-        const actual = sortedMonths.map((key) => {
-            const values = historyByMonth.get(`${name}|${key}`);
-            return values?.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
-        });
         const bounds = sortedMonths.map((key) => forecastByMonth.get(`${name}|${key}`) || []);
         const lowValues = bounds.map((values) => values.length
             ? values.reduce((sum, value) => sum + value.low, 0) / values.length
@@ -9808,18 +9847,6 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter, priceTyp
             ? values.reduce((sum, value) => sum + value.high, 0) / values.length
             : null);
 
-        datasets.push({
-            label: `${name} observed`,
-            data: actual,
-            borderColor: color,
-            backgroundColor: color,
-            borderWidth: 2.5,
-            pointRadius: sortedMonths.length > 24 ? 1 : 2.5,
-            pointHoverRadius: 5,
-            tension: 0.3,
-            spanGaps: false,
-            order: 3,
-        });
         datasets.push({
             label: `${name} forecast lower`,
             data: lowValues,
@@ -9850,7 +9877,7 @@ function renderMarketPriceChart(historical, forecasts, commodityFilter, priceTyp
     const hasData = datasets.some((dataset) => dataset.data.some((value) => value !== null));
     if (emptyState) {
         emptyState.hidden = hasData;
-        emptyState.textContent = "No market price observations or forecasts match these filters.";
+        emptyState.textContent = "No forecast points match these filters.";
     }
     if (marketPriceChartInstance) {
         marketPriceChartInstance.destroy();
@@ -10152,5 +10179,3 @@ function formatKg(value) {
         }
     )} kg`;
 }
-
-
