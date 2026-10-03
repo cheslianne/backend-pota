@@ -976,13 +976,20 @@ async function fetchFarmers() {
 
     try {
         const data = await apiRequest(FARMERS_ENDPOINT, { method: "GET" });
-        allFarmers = data;
+        const farmers = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.farmers)
+                ? data.farmers
+                : Array.isArray(data?.data)
+                    ? data.data
+                    : null;
 
-        if (!Array.isArray(data)) {
+        if (!farmers) {
             throw new Error("Invalid farmers response.");
         }
 
-        FARMERS_DATA = data.map(normalizeFarmer);
+        allFarmers = farmers;
+        FARMERS_DATA = farmers.map(normalizeFarmer);
         currentFarmersPage = 1;
         renderFarmersTable();
         return FARMERS_DATA;
@@ -1274,7 +1281,7 @@ function initFarmerSubviews() {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": token ? `Bearer ${token}` : ""
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
                     },
                     body: JSON.stringify(farmerData)
                 });
@@ -1296,6 +1303,10 @@ function initFarmerSubviews() {
                 console.log("Farmer created successfully:", result);
                 document.getElementById("confirmFarmerModal")?.classList.remove("show");
                 await fetchFarmers();
+
+                if (listSubview) listSubview.classList.remove("hidden-element");
+                if (regSubview) regSubview.classList.add("hidden-element");
+
                 document.getElementById("farmerAddedModal")?.classList.add("show");
                 const form = document.getElementById("registerFarmerForm");
                 if (form) form.reset();
