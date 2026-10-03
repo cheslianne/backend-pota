@@ -1780,7 +1780,6 @@ body .view.active-view { animation: esakaFade .35s ease; }
 .market-forecast-card { min-width: 0; padding: 17px; }
 .market-forecast-card .market-section-heading { margin-bottom: 12px; }
 .market-forecast-card .market-section-heading h2 { font-size: 14px; }
-.market-forecast-card .market-model-badge { align-self: flex-start; padding: 6px 9px; font-size: 10px; }
 .market-history-details { padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); }
 .market-history-details summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 58px; cursor: pointer; list-style: none; }
 .market-history-details summary::-webkit-details-marker { display: none; }
@@ -2826,7 +2825,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="fair-price-analysis">
                 <section class="price-chart-panel">
                   <div class="price-chart-heading">
-                          <div><h2 id="priceTrendTitle">Price trend across all commodities</h2><p id="priceTrendDescription">Monthly PSA observations and Facebook Prophet forecast ranges.</p></div>
+                          <div><h2 id="priceTrendTitle">Price trend across all commodities</h2><p id="priceTrendDescription">Monthly forecast ranges.</p></div>
                           <div class="price-chart-legend" id="fairPriceChartLegend" aria-label="Chart legend"></div>
                   </div>
                   <div class="price-chart-frame">
@@ -2888,11 +2887,11 @@ body .view.active-view { animation: esakaFade .35s ease; }
 
               <div class="market-forecast-grid">
                 <section class="market-forecast-card">
-                  <div class="market-section-heading"><div><h2>Wholesale projections</h2><p>Forecast range by commodity and month.</p></div><span class="market-model-badge">Facebook Prophet</span></div>
+                  <div class="market-section-heading"><div><h2>Wholesale projections</h2><p>Forecast range by commodity and month.</p></div></div>
                   <div id="wholesaleForecastResultsContainer">Loading wholesale forecasts…</div>
                 </section>
                 <section class="market-forecast-card">
-                  <div class="market-section-heading"><div><h2>Retail projections</h2><p>Forecast range by commodity and month.</p></div><span class="market-model-badge">Facebook Prophet</span></div>
+                  <div class="market-section-heading"><div><h2>Retail projections</h2><p>Forecast range by commodity and month.</p></div></div>
                   <div id="retailForecastResultsContainer">Loading retail forecasts…</div>
                 </section>
               </div>
