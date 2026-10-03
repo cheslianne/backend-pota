@@ -8880,7 +8880,23 @@ async function loadMarketPriceDashboard() {
         }
 
         MARKET_PRICES_DATA = [];
-        MARKET_PRICE_FORECASTS_DATA = forecasts;
+        MARKET_PRICE_FORECASTS_DATA = forecasts
+            .map((forecast) => {
+                // The monthly endpoint returns year/month instead of the
+                // weekly forecast_date used by the dashboard filters.
+                const year = Number(forecast.year);
+                const month = Number(forecast.month);
+                const forecastDate = forecast.forecast_date
+                    || (Number.isInteger(year) && Number.isInteger(month)
+                        && month >= 1 && month <= 12
+                        ? `${year}-${String(month).padStart(2, "0")}-01`
+                        : null);
+
+                return forecastDate
+                    ? { ...forecast, forecast_date: forecastDate }
+                    : null;
+            })
+            .filter(Boolean);
 
         renderWholesaleForecasts(MARKET_PRICE_FORECASTS_DATA);
         renderRetailForecasts(MARKET_PRICE_FORECASTS_DATA);
