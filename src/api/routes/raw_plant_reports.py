@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from datetime import datetime
 
-from src.core.database import get_db
+from src.core.database import get_db, engine
 from src.core.auth import get_current_user
 
 from src.models.raw_plant_reports import RawPlantReport
@@ -28,6 +28,11 @@ from src.api.schemas.raw_plant_reports import (
 import os
 import mimetypes
 from src.models.report_attachment_files import ReportAttachmentFile
+
+try:
+    ReportAttachmentFile.__table__.create(bind=engine, checkfirst=True)
+except Exception as exc:
+    print(f"Could not ensure report_attachment_files table: {exc}")
 import shutil
 import uuid
 from fastapi import UploadFile, File
