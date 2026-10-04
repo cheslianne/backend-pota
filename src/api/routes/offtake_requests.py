@@ -150,6 +150,7 @@ async def create_offtake_request(
                 farmer_location=farmer.address,
                 farmer_name=farmer_full_name,
                 rsbsa_id=farmer.rsbsa_id,
+                delivery_location=db_request.delivery_location or "",
             )
         except Exception as e:
             print(

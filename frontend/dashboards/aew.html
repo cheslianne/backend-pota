@@ -621,6 +621,61 @@
 
     .form-field-full { grid-column: 1 / -1; }
 
+    .searchable-select { position: relative; }
+    .searchable-select-input { padding-right: 38px !important; }
+    .searchable-select-options {
+      display: none;
+      position: absolute;
+      inset: calc(100% + 5px) 0 auto;
+      z-index: 30;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(18, 38, 28, .16);
+    }
+    .searchable-select.open .searchable-select-options { display: block; }
+    .searchable-select-list { max-height: 240px; overflow-y: auto; }
+    .searchable-select-option {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+    }
+    .searchable-select-option:hover,
+    .searchable-select-option[aria-selected="true"] { background: #EEF2E9; }
+    .searchable-select-empty { padding: 12px; color: var(--muted); font-size: 13px; }
+    .searchable-select-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 4px 2px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .searchable-select-pagination button {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: white;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .searchable-select-pagination button:disabled { opacity: .45; cursor: default; }
+    .form-grid-two .form-field-item .delivery-location-hint {
+      margin: -10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .confirm-offtake-box {
       background: #FFFFFF;
       border: 1.5px solid var(--border);
@@ -2390,8 +2445,15 @@ body .view.active-view { animation: esakaFade .35s ease; }
                   <form id="submitPlantIntentForm">
                       <div class="form-grid-two">
                           <div class="form-field-item">
-                              <label>Farmer Name <span class="req">*</span></label>
-                              <select id="piFarmerName" required>
+                              <label for="piFarmerSearch">Farmer Name <span class="req">*</span></label>
+                              <div class="searchable-select" data-searchable-select="piFarmerName">
+                                <input id="piFarmerSearch" class="searchable-select-input" type="search" role="combobox" aria-label="Search farmer" aria-autocomplete="list" aria-expanded="false" aria-controls="piFarmerOptionList" placeholder="Search farmers..." autocomplete="off">
+                                <div class="searchable-select-options" id="piFarmerOptions">
+                                  <div class="searchable-select-list" id="piFarmerOptionList" role="listbox"></div>
+                                  <div class="searchable-select-pagination"></div>
+                                </div>
+                              </div>
+                              <select id="piFarmerName" hidden aria-hidden="true" tabindex="-1">
                                   <option value="">Select Farmer</option>
                               </select>
                           </div>
@@ -2408,8 +2470,15 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               <input type="date" id="piHarvestDate" required>
                           </div>
                           <div class="form-field-item">
-                              <label>Commodity <span class="req">*</span></label>
-                              <select id="piCommodity" required>
+                              <label for="piCommoditySearch">Commodity <span class="req">*</span></label>
+                              <div class="searchable-select" data-searchable-select="piCommodity">
+                                <input id="piCommoditySearch" class="searchable-select-input" type="search" role="combobox" aria-label="Search commodity" aria-autocomplete="list" aria-expanded="false" aria-controls="piCommodityOptionList" placeholder="Search commodities..." autocomplete="off">
+                                <div class="searchable-select-options" id="piCommodityOptions">
+                                  <div class="searchable-select-list" id="piCommodityOptionList" role="listbox"></div>
+                                  <div class="searchable-select-pagination"></div>
+                                </div>
+                              </div>
+                              <select id="piCommodity" hidden aria-hidden="true" tabindex="-1">
                                   <option value="">Select Commodity</option>
                                   <option value="Tomato">Tomato</option>
                                   <option value="Red Onion">Red Onion</option>
@@ -2715,9 +2784,34 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               <label>Harvest Date <span class="req">*</span></label>
                               <input type="date" id="offtakeHarvestDate" required>
                           </div>
-                          <div class="form-field-item">
+                          <div class="form-field-item form-field-full">
                               <label>Delivery Location <span class="req">*</span></label>
-                              <input type="text" id="offtakeLocation" placeholder="e.g. Sta. Monica Trading Post" required>
+                              <div class="form-grid-two">
+                                <div class="form-field-item">
+                                  <label for="offtakeRegion">Region <span class="req">*</span></label>
+                                  <input type="text" id="offtakeRegion" maxlength="100" autocomplete="address-level1" required>
+                                </div>
+                                <div class="form-field-item">
+                                  <label for="offtakeProvince">Province <span class="req">*</span></label>
+                                  <input type="text" id="offtakeProvince" maxlength="100" autocomplete="address-level1" required>
+                                </div>
+                                <div class="form-field-item">
+                                  <label for="offtakeMunicipality">Municipality/City <span class="req">*</span></label>
+                                  <input type="text" id="offtakeMunicipality" maxlength="100" autocomplete="address-level2" required>
+                                </div>
+                                <div class="form-field-item">
+                                  <label for="offtakeBarangay">Barangay <span class="req">*</span></label>
+                                  <input type="text" id="offtakeBarangay" maxlength="100" required>
+                                </div>
+                                <div class="form-field-item">
+                                  <label for="offtakeStreet">Street/Purok/Sitio <span class="req">*</span></label>
+                                  <input type="text" id="offtakeStreet" maxlength="150" autocomplete="street-address" required>
+                                </div>
+                                <div class="form-field-item">
+                                  <label for="offtakeLandmark">Landmark (optional)</label>
+                                  <input type="text" id="offtakeLandmark" maxlength="150">
+                                </div>
+                              </div>
                           </div>
                       </div>
                       <div class="actions-right-row">

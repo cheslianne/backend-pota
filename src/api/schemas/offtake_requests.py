@@ -10,6 +10,7 @@ class OfftakeRequestBase(BaseModel):
     quantity: Decimal
     selling_price: Decimal
     harvest_date: date
+    delivery_location: Optional[str] = None
     commodity_photo: Optional[str] = None
 
 
@@ -23,6 +24,7 @@ class OfftakeRequestUpdate(BaseModel):
     quantity: Optional[Decimal] = None
     selling_price: Optional[Decimal] = None
     harvest_date: Optional[date] = None
+    delivery_location: Optional[str] = None
     commodity_photo: Optional[str] = None
 
 

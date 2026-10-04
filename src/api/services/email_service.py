@@ -1,5 +1,7 @@
 # src/api/services/email_service.py
 
+from html import escape
+
 import sib_api_v3_sdk
 from sib_api_v3_sdk import ApiClient, Configuration
 from sib_api_v3_sdk.api.transactional_emails_api import TransactionalEmailsApi
@@ -94,6 +96,7 @@ async def send_offtake_request_email(
     farmer_location: str,
     farmer_name: str = "",
     rsbsa_id: str = "",
+    delivery_location: str = "",
 ):
     try:
         api_instance = get_email_client()
@@ -121,7 +124,8 @@ async def send_offtake_request_email(
                     <strong>Quantity (kg):</strong> {quantity}<br>
                     <strong>Selling Price (₱ / kg):</strong> {selling_price}<br>
                     <strong>Harvest Date:</strong> {harvest_date}<br>
-                    <strong>Farmer Location:</strong> {farmer_location}
+                    <strong>Farmer Location:</strong> {farmer_location}<br>
+                    <strong>Delivery Location:</strong> {escape(delivery_location) or "N/A"}
                 </p>
 
                 <p>

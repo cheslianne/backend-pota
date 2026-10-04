@@ -1738,6 +1738,8 @@ function initPlantingIntent() {
 
     initPlantingIntentTabs();
     initPlantingSummaryCardFilters();
+    initSearchableSelection("piFarmerSearch", "piFarmerName");
+    initSearchableSelection("piCommoditySearch", "piCommodity");
 
     document.getElementById("addPlantIntentBtn")?.addEventListener("click", function() {
         const form = document.getElementById("submitPlantIntentForm");
@@ -7221,6 +7223,7 @@ function initOfftakeRequest() {
                     request._farmerName,
                     request.commodity,
                     request.quantity,
+                    request.delivery_location,
                     request._farmerLocation,
                     request.harvest_date
                 ].join(" ").toLowerCase();
@@ -7320,7 +7323,7 @@ function renderOfftakeTable() {
             <td><span class="pill">${escapeHtml(request._farmerName)}</span></td>
             <td><span class="pill">${escapeHtml(request.commodity || "—")}</span></td>
             <td><span class="pill">${escapeHtml(request.quantity || "—")} kg</span></td>
-            <td><span class="pill">${escapeHtml(request._farmerLocation)}</span></td>
+            <td><span class="pill">${escapeHtml(request.delivery_location || request._farmerLocation)}</span></td>
             <td><span class="pill">${escapeHtml(request.harvest_date || "—")}</span></td>
             <td><span class="status-pill submitted">Submitted</span></td>
         `;
@@ -7394,6 +7397,18 @@ function updateOfftakePagination() {
 }
 
 function collectOfftakeFormData() {
+    const deliveryLocation = [
+        ["Region", "offtakeRegion"],
+        ["Province", "offtakeProvince"],
+        ["Municipality/City", "offtakeMunicipality"],
+        ["Barangay", "offtakeBarangay"],
+        ["Street/Purok/Sitio", "offtakeStreet"],
+        ["Landmark", "offtakeLandmark"]
+    ].map(([label, id]) => [label, getOfftakeValue([id])])
+        .filter(([, value]) => value)
+        .map(([label, value]) => `${label}: ${value}`)
+        .join(", ");
+
     return {
         farmer_name: getOfftakeValue(["offtakeFarmerName", "farmerName", "offtakeFarmer"]),
         farmer_id: getOfftakeValue(["offtakeFarmerId", "farmerId", "offtakeFarmerID"]),
@@ -7403,7 +7418,7 @@ function collectOfftakeFormData() {
         harvest_date: getOfftakeValue(["offtakeHarvestDate", "harvestDate"]),
         commodity_photo: getOfftakeValue(["offtakeCommodityPhoto", "commodityPhoto"]),
         buyer: getOfftakeValue(["offtakeBuyer", "buyer"]),
-        delivery_location: getOfftakeValue(["offtakeLocation", "offtakeDeliveryLocation", "deliveryLocation"])
+        delivery_location: deliveryLocation
     };
 }
 
@@ -7429,6 +7444,19 @@ function validateOfftakeForm(data) {
     var sellingPriceValue = data.selling_price.replace(/,/g, "").replace(/₱/g, "").trim();
     if (!/^\d+(\.\d+)?$/.test(sellingPriceValue)) { alert("Selling Price must be a valid number."); return false; }
     if (!data.harvest_date) { alert("Please select Harvest Date."); return false; }
+    for (const [field, label] of [
+        ["offtakeRegion", "Region"],
+        ["offtakeProvince", "Province"],
+        ["offtakeMunicipality", "Municipality/City"],
+        ["offtakeBarangay", "Barangay"],
+        ["offtakeStreet", "Street/Purok/Sitio"]
+    ]) {
+        if (!getOfftakeValue([field])) {
+            alert(`Please enter ${label} for the delivery location.`);
+            document.getElementById(field)?.focus();
+            return false;
+        }
+    }
     return true;
 }
 
@@ -7484,7 +7512,24 @@ function populateOfftakeForm(data) {
     setOfftakeValue(["offtakeHarvestDate", "harvestDate"], data.harvest_date);
     setOfftakeValue(["offtakeCommodityPhoto", "commodityPhoto"], data.commodity_photo);
     setOfftakeValue(["offtakeBuyer", "buyer"], data.buyer);
-    setOfftakeValue(["offtakeDeliveryLocation", "deliveryLocation"], data.delivery_location);
+    const locationParts = Object.fromEntries(
+        String(data.delivery_location || "")
+            .split(/,\s*(?=[^,]+:\s)/)
+            .map(part => {
+                const separator = part.indexOf(":");
+                return separator === -1
+                    ? ["", ""]
+                    : [part.slice(0, separator).trim(), part.slice(separator + 1).trim()];
+            })
+    );
+    [
+        ["Region", "offtakeRegion"],
+        ["Province", "offtakeProvince"],
+        ["Municipality/City", "offtakeMunicipality"],
+        ["Barangay", "offtakeBarangay"],
+        ["Street/Purok/Sitio", "offtakeStreet"],
+        ["Landmark", "offtakeLandmark"]
+    ].forEach(([label, id]) => setOfftakeValue([id], locationParts[label]));
 }
 
 function setOfftakeValue(ids, value) {
@@ -7532,6 +7577,7 @@ async function submitOfftakeRequest() {
             quantity: quantity,
             selling_price: sellingPrice,
             harvest_date: data.harvest_date,
+            delivery_location: data.delivery_location,
             commodity_photo: data.commodity_photo || null
         };
 
@@ -7657,10 +7703,136 @@ function populateFarmerDropdowns() {
     });
 }
 
+function initSearchableSelection(inputId, selectId) {
+    const input = document.getElementById(inputId);
+    const select = document.getElementById(selectId);
+    if (!input || !select || input.dataset.searchableReady === "true") return;
+
+    const container = input.closest(".searchable-select");
+    const optionsPanel = container?.querySelector(".searchable-select-options");
+    const list = optionsPanel?.querySelector(".searchable-select-list");
+    const pagination = optionsPanel?.querySelector(".searchable-select-pagination");
+    if (!container || !optionsPanel || !list || !pagination) return;
+
+    const pageSize = 8;
+    let currentPage = 1;
+    let query = "";
+
+    function selectedLabel() {
+        return select.value
+            ? select.options[select.selectedIndex]?.textContent || ""
+            : "";
+    }
+
+    function close() {
+        container.classList.remove("open");
+        input.setAttribute("aria-expanded", "false");
+        input.value = selectedLabel();
+    }
+
+    function render() {
+        const matchingOptions = Array.from(select.options)
+            .filter(option => option.value)
+            .filter(option => option.textContent.toLowerCase().includes(query.toLowerCase()));
+        const totalPages = Math.max(1, Math.ceil(matchingOptions.length / pageSize));
+        currentPage = Math.min(currentPage, totalPages);
+        const pageOptions = matchingOptions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        list.replaceChildren();
+        if (pageOptions.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "searchable-select-empty";
+            empty.textContent = "No matching options.";
+            list.appendChild(empty);
+        } else {
+            pageOptions.forEach(option => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "searchable-select-option";
+                button.setAttribute("role", "option");
+                button.setAttribute("aria-selected", String(select.value === option.value));
+                button.textContent = option.textContent;
+                button.addEventListener("click", () => {
+                    select.value = option.value;
+                    select.dispatchEvent(new Event("change", { bubbles: true }));
+                    close();
+                });
+                list.appendChild(button);
+            });
+        }
+
+        pagination.replaceChildren();
+        const previous = document.createElement("button");
+        previous.type = "button";
+        previous.textContent = "Previous";
+        previous.disabled = currentPage === 1;
+        previous.addEventListener("click", () => {
+            currentPage--;
+            render();
+        });
+
+        const status = document.createElement("span");
+        status.textContent = `${matchingOptions.length ? (currentPage - 1) * pageSize + 1 : 0}-${Math.min(currentPage * pageSize, matchingOptions.length)} of ${matchingOptions.length}`;
+
+        const next = document.createElement("button");
+        next.type = "button";
+        next.textContent = "Next";
+        next.disabled = currentPage >= totalPages;
+        next.addEventListener("click", () => {
+            currentPage++;
+            render();
+        });
+
+        pagination.append(previous, status, next);
+    }
+
+    input.addEventListener("focus", () => {
+        if (input.value === selectedLabel()) input.value = "";
+        query = input.value.trim();
+        currentPage = 1;
+        container.classList.add("open");
+        input.setAttribute("aria-expanded", "true");
+        render();
+    });
+
+    input.addEventListener("input", () => {
+        query = input.value.trim();
+        currentPage = 1;
+        if (select.value && input.value !== selectedLabel()) {
+            select.value = "";
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        container.classList.add("open");
+        input.setAttribute("aria-expanded", "true");
+        render();
+    });
+
+    input.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            close();
+        } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            list.querySelector(".searchable-select-option")?.focus();
+        }
+    });
+
+    select.addEventListener("change", () => {
+        if (!container.classList.contains("open")) input.value = selectedLabel();
+    });
+
+    document.addEventListener("click", event => {
+        if (!container.contains(event.target)) close();
+    });
+
+    input.dataset.searchableReady = "true";
+    input.value = selectedLabel();
+}
+
 function setupFarmerDropdownAutoFill() {
     var piFarmerName = document.getElementById('piFarmerName');
     var piFarmerId = document.getElementById('piFarmerId');
     if (piFarmerName && piFarmerId) {
+        initSearchableSelection("piFarmerSearch", "piFarmerName");
         piFarmerName.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
             if (selectedOption && selectedOption.value) {

@@ -5,6 +5,7 @@ from sqlalchemy import (
     Date,
     DECIMAL,
     TIMESTAMP,
+    Text,
     ForeignKey,
     text
 )
@@ -26,6 +27,7 @@ class OfftakeRequest(Base):
     quantity = Column(DECIMAL(10, 2), nullable=False)
     selling_price = Column(DECIMAL(10, 2), nullable=False)
     harvest_date = Column(Date, nullable=False)
+    delivery_location = Column(Text, nullable=True)
     commodity_photo = Column(String(255), nullable=True)
     created_at = Column(
         TIMESTAMP,
