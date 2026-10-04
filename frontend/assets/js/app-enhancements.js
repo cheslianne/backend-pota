@@ -10,6 +10,13 @@
   let redirecting = false;
   let profilePreviousHash = null;
 
+  function redirectToLogin(message) {
+    if (redirecting || !window.location.pathname.includes("/dashboards/")) return;
+    redirecting = true;
+    sessionStorage.setItem("esaka_login_notice", message);
+    window.location.href = "../login.html";
+  }
+
   localStorage.removeItem("access_token");
   localStorage.removeItem("token");
   localStorage.removeItem("token_type");
@@ -42,10 +49,7 @@
           localStorage.removeItem("access_token");
           localStorage.removeItem("token");
           localStorage.removeItem("token_type");
-          if (window.location.pathname.includes("/dashboards/") && !redirecting) {
-            redirecting = true;
-            window.location.href = "../login.html";
-          }
+          redirectToLogin("Your session could not be verified. Please log in again.");
           return null;
         }
         if (!response.ok) throw new Error(`Session check failed (${response.status}).`);
@@ -56,6 +60,7 @@
         return user;
       }).catch(error => {
         console.error("Unable to verify session:", error);
+        redirectToLogin("Unable to verify your session. Please log in again.");
         return null;
       });
     }
@@ -117,8 +122,7 @@
       if (response.status === 401 &&
           window.location.pathname.includes("/dashboards/") &&
           !redirecting) {
-        redirecting = true;
-        window.location.href = "../login.html";
+        redirectToLogin("Your session has expired. Please log in again.");
       }
       return response;
     } finally {

@@ -5,6 +5,13 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const formStatus = document.getElementById('formStatus');
 
+const loginNotice = sessionStorage.getItem('esaka_login_notice');
+if (loginNotice && formStatus) {
+  formStatus.className = 'form-status error show';
+  formStatus.textContent = loginNotice;
+  sessionStorage.removeItem('esaka_login_notice');
+}
+
 
 
 
@@ -184,29 +191,37 @@ form.addEventListener('submit', async (e) => {
       );
     }
 
-
+    const sessionResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include'
+    });
+    if (!sessionResponse.ok) {
+      throw new Error(
+        'Your credentials were accepted, but your login session could not be established. Please try again.'
+      );
+    }
+    const sessionUser = await sessionResponse.json();
 
 
     /* ---------- Save Non-sensitive Session Display Data ---------- */
     localStorage.removeItem('access_token');
     localStorage.removeItem('token');
     localStorage.removeItem('token_type');
-    localStorage.setItem('user_id', data.user_id);
-    localStorage.setItem('username', data.username);
-    localStorage.setItem('role', data.role);
-
+    localStorage.setItem('user_id', sessionUser.user_id);
+    localStorage.setItem('username', sessionUser.username);
+    localStorage.setItem('role', sessionUser.role);
 
 
 
     /* ---------- Determine Dashboard ---------- */
-    const dashboard = getDashboardByRole(data.role);
-
+    const dashboard = getDashboardByRole(sessionUser.role);
 
 
 
     if (!dashboard) {
       throw new Error(
-        `No dashboard configured for role: ${data.role}`
+        `No dashboard configured for role: ${sessionUser.role}`
       );
     }
 
@@ -233,5 +248,3 @@ form.addEventListener('submit', async (e) => {
     formStatus.textContent = error.message || 'Unable to connect to the server.';
   }
 });
-
-

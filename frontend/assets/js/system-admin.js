@@ -54,10 +54,7 @@ function handleUnauthorized() {
 
 
 function initializeLoggedInUser(user) {
-    if (!user) {
-        window.location.href = "../index.html";
-        return false;
-    }
+    if (!user) return false;
     const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
     const displayName = fullName ||
         localStorage.getItem("user_display_name") ||
