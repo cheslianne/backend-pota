@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from src.core.auth import get_current_user
 from src.core.database import get_db
 from src.models.offtake_requests import OfftakeRequest
 from src.models.buyers import Buyer
 from src.models.farmers import Farmer
+from src.models.users import User
 from src.api.services.email_service import send_offtake_request_email
 
 from src.api.schemas.offtake_requests import (
@@ -17,6 +19,14 @@ from src.api.schemas.offtake_requests import (
 router = APIRouter()
 
 
+def _owned_offtake_requests(db: Session, current_user: User):
+    return (
+        db.query(OfftakeRequest)
+        .join(Farmer, OfftakeRequest.farmer_id == Farmer.farmer_id)
+        .filter(Farmer.aew_id == current_user.user_id)
+    )
+
+
 # ============================================================
 # CREATE OFFTAKE REQUEST
 # ============================================================
@@ -24,6 +34,7 @@ router = APIRouter()
 @router.post("/", response_model=OfftakeRequestResponse)
 async def create_offtake_request(
     request: OfftakeRequestCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
@@ -33,7 +44,10 @@ async def create_offtake_request(
 
     farmer = (
         db.query(Farmer)
-        .filter(Farmer.farmer_id == request.farmer_id)
+        .filter(
+            Farmer.farmer_id == request.farmer_id,
+            Farmer.aew_id == current_user.user_id,
+        )
         .first()
     )
 
@@ -147,10 +161,11 @@ async def create_offtake_request(
 )
 def get_offtake_requests(
     farmer_id: int | None = Query(None, ge=1),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    requests_query = db.query(OfftakeRequest)
+    requests_query = _owned_offtake_requests(db, current_user)
     if farmer_id is not None:
         requests_query = requests_query.filter(OfftakeRequest.farmer_id == farmer_id)
 
@@ -175,11 +190,12 @@ def get_offtake_requests(
 )
 def read_offtake_request(
     offtake_request_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
     db_request = (
-        db.query(OfftakeRequest)
+        _owned_offtake_requests(db, current_user)
         .filter(
             OfftakeRequest.offtake_request_id
             == offtake_request_id
@@ -207,11 +223,12 @@ def read_offtake_request(
 def update_offtake_request(
     offtake_request_id: int,
     request: OfftakeRequestUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
     db_request = (
-        db.query(OfftakeRequest)
+        _owned_offtake_requests(db, current_user)
         .filter(
             OfftakeRequest.offtake_request_id
             == offtake_request_id
@@ -225,9 +242,20 @@ def update_offtake_request(
             detail="Offtake request not found"
         )
 
-    for key, value in request.model_dump(
-        exclude_unset=True
-    ).items():
+    update_data = request.model_dump(exclude_unset=True)
+    if "farmer_id" in update_data:
+        farmer = (
+            db.query(Farmer)
+            .filter(
+                Farmer.farmer_id == update_data["farmer_id"],
+                Farmer.aew_id == current_user.user_id,
+            )
+            .first()
+        )
+        if not farmer:
+            raise HTTPException(status_code=404, detail="Farmer not found")
+
+    for key, value in update_data.items():
 
         setattr(
             db_request,
@@ -248,11 +276,12 @@ def update_offtake_request(
 @router.delete("/{offtake_request_id}")
 def delete_offtake_request(
     offtake_request_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
     db_request = (
-        db.query(OfftakeRequest)
+        _owned_offtake_requests(db, current_user)
         .filter(
             OfftakeRequest.offtake_request_id
             == offtake_request_id
