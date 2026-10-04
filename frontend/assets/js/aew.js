@@ -10081,59 +10081,27 @@ async function loadAEWNotifications() {
 
         const mapResult = await mapResponse.json();
 
-        if (!mapResult.data || !Array.isArray(mapResult.data)) {
+        if (!Array.isArray(mapResult.data)) {
             showNoNotifications();
             return;
         }
 
+        const alertKeys = new Set();
         const alerts = [];
 
         for (const municipalityData of mapResult.data) {
             const municipality = municipalityData.municipality;
-
-            if (!municipalityData.commodities || !Array.isArray(municipalityData.commodities)) {
-                continue;
-            }
+            if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
 
             for (const item of municipalityData.commodities) {
-                const commodity = item.commodity;
+                const status = String(item.status || "").toUpperCase();
+                if (!["OVERSUPPLY", "SURPLUS", "DEFICIT"].includes(status)) continue;
 
-                try {
-                    const alertResponse = await fetch(
-                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
-                        {
-                            method: "GET",
-                            headers: getAuthHeaders()
-                        }
-                    );
+                const key = `${municipality.toLowerCase()}|${status}`;
+                if (alertKeys.has(key)) continue;
 
-                    if (!alertResponse.ok) {
-                        continue;
-                    }
-
-                    const alertData = await alertResponse.json();
-
-                    if (alertData.status === "OVERSUPPLY") {
-                        const supply = Number(alertData.projected_supply || 0);
-                        const demand = Number(alertData.base_demand || 0);
-                        let surplusPercentage = 0;
-
-                        if (demand > 0) {
-                            surplusPercentage = ((supply - demand) / demand) * 100;
-                        }
-
-                        alerts.push({
-                            commodity: alertData.commodity || commodity,
-                            municipality: alertData.municipality || municipality,
-                            supply: supply,
-                            demand: demand,
-                            surplusPercentage: surplusPercentage,
-                            date: new Date()
-                        });
-                    }
-                } catch (error) {
-                    console.warn(`Failed to check ${commodity} in ${municipality}:`, error);
-                }
+                alertKeys.add(key);
+                alerts.push({ municipality, status });
             }
         }
 
@@ -10147,7 +10115,7 @@ async function loadAEWNotifications() {
         console.error("Failed to load AEW notifications:", error);
         notificationList.innerHTML = `
             <div class="notification-empty">
-                No new notifications.
+                Unable to load notifications.
             </div>
         `;
         if (notificationDot) {
@@ -10176,21 +10144,22 @@ function renderAEWNotifications(alerts) {
     alerts.forEach(alert => {
         const item = document.createElement("div");
         item.className = "notification-item";
+        item.style.display = "flex";
+        item.style.alignItems = "center";
+        item.style.justifyContent = "space-between";
+        item.style.gap = "12px";
         item.style.padding = "12px 18px";
         item.style.borderBottom = "1px solid var(--border-light)";
         item.style.fontSize = "13px";
 
-        item.innerHTML = `
-            <div class="notification-title" style="font-weight:700; color:#C0392B; margin-bottom:4px;">
-                🔴 ${escapeHtml(alert.commodity)} Oversupply Risk
-            </div>
-            <div class="notification-details" style="color:var(--muted); line-height:1.4;">
-                <strong>${escapeHtml(alert.municipality)}</strong><br>
-                Supply: ${formatKg(alert.supply)}<br>
-                Demand: ${formatKg(alert.demand)}<br>
-                Surplus: +${Math.round(alert.surplusPercentage)}%
-            </div>
-        `;
+        const municipality = document.createElement("strong");
+        municipality.textContent = alert.municipality;
+        const status = document.createElement("span");
+        status.textContent = alert.status;
+        status.style.fontWeight = "700";
+        status.style.color = alert.status === "DEFICIT" ? "#D97706" : "#C0392B";
+        status.setAttribute("aria-label", `Status: ${alert.status}`);
+        item.append(municipality, status);
 
         notificationList.appendChild(item);
     });
@@ -10216,18 +10185,4 @@ function showNoNotifications() {
     if (notificationDot) {
         notificationDot.style.display = "none";
     }
-}
-
-
-/* ============================================================
-   FORMAT KG
-============================================================ */
-
-function formatKg(value) {
-    return `${Number(value || 0).toLocaleString(
-        "en-US",
-        {
-            maximumFractionDigits: 2
-        }
-    )} kg`;
 }

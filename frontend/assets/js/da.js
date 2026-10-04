@@ -1287,49 +1287,29 @@ async function loadSystemAlertLogs() {
             return;
         }
 
-        const alertResults = [];
-
-        for (const municipalityData of result.data) {
+        systemAlertsCache = result.data.flatMap(municipalityData => {
             const municipality = municipalityData.municipality;
-            if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
+            if (!municipality || !Array.isArray(municipalityData.commodities)) return [];
 
-            for (const item of municipalityData.commodities) {
-                const commodity = item.commodity;
-                if (!commodity) continue;
+            return municipalityData.commodities.flatMap(item => {
+                const status = String(item.status || "").toUpperCase();
+                if (!item.commodity || !["OVERSUPPLY", "SURPLUS", "DEFICIT"].includes(status)) return [];
 
-                try {
-                    const alertResponse = await fetch(
-                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
-                        { method: "GET", headers: getAuthHeaders(false) }
-                    );
+                const baseDemand = Number(item.base_demand || 0);
+                const projectedSupply = Number(item.total_supply || 0);
 
-                    if (!alertResponse.ok) continue;
-
-                    const alertData = await alertResponse.json();
-
-                    // Handle both OVERSUPPLY and DEFICIT
-                    const status = String(alertData.status || "").toUpperCase();
-
-                    if (status === "OVERSUPPLY" || status === "DEFICIT") {
-                        alertResults.push({
-                            commodity: alertData.commodity || commodity,
-                            municipality: alertData.municipality || municipality,
-                            base_demand: Number(alertData.base_demand || 0),
-                            projected_supply: Number(alertData.projected_supply || 0),
-                            excess_supply: Number(alertData.excess_supply || 0),
-                            supply_percentage: Number(alertData.supply_percentage || 0),
-                            status: status,
-                            date: new Date()
-                        });
-                    }
-
-                } catch (error) {
-                    console.error(`Error checking ${commodity} - ${municipality}:`, error);
-                }
-            }
-        }
-
-        systemAlertsCache = alertResults;
+                return [{
+                    commodity: item.commodity,
+                    municipality,
+                    base_demand: baseDemand,
+                    projected_supply: projectedSupply,
+                    excess_supply: Math.max(projectedSupply - baseDemand, 0),
+                    supply_percentage: baseDemand > 0 ? (projectedSupply / baseDemand) * 100 : 0,
+                    status,
+                    date: new Date()
+                }];
+            });
+        });
         currentAlertsPage = 1;
         renderSystemAlertLogs();
 
@@ -1393,7 +1373,10 @@ function renderSystemAlertLogs() {
             ? Math.abs(alertItem.excess_supply) || Math.max(alertItem.base_demand - alertItem.projected_supply, 0)
             : Math.abs(alertItem.excess_supply);
 
-        const title = `${alertItem.commodity} ${isDeficit ? "Deficit" : "Oversupply"} — ${alertItem.municipality}`;
+        const statusLabel = alertItem.status === "DEFICIT"
+            ? "Deficit"
+            : alertItem.status === "SURPLUS" ? "Surplus" : "Oversupply";
+        const title = `${alertItem.commodity} ${statusLabel} — ${alertItem.municipality}`;
         const desc = isDeficit
             ? `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is only ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`
             : `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`;
