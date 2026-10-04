@@ -1006,8 +1006,11 @@ async function fetchFarmers() {
     } catch (error) {
         console.error("Unable to load farmers:", error);
         FARMERS_DATA = [];
+        const sessionExpired = error && (error.status === 401 || error.status === 403);
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load farmers.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
+            tbody.innerHTML = sessionExpired
+                ? `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Your session has expired or you are not logged in.<br><a href="../login.html">Log in again</a></td></tr>`
+                : `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load farmers.<br><small>${escapeHtml(error.message || "Please check the FastAPI server.")}</small></td></tr>`;
         }
         updatePagination();
         return [];
