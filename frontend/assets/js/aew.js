@@ -5746,8 +5746,7 @@ async function saveReport(status) {
                 setTimeout(() => {
                     alert(
                         "Report saved, but some attachments failed to upload:\n\n" +
-                        uploadErrors.join("\n") +
-                        "\n\nYou can re-upload them from the report details page."
+                        uploadErrors.join("\n")
                     );
                 }, 500);
             }
