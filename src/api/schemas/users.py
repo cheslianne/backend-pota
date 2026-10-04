@@ -91,6 +91,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    birthdate: date
     password: str
 
     @field_validator("password")

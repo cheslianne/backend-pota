@@ -99,6 +99,17 @@ def test_birthdate_is_validated_for_create_and_update():
         UserUpdate(birthdate="2999-01-01")
 
 
+def test_account_creation_requires_birthdate():
+    payload = account_payload()
+    del payload["birthdate"]
+    with pytest.raises(ValidationError, match="birthdate"):
+        UserCreate(**payload)
+
+    payload["birthdate"] = None
+    with pytest.raises(ValidationError, match="birthdate"):
+        UserCreate(**payload)
+
+
 def test_password_feedback_requirements_are_enforced_by_api_schema():
     payload = account_payload()
     payload["password"] = "Password1"
