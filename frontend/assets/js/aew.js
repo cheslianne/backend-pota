@@ -10097,11 +10097,14 @@ async function loadAEWNotifications() {
                 const status = String(item.status || "").toUpperCase();
                 if (!["OVERSUPPLY", "SURPLUS", "DEFICIT"].includes(status)) continue;
 
-                const key = `${municipality.toLowerCase()}|${status}`;
+                const commodity = String(item.commodity || "").trim();
+                if (!commodity) continue;
+
+                const key = `${municipality.toLowerCase()}|${commodity.toLowerCase()}|${status}`;
                 if (alertKeys.has(key)) continue;
 
                 alertKeys.add(key);
-                alerts.push({ municipality, status });
+                alerts.push({ municipality, commodity, status });
             }
         }
 
@@ -10144,22 +10147,33 @@ function renderAEWNotifications(alerts) {
     alerts.forEach(alert => {
         const item = document.createElement("div");
         item.className = "notification-item";
-        item.style.display = "flex";
-        item.style.alignItems = "center";
-        item.style.justifyContent = "space-between";
-        item.style.gap = "12px";
         item.style.padding = "12px 18px";
         item.style.borderBottom = "1px solid var(--border-light)";
         item.style.fontSize = "13px";
 
-        const municipality = document.createElement("strong");
-        municipality.textContent = alert.municipality;
-        const status = document.createElement("span");
-        status.textContent = alert.status;
-        status.style.fontWeight = "700";
-        status.style.color = alert.status === "DEFICIT" ? "#D97706" : "#C0392B";
-        status.setAttribute("aria-label", `Status: ${alert.status}`);
-        item.append(municipality, status);
+        const details = document.createElement("div");
+        details.style.display = "grid";
+        details.style.gap = "4px";
+        [
+            ["Municipality", alert.municipality],
+            ["Commodity", alert.commodity],
+            ["Status", alert.status]
+        ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            const fieldLabel = document.createElement("strong");
+            fieldLabel.textContent = `${label}: `;
+            const fieldValue = document.createElement("span");
+            fieldValue.textContent = value;
+            row.append(fieldLabel, fieldValue);
+
+            if (label === "Status") {
+                fieldValue.style.fontWeight = "700";
+                fieldValue.style.color = alert.status === "DEFICIT" ? "#D97706" : "#C0392B";
+            }
+
+            details.appendChild(row);
+        });
+        item.appendChild(details);
 
         notificationList.appendChild(item);
     });
