@@ -36,13 +36,14 @@ function initViewSwitching(onSwitch){
   const views = document.querySelectorAll('.view');
   const isSystemAdmin = Boolean(document.getElementById('view-users'));
   const routeToView = {
-    dashboard: 'users',
+    dashboard: 'dashboard',
     'user-management': 'users',
     'add-account': 'add-account',
     'audit-logs': 'audit',
     'archived-accounts': 'archived'
   };
   const viewToRoute = {
+    dashboard: 'dashboard',
     users: 'user-management',
     'add-account': 'add-account',
     audit: 'audit-logs',
@@ -91,7 +92,7 @@ function initViewSwitching(onSwitch){
       if (route !== 'user-profile' && !routeToView[route]) {
         history.replaceState(null, '', `${location.pathname}${location.search}#/dashboard`);
       }
-      const viewKey = routeToView[route] || 'users';
+      const viewKey = routeToView[route] || 'dashboard';
       if (!window.location.hash) {
         history.replaceState(null, '', `${location.pathname}${location.search}#/dashboard`);
       }

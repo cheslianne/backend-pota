@@ -25,9 +25,10 @@ display data only; access tokens are not returned to JavaScript or saved in
 browser storage. The theme preference is stored locally and is independent of
 the authentication session.
 
-The system administrator dashboard uses hash routes such as
-`/dashboards/system-admin.html#/user-management`,
-`/dashboards/system-admin.html#/add-account`, and
+The system administrator dashboard opens to
+`/dashboards/system-admin.html#/dashboard`; user management remains a separate
+view at `/dashboards/system-admin.html#/user-management`. Other routes include
+`/dashboards/system-admin.html#/add-account` and
 `/dashboards/system-admin.html#/user-profile`. Hash routing preserves direct
 links and browser history without requiring additional static-host rewrites.
 Account names accept Unicode letters and common name punctuation; account

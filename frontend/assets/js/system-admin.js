@@ -116,6 +116,10 @@ function getRoleStyle(role) {
 let currentUserPage = 1;
 const usersPerPage = 7;
 let cachedUsers = [];
+let dashboardUsersError = null;
+let dashboardActivityError = null;
+let dashboardUsersLoading = true;
+let dashboardActivityLoading = true;
 
 
 let currentAuditPage = 1;
@@ -355,13 +359,114 @@ function resetLocationDropdowns() {
 /* ============================================================
    LOAD USERS
 ============================================================ */
+function isUserActive(user) {
+    if (typeof user.is_active === "boolean") return user.is_active;
+    if (typeof user.status === "string") return user.status.toLowerCase() === "active";
+    return true;
+}
+
+function renderUsersTable() {
+    const userRows = document.getElementById("userRows");
+    if (!userRows) return;
+
+    const query = document.getElementById("searchUsers")?.value.trim().toLowerCase() || "";
+    const filteredUsers = cachedUsers.filter(user => {
+        const name = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+        const email = user.email_address || user.email || "";
+        const role = user.role || "";
+        const status = isUserActive(user) ? "active" : "inactive";
+        return !query || [name, email, role, status].some(value => String(value).toLowerCase().includes(query));
+    });
+
+    if (filteredUsers.length === 0) {
+        const message = cachedUsers.length === 0
+            ? "No users found."
+            : "No users match your search.";
+        userRows.innerHTML = `<tr><td colspan="5" style="text-align:center;">${message}</td></tr>`;
+        currentUserPage = 1;
+        renderPagination(0, usersPerPage, currentUserPage, () => {}).updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
+        return;
+    }
+
+    const pagination = renderPagination(filteredUsers.length, usersPerPage, currentUserPage, newPage => {
+        currentUserPage = newPage;
+        renderUsersTable();
+    });
+    currentUserPage = pagination.currentPage;
+    userRows.innerHTML = "";
+
+    pagination.paginatedSlice(filteredUsers).forEach(user => {
+        const row = document.createElement("tr");
+        const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
+        const email = user.email_address || user.email || "—";
+        const role = user.role || "—";
+        const isActive = isUserActive(user);
+        const roleStyle = getRoleStyle(role);
+        const userId = user.user_id ?? user.id ?? "";
+
+        row.innerHTML = `
+            <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
+            <td>${escapeHTML(email)}</td>
+            <td><span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></td>
+            <td><span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
+            <td>
+                <button class="${isActive ? "btn-deactivate" : "btn-reactivate"}" type="button" data-user-id="${escapeHTML(userId)}" data-active="${isActive}">
+                    ${isActive ? "Deactivate" : "Reactivate"}
+                </button>
+                <button class="btn-archive" type="button" data-user-id="${escapeHTML(userId)}" data-user-name="${escapeHTML(fullName)}">
+                    Archive
+                </button>
+            </td>
+        `;
+        row.style.cursor = "pointer";
+        row.addEventListener("click", event => {
+            if (event.target.closest("button")) return;
+            openUserDetails(user);
+        });
+        userRows.appendChild(row);
+    });
+
+    pagination.updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
+
+    const prevBtn = document.getElementById("prevPageBtn");
+    const nextBtn = document.getElementById("nextPageBtn");
+    if (prevBtn) {
+        const newPrev = prevBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+        newPrev.addEventListener("click", () => {
+            if (currentUserPage > 1) {
+                currentUserPage--;
+                renderUsersTable();
+            }
+        });
+    }
+    if (nextBtn) {
+        const newNext = nextBtn.cloneNode(true);
+        nextBtn.parentNode.replaceChild(newNext, nextBtn);
+        newNext.addEventListener("click", () => {
+            if (currentUserPage < pagination.totalPages) {
+                currentUserPage++;
+                renderUsersTable();
+            }
+        });
+    }
+
+    document.querySelectorAll("#userRows .btn-deactivate, #userRows .btn-reactivate").forEach(button => {
+        button.addEventListener("click", () => toggleUserStatus(button));
+    });
+    document.querySelectorAll("#userRows .btn-archive").forEach(button => {
+        button.addEventListener("click", () => archiveUser(button));
+    });
+}
+
 async function loadUsers() {
     const userRows = document.getElementById("userRows");
     if (!userRows) return;
 
-
-    userRows.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading users...</td></tr>`;
-
+    userRows.innerHTML = `<tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>`;
+    dashboardUsersLoading = true;
+    dashboardUsersError = null;
+    renderDashboardSummary();
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/users`, {
@@ -371,14 +476,15 @@ async function loadUsers() {
         let data = {};
         try { data = await response.json(); } catch { data = {}; }
 
-
         if (response.status === 401) { handleUnauthorized(); return; }
         if (response.status === 403) {
-            userRows.innerHTML = `<tr><td colspan="6" class="api-error">${escapeHTML(getErrorMessage(data, "You do not have permission to view users."))}</td></tr>`;
+            dashboardUsersError = getErrorMessage(data, "You do not have permission to view users.");
+            dashboardUsersLoading = false;
+            userRows.innerHTML = `<tr><td colspan="5" class="api-error">${escapeHTML(dashboardUsersError)}</td></tr>`;
+            renderDashboardSummary();
             return;
         }
         if (!response.ok) throw new Error(getErrorMessage(data, "Failed to load users."));
-
 
         let users = [];
         if (Array.isArray(data)) users = data;
@@ -386,106 +492,17 @@ async function loadUsers() {
         else if (Array.isArray(data.data)) users = data.data;
         else throw new Error("Unexpected response format.");
 
-
         cachedUsers = users;
-        updateRoleSummaryCards(cachedUsers); 
-
-
-        if (cachedUsers.length === 0) {
-            userRows.innerHTML = `<tr><td colspan="6" style="text-align:center;">No users found.</td></tr>`;
-            renderPagination(0, usersPerPage, currentUserPage, () => {}).updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
-            return;
-        }
-
-
-        const pagination = renderPagination(cachedUsers.length, usersPerPage, currentUserPage, (newPage) => {
-            currentUserPage = newPage;
-            loadUsers();
-        });
-
-
-        userRows.innerHTML = "";
-        pagination.paginatedSlice(cachedUsers).forEach(user => {
-            const row = document.createElement("tr");
-            const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
-            const username = user.username || "—";
-            const role = user.role || "—";
-            const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
-            const locationText = locationParts.length ? locationParts.join(", ") : "—";
-            let isActive = true;
-            if (typeof user.is_active === "boolean") isActive = user.is_active;
-            else if (typeof user.status === "string") isActive = user.status.toLowerCase() === "active";
-
-
-            const roleStyle = getRoleStyle(role);
-            const userId = user.user_id ?? user.id ?? "";
-
-
-            row.innerHTML = `
-                <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
-                <td><span class="username-pill">${escapeHTML(username)}</span></td>
-                <td><span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></td>
-                <td><span class="location-pill">${escapeHTML(locationText)}</span></td>
-                <td><span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
-                <td>
-                    <button class="${isActive ? 'btn-deactivate' : 'btn-reactivate'}" type="button" data-user-id="${escapeHTML(userId)}" data-active="${isActive}">
-                        ${isActive ? 'Deactivate' : 'Reactivate'}
-                    </button>
-                    <button class="btn-archive" type="button" data-user-id="${escapeHTML(userId)}" data-user-name="${escapeHTML(fullName)}">
-                        Archive
-                    </button>
-                </td>
-            `;
-            userRows.appendChild(row);
-
-            row.style.cursor = "pointer";
-row.addEventListener("click", (event) => {
-    // Huwag i-expand kung button ang pinindot
-    if (event.target.closest("button")) return;
-    openUserDetails(user);
-});
-        });
-
-
-
-        pagination.updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
-
-        const prevBtn = document.getElementById("prevPageBtn");
-const nextBtn = document.getElementById("nextPageBtn");
-
-if (prevBtn) {
-    const newPrev = prevBtn.cloneNode(true);
-    prevBtn.parentNode.replaceChild(newPrev, prevBtn);
-    newPrev.addEventListener("click", () => {
-        if (currentUserPage > 1) {
-            currentUserPage--;
-            loadUsers();
-        }
-    });
-}
-
-if (nextBtn) {
-    const newNext = nextBtn.cloneNode(true);
-    nextBtn.parentNode.replaceChild(newNext, nextBtn);
-    newNext.addEventListener("click", () => {
-        const totalPages = Math.ceil(cachedUsers.length / usersPerPage) || 1;
-        if (currentUserPage < totalPages) {
-            currentUserPage++;
-            loadUsers();
-        }
-    });
-}
-
-        document.querySelectorAll("#userRows .btn-deactivate, #userRows .btn-reactivate").forEach(button => {
-            button.addEventListener("click", () => toggleUserStatus(button));
-        });
-        document.querySelectorAll("#userRows .btn-archive").forEach(button => {
-            button.addEventListener("click", () => archiveUser(button));
-        });
-
-
+        dashboardUsersLoading = false;
+        currentUserPage = 1;
+        updateRoleSummaryCards(cachedUsers);
+        renderUsersTable();
+        renderDashboardSummary();
     } catch (error) {
-        userRows.innerHTML = `<tr><td colspan="6" class="api-error">Failed to load users.<br><br>${escapeHTML(error.message)}</td></tr>`;
+        dashboardUsersError = error.message || "Failed to load users.";
+        dashboardUsersLoading = false;
+        userRows.innerHTML = `<tr><td colspan="5" class="api-error">Failed to load users.<br><br>${escapeHTML(dashboardUsersError)}</td></tr>`;
+        renderDashboardSummary();
     }
 }
 
@@ -493,35 +510,26 @@ if (nextBtn) {
    VIEW USER DETAILS (Manage Users)
 ============================================================ */
 function openUserDetails(user) {
-    window.__currentUserDetail = user; 
+    window.__currentUserDetail = user;
     const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
-    const username = user.username || "—";
     const role = user.role || "—";
     const email = user.email_address || user.email || "—";
-    const phone = user.phone_number || user.phone || "—";
-    const locationParts = [user.municipality, user.province, user.region].filter(Boolean);
-    const locationText = locationParts.length ? locationParts.join(", ") : "—";
+    const createdAt = user.created_at ? new Date(user.created_at) : null;
+    const createdDate = createdAt && !Number.isNaN(createdAt.getTime())
+        ? createdAt.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "2-digit" })
+        : "—";
 
-    let isActive = true;
-    if (typeof user.is_active === "boolean") isActive = user.is_active;
-    else if (typeof user.status === "string") isActive = user.status.toLowerCase() === "active";
-
+    const isActive = isUserActive(user);
     const roleStyle = getRoleStyle(role);
 
     const content = document.getElementById("modalUserContent");
     if (content) {
         content.innerHTML = `
-            <div><b>Full Name:</b> ${escapeHTML(fullName)}</div>
-            <div><b>Username:</b> ${escapeHTML(username)}</div>
-            <div><b>Role:</b> <span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></div>
+            <div><b>Name:</b> ${escapeHTML(fullName)}</div>
             <div><b>Email:</b> ${escapeHTML(email)}</div>
-            <div><b>Phone Number:</b> ${escapeHTML(phone)}</div>
-            <div><b>Region:</b> ${escapeHTML(user.region || "—")}</div>
-            <div><b>Province:</b> ${escapeHTML(user.province || "—")}</div>
-            <div><b>Municipality/City:</b> ${escapeHTML(user.municipality || "—")}</div>
-            <div><b>Location:</b> ${escapeHTML(locationText)}</div>
+            <div><b>Role:</b> <span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></div>
             <div><b>Status:</b> <span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></div>
-            <div><b>User ID:</b> ${escapeHTML(user.user_id ?? user.id ?? "—")}</div>
+            <div><b>Date Created:</b> ${escapeHTML(createdDate)}</div>
         `;
     }
 
@@ -577,6 +585,65 @@ function updateRoleSummaryCards(users) {
     setCount("countMunicipal", counts["Municipal Coordinator"]);
     setCount("countProvincial", counts["Provincial Coordinator"]);
     setCount("countDARFO", counts["DA-RFO"]);
+}
+
+function renderDashboardSummary() {
+    const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+
+    if (dashboardUsersLoading) {
+        ["dashboardTotalUsers", "dashboardActiveUsers", "dashboardInactiveUsers"].forEach(id => setValue(id, "—"));
+    } else if (dashboardUsersError) {
+        ["dashboardTotalUsers", "dashboardActiveUsers", "dashboardInactiveUsers"].forEach(id => setValue(id, "Unavailable"));
+        ["countAEW", "countMunicipal", "countProvincial", "countDARFO"].forEach(id => setValue(id, "—"));
+    } else {
+        const activeCount = cachedUsers.filter(isUserActive).length;
+        setValue("dashboardTotalUsers", cachedUsers.length);
+        setValue("dashboardActiveUsers", activeCount);
+        setValue("dashboardInactiveUsers", cachedUsers.length - activeCount);
+    }
+
+    const activityContainer = document.getElementById("dashboardRecentActivity");
+    if (dashboardActivityLoading) {
+        setValue("dashboardAuditCount", "—");
+        if (activityContainer) activityContainer.innerHTML = `<p class="dashboard-empty-state">Loading activity...</p>`;
+        return;
+    }
+    if (dashboardActivityError) {
+        setValue("dashboardAuditCount", "Unavailable");
+        if (activityContainer) activityContainer.innerHTML = `<p class="dashboard-empty-state">Unable to load recent activity.</p>`;
+        return;
+    }
+
+    setValue("dashboardAuditCount", cachedAuditLogs.length);
+    if (!activityContainer) return;
+    const recentLogs = [...cachedAuditLogs]
+        .sort((a, b) => new Date(b.created_at ?? b.timestamp ?? 0).getTime() - new Date(a.created_at ?? a.timestamp ?? 0).getTime())
+        .slice(0, 5);
+
+    if (recentLogs.length === 0) {
+        activityContainer.innerHTML = `<p class="dashboard-empty-state">No recent activity recorded.</p>`;
+        return;
+    }
+
+    activityContainer.innerHTML = recentLogs.map(log => {
+        const userName = log.user_name ||
+            (log.user ? `${log.user.first_name || ""} ${log.user.last_name || ""}`.trim() : "") ||
+            "Account activity";
+        const action = log.action || "System activity";
+        const resource = log.resource_type ? `Resource: ${log.resource_type}` : userName;
+        return `
+            <article class="dashboard-activity-item">
+                <div class="dashboard-activity-copy">
+                    <strong>${escapeHTML(action)}</strong>
+                    <span>${escapeHTML(resource)}</span>
+                </div>
+                <time>${escapeHTML(formatAuditDate(log.created_at ?? log.timestamp))}</time>
+            </article>
+        `;
+    }).join("");
 }
 
 /* ============================================================
@@ -1074,6 +1141,9 @@ async function loadAuditLogs() {
 
 
     auditLogRows.innerHTML = `<tr><td colspan="5" style="text-align:center;">Loading audit logs...</td></tr>`;
+    dashboardActivityLoading = true;
+    dashboardActivityError = null;
+    renderDashboardSummary();
 
 
     try {
@@ -1087,7 +1157,10 @@ async function loadAuditLogs() {
 
         if (response.status === 401) { handleUnauthorized(); return; }
         if (response.status === 403) {
+            dashboardActivityError = getErrorMessage(data, "You do not have permission to view audit logs.");
+            dashboardActivityLoading = false;
             auditLogRows.innerHTML = `<tr><td colspan="5" class="api-error">${escapeHTML(getErrorMessage(data, "You do not have permission to view audit logs."))}</td></tr>`;
+            renderDashboardSummary();
             return;
         }
         if (!response.ok) throw new Error(getErrorMessage(data, "Failed to load audit logs."));
@@ -1101,12 +1174,17 @@ async function loadAuditLogs() {
 
 
         cachedAuditLogs = logs;
+        dashboardActivityLoading = false;
         populateAuditActionDropdown(cachedAuditLogs);
         renderFilteredAuditLogs();
+        renderDashboardSummary();
 
 
     } catch (error) {
+        dashboardActivityError = error.message || "Failed to load audit logs.";
+        dashboardActivityLoading = false;
         auditLogRows.innerHTML = `<tr><td colspan="5" class="api-error">Failed to load audit logs.<br><br>${escapeHTML(error.message)}</td></tr>`;
+        renderDashboardSummary();
     }
 }
 
@@ -1949,11 +2027,9 @@ if (restoreFromDetailsBtn) {
 }
 
     // Search and Filter Listeners
-    document.getElementById("searchUsers")?.addEventListener("input", (e) => {
-        const search = e.target.value.trim().toLowerCase();
-        document.querySelectorAll("#userRows tr").forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(search) ? "" : "none";
-        });
+    document.getElementById("searchUsers")?.addEventListener("input", () => {
+        currentUserPage = 1;
+        renderUsersTable();
     });
 
     // ✅ IDAGDAG ITO — Archived Users search
@@ -2038,6 +2114,12 @@ document.getElementById("searchArchived")?.addEventListener("input", (e) => {
 
 
     // Add Account views toggle
+    document.querySelectorAll("[data-dashboard-view]").forEach(button => {
+        button.addEventListener("click", () => {
+            window.switchView?.(button.dataset.dashboardView);
+        });
+    });
+
     document.getElementById("addAccountBtn")?.addEventListener("click", () => {
         window.switchView?.("add-account");
     });

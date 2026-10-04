@@ -965,9 +965,13 @@
 <div class="layout">
   <nav class="sidebar" id="sidebar">
     <div class="nav-list">
-      <button class="nav-item active" type="button" data-view="users">
+      <button class="nav-item active" type="button" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" type="button" data-view="users">
         <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        Manage Users
+        User Management
       </button>
      
       <button class="nav-item" type="button" data-view="audit">
@@ -992,78 +996,123 @@
   <main class="main">
 
 
-   <section class="view active-view" id="view-users">
-  <div class="main-header">
-    <h1>All Users</h1>
-    <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
-      <div class="search-row" style="margin: 0;">
-        <div class="search-box">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchUsers" placeholder="Search users...">
+    <section class="view active-view" id="view-dashboard">
+      <div class="main-header dashboard-header">
+        <div>
+          <h1>System Dashboard</h1>
+          <p>Account health, activity, and platform-wide summaries.</p>
         </div>
+        <button class="btn-primary" type="button" data-dashboard-view="users">Manage Accounts</button>
       </div>
-      <button class="btn-primary" id="addAccountBtn" type="button" style="white-space: nowrap;">+ Add Account</button>
-    </div>
-  </div>
 
-  <!-- ===== SUMMARY CARDS ===== -->
-  <div class="summary-cards" id="roleSummaryCards">
-    <div class="summary-card aew" data-role="AEW">
-      <div class="summary-info">
-        <h3>Agricultural Extension Workers</h3>
-        <p class="summary-count" id="countAEW">0</p>
-        <span class="summary-label">Registered Accounts</span>
+      <div class="dashboard-stat-grid" aria-label="System statistics">
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Total Accounts</span>
+          <strong id="dashboardTotalUsers">—</strong>
+          <span class="dashboard-stat-note">All registered accounts</span>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Active Accounts</span>
+          <strong id="dashboardActiveUsers">—</strong>
+          <span class="dashboard-stat-note">Currently enabled</span>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Inactive Accounts</span>
+          <strong id="dashboardInactiveUsers">—</strong>
+          <span class="dashboard-stat-note">Currently disabled</span>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Audit Events</span>
+          <strong id="dashboardAuditCount">—</strong>
+          <span class="dashboard-stat-note">Recorded system activity</span>
+        </article>
       </div>
-    </div>
 
-    <div class="summary-card municipal" data-role="Municipal Coordinator">
-      <div class="summary-info">
-        <h3>Municipal Coordinators</h3>
-        <p class="summary-count" id="countMunicipal">0</p>
-        <span class="summary-label">Registered Accounts</span>
+      <div class="dashboard-content-grid">
+        <section class="card dashboard-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <h2>Account Summary</h2>
+              <p>Reports &amp; analytics: registered accounts by role</p>
+            </div>
+          </div>
+          <div class="summary-cards dashboard-role-cards" id="roleSummaryCards">
+            <div class="summary-card aew" data-role="AEW">
+              <div class="summary-info">
+                <h3>Agricultural Extension Workers</h3>
+                <p class="summary-count" id="countAEW">—</p>
+                <span class="summary-label">Registered Accounts</span>
+              </div>
+            </div>
+            <div class="summary-card municipal" data-role="Municipal Coordinator">
+              <div class="summary-info">
+                <h3>Municipal Coordinators</h3>
+                <p class="summary-count" id="countMunicipal">—</p>
+                <span class="summary-label">Registered Accounts</span>
+              </div>
+            </div>
+            <div class="summary-card provincial" data-role="Provincial Coordinator">
+              <div class="summary-info">
+                <h3>Provincial Coordinators</h3>
+                <p class="summary-count" id="countProvincial">—</p>
+                <span class="summary-label">Registered Accounts</span>
+              </div>
+            </div>
+            <div class="summary-card da-rfo" data-role="DA-RFO">
+              <div class="summary-info">
+                <h3>DA-RFO Officers</h3>
+                <p class="summary-count" id="countDARFO">—</p>
+                <span class="summary-label">Registered Accounts</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card dashboard-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <h2>Recent Activity</h2>
+              <p>Latest recorded audit events</p>
+            </div>
+            <button class="btn-secondary" type="button" data-dashboard-view="audit">View audit log</button>
+          </div>
+          <div id="dashboardRecentActivity" class="dashboard-activity-list" aria-live="polite">
+            <p class="dashboard-empty-state">Loading activity...</p>
+          </div>
+        </section>
       </div>
-    </div>
+    </section>
 
-    <div class="summary-card provincial" data-role="Provincial Coordinator">
-      <div class="summary-info">
-        <h3>Provincial Coordinators</h3>
-        <p class="summary-count" id="countProvincial">0</p>
-        <span class="summary-label">Registered Accounts</span>
+    <section class="view" id="view-users">
+      <div class="main-header">
+        <h1>User Account Management</h1>
+        <button class="btn-primary" id="addAccountBtn" type="button">+ Add Account</button>
       </div>
-    </div>
-
-    <div class="summary-card da-rfo" data-role="DA-RFO">
-      <div class="summary-info">
-        <h3>DA-RFO Officers</h3>
-        <p class="summary-count" id="countDARFO">0</p>
-        <span class="summary-label">Registered Accounts</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
 
       <div class="card">
-        <div class="card-title">User Account Management</div>
+        <div class="card-title">Accounts</div>
+        <div class="search-row user-management-search">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchUsers" placeholder="Search by name, email, role, or status" aria-label="Search user accounts">
+          </div>
+        </div>
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Username</th>
+                <th>Email</th>
                 <th>Role</th>
-                <th>Location</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="userRows" data-page-size="7">
-              <tr><td colspan="6" class="loading-row">Loading users...</td></tr>
+              <tr><td colspan="5" class="loading-row">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
-
-
         <div class="pagination-container">
           <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
           <div class="pagination-controls" id="paginationControls">
