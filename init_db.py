@@ -23,6 +23,7 @@ from src.models import (
     planting_intents,
     price_data,
     raw_plant_reports,
+    report_attachment_files,
     report_planting_intents,
     report_status,
     report_submission,

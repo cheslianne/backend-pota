@@ -26,10 +26,13 @@ from src.api.schemas.raw_plant_reports import (
 )
 
 import os
+import mimetypes
+from src.models.report_attachment_files import ReportAttachmentFile
 import shutil
 import uuid
 from fastapi import UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+from urllib.parse import quote
 
 
 router = APIRouter()
@@ -859,9 +862,19 @@ async def upload_report_attachment(
     unique_name = f"{report_id}_{uuid.uuid4().hex}{ext}"
     filepath = os.path.join(UPLOAD_DIR, unique_name)
     
-    # ✅ Save file
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # ✅ Save file (DB is the source of truth; disk is a best-effort copy)
+    file_bytes = file.file.read()
+    db.merge(ReportAttachmentFile(
+        stored_name=unique_name,
+        report_id=report_id,
+        content_type=mimetypes.guess_type(file.filename)[0],
+        content=file_bytes,
+    ))
+    try:
+        with open(filepath, "wb") as buffer:
+            buffer.write(file_bytes)
+    except OSError:
+        pass
     
     # ✅ Save reference sa report
     attachment_info = {
@@ -917,44 +930,42 @@ def get_report_attachment(
         raise HTTPException(404, "Attachment not found.")
     
     safe_name = os.path.basename(stored_name)
+    filename = attachment.get("filename", stored_name)
+    media_type, _ = mimetypes.guess_type(filename)
+
+    VIEWABLE_TYPES = ("image/", "application/pdf", "text/", "video/", "audio/")
+    is_viewable = bool(media_type) and any(
+        media_type.startswith(t) for t in VIEWABLE_TYPES
+    )
+    disposition = "inline" if is_viewable else "attachment"
+
+    stored = db.query(ReportAttachmentFile).filter(
+        ReportAttachmentFile.stored_name == safe_name
+    ).first()
+    if stored:
+        return Response(
+            content=bytes(stored.content),
+            media_type=media_type or stored.content_type or "application/octet-stream",
+            headers={
+                "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(filename)}"
+            },
+        )
+
     filepath = os.path.join(UPLOAD_DIR, safe_name)
     if not os.path.exists(filepath):
         legacy_path = os.path.join("uploads", "reports", safe_name)
         if os.path.exists(legacy_path):
             filepath = legacy_path
     if not os.path.exists(filepath):
-        raise HTTPException(404, "File not found on disk.")
-    
-    # ✅ Determine MIME type
-    filename = attachment.get("filename", stored_name)
-    media_type, _ = mimetypes.guess_type(filename)
-    
-    # ✅ List of viewable types (browser can display)
-    VIEWABLE_TYPES = (
-        "image/",
-        "application/pdf",
-        "text/",
-        "video/",
-        "audio/",
-    )
-    
-    is_viewable = media_type and any(
-        media_type.startswith(t) for t in VIEWABLE_TYPES
-    )
-    
-    if is_viewable:
-        # ✅ View sa browser
-        return FileResponse(
-            filepath,
-            media_type=media_type,
-            filename=filename,
-            content_disposition_type="inline",
+        raise HTTPException(
+            404,
+            "File is no longer available. It was uploaded before attachments were "
+            "stored permanently; please re-upload it.",
         )
-    else:
-        # ⬇️ Download (docx, xlsx, etc.)
-        return FileResponse(
-            filepath,
-            media_type=media_type or "application/octet-stream",
-            filename=filename,
-            content_disposition_type="attachment",
-        )
+
+    return FileResponse(
+        filepath,
+        media_type=media_type or "application/octet-stream",
+        filename=filename,
+        content_disposition_type=disposition,
+    )
