@@ -14,7 +14,7 @@ python seed_alert_thresholds.py
 
 if [ "${RUN_ETL_ON_STARTUP:-false}" = "true" ]; then
     echo "RUN_ETL_ON_STARTUP=true; loading market prices and forecasts..."
-    python init_market_data.py
+    (python init_market_data.py || echo "Market data initialization failed") &
 fi
 
 exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8000}"
