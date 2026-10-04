@@ -7101,10 +7101,11 @@ function initOfftakeRequest() {
             alert("Please select a farmer.");
             return;
         }
-        if (farmerId) farmerId.value = farmerSelect.value;
+        if (farmerId) farmerId.value = getFarmerRsbsaId(farmerSelect.value);
 
         const data = collectOfftakeFormData();
         data.farmer_id = Number(farmerSelect.value);
+        data.rsbsa_id = getFarmerRsbsaId(farmerSelect.value);
         data.farmer_name = farmerSelect.options[farmerSelect.selectedIndex].text;
 
         if (!validateOfftakeForm(data)) return;
@@ -7374,10 +7375,15 @@ function validateOfftakeForm(data) {
     return true;
 }
 
+function getFarmerRsbsaId(farmerId) {
+    var match = (allFarmers || []).find(function(f) { return String(f.farmer_id) === String(farmerId); });
+    return match && match.rsbsa_id ? match.rsbsa_id : "";
+}
+
 function populateOfftakeReview(data) {
     var values = {
         farmer_name: data.farmer_name,
-        farmer_id: data.farmer_id,
+        farmer_id: data.rsbsa_id || data.farmer_id,
         commodity: data.commodity,
         quantity: data.quantity,
         selling_price: data.selling_price,
@@ -7414,7 +7420,7 @@ function setReviewValue(ids, value) {
 
 function populateOfftakeForm(data) {
     setOfftakeValue(["offtakeFarmerName", "farmerName", "offtakeFarmer"], data.farmer_name);
-    setOfftakeValue(["offtakeFarmerId", "farmerId", "offtakeFarmerID"], data.farmer_id);
+    setOfftakeValue(["offtakeFarmerId", "farmerId", "offtakeFarmerID"], data.rsbsa_id || data.farmer_id);
     setOfftakeValue(["offtakeCommodity", "commodity"], data.commodity);
     setOfftakeValue(["offtakeQuantity", "quantity"], data.quantity);
     setOfftakeValue(["offtakeSellingPrice", "sellingPrice"], data.selling_price);
@@ -7614,7 +7620,7 @@ function setupFarmerDropdownAutoFill() {
         offtakeFarmerSelect.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
             if (selectedOption && selectedOption.value) {
-                offtakeFarmerId.value = selectedOption.value;
+                offtakeFarmerId.value = getFarmerRsbsaId(selectedOption.value);
             } else {
                 offtakeFarmerId.value = '';
             }

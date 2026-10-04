@@ -92,6 +92,8 @@ async def send_offtake_request_email(
     selling_price,
     harvest_date,
     farmer_location: str,
+    farmer_name: str = "",
+    rsbsa_id: str = "",
 ):
     try:
         api_instance = get_email_client()
@@ -113,10 +115,12 @@ async def send_offtake_request_email(
                 <h3>Offtake Request Details</h3>
 
                 <p>
+                    <strong>Farmers Beneficiary:</strong> {farmer_name or "N/A"}<br>
+                    <strong>RSBSA ID:</strong> {rsbsa_id or "N/A"}<br>
                     <strong>Commodity:</strong> {commodity}<br>
-                    <strong>Quantity:</strong> {quantity}<br>
-                    <strong>Selling Price:</strong> {selling_price}<br>
-                    <strong>Expected Harvest Date:</strong> {harvest_date}<br>
+                    <strong>Quantity (kg):</strong> {quantity}<br>
+                    <strong>Selling Price (₱ / kg):</strong> {selling_price}<br>
+                    <strong>Projected Harvest / Pick-up:</strong> {harvest_date}<br>
                     <strong>Farmer Location:</strong> {farmer_location}
                 </p>
 

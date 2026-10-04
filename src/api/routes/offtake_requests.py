@@ -122,6 +122,15 @@ async def create_offtake_request(
                 selling_price=db_request.selling_price,
                 harvest_date=db_request.harvest_date,
                 farmer_location=farmer.address,
+                farmer_name=" ".join(
+                    p for p in [
+                        farmer.first_name,
+                        farmer.middle_name,
+                        farmer.last_name,
+                        farmer.suffix,
+                    ] if p
+                ),
+                rsbsa_id=farmer.rsbsa_id,
             )
 
             print(
