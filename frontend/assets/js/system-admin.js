@@ -5,7 +5,7 @@ const API_BASE_URL = window.API_BASE_URL || "https://esaka-backend-production.up
    AUTH
 ============================================================ */
 function getAuthToken() {
-    return localStorage.getItem("access_token");
+    return "cookie-session";
 }
 
 
@@ -52,18 +52,20 @@ function handleUnauthorized() {
 }
 
 
-function initializeLoggedInUser() {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
+function initializeLoggedInUser(user) {
+    if (!user) {
         window.location.href = "../index.html";
         return false;
     }
     // ✅ Priority: user_display_name > username
     const username =
         localStorage.getItem("user_display_name") ||
-        localStorage.getItem("username") ||
+        user.username ||
         "Unknown User";
-    const role = localStorage.getItem("role") || "Unknown Role";
+    const role = user.role || "Unknown Role";
+    localStorage.setItem("user_id", user.user_id);
+    localStorage.setItem("username", user.username);
+    localStorage.setItem("role", role);
     const usernameElement = document.getElementById("loggedInUserName");
     const roleElement = document.getElementById("loggedInUserRole");
     if (usernameElement) usernameElement.textContent = username;
@@ -947,10 +949,11 @@ function openArchiveDetails(user) {
 
     currentArchiveUser = user;
 
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
-    view.classList.add("active-view");
-
-    document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+    if (window.switchView) window.switchView("archive-details");
+    else {
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
+        view.classList.add("active-view");
+    }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1045,8 +1048,7 @@ if (passwordError) {
         resetLocationDropdowns();
 
 
-        document.getElementById("view-add-account")?.classList.remove("active-view");
-        document.getElementById("view-users")?.classList.add("active-view");
+        window.switchView?.("users");
 
 
         await loadUsers();
@@ -1760,8 +1762,9 @@ function initProfileModal() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (!initializeLoggedInUser()) return;
+document.addEventListener("DOMContentLoaded", async () => {
+    const sessionUser = await window.ESakaAuth?.getSession();
+    if (!initializeLoggedInUser(sessionUser)) return;
     if (!checkAdminRole()) return;
 
     /* ============================================================
@@ -1916,6 +1919,10 @@ document.getElementById("editUserForm")?.addEventListener("submit", saveUserEdit
 const backBtn2 = document.getElementById("backToArchivedBtn2");
 
 function goBackToArchived() {
+    if (window.switchView) {
+        window.switchView("archived");
+        return;
+    }
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active-view"));
     const archivedView = document.getElementById("view-archived");
     if (archivedView) archivedView.classList.add("active-view");
@@ -2032,16 +2039,14 @@ document.getElementById("searchArchived")?.addEventListener("input", (e) => {
 
     // Add Account views toggle
     document.getElementById("addAccountBtn")?.addEventListener("click", () => {
-        document.getElementById("view-users")?.classList.remove("active-view");
-        document.getElementById("view-add-account")?.classList.add("active-view");
+        window.switchView?.("add-account");
     });
 
 
     document.getElementById("cancelAddAccount")?.addEventListener("click", () => {
         document.getElementById("addAccountForm")?.reset();
         resetLocationDropdowns();
-        document.getElementById("view-add-account")?.classList.remove("active-view");
-        document.getElementById("view-users")?.classList.add("active-view");
+        window.switchView?.("users");
     });
 
 
@@ -2056,8 +2061,20 @@ document.getElementById("searchArchived")?.addEventListener("input", (e) => {
     document.getElementById("cancelLogoutBtn")?.addEventListener("click", () => {
         document.getElementById("confirmLogoutModal")?.classList.remove("show");
     });
-    document.getElementById("finalLogoutBtn")?.addEventListener("click", () => {
-        localStorage.clear();
-        window.location.href = "../index.html";
+    document.getElementById("finalLogoutBtn")?.addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.classList.add("is-loading");
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" });
+            if (!response.ok) throw new Error(`Sign out failed (${response.status}).`);
+            ["user_id", "username", "role", "user_display_name"].forEach(key => localStorage.removeItem(key));
+            window.location.href = "../index.html";
+        } catch (error) {
+            console.error("Sign out error:", error);
+            alert(error.message || "Unable to sign out. Please try again.");
+            button.disabled = false;
+            button.classList.remove("is-loading");
+        }
     });
 });

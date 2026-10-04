@@ -1,6 +1,6 @@
 # src/api/routes/auth.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
@@ -8,7 +8,12 @@ from datetime import datetime, timedelta, timezone
 import secrets
 
 from src.core.database import get_db
-from src.core.auth import create_access_token
+from src.core.auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    AUTH_COOKIE_NAME,
+    create_access_token,
+    get_current_user,
+)
 from src.core.security import hash_password
 from src.core.config import settings
 
@@ -33,6 +38,15 @@ LOGIN_LOCKOUT_DURATION = timedelta(minutes=15)
 INVALID_CREDENTIALS_DETAIL = "Invalid credentials."
 
 
+def secure_auth_cookie(request: Request) -> bool:
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",", 1)[0]
+    return (
+        request.url.scheme == "https"
+        or forwarded_proto.strip().lower() == "https"
+        or request.url.hostname not in {"localhost", "127.0.0.1", "testserver"}
+    )
+
+
 # =========================================================
 # PASSWORD HASHING
 # =========================================================
@@ -47,12 +61,11 @@ pwd_context = CryptContext(
 # LOGIN
 # =========================================================
 
-@router.post(
-    "/login",
-    response_model=LoginResponse
-)
+@router.post("/login", response_model=LoginResponse)
 async def login(
     login_data: LoginRequest,
+    request: Request,
+    response: Response,
     db: Session = Depends(get_db)
 ):
 
@@ -139,18 +152,40 @@ async def login(
     # RETURN LOGIN RESPONSE
     # =====================================================
 
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=access_token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=secure_auth_cookie(request),
+        samesite="lax",
+        path="/",
+    )
+
     return LoginResponse(
-
-        access_token=access_token,
-
-        token_type="bearer",
-
         user_id=user.user_id,
-
         username=user.username,
-
         role=user.role,
+    )
 
+
+@router.get("/me")
+async def current_session(user: User = Depends(get_current_user)):
+    return {
+        "user_id": user.user_id,
+        "username": user.username,
+        "role": user.role,
+    }
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(request: Request, response: Response):
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        secure=secure_auth_cookie(request),
+        httponly=True,
+        samesite="lax",
+        path="/",
     )
 
 

@@ -134,11 +134,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   if (confirmBtn) {
-    confirmBtn.addEventListener("click", function (e) {
+    confirmBtn.addEventListener("click", async function (e) {
       e.preventDefault();
       e.stopPropagation();
-      localStorage.clear();
-      sessionStorage.clear();
+      confirmBtn.disabled = true;
+      try {
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
+          method: "POST"
+        });
+        if (!response.ok) throw new Error(`Sign out failed (${response.status}).`);
+      } catch (error) {
+        console.error("Sign out error:", error);
+        alert(error.message || "Unable to sign out. Please try again.");
+        confirmBtn.disabled = false;
+        return;
+      }
+      ["user_id", "username", "role", "user_display_name"].forEach(key => localStorage.removeItem(key));
       const isSubfolder = window.location.pathname.includes("/dashboards/") || window.location.pathname.includes("/pages/");
       window.location.href = isSubfolder ? "../index.html" : "index.html";
     });
@@ -191,4 +202,3 @@ true);
 
 
 });
-

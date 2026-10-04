@@ -34,8 +34,26 @@ function initNotifDropdown(){
 function initViewSwitching(onSwitch){
   const navButtons = document.querySelectorAll('.nav-item[data-view]');
   const views = document.querySelectorAll('.view');
+  const isSystemAdmin = Boolean(document.getElementById('view-users'));
+  const routeToView = {
+    dashboard: 'users',
+    'user-management': 'users',
+    'add-account': 'add-account',
+    'audit-logs': 'audit',
+    'archived-accounts': 'archived'
+  };
+  const viewToRoute = {
+    users: 'user-management',
+    'add-account': 'add-account',
+    audit: 'audit-logs',
+    archived: 'archived-accounts'
+  };
 
-  function switchView(viewKey){
+  function renderView(viewKey){
+    if (isSystemAdmin && viewKey === 'user-profile') {
+      document.getElementById('profileModal')?.classList.add('show');
+      return;
+    }
     views.forEach(v => v.classList.remove('active-view'));
     const target = document.getElementById('view-' + viewKey);
     if (target) target.classList.add('active-view');
@@ -48,9 +66,41 @@ function initViewSwitching(onSwitch){
     if (typeof onSwitch === 'function') onSwitch(viewKey);
   }
 
+  function switchView(viewKey){
+    if (isSystemAdmin) {
+      const route = viewToRoute[viewKey];
+      if (route && window.location.hash !== `#/${route}`) {
+        window.location.hash = `/${route}`;
+        return;
+      }
+      if (viewKey === 'user-profile' && window.location.hash !== '#/user-profile') {
+        window.location.hash = '/user-profile';
+        return;
+      }
+    }
+    renderView(viewKey);
+  }
+
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
+
+  if (isSystemAdmin) {
+    function renderRoute(){
+      const route = window.location.hash.replace(/^#\/?/, '') || 'dashboard';
+      if (route !== 'user-profile' && !routeToView[route]) {
+        history.replaceState(null, '', `${location.pathname}${location.search}#/dashboard`);
+      }
+      const viewKey = routeToView[route] || 'users';
+      if (!window.location.hash) {
+        history.replaceState(null, '', `${location.pathname}${location.search}#/dashboard`);
+      }
+      document.getElementById('profileModal')?.classList.toggle('show', route === 'user-profile');
+      renderView(viewKey);
+    }
+    window.addEventListener('hashchange', renderRoute);
+    renderRoute();
+  }
 
   window.switchView = switchView;
 }

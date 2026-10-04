@@ -24,7 +24,7 @@ const REGIONAL_SUMMARY_ENDPOINT        = `${API_BASE_URL}/api/report-submissions
 ============================================================ */
 
 function getAuthToken() {
-    return localStorage.getItem("access_token") || localStorage.getItem("token");
+    return "cookie-session";
 }
 
 function getAuthHeaders(includeContentType = true) {
@@ -1231,8 +1231,7 @@ function initAlertThreshold() {
             const response = await fetch(`${API_BASE_URL}/api/alert-thresholds`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify(payload)
             });

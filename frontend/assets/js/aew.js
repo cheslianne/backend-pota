@@ -22,7 +22,7 @@ const FORECASTS_ENDPOINT = `${API_BASE_URL}/api/forecasts/`;
 ============================================================ */
 
 function getAuthToken() {
-    return localStorage.getItem("access_token") || localStorage.getItem("token") || null;
+    return "cookie-session";
 }
 
 function getAuthHeaders() {

@@ -160,6 +160,7 @@ form.addEventListener('submit', async (e) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({
         username: username,
         password: password
@@ -186,9 +187,10 @@ form.addEventListener('submit', async (e) => {
 
 
 
-    /* ---------- Save Authentication Data ---------- */
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('token_type', data.token_type);
+    /* ---------- Save Non-sensitive Session Display Data ---------- */
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('token_type');
     localStorage.setItem('user_id', data.user_id);
     localStorage.setItem('username', data.username);
     localStorage.setItem('role', data.role);
@@ -231,6 +233,5 @@ form.addEventListener('submit', async (e) => {
     formStatus.textContent = error.message || 'Unable to connect to the server.';
   }
 });
-
 
 

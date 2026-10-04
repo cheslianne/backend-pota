@@ -9,11 +9,6 @@ from fastapi import (
     Request,
 )
 
-from fastapi.security import (
-    HTTPBearer,
-    HTTPAuthorizationCredentials,
-)
-
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
@@ -31,7 +26,7 @@ SECRET_KEY = "esaka-secret-key-change-this-later"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 8 * 60
 
-security = HTTPBearer()
+AUTH_COOKIE_NAME = "esaka_access_token"
 
 
 def create_access_token(data: dict):
@@ -67,12 +62,16 @@ def decode_access_token(token: str) -> dict:
 
 async def get_current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
 
-    # Get token
-    token = credentials.credentials
+    token = request.cookies.get(AUTH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Decode token
     payload = decode_access_token(token)
@@ -104,6 +103,13 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
+        )
+
+    if not user.is_active or user.is_archived:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # =====================================================

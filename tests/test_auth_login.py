@@ -70,12 +70,18 @@ def override_db():
 
 
 app.dependency_overrides[get_db] = override_db
-client = TestClient(app)
+client = TestClient(app, base_url="https://testserver")
 
 
 def test_login_errors_are_generic_and_five_failures_lock_account():
     username = "auth-qa-user"
     password = "CorrectPass1!"
+    bearer_only = client.get(
+        "/api/auth/me",
+        headers={"Authorization": "Bearer client-readable-token"},
+    )
+    assert bearer_only.status_code == 401
+
     db = session_factory()
     db.query(User).filter(User.username == username).delete()
     user = User(
@@ -155,6 +161,19 @@ def test_login_errors_are_generic_and_five_failures_lock_account():
         json={"username": username, "password": password},
     )
     assert successful_login.status_code == 200
+    assert "access_token" not in successful_login.json()
+    assert successful_login.cookies.get("esaka_access_token")
+    set_cookie = successful_login.headers["set-cookie"].lower()
+    assert "httponly" in set_cookie and "secure" in set_cookie
+
+    current_session = client.get("/api/auth/me")
+    assert current_session.status_code == 200
+    assert current_session.json()["username"] == username
+    db = session_factory()
+    db.query(User).filter(User.user_id == user_id).update({"is_active": False})
+    db.commit()
+    db.close()
+    assert client.get("/api/auth/me").status_code == 401
 
     db = session_factory()
     user = db.query(User).filter(User.user_id == user_id).one()
@@ -163,3 +182,5 @@ def test_login_errors_are_generic_and_five_failures_lock_account():
     db.query(User).filter(User.user_id == user_id).delete()
     db.commit()
     db.close()
+    assert client.post("/api/auth/logout").status_code == 204
+    assert client.get("/api/auth/me").status_code == 401
