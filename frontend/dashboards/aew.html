@@ -1965,7 +1965,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
               <div class="card">
                   <form id="registerFarmerForm">
                       <div class="form-grid-two">
-                          <div class="form-field-item"><label>Farmer ID (RSBSA ID) <span class="req">*</span></label><input type="text" id="regFarmerId" placeholder="e.g. 11-024-03-030-000013" required minlength="14" maxlength="20" inputmode="numeric" autocomplete="off" pattern="[0-9\-]{14,20}" title="Numbers (hyphens allowed): 14 to 16 digits, at most 20 characters"></div>
+                          <div class="form-field-item"><label>Farmer ID (RSBSA ID) <span class="req">*</span></label><input type="text" id="regFarmerId" placeholder="e.g. 11-024-03-030-000013" required minlength="20" maxlength="20" inputmode="numeric" autocomplete="off" pattern="[0-9]{2}-[0-9]{3}-[0-9]{2}-[0-9]{3}-[0-9]{6}" title="Enter the 16-digit RSBSA ID in this format: 00-000-00-000-000000"></div>
                           <div class="form-field-item"><label>Municipality <span class="req">*</span></label><select id="regMunicipality" required><option value="" disabled selected>Select Municipality</option></select></div>
                           <div class="form-field-item"><label>First Name <span class="req">*</span></label><input type="text" id="regFirstName" placeholder="Enter your first name" required></div>
                           <div class="form-field-item"><label>Barangay <span class="req">*</span></label><select id="regBarangay" required disabled><option value="" disabled selected>Select Municipality first</option></select></div>

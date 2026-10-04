@@ -1167,6 +1167,19 @@ function updateSearchPaginationText(resultCount) {
    FARMER SUBVIEWS
 ============================================================ */
 
+function formatRsbsaId(value) {
+    const digits = value.replace(/\D/g, "").slice(0, 16);
+    const groups = [
+        digits.slice(0, 2),
+        digits.slice(2, 5),
+        digits.slice(5, 7),
+        digits.slice(7, 10),
+        digits.slice(10, 16)
+    ];
+
+    return groups.filter(Boolean).join("-");
+}
+
 function initFarmerSubviews() {
     const listSubview = document.getElementById("farmersListSubview");
     const regSubview = document.getElementById("registerFarmerSubview");
@@ -1216,11 +1229,25 @@ function initFarmerSubviews() {
         console.log("Register Farmer Form found");
 
         const rsbsaInput = document.getElementById("regFarmerId");
-        const formatRsbsaId = (value) => value.replace(/[^\d-]/g, "").slice(0, 20);
 
         if (rsbsaInput) {
             rsbsaInput.addEventListener("input", () => {
-                rsbsaInput.value = formatRsbsaId(rsbsaInput.value);
+                const cursor = rsbsaInput.selectionStart ?? rsbsaInput.value.length;
+                const digitsBeforeCursor = rsbsaInput.value
+                    .slice(0, cursor)
+                    .replace(/\D/g, "")
+                    .length;
+                const digits = rsbsaInput.value.replace(/\D/g, "").slice(0, 16);
+                rsbsaInput.value = formatRsbsaId(digits);
+
+                const hyphensBeforeCursor = [2, 5, 7, 10]
+                    .filter((position) => position < digitsBeforeCursor)
+                    .length;
+                const nextCursor = Math.min(
+                    digitsBeforeCursor + hyphensBeforeCursor,
+                    rsbsaInput.value.length
+                );
+                rsbsaInput.setSelectionRange(nextCursor, nextCursor);
             });
         }
 
@@ -1245,9 +1272,8 @@ function initFarmerSubviews() {
                 alert("Please complete all required fields.");
                 return;
             }
-            const rsbsaDigitCount = rsbsaId.replace(/\D/g, "").length;
-            if (!/^[\d-]+$/.test(rsbsaId) || /--|^-|-$/.test(rsbsaId) || rsbsaId.length > 20 || rsbsaDigitCount < 14 || rsbsaDigitCount > 16) {
-                alert("Farmer ID must contain numbers (hyphens allowed) with 14 to 16 digits and at most 20 characters.");
+            if (!/^\d{2}-\d{3}-\d{2}-\d{3}-\d{6}$/.test(rsbsaId)) {
+                alert("Farmer ID must follow the 16-digit RSBSA format: 00-000-00-000-000000.");
                 return;
             }
 
