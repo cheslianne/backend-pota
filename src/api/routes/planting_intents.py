@@ -1,4 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
+import asyncio
+import json
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    File,
+    UploadFile,
+    Form,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from pydantic import BaseModel
@@ -6,8 +19,9 @@ import os
 import uuid
 from datetime import datetime
 
-from src.core.database import get_db
-from src.core.auth import get_current_user
+from src.core.config import settings
+from src.core.database import SessionLocal, get_db
+from src.core.auth import AUTH_COOKIE_NAME, decode_access_token, get_current_user
 
 from src.models.planting_intents import PlantingIntent
 from src.models.farmers import Farmer
@@ -335,6 +349,10 @@ def get_municipality_map_data(
     """
     Municipality-level supply status for the DA-RFO map.
     """
+    return _get_municipality_map_data(db)
+
+
+def _get_municipality_map_data(db: Session):
 
     rows = (
         db.query(
@@ -422,6 +440,78 @@ def get_municipality_map_data(
     return {
         "data": list(municipality_data.values())
     }
+
+
+def _get_authenticated_municipality_map(user_id: int, token: str):
+    current_payload = decode_access_token(token)
+    if not current_payload or current_payload.get("user_id") != user_id:
+        return None
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if (
+            not user
+            or not user.is_active
+            or user.is_archived
+            or user.role not in ("Agricultural Extension Worker", "AEW")
+        ):
+            return None
+        return _get_municipality_map_data(db)
+
+
+@router.websocket("/municipality-map/ws")
+async def municipality_map_updates(websocket: WebSocket):
+    origin = websocket.headers.get("origin", "").rstrip("/")
+    allowed_origins = {
+        configured.strip().rstrip("/")
+        for configured in settings.allowed_origins.split(",")
+        if configured.strip()
+    } | {"http://localhost:5500", "http://127.0.0.1:5500"}
+    token = websocket.cookies.get(AUTH_COOKIE_NAME)
+    payload = decode_access_token(token) if token else None
+
+    if origin not in allowed_origins or not payload or payload.get("user_id") is None:
+        await websocket.close(code=1008)
+        return
+
+    user_id = payload["user_id"]
+    snapshot = await asyncio.to_thread(
+        _get_authenticated_municipality_map,
+        user_id,
+        token,
+    )
+    if snapshot is None:
+        await websocket.close(code=1008)
+        return
+
+    await websocket.accept()
+    previous_snapshot = None
+    try:
+        while True:
+            serialized_snapshot = json.dumps(snapshot, default=str, sort_keys=True)
+            if serialized_snapshot != previous_snapshot:
+                await websocket.send_text(
+                    json.dumps({"type": "municipality-map", **snapshot}, default=str)
+                )
+                previous_snapshot = serialized_snapshot
+
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=15)
+            except asyncio.TimeoutError:
+                pass
+            except WebSocketDisconnect:
+                return
+
+            snapshot = await asyncio.to_thread(
+                _get_authenticated_municipality_map,
+                user_id,
+                token,
+            )
+            if snapshot is None:
+                await websocket.close(code=1008)
+                return
+    except WebSocketDisconnect:
+        return
 
 # ============================================================
 # GET ATTACHMENT

@@ -14,7 +14,7 @@
     if (redirecting || !window.location.pathname.includes("/dashboards/")) return;
     redirecting = true;
     sessionStorage.setItem("esaka_login_notice", message);
-    window.location.href = "../login.html";
+    window.location.replace("../login.html");
   }
 
   localStorage.removeItem("access_token");
@@ -49,6 +49,7 @@
     if (!sessionPromise) {
       sessionPromise = nativeFetch(`${apiBase.origin}/api/auth/me`, {
         credentials: "include",
+        cache: "no-store",
         headers: { Accept: "application/json" }
       }).then(async response => {
         if (response.status === 401) {
@@ -66,7 +67,7 @@
         return user;
       }).catch(error => {
         console.error("Unable to verify session:", error);
-        redirectToLogin("Unable to verify your session. Please log in again.");
+        sessionPromise = null;
         return null;
       });
     }
@@ -209,6 +210,12 @@
         }
       }
     }, true);
+  });
+
+  window.addEventListener("pageshow", event => {
+    if (!event.persisted || !window.location.pathname.includes("/dashboards/")) return;
+    sessionPromise = null;
+    getSession();
   });
 
   window.ESakaAuth = { getSession };

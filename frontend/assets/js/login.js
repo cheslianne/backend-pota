@@ -236,7 +236,7 @@ form.addEventListener('submit', async (e) => {
 
 
     setTimeout(() => {
-      window.location.href = dashboard;
+      window.location.replace(dashboard);
     }, 600);
 
 

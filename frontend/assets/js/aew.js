@@ -456,29 +456,54 @@ function initViewNavigation() {
     const navButtons = document.querySelectorAll(".nav-item[data-view]");
     const views = document.querySelectorAll(".view");
 
+    function activateView(targetViewKey) {
+        views.forEach(function(view) {
+            view.classList.remove("active-view");
+        });
+
+        const targetView = document.getElementById("view-" + targetViewKey);
+        if (targetView) {
+            targetView.classList.add("active-view");
+        }
+
+        navButtons.forEach(function(navButton) {
+            navButton.classList.toggle("active", navButton.dataset.view === targetViewKey);
+        });
+
+        if (targetViewKey === "map" && mapInstance) {
+            setTimeout(function() {
+                mapInstance.invalidateSize();
+            }, 100);
+        }
+    }
+
+    const initialView = document.querySelector(".nav-item[data-view].active")?.dataset.view;
+    if (initialView) {
+        window.history.replaceState(
+            { ...window.history.state, esakaAewView: initialView },
+            "",
+            window.location.href
+        );
+    }
+
     navButtons.forEach(function(button) {
         button.addEventListener("click", function() {
             const targetViewKey = this.dataset.view;
-
-            views.forEach(function(view) {
-                view.classList.remove("active-view");
-            });
-
-            const targetView = document.getElementById("view-" + targetViewKey);
-            if (targetView) {
-                targetView.classList.add("active-view");
-            }
-
-            navButtons.forEach(function(navButton) {
-                navButton.classList.toggle("active", navButton === button);
-            });
-
-            if (targetViewKey === "map" && mapInstance) {
-                setTimeout(function() {
-                    mapInstance.invalidateSize();
-                }, 100);
-            }
+            if (targetViewKey === document.querySelector(".nav-item[data-view].active")?.dataset.view) return;
+            window.history.pushState(
+                { ...window.history.state, esakaAewView: targetViewKey },
+                "",
+                window.location.href
+            );
+            activateView(targetViewKey);
         });
+    });
+
+    window.addEventListener("popstate", function(event) {
+        const viewKey = event.state?.esakaAewView;
+        if (viewKey && document.getElementById("view-" + viewKey)) {
+            activateView(viewKey);
+        }
     });
 }
 
@@ -10047,6 +10072,7 @@ async function initNotificationBell() {
     });
 
     await loadAEWNotifications();
+    connectAEWNotificationStream();
 }
 
 
@@ -10079,40 +10105,7 @@ async function loadAEWNotifications() {
             throw new Error(`Map API error: ${mapResponse.status}`);
         }
 
-        const mapResult = await mapResponse.json();
-
-        if (!Array.isArray(mapResult.data)) {
-            showNoNotifications();
-            return;
-        }
-
-        const alertKeys = new Set();
-        const alerts = [];
-
-        for (const municipalityData of mapResult.data) {
-            const municipality = municipalityData.municipality;
-            if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
-
-            for (const item of municipalityData.commodities) {
-                const status = String(item.status || "").toUpperCase();
-                if (!["OVERSUPPLY", "SURPLUS", "DEFICIT"].includes(status)) continue;
-
-                const commodity = String(item.commodity || "").trim();
-                if (!commodity) continue;
-
-                const key = `${municipality.toLowerCase()}|${commodity.toLowerCase()}|${status}`;
-                if (alertKeys.has(key)) continue;
-
-                alertKeys.add(key);
-                alerts.push({ municipality, commodity, status });
-            }
-        }
-
-        renderAEWNotifications(alerts);
-
-        if (notificationDot) {
-            notificationDot.style.display = alerts.length > 0 ? "block" : "none";
-        }
+        updateAEWNotifications(await mapResponse.json());
 
     } catch (error) {
         console.error("Failed to load AEW notifications:", error);
@@ -10125,6 +10118,76 @@ async function loadAEWNotifications() {
             notificationDot.style.display = "none";
         }
     }
+}
+
+function updateAEWNotifications(mapResult) {
+    const notificationDot = document.getElementById("notificationDot");
+    if (!Array.isArray(mapResult?.data)) {
+        showNoNotifications();
+        return;
+    }
+
+    const alertKeys = new Set();
+    const alerts = [];
+
+    for (const municipalityData of mapResult.data) {
+        const municipality = municipalityData.municipality;
+        if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
+
+        for (const item of municipalityData.commodities) {
+            const status = String(item.status || "").toUpperCase();
+            if (!["OVERSUPPLY", "SURPLUS", "DEFICIT"].includes(status)) continue;
+
+            const commodity = String(item.commodity || "").trim();
+            if (!commodity) continue;
+
+            const key = `${municipality.toLowerCase()}|${commodity.toLowerCase()}|${status}`;
+            if (alertKeys.has(key)) continue;
+
+            alertKeys.add(key);
+            alerts.push({ municipality, commodity, status });
+        }
+    }
+
+    renderAEWNotifications(alerts);
+    if (notificationDot) {
+        notificationDot.style.display = alerts.length > 0 ? "block" : "none";
+    }
+}
+
+let aewNotificationSocket = null;
+let aewNotificationReconnectTimer = null;
+
+function connectAEWNotificationStream() {
+    if (aewNotificationSocket?.readyState === WebSocket.OPEN ||
+        aewNotificationSocket?.readyState === WebSocket.CONNECTING) return;
+
+    const socketUrl = new URL("/api/planting-intents/municipality-map/ws", API_BASE_URL);
+    socketUrl.protocol = socketUrl.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(socketUrl);
+    aewNotificationSocket = socket;
+
+    socket.addEventListener("message", event => {
+        try {
+            const message = JSON.parse(event.data);
+            if (message.type === "municipality-map") {
+                updateAEWNotifications(message);
+            }
+        } catch (error) {
+            console.error("Unable to process live AEW notifications:", error);
+        }
+    });
+
+    socket.addEventListener("error", () => {
+        console.warn("Live AEW notifications are unavailable; the notification list will refresh when opened.");
+    });
+
+    socket.addEventListener("close", event => {
+        if (aewNotificationSocket === socket) aewNotificationSocket = null;
+        if (event.code === 1008) return;
+        clearTimeout(aewNotificationReconnectTimer);
+        aewNotificationReconnectTimer = setTimeout(connectAEWNotificationStream, 5000);
+    });
 }
 
 
