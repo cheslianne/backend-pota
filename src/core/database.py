@@ -170,7 +170,7 @@ def create_audit_logs(
 
     for obj in session.new:
 
-        if isinstance(obj, AuditLog):
+        if isinstance(obj, AuditLog) or getattr(obj, "__audit_skip__", False):
             continue
 
         mapper = inspect(obj).mapper
@@ -209,7 +209,7 @@ def create_audit_logs(
 
     for obj in session.dirty:
 
-        if isinstance(obj, AuditLog):
+        if isinstance(obj, AuditLog) or getattr(obj, "__audit_skip__", False):
             continue
 
         state = inspect(obj)
@@ -294,7 +294,7 @@ def create_audit_logs(
 
     for obj in session.deleted:
 
-        if isinstance(obj, AuditLog):
+        if isinstance(obj, AuditLog) or getattr(obj, "__audit_skip__", False):
             continue
 
         mapper = inspect(obj).mapper
