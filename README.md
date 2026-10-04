@@ -12,15 +12,17 @@ override `DATABASE_URL`.
 
 For the separate Railway frontend service, set `API_BASE_URL` to the backend
 service's public HTTPS URL (not the PostgreSQL internal hostname). The frontend
-uses this value for all API requests. Set `RUN_ETL_ON_STARTUP=true` on the
-backend when provisioning a new database so the bundled market-price seed data
-and forecasts are loaded before the API starts.
+container proxies `/api` requests to this backend and exposes the API to browser
+code at the frontend's own origin, keeping the HTTP-only session cookie
+first-party. Set `RUN_ETL_ON_STARTUP=true` on the backend when provisioning a
+new database so the bundled market-price seed data and forecasts are loaded
+before the API starts.
 
 ## Frontend session and preferences
 
 The frontend authenticates with an HTTP-only, Secure `esaka_access_token`
-cookie. HTTPS responses mark the cookie `SameSite=None` so credentialed API
-requests work when the frontend and backend use separate deployment hosts.
+cookie. HTTPS responses mark the cookie `SameSite=None`; production browser API
+calls use the frontend-origin proxy to avoid third-party cookie restrictions.
 Authenticated write requests validate their `Origin`; `ALLOWED_ORIGINS` must
 include the deployed frontend origin. The login response contains account
 display data only; access tokens are not returned to JavaScript or saved in
