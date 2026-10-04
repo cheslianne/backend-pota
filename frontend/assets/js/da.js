@@ -4,7 +4,7 @@
    (Pagination: Buyer Registry 7/page, System Alerts 4/page, ETL Logs 7/page)
 ============================================================ */
 
-const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = window.API_BASE_URL || "https://esaka-backend-production.up.railway.app";
 
 const PENDING_BUYERS_ENDPOINT      = `${API_BASE_URL}/api/buyer-status/pending`;
 const VERIFIED_BUYERS_ENDPOINT     = `${API_BASE_URL}/api/buyer-status/verified`;

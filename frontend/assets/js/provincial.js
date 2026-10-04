@@ -3,7 +3,7 @@
    Aligned with Municipal dashboard logic
 ============================================================ */
 
-const API_BASE_URL = window.API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = window.API_BASE_URL || "https://esaka-backend-production.up.railway.app";
 
 const PROVINCIAL_PENDING_ENDPOINT      = `${API_BASE_URL}/api/report-submissions/for-provincial-validation`;
 const SENT_TO_REGIONAL_ENDPOINT        = `${API_BASE_URL}/api/report-submissions/sent-to-regional`;
