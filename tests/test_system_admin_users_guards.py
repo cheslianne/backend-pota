@@ -13,11 +13,19 @@ sys.path.insert(0, ".")
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql.elements import TextClause
 
 
 @compiles(JSONB, "sqlite")
 def _jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
+
+
+@compiles(TextClause, "sqlite")
+def _postgres_json_default_sqlite(element, compiler, **kw):
+    if element.text.strip() == "'[]'::jsonb":
+        return "'[]'"
+    return compiler.visit_textclause(element, **kw)
 
 
 from fastapi import FastAPI
@@ -38,6 +46,7 @@ for _, module_name, _ in pkgutil.iter_modules(src.models.__path__):
 from src.models.users import User
 from src.models.audit_logs import AuditLog
 from src.models.farmers import Farmer
+from src.api.routes import auth as auth_routes
 from src.api.routes import users as users_routes
 
 engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -46,6 +55,7 @@ session_factory = sessionmaker(bind=engine)
 
 app = FastAPI()
 app.include_router(users_routes.router, prefix="/api/users")
+app.include_router(auth_routes.router, prefix="/api/auth")
 
 
 def override_db():
@@ -77,7 +87,7 @@ client = TestClient(app)
 def make_user(username, role, **extra):
     session = session_factory()
     user = User(
-        first_name="T", last_name=username, username=username, email_address=f"{username}@gmail.com",
+        first_name="T", last_name="User", username=username, email_address=f"{username}@gmail.com",
         phone_number="09171234567", password="x", role=role, is_active=True, is_archived=False, **extra,
     )
     session.add(user)
@@ -140,10 +150,49 @@ def test_create_normalizes_role():
     response = client.post("/api/users", json={
         "first_name": "N", "last_name": "U", "username": "newaew",
         "email_address": "newaew@gmail.com", "phone_number": "09171234567",
-        "role": "AEW", "password": "Passw0rd!",
+        "birthdate": "1990-01-15", "role": "AEW", "password": "Passw0rd!",
     })
     assert response.status_code in (200, 201), response.text
     assert response.json()["role"] == "Agricultural Extension Worker", response.json()
+    assert response.json()["birthdate"] == "1990-01-15"
+
+
+def test_profile_name_and_birthdate_round_trip():
+    acting["id"] = admin_one
+    response = put(plain_user, first_name="Avery", last_name="Santos", birthdate="1992-04-03")
+    assert response.status_code == 200, response.text
+    assert response.json()["first_name"] == "Avery"
+    assert response.json()["last_name"] == "Santos"
+    assert response.json()["birthdate"] == "1992-04-03"
+
+
+def test_admin_cannot_deactivate_own_account():
+    acting["id"] = admin_one
+    response = client.patch(f"/api/users/{admin_one}/status", json={"is_active": False})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "You cannot deactivate your own account"
+
+    session = session_factory()
+    user = session.query(User).filter(User.user_id == admin_one).first()
+    assert user.is_active is True
+    session.close()
+
+
+def test_session_returns_profile_names_and_birthdate():
+    session = session_factory()
+    user = session.query(User).filter(User.user_id == admin_one).first()
+    user.first_name = "Casey"
+    user.last_name = "Admin"
+    user.birthdate = date(1988, 2, 9)
+    session.commit()
+    session.close()
+    acting["id"] = admin_one
+
+    response = client.get("/api/auth/me")
+    assert response.status_code == 200
+    assert response.json()["first_name"] == "Casey"
+    assert response.json()["last_name"] == "Admin"
+    assert response.json()["birthdate"] == "1988-02-09"
 
 
 def test_delete_guards():

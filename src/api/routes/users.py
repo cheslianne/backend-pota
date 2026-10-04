@@ -231,6 +231,7 @@ def read_archived_users(
             "username": user.username,
             "email_address": user.email_address,
             "phone_number": user.phone_number,
+            "birthdate": user.birthdate,
             "role": user.role,
             "region": user.region,
             "province": user.province,
@@ -537,6 +538,12 @@ def update_user_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
+        )
+
+    if db_user.user_id == current_user.user_id and status_update.is_active is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own account"
         )
 
     # PREVENT DEACTIVATING LAST ADMIN

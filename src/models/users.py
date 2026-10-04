@@ -4,6 +4,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    Date,
     DateTime,
     Boolean,
     Index,
@@ -32,6 +33,7 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email_address = Column(String(100), unique=True, nullable=False)
     phone_number = Column(String(15), nullable=False)
+    birthdate = Column(Date, nullable=True)
 
     # ============================================================
     # AUTHENTICATION

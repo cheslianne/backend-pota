@@ -32,4 +32,7 @@ view at `/dashboards/system-admin.html#/user-management`. Other routes include
 `/dashboards/system-admin.html#/user-profile`. Hash routing preserves direct
 links and browser history without requiring additional static-host rewrites.
 Account names accept Unicode letters and common name punctuation; account
-usernames and phone numbers are validated on both frontend and backend.
+usernames and phone numbers are validated on both frontend and backend. New
+accounts collect birthdates, while existing accounts without one remain
+supported. Profile settings load and save first name, last name, and birthdate
+through the authenticated API rather than reconstructing them from local labels.

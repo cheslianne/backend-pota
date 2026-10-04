@@ -1,4 +1,5 @@
 const API_BASE_URL = window.API_BASE_URL || "https://esaka-backend-production.up.railway.app";
+let currentSessionUser = null;
 
 
 /* ============================================================
@@ -57,8 +58,8 @@ function initializeLoggedInUser(user) {
         window.location.href = "../index.html";
         return false;
     }
-    // ✅ Priority: user_display_name > username
-    const username =
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    const displayName = fullName ||
         localStorage.getItem("user_display_name") ||
         user.username ||
         "Unknown User";
@@ -66,9 +67,12 @@ function initializeLoggedInUser(user) {
     localStorage.setItem("user_id", user.user_id);
     localStorage.setItem("username", user.username);
     localStorage.setItem("role", role);
+    if (fullName) localStorage.setItem("user_display_name", fullName);
+    if (user.birthdate) localStorage.setItem("user_birthdate", user.birthdate);
+    else localStorage.removeItem("user_birthdate");
     const usernameElement = document.getElementById("loggedInUserName");
     const roleElement = document.getElementById("loggedInUserRole");
-    if (usernameElement) usernameElement.textContent = username;
+    if (usernameElement) usernameElement.textContent = displayName;
     if (roleElement) roleElement.textContent = role;
     return true;
 }
@@ -403,6 +407,7 @@ function renderUsersTable() {
         const isActive = isUserActive(user);
         const roleStyle = getRoleStyle(role);
         const userId = user.user_id ?? user.id ?? "";
+        const isCurrentUser = String(userId) === String(localStorage.getItem("user_id"));
 
         row.innerHTML = `
             <td><span class="name-pill">${escapeHTML(fullName)}</span></td>
@@ -410,10 +415,10 @@ function renderUsersTable() {
             <td><span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></td>
             <td><span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
             <td>
-                <button class="${isActive ? "btn-deactivate" : "btn-reactivate"}" type="button" data-user-id="${escapeHTML(userId)}" data-active="${isActive}">
+                <button class="${isActive ? "btn-deactivate" : "btn-reactivate"}" type="button" data-user-id="${escapeHTML(userId)}" data-active="${isActive}" ${isCurrentUser && isActive ? 'disabled title="You cannot deactivate your own account."' : ""}>
                     ${isActive ? "Deactivate" : "Reactivate"}
                 </button>
-                <button class="btn-archive" type="button" data-user-id="${escapeHTML(userId)}" data-user-name="${escapeHTML(fullName)}">
+                <button class="btn-archive" type="button" data-user-id="${escapeHTML(userId)}" data-user-name="${escapeHTML(fullName)}" ${isCurrentUser ? 'disabled title="You cannot archive your own account."' : ""}>
                     Archive
                 </button>
             </td>
@@ -587,6 +592,155 @@ function updateRoleSummaryCards(users) {
     setCount("countDARFO", counts["DA-RFO"]);
 }
 
+const dashboardChartInstances = {};
+
+function parseDashboardDate(value) {
+    if (!value) return null;
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+    const parsed = dateOnly
+        ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+        : new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function renderDashboardCharts() {
+    const charts = [
+        ["accountStatusChart", "accountStatusChartMessage"],
+        ["accountsCreatedChart", "accountsCreatedChartMessage"],
+        ["userGrowthChart", "userGrowthChartMessage"]
+    ];
+
+    const showChartMessage = message => {
+        charts.forEach(([canvasId, messageId]) => {
+            const canvas = document.getElementById(canvasId);
+            const messageEl = document.getElementById(messageId);
+            if (canvas) canvas.hidden = true;
+            if (messageEl) {
+                messageEl.hidden = false;
+                messageEl.textContent = message;
+            }
+            dashboardChartInstances[canvasId]?.destroy();
+            delete dashboardChartInstances[canvasId];
+        });
+    };
+
+    if (dashboardUsersLoading) {
+        showChartMessage("Loading account analytics...");
+        return;
+    }
+    if (dashboardUsersError) {
+        showChartMessage("Account analytics are unavailable because account data could not be loaded.");
+        return;
+    }
+    if (typeof Chart === "undefined") {
+        showChartMessage("Charts are unavailable because the chart library could not be loaded.");
+        return;
+    }
+
+    charts.forEach(([canvasId, messageId]) => {
+        const canvas = document.getElementById(canvasId);
+        const messageEl = document.getElementById(messageId);
+        if (canvas) canvas.hidden = false;
+        if (messageEl) messageEl.hidden = true;
+    });
+
+    const activeCount = cachedUsers.filter(isUserActive).length;
+    const inactiveCount = cachedUsers.length - activeCount;
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    monthStart.setMonth(monthStart.getMonth() - 11);
+
+    const monthDates = Array.from({ length: 12 }, (_, index) =>
+        new Date(monthStart.getFullYear(), monthStart.getMonth() + index, 1)
+    );
+    const monthKeys = monthDates.map(date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
+    const createdPerMonth = new Map(monthKeys.map(key => [key, 0]));
+    let olderAccounts = 0;
+
+    cachedUsers.forEach(user => {
+        const createdAt = parseDashboardDate(user.created_at);
+        if (!createdAt) return;
+        const key = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
+        if (createdAt < monthStart) olderAccounts++;
+        if (createdPerMonth.has(key)) createdPerMonth.set(key, createdPerMonth.get(key) + 1);
+    });
+
+    const monthlyCounts = monthKeys.map(key => createdPerMonth.get(key));
+    const growthCounts = [];
+    let cumulativeCount = olderAccounts;
+    monthlyCounts.forEach(count => {
+        cumulativeCount += count;
+        growthCounts.push(cumulativeCount);
+    });
+    const monthLabels = monthDates.map(date => date.toLocaleDateString("en", { month: "short", year: "numeric" }));
+
+    Object.values(dashboardChartInstances).forEach(chart => chart.destroy());
+    Object.keys(dashboardChartInstances).forEach(key => delete dashboardChartInstances[key]);
+
+    const statusCanvas = document.getElementById("accountStatusChart");
+    const createdCanvas = document.getElementById("accountsCreatedChart");
+    const growthCanvas = document.getElementById("userGrowthChart");
+    if (!statusCanvas || !createdCanvas || !growthCanvas) return;
+
+    dashboardChartInstances.accountStatusChart = new Chart(statusCanvas, {
+        type: "pie",
+        data: {
+            labels: ["Active", "Inactive"],
+            datasets: [{
+                data: [activeCount, inactiveCount],
+                backgroundColor: ["#1c7549", "#d99a37"],
+                borderColor: "#ffffff",
+                borderWidth: 3
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom" } }
+        }
+    });
+
+    dashboardChartInstances.accountsCreatedChart = new Chart(createdCanvas, {
+        type: "bar",
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: "Accounts created",
+                data: monthlyCounts,
+                backgroundColor: "#2e7d5b",
+                borderRadius: 5
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    dashboardChartInstances.userGrowthChart = new Chart(growthCanvas, {
+        type: "line",
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: "Cumulative accounts",
+                data: growthCounts,
+                borderColor: "#2e7d5b",
+                backgroundColor: "rgba(46, 125, 91, .12)",
+                pointBackgroundColor: "#e3a93a",
+                pointRadius: 3,
+                fill: true,
+                tension: .3
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
 function renderDashboardSummary() {
     const setValue = (id, value) => {
         const element = document.getElementById(id);
@@ -604,6 +758,7 @@ function renderDashboardSummary() {
         setValue("dashboardActiveUsers", activeCount);
         setValue("dashboardInactiveUsers", cachedUsers.length - activeCount);
     }
+    renderDashboardCharts();
 
     const activityContainer = document.getElementById("dashboardRecentActivity");
     if (dashboardActivityLoading) {
@@ -689,6 +844,10 @@ async function toggleUserStatus(button) {
     const userId = button.dataset.userId;
     const currentStatus = button.dataset.active === "true";
     if (!userId) return;
+    if (currentStatus && String(userId) === String(localStorage.getItem("user_id"))) {
+        alert("You cannot deactivate your own account.");
+        return;
+    }
 
 
     const modal = document.getElementById("confirmStatusModal");
@@ -760,6 +919,10 @@ async function archiveUser(button) {
     const userId = button.dataset.userId;
     const userName = button.dataset.userName || "this user";
     if (!userId) return;
+    if (String(userId) === String(localStorage.getItem("user_id"))) {
+        alert("You cannot archive your own account.");
+        return;
+    }
 
 
     const modal = document.getElementById("confirmArchiveModal");
@@ -1038,6 +1201,7 @@ async function createAccount(event) {
     const lastName = document.getElementById("lastName")?.value.trim();
     const username = document.getElementById("newUsername")?.value.trim();
     const email = document.getElementById("newEmail")?.value.trim();
+    const birthdate = document.getElementById("newBirthdate")?.value;
     const password = document.getElementById("newPassword")?.value;
     const confirmPassword = document.getElementById("confirmPassword")?.value;
     const phone = document.getElementById("phoneNumber")?.value.trim();
@@ -1056,8 +1220,14 @@ async function createAccount(event) {
     const municipalityName = municipalitySelect?.selectedOptions[0]?.textContent?.trim() || "";
 
 
-    if (!firstName || !lastName || !username || !email || !password || !confirmPassword || !phone || !role || !regionCode || !municipalityCode) {
+    if (!firstName || !lastName || !username || !email || !birthdate || !password || !confirmPassword || !phone || !role || !regionCode || !municipalityCode) {
         alert("Please fill in all required fields.");
+        return;
+    }
+    const today = new Date();
+    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (birthdate > todayLocal) {
+        alert("Birthdate cannot be in the future.");
         return;
     }
     if (!/^\d{11}$/.test(phone)) {
@@ -1095,6 +1265,7 @@ if (passwordError) {
                 last_name: lastName,
                 username: username,
                 email_address: email,
+                birthdate: birthdate,
                 phone_number: phone,
                 role: role,
                 password: password,
@@ -1498,6 +1669,7 @@ async function openEditUserForm(user) {
     document.getElementById("editLastName").value = user.last_name || "";
     document.getElementById("editUsername").value = user.username || "";
     document.getElementById("editEmail").value = user.email_address || user.email || "";
+    document.getElementById("editBirthdate").value = user.birthdate || "";
     document.getElementById("editPhone").value = user.phone_number || user.phone || "";
     document.getElementById("editRole").value = user.role || "";
 
@@ -1540,6 +1712,7 @@ async function saveUserEdits(event) {
     const lastName = document.getElementById("editLastName").value.trim();
     const username = document.getElementById("editUsername").value.trim();
     const email = document.getElementById("editEmail").value.trim();
+    const birthdate = document.getElementById("editBirthdate").value;
     const phone = document.getElementById("editPhone").value.trim();
     const role = document.getElementById("editRole").value;
 
@@ -1580,6 +1753,7 @@ async function saveUserEdits(event) {
             last_name: lastName,
             username: username,
             email_address: email,
+            birthdate: birthdate || null,
             phone_number: phone,
             role: role,
             region: region,
@@ -1618,6 +1792,7 @@ async function saveUserEdits(event) {
                 last_name: lastName,
                 username,
                 email_address: email,
+                birthdate: birthdate || null,
                 phone_number: phone,
                 role,
                 region,
@@ -1776,17 +1951,14 @@ function initProfileModal() {
     openProfileBtn.addEventListener("click", (e) => {
         e.stopPropagation();
 
-        const currentName = document.getElementById("loggedInUserName")?.textContent || "System Admin";
-        const nameParts = currentName.trim().split(" ");
-
-        if (profileFirstName) profileFirstName.value = nameParts[0] || "";
-        if (profileLastName) profileLastName.value = nameParts.slice(1).join(" ") || "";
+        if (profileFirstName) profileFirstName.value = currentSessionUser?.first_name || "";
+        if (profileLastName) profileLastName.value = currentSessionUser?.last_name || "";
 
         if (profileUsername) {
-            profileUsername.value = localStorage.getItem("username") || localStorage.getItem("user_id") || "sysadmin";
+            profileUsername.value = currentSessionUser?.username || localStorage.getItem("username") || "sysadmin";
         }
         if (profileBirthdate) {
-            profileBirthdate.value = localStorage.getItem("user_birthdate") || "1990-01-15";
+            profileBirthdate.value = currentSessionUser?.birthdate || "";
         }
 
         avatarOptions.forEach(opt => {
@@ -1817,33 +1989,77 @@ function initProfileModal() {
     });
 
     // Save profile
-    profileForm?.addEventListener("submit", (e) => {
+    profileForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const fName = profileFirstName.value.trim();
         const lName = profileLastName.value.trim();
         const bDate = profileBirthdate.value;
 
-        if (!fName || !lName || !bDate) {
-            showCustomAlert("Pakisagutan ang lahat ng kinakailangang fields.");
+        if (!fName || !lName) {
+            showCustomAlert("First name and last name are required.");
             return;
         }
 
-        localStorage.setItem("user_display_name", fName + " " + lName);
-        localStorage.setItem("user_birthdate", bDate);
-        localStorage.setItem("user_avatar_src", currentSelectedSrc);
+        const userId = currentSessionUser?.user_id || localStorage.getItem("user_id");
+        if (!userId) {
+            showCustomAlert("Unable to identify the signed-in account. Please sign in again.");
+            return;
+        }
 
-        loadSavedProfile();
+        const saveButton = profileForm.querySelector('button[type="submit"]');
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving...";
+        }
 
-        profileModal.classList.remove("show");
-        showCustomAlert("Profile updated and saved successfully!");
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                method: "PUT",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    first_name: fName,
+                    last_name: lName,
+                    birthdate: bDate || null
+                })
+            });
+            let data = {};
+            try { data = await response.json(); } catch { data = {}; }
+            if (response.status === 401) { handleUnauthorized(); return; }
+            if (!response.ok) throw new Error(getErrorMessage(data, "Failed to save profile."));
+
+            currentSessionUser = { ...currentSessionUser, ...data };
+            initializeLoggedInUser(currentSessionUser);
+            localStorage.setItem("user_avatar_src", currentSelectedSrc);
+            loadSavedProfile();
+            profileModal.classList.remove("show");
+            showCustomAlert("Profile updated and saved successfully!");
+        } catch (error) {
+            showCustomAlert(error.message || "Unable to save profile.");
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = "Save Changes";
+            }
+        }
     });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     const sessionUser = await window.ESakaAuth?.getSession();
+    currentSessionUser = sessionUser;
     if (!initializeLoggedInUser(sessionUser)) return;
     if (!checkAdminRole()) return;
+    const today = new Date();
+    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const birthdateInputs = [
+        document.getElementById("newBirthdate"),
+        document.getElementById("profileBirthdate"),
+        document.getElementById("editBirthdate")
+    ];
+    birthdateInputs.forEach(input => {
+        if (input) input.max = todayLocal;
+    });
 
     /* ============================================================
    PASSWORD TOGGLE (Show/Hide)

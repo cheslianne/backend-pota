@@ -176,6 +176,21 @@ body .modal-box h2 { color: var(--admin-ink); font-weight: 800; }
   color: var(--admin-muted);
   font-size: 12px;
 }
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.chart-panel { min-width: 0; padding: 18px; }
+.chart-panel .dashboard-panel-heading { min-height: 48px; margin-bottom: 8px; }
+.dashboard-chart-frame { position: relative; height: 240px; }
+.dashboard-chart-message {
+  margin-top: 10px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  text-align: center;
+}
 .dashboard-content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
@@ -246,6 +261,7 @@ body .dashboard-role-cards .summary-count { font-size: 27px; }
   body .main { padding: 24px 18px 48px; }
   body .topbar { padding: 0 18px; }
   .dashboard-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-chart-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   body .main-header { align-items: flex-start; }
@@ -256,6 +272,7 @@ body .dashboard-role-cards .summary-count { font-size: 27px; }
   body .dashboard-panel { padding: 17px; }
   body .dashboard-role-cards { grid-template-columns: 1fr; }
   .dashboard-panel-heading { align-items: flex-start; }
+  .dashboard-chart-frame { height: 220px; }
 }
 @media (max-width: 420px) {
   .dashboard-stat-grid { grid-template-columns: 1fr; }

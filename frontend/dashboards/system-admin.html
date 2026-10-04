@@ -6,6 +6,7 @@
   <title>System Admin — eSaka</title>
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/app-enhancements.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1009,7 +1010,7 @@
         <article class="dashboard-stat-card">
           <span class="dashboard-stat-label">Total Accounts</span>
           <strong id="dashboardTotalUsers">—</strong>
-          <span class="dashboard-stat-note">All registered accounts</span>
+          <span class="dashboard-stat-note">Current non-archived accounts</span>
         </article>
         <article class="dashboard-stat-card">
           <span class="dashboard-stat-label">Active Accounts</span>
@@ -1026,6 +1027,45 @@
           <strong id="dashboardAuditCount">—</strong>
           <span class="dashboard-stat-note">Recorded system activity</span>
         </article>
+      </div>
+
+      <div class="dashboard-chart-grid">
+        <section class="card dashboard-panel chart-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <h2>Active vs. Inactive Users</h2>
+              <p>Current non-archived accounts</p>
+            </div>
+          </div>
+          <div class="dashboard-chart-frame">
+            <canvas id="accountStatusChart" aria-label="Pie chart of active and inactive accounts"></canvas>
+          </div>
+          <p class="dashboard-chart-message" id="accountStatusChartMessage" hidden></p>
+        </section>
+        <section class="card dashboard-panel chart-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <h2>Accounts Created per Month</h2>
+              <p>Last 12 months, archived accounts excluded</p>
+            </div>
+          </div>
+          <div class="dashboard-chart-frame">
+            <canvas id="accountsCreatedChart" aria-label="Bar chart of accounts created each month"></canvas>
+          </div>
+          <p class="dashboard-chart-message" id="accountsCreatedChartMessage" hidden></p>
+        </section>
+        <section class="card dashboard-panel chart-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <h2>User Growth Trends</h2>
+              <p>Cumulative account creation over the last 12 months</p>
+            </div>
+          </div>
+          <div class="dashboard-chart-frame">
+            <canvas id="userGrowthChart" aria-label="Line graph of cumulative user growth"></canvas>
+          </div>
+          <p class="dashboard-chart-message" id="userGrowthChartMessage" hidden></p>
+        </section>
       </div>
 
       <div class="dashboard-content-grid">
@@ -1149,6 +1189,10 @@
             <div class="form-field">
               <label for="newEmail">Email *</label>
               <input type="email" id="newEmail" required>
+            </div>
+            <div class="form-field">
+              <label for="newBirthdate">Birthdate *</label>
+              <input type="date" id="newBirthdate" required>
             </div>
            <div class="form-field">
   <label for="newPassword">Password *</label>
@@ -1853,8 +1897,8 @@
           <input type="text" id="profileLastName" required>
         </div>
         <div class="form-field-item form-field-full">
-          <label>Birthdate <span class="req">*</span></label>
-          <input type="date" id="profileBirthdate" required>
+          <label>Birthdate</label>
+          <input type="date" id="profileBirthdate">
         </div>
       </div>
 
@@ -1906,6 +1950,10 @@
     <div class="form-field">
       <label for="editEmail">Email *</label>
       <input type="email" id="editEmail" required>
+    </div>
+    <div class="form-field">
+      <label for="editBirthdate">Birthdate</label>
+      <input type="date" id="editBirthdate">
     </div>
     <div class="form-field">
       <label for="editPhone">Phone Number *</label>

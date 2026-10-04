@@ -175,6 +175,9 @@ async def current_session(user: User = Depends(get_current_user)):
         "user_id": user.user_id,
         "username": user.username,
         "role": user.role,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "birthdate": user.birthdate,
     }
 
 

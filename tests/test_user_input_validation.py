@@ -11,6 +11,7 @@ def account_payload():
         "username": "elise.dela-cruz",
         "email_address": "elise@example.com",
         "phone_number": "09171234567",
+        "birthdate": "1990-01-15",
         "role": "Municipal Coordinator",
         "password": "Password1!",
     }
@@ -45,3 +46,12 @@ def test_profile_update_uses_the_same_field_validation():
     assert UserUpdate(first_name="Māori").first_name == "Māori"
     with pytest.raises(ValidationError):
         UserUpdate(first_name="Name🚀")
+
+
+def test_birthdate_is_validated_for_create_and_update():
+    payload = account_payload()
+    payload["birthdate"] = "2999-01-01"
+    with pytest.raises(ValidationError, match="Birthdate cannot be in the future"):
+        UserCreate(**payload)
+    with pytest.raises(ValidationError, match="Birthdate cannot be in the future"):
+        UserUpdate(birthdate="2999-01-01")
