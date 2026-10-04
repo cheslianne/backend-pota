@@ -576,7 +576,7 @@ function renderFilteredMapMarkers() {
 
             if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
                 markerColor = "#C0392B"; // Red
-            } else if (status.includes("BALANCED")) {
+            } else if (status.includes("BALANCE")) {
                 markerColor = "#2E7D32"; // Green
             } else if (status.includes("DEFICIT")) {
                 markerColor = "#D97706"; // Amber
