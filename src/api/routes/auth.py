@@ -47,6 +47,10 @@ def secure_auth_cookie(request: Request) -> bool:
     )
 
 
+def auth_cookie_samesite(request: Request) -> str:
+    return "none" if secure_auth_cookie(request) else "lax"
+
+
 # =========================================================
 # PASSWORD HASHING
 # =========================================================
@@ -158,7 +162,7 @@ async def login(
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,
         secure=secure_auth_cookie(request),
-        samesite="lax",
+        samesite=auth_cookie_samesite(request),
         path="/",
     )
 
@@ -187,7 +191,7 @@ async def logout(request: Request, response: Response):
         key=AUTH_COOKIE_NAME,
         secure=secure_auth_cookie(request),
         httponly=True,
-        samesite="lax",
+        samesite=auth_cookie_samesite(request),
         path="/",
     )
 

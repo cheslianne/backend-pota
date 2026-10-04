@@ -12,6 +12,7 @@ from fastapi import (
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
+from src.core.config import settings
 from src.core.database import (
     get_db,
     current_user_id,
@@ -72,6 +73,20 @@ async def get_current_user(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        origin = request.headers.get("origin")
+        if origin:
+            allowed_origins = {
+                configured.strip().rstrip("/")
+                for configured in settings.allowed_origins.split(",")
+                if configured.strip()
+            } | {"http://localhost:5500", "http://127.0.0.1:5500"}
+            if origin.rstrip("/") not in allowed_origins:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Untrusted request origin",
+                )
 
     # Decode token
     payload = decode_access_token(token)

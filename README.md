@@ -19,7 +19,9 @@ and forecasts are loaded before the API starts.
 ## Frontend session and preferences
 
 The frontend authenticates with an HTTP-only, Secure `esaka_access_token`
-cookie. Browser API requests include credentials, so `ALLOWED_ORIGINS` must
+cookie. HTTPS responses mark the cookie `SameSite=None` so credentialed API
+requests work when the frontend and backend use separate deployment hosts.
+Authenticated write requests validate their `Origin`; `ALLOWED_ORIGINS` must
 include the deployed frontend origin. The login response contains account
 display data only; access tokens are not returned to JavaScript or saved in
 browser storage. The theme preference is stored locally and is independent of
