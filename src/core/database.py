@@ -13,10 +13,32 @@ from src.core.config import settings
 # DATABASE CONNECTION
 # =========================================================
 
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{settings.db_user}:{quote_plus(settings.db_password)}"
-    f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
-)
+def _build_database_url() -> str:
+    """Use the provider URL first, with DB_* kept for local compatibility."""
+    if settings.database_url:
+        return settings.database_url.replace("postgres://", "postgresql://", 1)
+
+    legacy_values = {
+        "DB_HOST": settings.db_host,
+        "DB_PORT": settings.db_port,
+        "DB_NAME": settings.db_name,
+        "DB_USER": settings.db_user,
+        "DB_PASSWORD": settings.db_password,
+    }
+    missing = [name for name, value in legacy_values.items() if value is None]
+    if missing:
+        raise RuntimeError(
+            "Database configuration is incomplete. Set DATABASE_URL or all "
+            f"legacy variables: {', '.join(missing)}."
+        )
+
+    return (
+        f"postgresql://{settings.db_user}:{quote_plus(settings.db_password)}"
+        f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+    )
+
+
+SQLALCHEMY_DATABASE_URL = _build_database_url()
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
