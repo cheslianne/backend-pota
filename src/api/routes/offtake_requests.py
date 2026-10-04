@@ -5,6 +5,8 @@ from src.core.auth import get_current_user
 from src.core.database import get_db
 from src.models.offtake_requests import OfftakeRequest
 from src.models.buyers import Buyer
+from src.models.buyer_registry import BuyerRegistry
+from src.models.buyer_status import BuyerStatus
 from src.models.farmers import Farmer
 from src.models.users import User
 from src.api.services.email_service import send_offtake_request_email
@@ -83,6 +85,26 @@ async def create_offtake_request(
         .all()
     )
 
+    # Include verified registry buyers that have no row in `buyers`
+    known_emails = {b.email_address.strip().lower() for b in buyers}
+    verified_registry = (
+        db.query(BuyerRegistry)
+        .join(
+            BuyerStatus,
+            BuyerStatus.buyer_registry_id == BuyerRegistry.buyer_registry_id,
+        )
+        .filter(BuyerStatus.status == "Verified")
+        .all()
+    )
+    recipients = [
+        {"email": b.email_address, "name": b.buyer_name} for b in buyers
+    ]
+    for reg in verified_registry:
+        email = (reg.email_address or "").strip()
+        if email and email.lower() not in known_emails:
+            known_emails.add(email.lower())
+            recipients.append({"email": email, "name": reg.organization})
+
     # ========================================================
     # DEBUG
     # ========================================================
@@ -105,54 +127,44 @@ async def create_offtake_request(
     # 5. SEND EMAIL NOTIFICATION
     # ========================================================
 
-    for buyer in buyers:
+    farmer_full_name = " ".join(
+        p for p in [
+            farmer.first_name,
+            farmer.middle_name,
+            farmer.last_name,
+        ] if p
+    )
+
+    for recipient in recipients:
+
+        print(f">>> Sending offtake email to: {recipient['email']}")
 
         try:
-
-            print(
-                f">>> Sending offtake email to: "
-                f"{buyer.email_address}"
-            )
-
             message_id = await send_offtake_request_email(
-                buyer_email=buyer.email_address,
-                buyer_name=buyer.buyer_name,
+                buyer_email=recipient["email"],
+                buyer_name=recipient["name"],
                 commodity=db_request.commodity,
                 quantity=db_request.quantity,
                 selling_price=db_request.selling_price,
                 harvest_date=db_request.harvest_date,
                 farmer_location=farmer.address,
-                farmer_name=" ".join(
-                    p for p in [
-                        farmer.first_name,
-                        farmer.middle_name,
-                        farmer.last_name,
-                        farmer.suffix,
-                    ] if p
-                ),
+                farmer_name=farmer_full_name,
                 rsbsa_id=farmer.rsbsa_id,
             )
-
-            print(
-                f">>> OFFTAKE EMAIL SENT SUCCESSFULLY "
-                f"to {buyer.email_address}"
-            )
-
-            print(
-                f">>> Brevo message_id: {message_id}"
-            )
-
         except Exception as e:
-
             print(
-                f">>> OFFTAKE EMAIL FAILED "
-                f"to {buyer.email_address}"
+                f">>> OFFTAKE EMAIL FAILED to {recipient['email']}: "
+                f"{type(e).__name__}: {e}"
             )
+            continue
 
+        if message_id:
             print(
-                f">>> ERROR: {type(e).__name__}: {str(e)}"
+                f">>> OFFTAKE EMAIL SENT to {recipient['email']} "
+                f"(message_id: {message_id})"
             )
-
+        else:
+            print(f">>> OFFTAKE EMAIL NOT SENT to {recipient['email']} (see email error above)")
     # ========================================================
     # 6. RETURN CREATED REQUEST
     # ========================================================

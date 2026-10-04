@@ -49,6 +49,8 @@ for _, module_name, _ in pkgutil.iter_modules(src.models.__path__):
     importlib.import_module(f"src.models.{module_name}")
 
 from src.models.buyers import Buyer
+from src.models.buyer_registry import BuyerRegistry
+from src.models.buyer_status import BuyerStatus
 from src.models.farmers import Farmer
 from src.models.offtake_requests import OfftakeRequest
 from src.models.users import User
@@ -63,6 +65,8 @@ engine = create_engine(
 session_factory = sessionmaker(bind=engine)
 
 Buyer.__table__.create(engine, checkfirst=True)
+BuyerRegistry.__table__.create(engine, checkfirst=True)
+BuyerStatus.__table__.create(engine, checkfirst=True)
 User.__table__.create(engine, checkfirst=True)
 Farmer.__table__.create(engine, checkfirst=True)
 OfftakeRequest.__table__.create(engine, checkfirst=True)
@@ -215,6 +219,51 @@ def test_aew_can_create_request_for_owned_farmer():
     assert response.json()["offtake_request_id"] in {
         item["offtake_request_id"] for item in visible_requests
     }
+
+
+def test_verified_registry_buyer_receives_offtake_email(monkeypatch):
+    records = seed_records()
+    acting_user["id"] = records["users"][0]
+
+    session = session_factory()
+    registry = BuyerRegistry(
+        organization="Verified Org",
+        contact_person="Contact",
+        phone_number="09170000000",
+        email_address="verified@example.test",
+        address="Somewhere",
+        document="doc.pdf",
+    )
+    session.add(registry)
+    session.flush()
+    session.add(
+        BuyerStatus(buyer_registry_id=registry.buyer_registry_id, status="Verified")
+    )
+    session.commit()
+    session.close()
+
+    sent = []
+
+    async def fake_send(**kwargs):
+        sent.append(kwargs)
+        return "id"
+
+    monkeypatch.setattr(offtake_requests_routes, "send_offtake_request_email", fake_send)
+
+    response = client.post(
+        "/api/offtake-requests/",
+        json={
+            "farmer_id": records["farmers"][0],
+            "commodity": "Tomato",
+            "quantity": "10.00",
+            "selling_price": "25.00",
+            "harvest_date": "2026-10-04",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [s["buyer_email"] for s in sent] == ["verified@example.test"]
+    assert sent[0]["farmer_name"] == "Test Farmer1"
 
 
 def test_aew_cannot_create_request_for_another_aews_farmer():
