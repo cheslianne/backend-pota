@@ -34,6 +34,8 @@ from src.models import (
 # Columns added to models after tables already existed in production;
 # create_all() won't add them to pre-existing tables, so patch them here.
 MISSING_COLUMNS = [
+    ("users", "failed_login_attempts", "INTEGER NOT NULL DEFAULT 0"),
+    ("users", "locked_until", "TIMESTAMP"),
     ("users", "region", "VARCHAR(100)"),
     ("users", "province", "VARCHAR(100)"),
     ("users", "municipality", "VARCHAR(100)"),

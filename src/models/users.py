@@ -38,6 +38,12 @@ class User(Base):
     # ============================================================
 
     password = Column(String(255), nullable=False)
+    failed_login_attempts = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    locked_until = Column(DateTime, nullable=True)
 
     # ============================================================
     # PASSWORD RESET

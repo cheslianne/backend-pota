@@ -177,7 +177,9 @@ form.addEventListener('submit', async (e) => {
     /* ---------- Handle Failed Login ---------- */
     if (!response.ok) {
       throw new Error(
-        data.detail || 'Invalid username or password.'
+        [401, 403].includes(response.status)
+          ? 'Invalid credentials.'
+          : data.detail || 'Unable to log in.'
       );
     }
 
@@ -229,7 +231,6 @@ form.addEventListener('submit', async (e) => {
     formStatus.textContent = error.message || 'Unable to connect to the server.';
   }
 });
-
 
 
 

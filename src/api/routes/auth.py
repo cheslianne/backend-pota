@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 
 from src.core.database import get_db
@@ -27,6 +27,10 @@ from src.api.services.email_service import (
 
 
 router = APIRouter()
+
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOGIN_LOCKOUT_DURATION = timedelta(minutes=15)
+INVALID_CREDENTIALS_DETAIL = "Invalid credentials."
 
 
 # =========================================================
@@ -61,6 +65,7 @@ async def login(
         .filter(
             User.username == login_data.username
         )
+        .with_for_update()
         .first()
     )
 
@@ -72,18 +77,25 @@ async def login(
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail=INVALID_CREDENTIALS_DETAIL,
         )
 
-    # =====================================================
-    # CHECK ACCOUNT STATUS
-    # =====================================================
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    if user.locked_until and user.locked_until > now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_CREDENTIALS_DETAIL,
+        )
+
+    if user.locked_until and user.locked_until <= now:
+        user.failed_login_attempts = 0
+        user.locked_until = None
 
     if not user.is_active:
-
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been deactivated.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_CREDENTIALS_DETAIL,
         )
 
     # =====================================================
@@ -94,11 +106,18 @@ async def login(
         login_data.password,
         user.password
     ):
-
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+            user.locked_until = now + LOGIN_LOCKOUT_DURATION
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail=INVALID_CREDENTIALS_DETAIL,
         )
+
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    db.commit()
 
     # =====================================================
     # CREATE JWT TOKEN
