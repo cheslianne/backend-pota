@@ -7722,18 +7722,45 @@ async function loadForecastResults() {
     }
 
     try {
-        const [forecastResult, priceResult] = await Promise.allSettled([
+        const [forecastResult, priceResult, marketForecastResult, marketPriceResult] = await Promise.allSettled([
             apiRequest(FORECASTS_ENDPOINT, { method: "GET" }),
             apiRequest(PRICE_DATA_ENDPOINT, { method: "GET" }),
+            apiRequest(MARKET_PRICE_FORECASTS_ENDPOINT, { method: "GET" }),
+            apiRequest(MARKET_PRICES_ENDPOINT, { method: "GET" }),
         ]);
 
-        if (forecastResult.status !== "fulfilled") throw forecastResult.reason;
-        if (!Array.isArray(forecastResult.value)) throw new Error("Invalid forecast response.");
-
-        FORECASTS_DATA = forecastResult.value;
-        PRICE_DATA = priceResult.status === "fulfilled" && Array.isArray(priceResult.value)
+        const legacyForecasts = forecastResult.status === "fulfilled" && Array.isArray(forecastResult.value)
+            ? forecastResult.value
+            : [];
+        const legacyPrices = priceResult.status === "fulfilled" && Array.isArray(priceResult.value)
             ? priceResult.value
             : [];
+        const marketForecasts = marketForecastResult.status === "fulfilled" && Array.isArray(marketForecastResult.value)
+            ? marketForecastResult.value
+            : [];
+        const marketPrices = marketPriceResult.status === "fulfilled" && Array.isArray(marketPriceResult.value)
+            ? marketPriceResult.value
+            : [];
+
+        FORECASTS_DATA = legacyForecasts.length
+            ? legacyForecasts
+            : marketForecasts
+                .filter((row) => String(row.price_type).toUpperCase() === "RETAIL")
+                .map((row) => ({
+                    commodity: row.commodity,
+                    forecast_date: `${row.year}-${String(row.month).padStart(2, "0")}-01`,
+                    forecast_price_low: row.forecast_price_low,
+                    forecast_price_high: row.forecast_price_high,
+                }));
+        PRICE_DATA = legacyPrices.length
+            ? legacyPrices
+            : marketPrices.map((row) => ({
+                commodity: row.commodity,
+                price_per_kg: row.retail_price_per_kg,
+                record_date: row.record_date,
+            }));
+
+        if (!FORECASTS_DATA.length) throw new Error("No forecast records were returned.");
 
         const sharedForecastStart = getSharedForecastStartMonth();
         const alignedForecasts = sharedForecastStart
@@ -7741,7 +7768,7 @@ async function loadForecastResults() {
             : FORECASTS_DATA;
         renderForecastResults(alignedForecasts);
         renderFairPriceDashboard();
-        if (priceResult.status === "rejected") {
+        if (priceResult.status === "rejected" && marketPriceResult.status === "rejected") {
             console.warn("Historical price series could not be loaded:", priceResult.reason);
         }
     } catch (error) {
