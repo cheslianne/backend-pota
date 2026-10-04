@@ -2612,7 +2612,7 @@ function createPlantingIntentRow(intent, type) {
                     if (m !== menu) m.style.display = 'none';
                 });
 
-                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                openStatusDropdownMenu(pill, menu);
             });
         }
 
@@ -4117,7 +4117,7 @@ function renderFinalizedIntents(intents) {
                     if (m !== menu) m.style.display = 'none';
                 });
                 
-                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                openStatusDropdownMenu(newPill, menu);
             });
         }
     });
@@ -4166,6 +4166,39 @@ function renderFinalizedIntents(intents) {
     });
 }
 
+
+function openStatusDropdownMenu(pill, menu) {
+    const willOpen = menu.style.display !== 'block';
+    if (!willOpen) {
+        menu.style.display = 'none';
+        return;
+    }
+
+    menu.style.display = 'block';
+    menu.style.position = 'fixed';
+    menu.style.transform = 'none';
+    menu.style.margin = '0';
+
+    const pillRect = pill.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - pillRect.bottom;
+    const openUp = spaceBelow < menuRect.height + 8 && pillRect.top > menuRect.height + 8;
+
+    const top = openUp ? pillRect.top - menuRect.height - 4 : pillRect.bottom + 4;
+    let left = pillRect.left + pillRect.width / 2 - menuRect.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - menuRect.width - 8));
+
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+}
+
+function closeStatusDropdownsOnScroll() {
+    document.querySelectorAll('.status-dropdown-menu').forEach(function(m) {
+        m.style.display = 'none';
+    });
+}
+window.addEventListener('scroll', closeStatusDropdownsOnScroll, true);
+window.addEventListener('resize', closeStatusDropdownsOnScroll);
 
 // UPDATE FINALIZED INTENT
 
