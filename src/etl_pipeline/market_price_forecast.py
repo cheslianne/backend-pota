@@ -15,7 +15,7 @@ from src.models.market_price_forecast import MarketPriceForecast
 # FORECAST SETTINGS
 # ============================================================
 
-FORECAST_WEEKS = 12
+FORECAST_WEEKS = 26
 
 DATA_SOURCE = "SEED_DATA"
 ETL_CADENCE = "Weekly"
