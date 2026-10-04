@@ -1002,6 +1002,7 @@ async function fetchFarmers() {
         FARMERS_DATA = farmers.map(normalizeFarmer);
         currentFarmersPage = 1;
         renderFarmersTable();
+        populateFarmerDropdowns();
         return FARMERS_DATA;
     } catch (error) {
         console.error("Unable to load farmers:", error);
