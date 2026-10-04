@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const themeKey = "esaka-theme";
   const apiBase = new URL(window.API_BASE_URL || "https://esaka-backend-production.up.railway.app");
   const nativeFetch = window.fetch.bind(window);
@@ -182,7 +182,7 @@
     toggle.id = "themeToggle";
     toggle.className = "theme-toggle";
     toggle.addEventListener("click", () => {
-      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
     });
     const topbar = document.querySelector(".topbar-right");
     (topbar || document.body).appendChild(toggle);

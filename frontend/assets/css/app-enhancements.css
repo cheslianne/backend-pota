@@ -155,3 +155,89 @@ input[type="submit"].is-loading::after {
     animation-duration: 1.8s;
   }
 }
+
+/* Uniform dark-mode readability across all roles */
+html[data-theme="dark"] body.pc-modern,
+html[data-theme="dark"] body {
+  --white: #202923;
+  --cream: #151b18;
+  --ink: #e5ece7;
+  --neutral: #e5ece7;
+  --muted: #a4b2a9;
+  --border: #3b4941;
+  --border-light: #344139;
+  --green-light: #2b3b31;
+  --primary: #7fd69a;
+  --pc-secondary: #a4b2a9;
+  --gold: #e6c36a;
+}
+
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] body.pc-modern .topbar,
+html[data-theme="dark"] .main-header,
+html[data-theme="dark"] .notification-dropdown,
+html[data-theme="dark"] .notification-header,
+html[data-theme="dark"] .notification-item,
+html[data-theme="dark"] .pc-panel,
+html[data-theme="dark"] .pc-kpi-card,
+html[data-theme="dark"] .alert-card,
+html[data-theme="dark"] .map-legend,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .dropdown-menu,
+html[data-theme="dark"] .pagination,
+html[data-theme="dark"] .filter-bar,
+html[data-theme="dark"] .toolbar {
+  background: #202923 !important;
+  color: #e5ece7 !important;
+  border-color: #3b4941 !important;
+}
+
+html[data-theme="dark"] .user-name,
+html[data-theme="dark"] .user-role,
+html[data-theme="dark"] .section-heading,
+html[data-theme="dark"] .eyebrow,
+html[data-theme="dark"] .map-legend,
+html[data-theme="dark"] .map-legend span,
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-header *,
+html[data-theme="dark"] .card h1,
+html[data-theme="dark"] .card h2,
+html[data-theme="dark"] .card h3,
+html[data-theme="dark"] .card h4,
+html[data-theme="dark"] .card p,
+html[data-theme="dark"] .card strong,
+html[data-theme="dark"] .card-subtitle,
+html[data-theme="dark"] .summary-label,
+html[data-theme="dark"] .help-text,
+html[data-theme="dark"] .alert-desc,
+html[data-theme="dark"] .pc-panel *,
+html[data-theme="dark"] .pc-kpi-card *,
+html[data-theme="dark"] .notification-dropdown *,
+html[data-theme="dark"] .alert-card *,
+html[data-theme="dark"] .modal-box *,
+html[data-theme="dark"] .modal-content * {
+  color: #e5ece7;
+}
+
+html[data-theme="dark"] .user-role,
+html[data-theme="dark"] .card-subtitle,
+html[data-theme="dark"] .summary-label,
+html[data-theme="dark"] .help-text,
+html[data-theme="dark"] .alert-desc {
+  color: #a4b2a9;
+}
+
+html[data-theme="dark"] .section-heading,
+html[data-theme="dark"] .eyebrow {
+  color: #7fd69a;
+}
+
+html[data-theme="dark"] .leaflet-popup-content-wrapper,
+html[data-theme="dark"] .leaflet-popup-tip,
+html[data-theme="dark"] .leaflet-control,
+html[data-theme="dark"] .leaflet-bar a {
+  background: #202923 !important;
+  color: #e5ece7 !important;
+}
