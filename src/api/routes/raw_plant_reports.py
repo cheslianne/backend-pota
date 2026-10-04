@@ -810,7 +810,10 @@ def get_reports_by_status(
 # UPLOAD REPORT ATTACHMENT
 # ============================================================
 
-UPLOAD_DIR = "uploads/reports"
+UPLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+    "uploads", "reports",
+)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"}
@@ -913,7 +916,12 @@ def get_report_attachment(
     if not attachment:
         raise HTTPException(404, "Attachment not found.")
     
-    filepath = os.path.join(UPLOAD_DIR, stored_name)
+    safe_name = os.path.basename(stored_name)
+    filepath = os.path.join(UPLOAD_DIR, safe_name)
+    if not os.path.exists(filepath):
+        legacy_path = os.path.join("uploads", "reports", safe_name)
+        if os.path.exists(legacy_path):
+            filepath = legacy_path
     if not os.path.exists(filepath):
         raise HTTPException(404, "File not found on disk.")
     

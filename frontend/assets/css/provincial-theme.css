@@ -135,6 +135,16 @@ body.pc-modern .summary-card{
   overflow:hidden;
   transition:transform .15s ease, box-shadow .15s ease;
 }
+/* Report detail summary is a stacked block, not a flex stat tile */
+body.pc-modern #reportSummaryCardWrapper .summary-card{
+  display:block;
+  width:100%;
+  padding:24px 28px;
+  margin-bottom:24px;
+}
+body.pc-modern #reportSummaryCardWrapper .summary-card:hover{ transform:none; }
+body.pc-modern #reportSummaryCardWrapper .summary-card-header{ width:100%; }
+body.pc-modern #reportSummaryBody{ width:100%; }
 body.pc-modern .summary-card:hover{ transform:translateY(-2px); box-shadow:var(--pc-card-shadow-hover); }
 body.pc-modern #plantingSummaryCards .summary-card{ cursor:pointer; }
 body.pc-modern #plantingSummaryCards .summary-card:focus-visible{
