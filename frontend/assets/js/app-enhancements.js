@@ -41,7 +41,7 @@
 
   function getSession() {
     if (!sessionPromise) {
-      sessionPromise = nativeFetch(`${apiBase}/api/auth/me`, {
+      sessionPromise = nativeFetch(`${apiBase.origin}/api/auth/me`, {
         credentials: "include",
         headers: { Accept: "application/json" }
       }).then(async response => {
