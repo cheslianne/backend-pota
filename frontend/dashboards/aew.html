@@ -2682,13 +2682,13 @@ body .view.active-view { animation: esakaFade .35s ease; }
                   <form id="submitOfftakeForm">
                       <div class="form-grid-two">
                           <div class="form-field-item">
-                              <label>Farmers Beneficiary <span class="req">*</span></label>
+                              <label>Farmer Name <span class="req">*</span></label>
                               <select id="offtakeFarmerSelect" required>
                                   <option value="">Select Farmer</option>
                               </select>
                           </div>
                           <div class="form-field-item">
-                              <label>RSBSA ID</label>
+                              <label>Farmer ID</label>
                               <input type="text" id="offtakeFarmerId" class="input-readonly" readonly>
                           </div>
                           <div class="form-field-item">
@@ -2710,7 +2710,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               <input type="number" id="offtakePrice" required>
                           </div>
                           <div class="form-field-item">
-                              <label>Projected Harvest / Pick-up <span class="req">*</span></label>
+                              <label>Harvest Date <span class="req">*</span></label>
                               <input type="date" id="offtakeHarvestDate" required>
                           </div>
                           <div class="form-field-item">
@@ -2743,11 +2743,11 @@ body .view.active-view { animation: esakaFade .35s ease; }
 
                       <table class="offtake-spec-table">
                           <tr>
-                              <td class="label-col">Farmers Beneficiary</td>
+                              <td class="label-col">Farmer Name</td>
                               <td id="confirmFarmerName">—</td>
                           </tr>
                           <tr>
-                              <td class="label-col">RSBSA ID</td>
+                              <td class="label-col">Farmer ID</td>
                               <td id="confirmFarmerId">—</td>
                           </tr>
                           <tr>
@@ -2763,7 +2763,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               <td>₱<span id="confirmSellingPrice">—</span> / kg</td>
                           </tr>
                           <tr>
-                              <td class="label-col">Projected Harvest / Pick-up</td>
+                              <td class="label-col">Harvest Date</td>
                               <td id="confirmHarvestDate">—</td>
                           </tr>
                           <tr>

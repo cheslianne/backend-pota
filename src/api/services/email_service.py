@@ -115,12 +115,12 @@ async def send_offtake_request_email(
                 <h3>Offtake Request Details</h3>
 
                 <p>
-                    <strong>Farmers Beneficiary:</strong> {farmer_name or "N/A"}<br>
-                    <strong>RSBSA ID:</strong> {rsbsa_id or "N/A"}<br>
+                    <strong>Farmer Name:</strong> {farmer_name or "N/A"}<br>
+                    <strong>Farmer ID:</strong> {rsbsa_id or "N/A"}<br>
                     <strong>Commodity:</strong> {commodity}<br>
                     <strong>Quantity (kg):</strong> {quantity}<br>
                     <strong>Selling Price (₱ / kg):</strong> {selling_price}<br>
-                    <strong>Projected Harvest / Pick-up:</strong> {harvest_date}<br>
+                    <strong>Harvest Date:</strong> {harvest_date}<br>
                     <strong>Farmer Location:</strong> {farmer_location}
                 </p>
 
