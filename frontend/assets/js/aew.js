@@ -1216,19 +1216,7 @@ function initFarmerSubviews() {
         console.log("Register Farmer Form found");
 
         const rsbsaInput = document.getElementById("regFarmerId");
-        const formatRsbsaId = (value) => {
-            const digits = value.replace(/\D/g, "").slice(0, 16);
-            const blocks = [2, 3, 2, 3, 6];
-            const parts = [];
-            let cursor = 0;
-            blocks.forEach((length) => {
-                if (cursor < digits.length) {
-                    parts.push(digits.slice(cursor, cursor + length));
-                    cursor += length;
-                }
-            });
-            return parts.join("-");
-        };
+        const formatRsbsaId = (value) => value.replace(/[^\d-]/g, "").slice(0, 20);
 
         if (rsbsaInput) {
             rsbsaInput.addEventListener("input", () => {
@@ -1257,10 +1245,9 @@ function initFarmerSubviews() {
                 alert("Please complete all required fields.");
                 return;
             }
-            const rsbsaDigits = rsbsaId.replace(/\D/g, "");
-            const formattedRsbsaId = formatRsbsaId(rsbsaId);
-            if (rsbsaDigits.length !== 16 || rsbsaId !== formattedRsbsaId) {
-                alert("Farmer ID (RSBSA ID) must contain exactly 16 digits in this format: XX-XXX-XX-XXX-XXXXXX.");
+            const rsbsaDigitCount = rsbsaId.replace(/\D/g, "").length;
+            if (!/^[\d-]+$/.test(rsbsaId) || /--|^-|-$/.test(rsbsaId) || rsbsaId.length > 20 || rsbsaDigitCount < 14 || rsbsaDigitCount > 16) {
+                alert("Farmer ID must contain numbers (hyphens allowed) with 14 to 16 digits and at most 20 characters.");
                 return;
             }
 
