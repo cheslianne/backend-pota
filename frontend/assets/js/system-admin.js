@@ -1191,10 +1191,193 @@ function openArchiveDetails(user) {
 /* ============================================================
    CREATE ACCOUNT
 ============================================================ */
+const addAccountFieldErrors = {
+    first_name: ["firstName", "firstNameError"],
+    last_name: ["lastName", "lastNameError"],
+    username: ["newUsername", "newUsernameError"],
+    email_address: ["newEmail", "newEmailError"],
+    birthdate: ["newBirthdate", "newBirthdateError"],
+    password: ["newPassword", "passwordHint"],
+    confirm_password: ["confirmPassword", "confirmPasswordHint"],
+    phone_number: ["phoneNumber", "phoneNumberError"],
+    role: ["roleSelect", "roleSelectError"],
+    region: ["regionSelect", "regionSelectError"],
+    province: ["provinceSelect", "provinceSelectError"],
+    municipality: ["municipalitySelect", "municipalitySelectError"]
+};
+
+function setAddAccountFieldError(fieldName, message) {
+    const field = addAccountFieldErrors[fieldName];
+    if (!field) return false;
+    const input = document.getElementById(field[0]);
+    const error = document.getElementById(field[1]);
+    if (error) {
+        error.textContent = message;
+        error.hidden = !message;
+    }
+    if (input) {
+        input.setAttribute("aria-invalid", message ? "true" : "false");
+    }
+    return Boolean(input && error);
+}
+
+function clearAddAccountFieldError(fieldName) {
+    const field = addAccountFieldErrors[fieldName];
+    if (!field) return;
+    const input = document.getElementById(field[0]);
+    const error = document.getElementById(field[1]);
+    if (input) input.removeAttribute("aria-invalid");
+    if (error && fieldName !== "password") {
+        error.textContent = "";
+        error.hidden = true;
+    }
+}
+
+function clearAddAccountErrors() {
+    Object.keys(addAccountFieldErrors).forEach(clearAddAccountFieldError);
+    const summary = document.getElementById("addAccountError");
+    if (summary) {
+        summary.textContent = "";
+        summary.hidden = true;
+    }
+}
+
+function validateAddAccountForm() {
+    const form = document.getElementById("addAccountForm");
+    if (!form) return false;
+    clearAddAccountErrors();
+
+    const firstName = document.getElementById("firstName");
+    const lastName = document.getElementById("lastName");
+    const username = document.getElementById("newUsername");
+    const email = document.getElementById("newEmail");
+    const birthdate = document.getElementById("newBirthdate");
+    const password = document.getElementById("newPassword");
+    const confirmPassword = document.getElementById("confirmPassword");
+    const phone = document.getElementById("phoneNumber");
+    const role = document.getElementById("roleSelect");
+    const region = document.getElementById("regionSelect");
+    const province = document.getElementById("provinceSelect");
+    const municipality = document.getElementById("municipalitySelect");
+
+    const errors = [];
+    const addError = (name, message) => {
+        setAddAccountFieldError(name, message);
+        errors.push(name);
+    };
+
+    if (!firstName.value.trim()) addError("first_name", "Please enter a first name.");
+    if (!lastName.value.trim()) addError("last_name", "Please enter a last name.");
+    if (!username.value.trim()) addError("username", "Please enter a username.");
+    if (!email.value.trim()) addError("email_address", "Please enter an email address.");
+    else if (!email.checkValidity()) addError("email_address", "Please enter a valid email address.");
+
+    const today = new Date();
+    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (!birthdate.value) addError("birthdate", "Please enter a birthdate.");
+    else if (birthdate.value > todayLocal) addError("birthdate", "Birthdate cannot be in the future.");
+
+    if (getPasswordRequirements(password.value).length) {
+        setAddAccountFieldError("password", getPasswordFeedback(password.value));
+        errors.push("password");
+    }
+    if (!confirmPassword.value) addError("confirm_password", "Please confirm the password.");
+    else if (password.value !== confirmPassword.value) addError("confirm_password", "Passwords do not match.");
+    if (!phone.value.trim()) addError("phone_number", "Please enter a phone number.");
+    else if (!/^\d{11}$/.test(phone.value.trim())) addError("phone_number", "Phone number must be exactly 11 digits (numbers only).");
+    if (!role.value) addError("role", "Please select a role.");
+    if (!region.value) addError("region", "Please select a region.");
+    if (!province.disabled && !province.value) addError("province", "Please select a province.");
+    if (!municipality.disabled && !municipality.value) addError("municipality", "Please select a municipality or city.");
+
+    if (errors.length) {
+        const firstInvalidField = addAccountFieldErrors[errors[0]];
+        document.getElementById(firstInvalidField[0])?.focus();
+        return false;
+    }
+    return true;
+}
+
+function showAddAccountApiErrors(data, fallback) {
+    const summary = document.getElementById("addAccountError");
+    const details = Array.isArray(data?.detail) ? data.detail : [data?.detail];
+    let hasFieldError = false;
+    const unmapped = [];
+
+    details.filter(Boolean).forEach(detail => {
+        const message = typeof detail === "string" ? detail : detail.msg || fallback;
+        const location = typeof detail === "object" && Array.isArray(detail.loc)
+            ? String(detail.loc[detail.loc.length - 1])
+            : "";
+        let fieldName = Object.keys(addAccountFieldErrors).find(key => key === location);
+        const normalizedMessage = message.toLowerCase();
+        if (!fieldName && normalizedMessage.includes("username")) fieldName = "username";
+        if (!fieldName && normalizedMessage.includes("email")) fieldName = "email_address";
+        if (!fieldName && normalizedMessage.includes("password")) fieldName = "password";
+        if (!fieldName && normalizedMessage.includes("phone")) fieldName = "phone_number";
+        if (!fieldName && normalizedMessage.includes("birthdate")) fieldName = "birthdate";
+
+        if (fieldName && setAddAccountFieldError(fieldName, message)) {
+            hasFieldError = true;
+        } else {
+            unmapped.push(message);
+        }
+    });
+
+    if (unmapped.length || !hasFieldError) {
+        if (summary) {
+            summary.textContent = unmapped.join(" ") || fallback;
+            summary.hidden = false;
+        }
+    }
+    const firstInvalid = document.querySelector("#addAccountForm [aria-invalid='true']");
+    firstInvalid?.focus();
+}
+
+function wireAddAccountInlineValidation() {
+    const form = document.getElementById("addAccountForm");
+    if (!form) return;
+
+    const updateConfirmPasswordFeedback = () => {
+        const password = document.getElementById("newPassword");
+        const confirm = document.getElementById("confirmPassword");
+        const hint = document.getElementById("confirmPasswordHint");
+        if (!password || !confirm || !hint) return;
+        const mismatch = Boolean(confirm.value) && confirm.value !== password.value;
+        hint.textContent = mismatch ? "Passwords do not match." : "";
+        hint.hidden = !mismatch;
+        confirm.setAttribute("aria-invalid", mismatch ? "true" : "false");
+    };
+
+    Object.entries(addAccountFieldErrors).forEach(([name, [inputId]]) => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const clear = () => {
+            clearAddAccountFieldError(name);
+            if (name === "password") updatePasswordFeedback();
+            if (inputId === "confirmPassword") updateConfirmPasswordFeedback();
+            const summary = document.getElementById("addAccountError");
+            if (summary) {
+                summary.textContent = "";
+                summary.hidden = true;
+            }
+        };
+        input.addEventListener("input", clear);
+        input.addEventListener("change", clear);
+    });
+
+    const password = document.getElementById("newPassword");
+    password?.addEventListener("focus", updatePasswordFeedback);
+    password?.addEventListener("input", updatePasswordFeedback);
+    password?.addEventListener("input", updateConfirmPasswordFeedback);
+    document.getElementById("confirmPassword")?.addEventListener("input", updateConfirmPasswordFeedback);
+}
+
 async function createAccount(event) {
     event.preventDefault();
     const form = document.getElementById("addAccountForm");
     if (!form) return;
+    if (!validateAddAccountForm()) return;
 
 
     const firstName = document.getElementById("firstName")?.value.trim();
@@ -1218,35 +1401,6 @@ async function createAccount(event) {
     const regionName = regionSelect?.selectedOptions[0]?.textContent?.trim() || "";
     const provinceName = provinceSelect?.selectedOptions[0]?.textContent?.trim() || "";
     const municipalityName = municipalitySelect?.selectedOptions[0]?.textContent?.trim() || "";
-
-
-    if (!firstName || !lastName || !username || !email || !birthdate || !password || !confirmPassword || !phone || !role || !regionCode || !municipalityCode) {
-        alert("Please fill in all required fields.");
-        return;
-    }
-    const today = new Date();
-    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    if (birthdate > todayLocal) {
-        alert("Birthdate cannot be in the future.");
-        return;
-    }
-    if (!/^\d{11}$/.test(phone)) {
-        alert("Phone number must be exactly 11 digits (numbers only).");
-        return;
-    }
-    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
-        alert("Email must be a valid @gmail.com address.");
-        return;
-    }
-    if (password !== confirmPassword) {
-        alert("Passwords do not match.");
-        return;
-    }
-    const passwordError = validatePassword(password);
-if (passwordError) {
-    alert(passwordError);
-    return;
-}
 
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -1279,10 +1433,15 @@ if (passwordError) {
         let data = {};
         try { data = await response.json(); } catch { data = {}; }
         if (response.status === 401) { handleUnauthorized(); return; }
-        if (!response.ok) throw new Error(getErrorMessage(data, "Failed to create account."));
+        if (!response.ok) {
+            showAddAccountApiErrors(data, getErrorMessage(data, "Failed to create account."));
+            return;
+        }
 
 
         form.reset();
+        clearAddAccountErrors();
+        updatePasswordFeedback();
         resetLocationDropdowns();
 
 
@@ -1291,9 +1450,12 @@ if (passwordError) {
 
         await loadUsers();
         await loadAuditLogs();
-        alert("Account created successfully!");
     } catch (error) {
-        alert(error.message || "Unable to create account.");
+        const summary = document.getElementById("addAccountError");
+        if (summary) {
+            summary.textContent = error.message || "Unable to create account.";
+            summary.hidden = false;
+        }
     } finally {
         if (submitButton) {
             submitButton.disabled = false;
@@ -1632,25 +1794,39 @@ function initHoverSidebar() {
    PASSWORD VALIDATION
 ============================================================ */
 function validatePassword(password) {
-    if (!password) {
-        return "Password is required.";
+    return getPasswordRequirements(password).length ? getPasswordFeedback(password) : null;
+}
+
+function getPasswordRequirements(password) {
+    const characters = [...password];
+    return [
+        [characters.length >= 8, "at least 8 characters"],
+        [characters.length <= 32, "no more than 32 characters"],
+        [/\p{Lu}/u.test(password), "at least one uppercase letter"],
+        [/\p{Ll}/u.test(password), "at least one lowercase letter"],
+        [/\p{N}/u.test(password), "at least one number"],
+        [/[^\p{L}\p{N}]/u.test(password), "at least one special character"]
+    ].filter(([met]) => !met).map(([, description]) => description);
+}
+
+function getPasswordFeedback(password) {
+    const unmet = getPasswordRequirements(password);
+    return unmet.length
+        ? `Password must contain ${unmet.join(", ")}.`
+        : "Password requirements met.";
+}
+
+function updatePasswordFeedback() {
+    const password = document.getElementById("newPassword");
+    const hint = document.getElementById("passwordHint");
+    if (!password || !hint) return;
+    const unmet = getPasswordRequirements(password.value);
+    hint.textContent = getPasswordFeedback(password.value);
+    if (document.activeElement === password || password.value) {
+        password.setAttribute("aria-invalid", unmet.length ? "true" : "false");
+    } else {
+        password.removeAttribute("aria-invalid");
     }
-    if (password.length < 8 || password.length > 32) {
-        return "Password must be 8–32 characters long.";
-    }
-    if (!/[A-Z]/.test(password)) {
-        return "Password must contain at least 1 uppercase letter.";
-    }
-    if (!/[a-z]/.test(password)) {
-        return "Password must contain at least 1 lowercase letter.";
-    }
-    if (!/[0-9]/.test(password)) {
-        return "Password must contain at least 1 number.";
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>_\-+=;'\[\]\\\/~`]/.test(password)) {
-        return "Password must contain at least 1 special character.";
-    }
-    return null; // valid
 }
 /* ============================================================
    EDIT USER DETAILS (CRUD - Update)
@@ -1738,11 +1914,6 @@ async function saveUserEdits(event) {
         alert("Phone number must be exactly 11 digits (numbers only).");
         return;
     }
-    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
-        alert("Email must be a valid @gmail.com address.");
-        return;
-    }
-
     const saveBtn = document.getElementById("saveEditUserBtn");
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving...";
@@ -2341,8 +2512,11 @@ document.getElementById("searchArchived")?.addEventListener("input", (e) => {
     });
 
 
+    wireAddAccountInlineValidation();
     document.getElementById("cancelAddAccount")?.addEventListener("click", () => {
         document.getElementById("addAccountForm")?.reset();
+        clearAddAccountErrors();
+        updatePasswordFeedback();
         resetLocationDropdowns();
         window.switchView?.("users");
     });

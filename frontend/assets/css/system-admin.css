@@ -131,6 +131,29 @@ body .search-box:focus-within, body input:focus, body select:focus, body textare
 body input, body select, body textarea { border-radius: 10px; border-color: var(--admin-line); background: #fff; }
 body select:disabled, body input:disabled, body textarea:disabled { background: #fff !important; color: var(--admin-muted) !important; opacity: .72; }
 body .form-section, body .form-field { border-color: var(--admin-line); }
+.validation-error,
+.form-error-summary {
+  display: block;
+  margin-top: 5px;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.form-error-summary { margin: 0 auto 0 0; }
+.validation-error[hidden],
+.form-error-summary[hidden] { display: none; }
+body input[aria-invalid="true"],
+body select[aria-invalid="true"] {
+  border-color: #b42318;
+}
+body .password-hint,
+body .field-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 body .modal-overlay { background: rgba(6,43,32,.55); backdrop-filter: blur(4px); }
 body .modal-box { border: 0; border-radius: 18px; box-shadow: 0 24px 60px rgba(6,43,32,.24); }

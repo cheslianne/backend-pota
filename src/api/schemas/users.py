@@ -21,6 +21,10 @@ def validate_person_name(value: str) -> str:
     return value
 
 
+def format_person_name(value: str) -> str:
+    return validate_person_name(value).title()
+
+
 def validate_username(value: str) -> str:
     value = value.strip()
     if not value or len(value) > 50 or any(
@@ -33,6 +37,21 @@ def validate_username(value: str) -> str:
 def validate_phone_number(value: str) -> str:
     if len(value) != 11 or not value.isascii() or not value.isdigit():
         raise ValueError("Phone number must contain exactly 11 digits.")
+    return value
+
+
+def validate_password(value: str) -> str:
+    requirements = (
+        (len(value) >= 8, "at least 8 characters"),
+        (len(value) <= 32, "no more than 32 characters"),
+        (any(char.isupper() for char in value), "one uppercase letter"),
+        (any(char.islower() for char in value), "one lowercase letter"),
+        (any(char.isdigit() for char in value), "one number"),
+        (any(not char.isalnum() for char in value), "one special character"),
+    )
+    missing = [description for is_met, description in requirements if not is_met]
+    if missing:
+        raise ValueError("Password must contain " + ", ".join(missing) + ".")
     return value
 
 
@@ -51,7 +70,7 @@ class UserBase(BaseModel):
     @field_validator("first_name", "last_name")
     @classmethod
     def names_contain_supported_characters(cls, value: str) -> str:
-        return validate_person_name(value)
+        return format_person_name(value)
 
     @field_validator("username")
     @classmethod
@@ -74,6 +93,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+    @field_validator("password")
+    @classmethod
+    def password_meets_requirements(cls, value: str) -> str:
+        return validate_password(value)
+
 
 class UserUpdate(BaseModel):
     first_name: str | None = None
@@ -91,7 +115,7 @@ class UserUpdate(BaseModel):
     @field_validator("first_name", "last_name")
     @classmethod
     def names_contain_supported_characters(cls, value: str | None) -> str | None:
-        return validate_person_name(value) if value is not None else None
+        return format_person_name(value) if value is not None else None
 
     @field_validator("username")
     @classmethod

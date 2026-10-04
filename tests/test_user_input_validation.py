@@ -26,6 +26,47 @@ def test_account_input_allows_unicode_letters_and_common_name_punctuation():
 
 
 @pytest.mark.parametrize(
+    ("first_name", "last_name", "expected_first", "expected_last"),
+    [
+        ("john", "mary anne", "John", "Mary Anne"),
+        ("juan", "dela cruz", "Juan", "Dela Cruz"),
+        ("māori", "o'neil", "Māori", "O'Neil"),
+    ],
+)
+def test_account_names_are_title_cased(first_name, last_name, expected_first, expected_last):
+    payload = account_payload()
+    payload["first_name"] = first_name
+    payload["last_name"] = last_name
+    user = UserCreate(**payload)
+    assert user.first_name == expected_first
+    assert user.last_name == expected_last
+
+
+@pytest.mark.parametrize(
+    "email",
+    [
+        "person@gmail.com",
+        "person@outlook.com",
+        "person@yahoo.com",
+        "person@icloud.com",
+        "person@protonmail.com",
+        "person@department.example",
+    ],
+)
+def test_email_accepts_common_and_custom_domains(email):
+    payload = account_payload()
+    payload["email_address"] = email
+    assert UserCreate(**payload).email_address == email
+
+
+def test_account_creation_rejects_malformed_email():
+    payload = account_payload()
+    payload["email_address"] = "not-an-email"
+    with pytest.raises(ValidationError):
+        UserCreate(**payload)
+
+
+@pytest.mark.parametrize(
     ("field", "value"),
     [
         ("first_name", "Ana 🙂"),
@@ -43,7 +84,8 @@ def test_account_input_rejects_unsupported_characters(field, value):
 
 
 def test_profile_update_uses_the_same_field_validation():
-    assert UserUpdate(first_name="Māori").first_name == "Māori"
+    assert UserUpdate(first_name="māori").first_name == "Māori"
+    assert UserUpdate(last_name="dela cruz").last_name == "Dela Cruz"
     with pytest.raises(ValidationError):
         UserUpdate(first_name="Name🚀")
 
@@ -55,3 +97,13 @@ def test_birthdate_is_validated_for_create_and_update():
         UserCreate(**payload)
     with pytest.raises(ValidationError, match="Birthdate cannot be in the future"):
         UserUpdate(birthdate="2999-01-01")
+
+
+def test_password_feedback_requirements_are_enforced_by_api_schema():
+    payload = account_payload()
+    payload["password"] = "Password1"
+    with pytest.raises(ValidationError, match="one special character"):
+        UserCreate(**payload)
+
+    payload["password"] = "Password1!"
+    assert UserCreate(**payload).password == "Password1!"
