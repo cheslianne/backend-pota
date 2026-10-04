@@ -76,10 +76,14 @@ html[data-theme="dark"] .summary-count {
 
 .theme-toggle {
   flex: none;
-  min-height: 36px;
-  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid var(--border, #dfe8e3);
-  border-radius: 9px;
+  border-radius: 50%;
   background: var(--white, #fff);
   color: var(--ink, #10261d);
   font: inherit;
@@ -90,9 +94,10 @@ html[data-theme="dark"] .summary-count {
 
 body > .theme-toggle {
   position: fixed;
-  top: 16px;
+  bottom: 16px;
   right: 16px;
-  z-index: 5000;
+  z-index: 900;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
 }
 
 #apiLoadingProgress {
