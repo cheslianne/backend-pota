@@ -9,3 +9,9 @@ set as a reference to the PostgreSQL service's `DATABASE_URL` variable. The
 older `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` variables
 remain supported for local development, but stale values for them cannot
 override `DATABASE_URL`.
+
+For the separate Railway frontend service, set `API_BASE_URL` to the backend
+service's public HTTPS URL (not the PostgreSQL internal hostname). The frontend
+uses this value for all API requests. Set `RUN_ETL_ON_STARTUP=true` on the
+backend when provisioning a new database so the bundled market-price seed data
+and forecasts are loaded before the API starts.

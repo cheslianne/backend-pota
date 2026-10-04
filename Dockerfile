@@ -23,7 +23,7 @@ RUN python -c "import cmdstanpy; cmdstanpy.set_cmdstan_path('/opt/cmdstan/cmdsta
 
 COPY src ./src
 COPY data ./data
-COPY init_db.py start.sh ./
+COPY init_db.py init_market_data.py start.sh ./
 COPY seed_admin.py seed_aew.py seed_alert_thresholds.py seed_buyers.py seed_darfo.py seed_farmers.py seed_municipal.py seed_planting_intents.py seed_provincial.py ./
 COPY uploads ./uploads
 

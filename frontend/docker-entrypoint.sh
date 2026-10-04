@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+if [ -z "${API_BASE_URL:-}" ]; then
+    echo "ERROR: API_BASE_URL is required for the deployed frontend." >&2
+    echo "Set it to the backend service's public HTTPS URL." >&2
+    exit 1
+fi
+
 # Inject the API_BASE_URL env var into a runtime config.js served to the browser
 cat > /usr/share/nginx/html/assets/js/config.js <<EOF
 window.API_BASE_URL = "${API_BASE_URL}";
