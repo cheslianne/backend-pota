@@ -772,7 +772,7 @@ function renderDashboardSummary() {
     setValue("dashboardAuditCount", cachedAuditLogs.length);
     if (!activityContainer) return;
     const recentLogs = [...cachedAuditLogs]
-        .sort((a, b) => new Date(b.created_at ?? b.timestamp ?? 0).getTime() - new Date(a.created_at ?? a.timestamp ?? 0).getTime())
+        .sort((a, b) => parseServerDate(b.created_at ?? b.timestamp ?? 0).getTime() - parseServerDate(a.created_at ?? a.timestamp ?? 0).getTime())
         .slice(0, 5);
 
     if (recentLogs.length === 0) {
@@ -1576,7 +1576,7 @@ function renderFilteredAuditLogs() {
         if (dateFilter) {
             const logDateVal = log.created_at ?? log.timestamp;
             if (logDateVal) {
-                const logDateOnly = new Date(logDateVal).toISOString().split('T')[0];
+                const logDateOnly = auditDateKey(logDateVal);
                 matchesDate = (logDateOnly === dateFilter);
             } else {
                 matchesDate = false;
@@ -1678,7 +1678,7 @@ if (auditNextBtn) {
             if (dateFilter) {
                 const logDateVal = log.created_at ?? log.timestamp;
                 if (logDateVal) {
-                    const logDateOnly = new Date(logDateVal).toISOString().split('T')[0];
+                    const logDateOnly = auditDateKey(logDateVal);
                     matchesDate = (logDateOnly === dateFilter);
                 } else {
                     matchesDate = false;
@@ -1704,16 +1704,31 @@ if (auditNextBtn) {
 }
 
 
+// The API returns UTC timestamps, sometimes without a timezone suffix; treat those as UTC.
+function parseServerDate(value) {
+    if (value instanceof Date) return value;
+    const text = String(value).trim();
+    const hasZone = /(Z|[+-]\d{2}:?\d{2})$/i.test(text);
+    const isoLike = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(text);
+    return new Date(isoLike && !hasZone ? text.replace(" ", "T") + "Z" : text);
+}
+
+function auditDateKey(value) {
+    const date = parseServerDate(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(date);
+}
+
 function formatAuditDate(value) {
     if (!value) return "—";
-    const date = new Date(value);
+    const date = parseServerDate(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
         year: "numeric", month: "short", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit"
     });
 }
-
 
 async function viewAuditLog(logId) {
     if (!logId) return;
