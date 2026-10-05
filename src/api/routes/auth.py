@@ -34,7 +34,7 @@ from src.api.services.email_service import (
 router = APIRouter()
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
-LOGIN_LOCKOUT_DURATION = timedelta(minutes=15)
+LOGIN_LOCKOUT_DURATION = timedelta(minutes=5)
 INVALID_CREDENTIALS_DETAIL = "Invalid credentials."
 
 

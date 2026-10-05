@@ -5,7 +5,8 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const formStatus = document.getElementById('formStatus');
 const LOGIN_ATTEMPT_LIMIT = 5;
-const LOGIN_ATTEMPT_WARNING = 'Invalid credentials. One more failed attempt will temporarily lock this account for 15 minutes.';
+const LOGIN_ATTEMPT_WARNING = 'Invalid credentials. One more failed attempt will temporarily lock this account for 5 minutes.';
+const LOGIN_LOCKED_MESSAGE = 'Invalid credentials. This account is temporarily locked for 5 minutes. Please try again later.';
 
 function loginAttemptKey(username) {
   return `esaka-login-failures:${String(username || '').trim().toLowerCase()}`;
@@ -209,9 +210,11 @@ form.addEventListener('submit', async (e) => {
         : 0;
       throw new Error(
         [401, 403].includes(response.status)
-          ? failedAttempts === LOGIN_ATTEMPT_LIMIT - 1
-            ? LOGIN_ATTEMPT_WARNING
-            : 'Invalid credentials.'
+          ? failedAttempts >= LOGIN_ATTEMPT_LIMIT
+            ? LOGIN_LOCKED_MESSAGE
+            : failedAttempts === LOGIN_ATTEMPT_LIMIT - 1
+              ? LOGIN_ATTEMPT_WARNING
+              : 'Invalid credentials.'
           : data.detail || 'Unable to log in.'
       );
     }
