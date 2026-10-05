@@ -1268,7 +1268,7 @@ input[type="checkbox"]{ accent-color:var(--primary); }
         </button>
         <button class="nav-item" type="button" data-view="market-price">
   <svg viewBox="0 0 24 24"><path d="M3 17h2v-7H3v7zm4 0h2V5H7v12zm4 0h2v-9h-2v9zm4 0h2V7h-2v10zm4 0h2v-5h-2v5zM2 19h20v2H2z"/></svg>
-  Upload Market Data
+  Upload market data
 </button>
         <button class="nav-item" type="button" data-view="summary">
           <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -1276,7 +1276,7 @@ input[type="checkbox"]{ accent-color:var(--primary); }
         </button>
         <button class="nav-item" type="button" data-view="reports">
           <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-          All Reports
+          Reports
         </button>
       </div>
 
@@ -1303,45 +1303,39 @@ input[type="checkbox"]{ accent-color:var(--primary); }
           </div>
           <div class="da-hero-actions">
             <div class="da-freshness-card">
-              <span>PSA OpenSTAT</span>
+              <span>Last PSA update</span>
               <strong id="daLastPsa">—</strong>
             </div>
+            <button class="btn-outline-report" type="button" data-view-target="reports">Open Reports</button>
             <button class="btn-outline-report" id="refreshDaDashboardBtn" type="button">Refresh</button>
           </div>
         </div>
 
         <div class="da-dashboard-grid">
-          <div class="card da-kpi da-kpi-primary"><div class="da-kpi-icon">♧</div><div class="da-kpi-info"><div class="da-kpi-label">Active alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div><div class="da-kpi-meta" id="daKpiAlertBreakdown">High · Medium · Low</div></div></div>
-          <div class="card da-kpi da-kpi-amber"><div class="da-kpi-icon">▰</div><div class="da-kpi-info"><div class="da-kpi-label">Oversupply risks</div><div class="da-kpi-value" id="daKpiOversupply">—</div><div class="da-kpi-meta">Commodity-region pairs</div></div></div>
-          <div class="card da-kpi da-kpi-slate"><div class="da-kpi-icon">▤</div><div class="da-kpi-info"><div class="da-kpi-label">Final sign-off</div><div class="da-kpi-value" id="daKpiReports">—</div><div class="da-kpi-meta">Reports queued</div></div></div>
-          <div class="card da-kpi da-kpi-red"><div class="da-kpi-icon">↻</div><div class="da-kpi-info"><div class="da-kpi-label">ETL health</div><div class="da-kpi-value" id="daKpiEtl">—</div><div class="da-kpi-meta">Last 10 runs</div></div></div>
+          <div class="card da-kpi da-kpi-primary"><div class="da-kpi-icon">♧</div><div class="da-kpi-info"><div class="da-kpi-label">Alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div><div class="da-kpi-meta" id="daKpiAlertBreakdown">High · Medium · Low</div></div></div>
+          <div class="card da-kpi da-kpi-amber"><div class="da-kpi-icon">▰</div><div class="da-kpi-info"><div class="da-kpi-label">Oversupply</div><div class="da-kpi-value" id="daKpiOversupply">—</div><div class="da-kpi-meta">Areas with excess supply</div></div></div>
+          <div class="card da-kpi da-kpi-slate"><div class="da-kpi-icon">▤</div><div class="da-kpi-info"><div class="da-kpi-label">Reports to review</div><div class="da-kpi-value" id="daKpiReports">—</div><div class="da-kpi-meta">Waiting for review</div></div></div>
+          <div class="card da-kpi da-kpi-red"><div class="da-kpi-icon">↻</div><div class="da-kpi-info"><div class="da-kpi-label">Data sync</div><div class="da-kpi-value" id="daKpiEtl">—</div><div class="da-kpi-meta">Failed syncs in last 10 runs</div></div></div>
         </div>
 
         <div class="card da-dashboard-card da-priority-panel">
-          <div class="da-panel-header"><div><span class="da-section-kicker">Operations queue</span><h2>Priority Action Required</h2><p>High-impact operational checkpoints requiring regional authorization.</p></div><span class="da-pending-pill"><span id="daActionCount">0</span> items pending</span></div>
+          <div class="da-panel-header"><div><span class="da-section-kicker">Actions</span><h2>Actions to review</h2><p>Items that need regional review.</p></div><span class="da-pending-pill"><span id="daActionCount">0</span> items pending</span></div>
           <div id="daActionsList" class="da-priority-grid"></div>
         </div>
 
         <div class="da-dashboard-columns">
           <div class="da-main-stack">
-            <div class="card da-dashboard-card da-panel-lg da-supply-panel">
-              <div class="da-panel-header"><div><span class="da-section-kicker">Supply balance engine</span><h2>Supply vs Demand Balance</h2><p>Projected harvest volumes compared against provincial target quotas.</p></div><span class="da-panel-tag">Regional view</span></div>
-              <div id="daSupplyCards" class="da-supply-cards"></div>
-              <div class="da-supply-advisory">ⓘ Official market advisory: alert limits are triggered automatically when projected supply breaches 110% of local demand. <button type="button" class="da-mini-button" data-view-target="threshold">Configure limits</button></div>
-              <div class="da-hidden-table" aria-hidden="true"><table class="da-dashboard-table"><tbody id="daSupplyRiskBody"></tbody></table></div>
-            </div>
-            <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Harvest timeline</span><h2>Projected Harvest Volume</h2><p>Weekly harvest volume by commodity for the next 30 days.</p></div><span class="da-panel-tag">30-day view</span></div><div id="daHarvestTimeline" class="da-timeline"></div></div>
-            <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Price stability radar</span><h2>Farmgate vs Market Benchmark</h2><p>PSA OpenSTAT and Bantay Presyo indicators.</p></div><span class="da-panel-tag">Regional</span></div><div id="daPricesBody" class="da-price-cards"></div></div>
+            <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Harvest</span><h2>Harvest forecast</h2><p>Expected harvest volume by commodity for the next 30 days.</p></div><span class="da-panel-tag">30 days</span></div><div id="daHarvestTimeline" class="da-timeline"></div></div>
           </div>
 
           <div class="da-side-stack">
             <div class="card da-dashboard-card da-side-panel da-map-panel"><div class="da-panel-header"><div><span class="da-section-kicker">Geospatial clusters</span><h2>Pampanga Commodity Map Overview</h2></div><span class="da-panel-tag">4 clusters</span></div><div class="da-mini-map"><span class="da-map-label">Sector South · Pampanga</span><span class="da-map-pin pin-red">Angeles (Surplus)</span><span class="da-map-pin pin-green">San Fernando (Balanced)</span><span class="da-map-pin pin-amber">Apalit (Deficit)</span></div><div class="da-map-stats"><span><b>1</b> Surplus area</span><span><b>1</b> Deficit cluster</span><span><b>2</b> Balanced areas</span></div><button class="da-map-link" type="button" data-view-target="map">Open full regional map ↗</button></div>
             <div class="card da-dashboard-card da-side-panel">
-              <div class="da-panel-header"><div><span class="da-section-kicker">Planting intent</span><h2>By Municipality</h2></div><span class="da-panel-tag">30-day view</span></div>
+              <div class="da-panel-header"><div><span class="da-section-kicker">Planting plans</span><h2>By municipality</h2></div><span class="da-panel-tag">30 days</span></div>
               <div id="daPlantingIntentList" class="da-municipality-list"></div>
             </div>
             <div class="card da-dashboard-card da-side-panel">
-              <div class="da-panel-header"><h2>ETL pipeline</h2><span class="count-badge muted">Health</span></div>
+              <div class="da-panel-header"><h2>Data sync</h2><span class="count-badge muted">Status</span></div>
               <div id="daEtlReliability" class="da-etl-reliability"></div>
               <div id="daEtlList" class="da-stat-list"></div>
             </div>
