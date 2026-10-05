@@ -3974,6 +3974,7 @@ async function manualRunETL() {
         // Go back to the first page so the newest logs are visible
         currentEtlPage = 1;
         await loadETLRunLogs();
+        await loadDaDashboard();
 
         if (result.hasFailed) {
             const failureSummary = result.logs

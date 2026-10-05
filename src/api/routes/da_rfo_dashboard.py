@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.core.auth import get_current_user
@@ -40,6 +41,15 @@ def _number(value) -> float:
 
 def _iso(value) -> str | None:
     return value.isoformat() if value else None
+
+
+def _latest_success(db: Session, sources: list[str] | None = None) -> str | None:
+    query = db.query(func.max(ETLRunLog.run_date_time)).filter(
+        ETLRunLog.status == "SUCCESS"
+    )
+    if sources:
+        query = query.filter(ETLRunLog.data_source.in_(sources))
+    return _iso(query.scalar())
 
 
 @router.get("")
@@ -192,6 +202,10 @@ def get_da_rfo_dashboard(
     return {
         "scope": "DA-RFO",
         "generated_at": datetime.utcnow().isoformat() + "Z",
+        "freshness": {
+            "last_refresh": _latest_success(db),
+            "psa_openstat": _latest_success(db, ["PSA OpenSTAT"]),
+        },
         "kpis": {
             "registered_farmers": len(farmers),
             "municipalities": len({farmer.municipality for farmer in farmers if farmer.municipality}),
