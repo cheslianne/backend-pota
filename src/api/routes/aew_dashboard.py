@@ -92,16 +92,31 @@ def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
             forecasts[key].append(row)
 
     below_fair = defaultdict(int)
+    next_month = _month_starts(today, 2)[1]
 
     snapshot = []
     for commodity in COMMODITIES:
         history = prices.get(commodity, [])
-        latest = history[-1] if history else None
-        previous = history[-2] if len(history) > 1 else None
+        monthly_prices = defaultdict(list)
+        for row in history:
+            monthly_prices[(row.record_date.year, row.record_date.month)].append(
+                _num(row.price_per_kg)
+            )
+        ordered_months = sorted(monthly_prices)
+        latest_month = ordered_months[-1] if ordered_months else None
+        previous_month = ordered_months[-2] if len(ordered_months) > 1 else None
+        latest_average = (
+            sum(monthly_prices[latest_month]) / len(monthly_prices[latest_month])
+            if latest_month else None
+        )
+        previous_average = (
+            sum(monthly_prices[previous_month]) / len(monthly_prices[previous_month])
+            if previous_month else None
+        )
 
         upcoming = [
             row for row in forecasts.get(commodity, [])
-            if row.forecast_date >= date(today.year, today.month, 1)
+            if row.forecast_date >= next_month
         ]
         if upcoming:
             first = upcoming[0].forecast_date
@@ -116,8 +131,8 @@ def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
             low = high = forecast_month = None
 
         trend = "no data"
-        if latest and previous:
-            diff = _num(latest.price_per_kg) - _num(previous.price_per_kg)
+        if latest_average is not None and previous_average is not None:
+            diff = latest_average - previous_average
             trend = "up" if diff > 0 else "down" if diff < 0 else "steady"
 
         if low is not None:
@@ -130,8 +145,13 @@ def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
 
         snapshot.append({
             "commodity": commodity,
-            "last_price": _num(latest.price_per_kg) if latest else None,
-            "last_price_date": latest.record_date.isoformat() if latest else None,
+            "last_price": latest_average,
+            "last_price_date": (
+                f"{latest_month[0]:04d}-{latest_month[1]:02d}"
+                if latest_month else None
+            ),
+            "last_price_label": "Latest monthly average",
+            "forecast_label": "Next-month forecast range",
             "trend": trend,
             "forecast_low": low,
             "forecast_high": high,

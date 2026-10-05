@@ -375,6 +375,7 @@
     .aew-dashboard-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
     .aew-dashboard-panel { padding: 20px; }
     .aew-dashboard-panel h2 { margin: 0 0 15px; color: var(--green-dark); font-size: 17px; letter-spacing: -.01em; }
+    .aew-panel-note { margin: -7px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.45; }
     .aew-dashboard-panel h2::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f4a340; margin: 0 8px 2px 0; }
     .aew-action { border-top: 1px solid var(--border-light); padding: 12px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
     .aew-action:first-child { border-top: 0; }
@@ -2069,7 +2070,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
           <div class="aew-dashboard-panel"><h2>Planting Intent Status</h2><div class="aew-status-grid" id="aewDashboardStatuses"></div></div>
           <div class="aew-dashboard-columns">
             <div class="aew-dashboard-panel"><h2>Supply Outlook</h2><div id="aewDashboardSupply"></div></div>
-            <div class="aew-dashboard-panel"><h2>Farmgate Price Snapshot</h2><div id="aewDashboardPrices"></div></div>
+            <div class="aew-dashboard-panel"><h2>Farmgate Price Snapshot</h2><p class="aew-panel-note">Actual price is the latest monthly average from PSA OpenSTAT. Forecast shows the next month’s estimated range.</p><div id="aewDashboardPrices"></div></div>
           </div>
           <div class="aew-dashboard-columns">
             <div class="aew-dashboard-panel aew-pipeline-panel"><h2>Report Pipeline</h2><div class="aew-pipeline-grid" id="aewDashboardPipeline"></div></div>
