@@ -255,6 +255,33 @@ body #profileModal button:focus-visible {
   outline-offset: 2px;
 }
 
+body #customAlertModal .modal-box {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  box-shadow: 0 24px 60px rgba(6,43,32,.24);
+}
+body #customAlertModal .modal-box h2 {
+  color: var(--admin-forest-2) !important;
+}
+body #customAlertModal .modal-box p {
+  color: var(--admin-muted) !important;
+}
+body #customAlertModal #closeCustomAlertBtn {
+  background: var(--admin-forest-2);
+  color: #fff;
+  border: 1px solid var(--admin-forest-2);
+  border-radius: 10px;
+  font-weight: 800;
+}
+body #customAlertModal #closeCustomAlertBtn:hover {
+  background: var(--admin-forest);
+  border-color: var(--admin-forest);
+}
+body #customAlertModal button:focus-visible {
+  outline: 3px solid rgba(227,169,58,.55);
+  outline-offset: 2px;
+}
+
 .dashboard-header > div > p,
 .dashboard-panel-heading p {
   margin-top: 5px;
