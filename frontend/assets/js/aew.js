@@ -309,14 +309,6 @@ function renderAewDashboard(data) {
         ["PSA OpenSTAT", data.freshness?.psa_openstat],
         ["Bantay Presyo", data.freshness?.bantay_presyo],
     ].map(([label, value]) => `<span class="aew-chip">${escapeHtml(label)}: ${escapeHtml(dashboardDate(value))}</span>`).join("");
-    const advisory = document.getElementById("aewDashboardAdvisory");
-    if (advisory) {
-        const firstAlert = data.alerts?.[0];
-        advisory.querySelector("span:last-child").innerHTML = firstAlert
-            ? `<strong>Regional Market Advisory</strong><br>${escapeHtml(firstAlert.message)}`
-            : "<strong>Regional Market Advisory</strong><br>No active supply advisories for your municipality.";
-    }
-
     const kpis = [
         ["Registered Farmers", data.kpis.registered_farmers],
         ["Active Planting Intents", data.kpis.active_planting_intents],
@@ -349,7 +341,6 @@ function renderAewDashboard(data) {
     document.getElementById("aewDashboardPrices").innerHTML = (data.fair_prices || []).map((price) => `<div class="aew-price-card"><div><strong>${escapeHtml(price.commodity)}</strong><small>Last: ${price.last_price == null ? "No data" : `₱${Number(price.last_price).toFixed(2)}/kg`} · ${escapeHtml(price.trend)}</small></div><div><strong>${price.forecast_low == null ? "—" : `₱${Number(price.forecast_low).toFixed(2)}–₱${Number(price.forecast_high).toFixed(2)}`}</strong><small>${price.offtake_below_fair ? `<span class="aew-warning">${price.offtake_below_fair} offtake request(s) below fair range</span>` : "Forecast range"}</small></div></div>`).join("") || '<div class="aew-empty">No price data.</div>';
 
     document.getElementById("aewDashboardMap").innerHTML = (data.map || []).slice(0, 5).map((entry) => `<div class="aew-action"><div><strong>${escapeHtml(entry.municipality)}</strong><small>${(entry.commodities || []).map((item) => `${escapeHtml(item.commodity)}: ${escapeHtml(item.status)}`).join(" · ") || "No data"}</small></div></div>`).join("") || '<div class="aew-empty">No municipal supply markers available.</div>';
-    document.getElementById("aewDashboardActivity").innerHTML = (data.recent_activity || []).map((item) => `<div class="aew-action"><div><strong>${escapeHtml(item.action)}</strong><small>${escapeHtml(item.resource_type)} #${escapeHtml(item.resource_id)} · ${escapeHtml(dashboardDate(item.created_at))}</small></div></div>`).join("") || '<div class="aew-empty">No recent activity.</div>';
 }
 
 
