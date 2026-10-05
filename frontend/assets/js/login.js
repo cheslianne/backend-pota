@@ -4,6 +4,26 @@ const passwordField = document.getElementById('passwordField');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const formStatus = document.getElementById('formStatus');
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_ATTEMPT_WARNING = 'Invalid credentials. One more failed attempt will temporarily lock this account for 15 minutes.';
+
+function loginAttemptKey(username) {
+  return `esaka-login-failures:${String(username || '').trim().toLowerCase()}`;
+}
+
+function getFailedLoginAttempts(username) {
+  return Number(sessionStorage.getItem(loginAttemptKey(username)) || 0);
+}
+
+function recordFailedLoginAttempt(username) {
+  const attempts = getFailedLoginAttempts(username) + 1;
+  sessionStorage.setItem(loginAttemptKey(username), String(attempts));
+  return attempts;
+}
+
+function clearFailedLoginAttempts(username) {
+  sessionStorage.removeItem(loginAttemptKey(username));
+}
 
 const loginNotice = sessionStorage.getItem('esaka_login_notice');
 if (loginNotice && formStatus) {
@@ -184,9 +204,14 @@ form.addEventListener('submit', async (e) => {
 
     /* ---------- Handle Failed Login ---------- */
     if (!response.ok) {
+      const failedAttempts = [401, 403].includes(response.status)
+        ? recordFailedLoginAttempt(username)
+        : 0;
       throw new Error(
         [401, 403].includes(response.status)
-          ? 'Invalid credentials.'
+          ? failedAttempts === LOGIN_ATTEMPT_LIMIT - 1
+            ? LOGIN_ATTEMPT_WARNING
+            : 'Invalid credentials.'
           : data.detail || 'Unable to log in.'
       );
     }
@@ -202,6 +227,7 @@ form.addEventListener('submit', async (e) => {
       );
     }
     const sessionUser = await sessionResponse.json();
+    clearFailedLoginAttempts(username);
 
 
     /* ---------- Save Non-sensitive Session Display Data ---------- */
