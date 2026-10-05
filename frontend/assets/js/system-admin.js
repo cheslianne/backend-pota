@@ -370,12 +370,14 @@ function renderUsersTable() {
     if (!userRows) return;
 
     const query = document.getElementById("searchUsers")?.value.trim().toLowerCase() || "";
+    const statusFilter = document.getElementById("userStatusFilter")?.value || "";
     const filteredUsers = cachedUsers.filter(user => {
         const name = `${user.first_name || ""} ${user.last_name || ""}`.trim();
         const email = user.email_address || user.email || "";
         const role = user.role || "";
         const status = isUserActive(user) ? "active" : "inactive";
-        return !query || [name, email, role, status].some(value => String(value).toLowerCase().includes(query));
+        const matchesQuery = !query || [name, email, role, status].some(value => String(value).toLowerCase().includes(query));
+        return matchesQuery && (!statusFilter || status === statusFilter);
     });
 
     if (filteredUsers.length === 0) {
@@ -2367,6 +2369,10 @@ if (restoreFromDetailsBtn) {
 
     // Search and Filter Listeners
     document.getElementById("searchUsers")?.addEventListener("input", () => {
+        currentUserPage = 1;
+        renderUsersTable();
+    });
+    document.getElementById("userStatusFilter")?.addEventListener("change", () => {
         currentUserPage = 1;
         renderUsersTable();
     });

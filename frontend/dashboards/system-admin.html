@@ -1125,6 +1125,11 @@
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="searchUsers" placeholder="Search by name, email, role, or status" aria-label="Search user accounts">
           </div>
+          <select id="userStatusFilter" class="filter-input" aria-label="Filter users by status">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
         <div class="table-wrapper">
           <table>
