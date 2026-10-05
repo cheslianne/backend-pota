@@ -281,6 +281,7 @@ function dashboardSwitchView(view) {
 }
 
 function initAewDashboard() {
+    document.getElementById("aewPrintButton")?.addEventListener("click", () => window.print());
     document.querySelectorAll("[data-dashboard-view]").forEach((button) => {
         button.addEventListener("click", () => dashboardSwitchView(button.dataset.dashboardView));
     });
@@ -309,6 +310,13 @@ function renderAewDashboard(data) {
         ["PSA OpenSTAT", data.freshness?.psa_openstat],
         ["Bantay Presyo", data.freshness?.bantay_presyo],
     ].map(([label, value]) => `<span class="aew-chip">${escapeHtml(label)}: ${escapeHtml(dashboardDate(value))}</span>`).join("");
+    const advisory = document.getElementById("aewDashboardAdvisory");
+    if (advisory) {
+        const firstAlert = data.alerts?.[0];
+        advisory.querySelector("span:last-child").innerHTML = firstAlert
+            ? `<strong>Regional Market Advisory</strong><br>${escapeHtml(firstAlert.message)}`
+            : "<strong>Regional Market Advisory</strong><br>No active supply advisories for your municipality.";
+    }
 
     const kpis = [
         ["Registered Farmers", data.kpis.registered_farmers],
@@ -328,10 +336,16 @@ function renderAewDashboard(data) {
     document.getElementById("aewDashboardStatuses").innerHTML = statusLabels.map(([key, label]) => `<div class="aew-status-item"><strong>${dashboardNumber(data.intent_breakdown?.[key])}</strong><span>${label}</span></div>`).join("");
     document.getElementById("aewDashboardPipeline").innerHTML = [["draft", "Draft"], ["municipal_pending", "Municipal Pending"], ["provincial", "Provincial"], ["approved", "Approved"]].map(([key, label]) => `<div class="aew-status-item"><strong>${dashboardNumber(data.report_pipeline?.[key])}</strong><span>${label}</span></div>`).join("");
 
-    document.getElementById("aewDashboardSupply").innerHTML = (data.supply_outlook || []).map((row) => {
-        const total = Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0);
-        return `<div class="aew-action"><div><strong>${escapeHtml(row.label)}</strong><small>${Object.entries(row.volumes || {}).map(([commodity, volume]) => `${escapeHtml(commodity)}: ${dashboardNumber(volume)} kg`).join(" · ") || "No expected harvest"}</small></div><strong>${dashboardNumber(total)} kg</strong></div>`;
-    }).join("") || '<div class="aew-empty">No supply outlook data.</div>';
+    const supplyRows = data.supply_outlook || [];
+    const maxSupply = Math.max(...supplyRows.map((row) => Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0)), 1);
+    const chartColors = { "Red Onion": "red", "White Onion": "white", Tomato: "tomato", Squash: "squash" };
+    document.getElementById("aewDashboardSupply").innerHTML = supplyRows.length
+        ? `<div class="aew-chart">${supplyRows.map((row) => {
+            const total = Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+            const bars = Object.entries(row.volumes || {}).map(([commodity, volume]) => `<span class="aew-chart-bar ${chartColors[commodity] || "squash"}" style="height:${Math.max(Number(volume || 0) / maxSupply * 150, Number(volume || 0) ? 4 : 0)}px" title="${escapeHtml(commodity)}: ${dashboardNumber(volume)} kg"></span>`).join("");
+            return `<div class="aew-chart-month"><div class="aew-chart-stack">${bars}</div><strong>${escapeHtml(row.label)}</strong><small>${dashboardNumber(total)} kg</small></div>`;
+        }).join("")}</div><div class="aew-chart-legend">${Object.entries(chartColors).map(([label, color]) => `<span><i class="aew-legend-dot" style="background:var(--${color === "squash" ? "green-dark" : "brown"})"></i>${escapeHtml(label)}</span>`).join("")}</div>`
+        : '<div class="aew-empty">No supply outlook data.</div>';
 
     document.getElementById("aewDashboardPrices").innerHTML = (data.fair_prices || []).map((price) => `<div class="aew-price-card"><div><strong>${escapeHtml(price.commodity)}</strong><small>Last: ${price.last_price == null ? "No data" : `₱${Number(price.last_price).toFixed(2)}/kg`} · ${escapeHtml(price.trend)}</small></div><div><strong>${price.forecast_low == null ? "—" : `₱${Number(price.forecast_low).toFixed(2)}–₱${Number(price.forecast_high).toFixed(2)}`}</strong><small>${price.offtake_below_fair ? `<span class="aew-warning">${price.offtake_below_fair} offtake request(s) below fair range</span>` : "Forecast range"}</small></div></div>`).join("") || '<div class="aew-empty">No price data.</div>';
 

@@ -354,39 +354,59 @@
     .view { display: none; }
     .view.active-view { display: block; }
 
-    .aew-dashboard-grid { display: grid; gap: 20px; }
+    .aew-dashboard-grid { display: grid; gap: 18px; max-width: 1320px; margin: 0 auto; }
     .aew-dashboard-head, .aew-dashboard-panel, .aew-kpi {
-      background: var(--white); border: 1px solid var(--border); border-radius: 16px;
-      box-shadow: 0 4px 18px rgba(31, 54, 39, .06);
+      background: var(--white); border: 1px solid rgba(15, 61, 46, .1); border-radius: 18px;
+      box-shadow: 0 8px 28px rgba(31, 54, 39, .07);
     }
-    .aew-dashboard-head { padding: 24px; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
-    .aew-dashboard-head h1 { margin: 0; color: var(--green-dark); font-size: 28px; }
-    .aew-dashboard-head p { margin: 6px 0 0; color: var(--muted); }
-    .aew-freshness { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-    .aew-chip { padding: 7px 10px; border-radius: 999px; background: var(--green-light); color: var(--green-dark); font-size: 12px; }
+    .aew-dashboard-head { min-height: 176px; padding: 28px 32px; display: flex; justify-content: space-between; gap: 20px; align-items: center; background: linear-gradient(120deg, #fbfaf5 0%, #f4f8ef 58%, #e3f0e2 100%); position: relative; overflow: hidden; }
+    .aew-dashboard-head::after { content: ""; position: absolute; width: 260px; height: 260px; right: -80px; top: -100px; border-radius: 50%; background: rgba(255, 171, 46, .12); }
+    .aew-dashboard-head h1 { margin: 0; color: var(--green-dark); font-size: 34px; letter-spacing: -.04em; position: relative; z-index: 1; }
+    .aew-dashboard-head p { margin: 8px 0 0; color: var(--muted); position: relative; z-index: 1; }
+    .aew-print-button { position: relative; z-index: 1; border: 1px solid rgba(15,61,46,.15); background: rgba(255,255,255,.8); color: var(--green-dark); border-radius: 999px; padding: 10px 15px; font-weight: 700; cursor: pointer; }
+    .aew-print-button:hover { background: var(--green-dark); color: #fff; }
+    .aew-freshness { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; position: relative; z-index: 1; max-width: 520px; }
+    .aew-chip { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.82); border: 1px solid rgba(15,61,46,.1); color: var(--green-dark); font-size: 11px; box-shadow: 0 3px 10px rgba(31,54,39,.05); }
     .aew-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
-    .aew-kpi { padding: 16px; min-height: 104px; }
-    .aew-kpi strong { display: block; font-size: 25px; color: var(--green-dark); }
-    .aew-kpi span { display: block; color: var(--muted); font-size: 12px; margin-top: 7px; }
-    .aew-dashboard-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 20px; }
-    .aew-dashboard-panel { padding: 18px; }
-    .aew-dashboard-panel h2 { margin: 0 0 14px; color: var(--green-dark); font-size: 18px; }
+    .aew-kpi { padding: 15px 16px; min-height: 106px; border-top: 4px solid var(--green); position: relative; }
+    .aew-kpi:nth-child(3), .aew-kpi:nth-child(6) { border-top-color: #f4a340; }
+    .aew-kpi:nth-child(5) { border-top-color: #d95b58; }
+    .aew-kpi strong { display: block; font-size: 27px; color: var(--green-dark); font-variant-numeric: tabular-nums; }
+    .aew-kpi span { display: block; color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.35; }
+    .aew-dashboard-columns { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr); gap: 18px; }
+    .aew-dashboard-panel { padding: 20px; }
+    .aew-dashboard-panel h2 { margin: 0 0 15px; color: var(--green-dark); font-size: 17px; letter-spacing: -.01em; }
+    .aew-dashboard-panel h2::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f4a340; margin: 0 8px 2px 0; }
     .aew-action { border-top: 1px solid var(--border-light); padding: 12px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
     .aew-action:first-child { border-top: 0; }
     .aew-action strong, .aew-action small { display: block; }
     .aew-action small { color: var(--muted); margin-top: 3px; }
-    .aew-action button, .aew-link { border: 0; background: var(--green-light); color: var(--green-dark); padding: 7px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    .aew-action button, .aew-link { border: 0; background: var(--green-light); color: var(--green-dark); padding: 8px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-weight: 700; font-size: 11px; }
+    .aew-action button:hover, .aew-link:hover { background: var(--green-dark); color: #fff; }
+    .aew-dashboard-columns > .aew-dashboard-panel:nth-child(2) .aew-action:last-child button { background: #f4a340; color: #2e2a22; padding: 10px 14px; }
+    .aew-dashboard-columns > .aew-dashboard-panel:nth-child(2) .aew-action:last-child button:hover { background: #d98200; color: #fff; }
     .aew-status-grid, .aew-pipeline-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .aew-status-item { background: var(--green-light); border-radius: 10px; padding: 12px; text-align: center; }
+    .aew-status-item { background: linear-gradient(145deg, #edf5e9, #f8faf4); border: 1px solid rgba(15,61,46,.08); border-radius: 12px; padding: 13px 8px; text-align: center; }
     .aew-status-item strong { display: block; color: var(--green-dark); font-size: 20px; }
     .aew-status-item span { font-size: 11px; color: var(--muted); }
     .aew-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .aew-table th, .aew-table td { text-align: left; padding: 9px; border-bottom: 1px solid var(--border-light); }
     .aew-table th { color: var(--muted); font-size: 11px; }
-    .aew-price-card { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; }
+    .aew-price-card { border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; background: #fcfdf9; }
     .aew-price-card small { display: block; color: var(--muted); margin-top: 4px; }
     .aew-warning { color: #a35300; font-size: 11px; font-weight: 700; }
     .aew-empty { color: var(--muted); padding: 12px 0; font-size: 13px; }
+    .aew-advisory { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border: 1px solid #f1d99e; background: #fff9e9; color: #805b1c; border-radius: 12px; font-size: 12px; }
+    .aew-advisory-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #ffe8a8; font-size: 15px; }
+    .aew-chart { display: flex; align-items: flex-end; gap: 15px; height: 190px; padding: 18px 10px 0; border-bottom: 1px solid var(--border); background: repeating-linear-gradient(to top, transparent 0, transparent 46px, rgba(15,61,46,.08) 47px); }
+    .aew-chart-month { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 8px; }
+    .aew-chart-stack { width: min(66px, 78%); min-height: 3px; display: flex; flex-direction: column-reverse; border-radius: 5px 5px 0 0; overflow: hidden; box-shadow: 0 3px 8px rgba(15,61,46,.12); }
+    .aew-chart-bar { min-height: 2px; } .aew-chart-bar.red { background: #a95d13; } .aew-chart-bar.white { background: #d8a65a; } .aew-chart-bar.tomato { background: #efaa5c; } .aew-chart-bar.squash { background: #143f2d; }
+    .aew-chart-month strong { font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .aew-chart-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 13px; font-size: 10px; color: var(--muted); }
+    .aew-legend-dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; margin-right: 4px; }
+    .aew-dashboard-panel button:focus-visible, .aew-dashboard-panel a:focus-visible { outline: 3px solid rgba(244,163,64,.55); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .aew-dashboard-panel button, .aew-link { transition: none; } }
     @media (max-width: 1100px) { .aew-kpis { grid-template-columns: repeat(3, 1fr); } .aew-dashboard-columns { grid-template-columns: 1fr; } }
     @media (max-width: 650px) { .aew-kpis, .aew-status-grid, .aew-pipeline-grid { grid-template-columns: repeat(2, 1fr); } .aew-dashboard-head { align-items: flex-start; flex-direction: column; } .aew-freshness { justify-content: flex-start; } }
 
@@ -2032,8 +2052,10 @@ body .view.active-view { animation: esakaFade .35s ease; }
         <div class="aew-dashboard-grid">
           <div class="aew-dashboard-head">
             <div><h1 id="aewDashboardGreeting">Mabuhay!</h1><p id="aewDashboardLocation">AEW overview</p></div>
+            <button class="aew-print-button" id="aewPrintButton" type="button">⎙ Print UC21</button>
             <div class="aew-freshness" id="aewDashboardFreshness"><span class="aew-chip">Loading data freshness...</span></div>
           </div>
+          <div class="aew-advisory" id="aewDashboardAdvisory"><span class="aew-advisory-icon">⚑</span><span><strong>Regional Market Advisory</strong><br><span>Loading supply and price advisories…</span></span></div>
           <div class="aew-kpis" id="aewDashboardKpis"></div>
           <div class="aew-dashboard-columns">
             <div class="aew-dashboard-panel"><h2>Action Required</h2><div id="aewDashboardActions"><div class="aew-empty">Loading actions...</div></div></div>
