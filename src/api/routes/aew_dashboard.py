@@ -11,8 +11,8 @@ from src.core.database import get_db
 from src.models.audit_logs import AuditLog
 from src.models.etl_run_log import ETLRunLog
 from src.models.farmers import Farmer
-from src.models.market_price import MarketPrice
-from src.models.market_price_forecast import MarketPriceForecast
+from src.models.price_data import PriceData
+from src.models.forecasts import Forecast
 from src.models.offtake_requests import OfftakeRequest
 from src.models.planting_intents import PlantingIntent
 from src.models.raw_plant_reports import RawPlantReport
@@ -76,16 +76,15 @@ def _latest_success(db: Session, sources: list[str]) -> str | None:
 
 def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
     prices = defaultdict(list)
-    for row in db.query(MarketPrice).order_by(MarketPrice.record_date.asc()).all():
+    for row in db.query(PriceData).order_by(PriceData.record_date.asc()).all():
         key = _commodity_key(row.commodity)
         if key:
             prices[key].append(row)
 
     forecasts = defaultdict(list)
     for row in (
-        db.query(MarketPriceForecast)
-        .filter(func.upper(MarketPriceForecast.price_type) == "WHOLESALE")
-        .order_by(MarketPriceForecast.forecast_date.asc())
+        db.query(Forecast)
+        .order_by(Forecast.forecast_date.asc())
         .all()
     ):
         key = _commodity_key(row.commodity)
@@ -118,7 +117,7 @@ def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
 
         trend = "no data"
         if latest and previous:
-            diff = _num(latest.wholesale_price_per_kg) - _num(previous.wholesale_price_per_kg)
+            diff = _num(latest.price_per_kg) - _num(previous.price_per_kg)
             trend = "up" if diff > 0 else "down" if diff < 0 else "steady"
 
         if low is not None:
@@ -131,7 +130,7 @@ def _price_snapshot(db: Session, today: date, offtakes: list) -> list[dict]:
 
         snapshot.append({
             "commodity": commodity,
-            "last_price": _num(latest.wholesale_price_per_kg) if latest else None,
+            "last_price": _num(latest.price_per_kg) if latest else None,
             "last_price_date": latest.record_date.isoformat() if latest else None,
             "trend": trend,
             "forecast_low": low,
