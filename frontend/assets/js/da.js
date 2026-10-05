@@ -287,6 +287,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 function initDaDashboard() {
     const refreshButton = document.getElementById("refreshDaDashboardBtn");
     refreshButton?.addEventListener("click", loadDaDashboard);
+    document.querySelectorAll("[data-view-target]").forEach(button => {
+        button.addEventListener("click", () => {
+            const target = document.querySelector(`.nav-item[data-view="${button.dataset.viewTarget}"]`);
+            target?.click();
+        });
+    });
 }
 
 function escapeDaHtml(value) {
@@ -324,6 +330,12 @@ function renderDaDashboard(data) {
     set("daKpiHarvest", formatValue(kpis.expected_harvest_30d_kg, " kg"));
     set("daKpiReports", formatValue(kpis.reports_pending));
     set("daKpiAlerts", formatValue(kpis.alerts));
+    const supplyRisk = Array.isArray(data.supply_risk) ? data.supply_risk : [];
+    const oversupplyCount = supplyRisk.filter(item => String(item.status || "").toUpperCase() === "SURPLUS").length;
+    set("daKpiOversupply", formatValue(kpis.oversupply_risks ?? oversupplyCount));
+    set("daKpiPendingBuyers", formatValue(kpis.pending_buyers ?? data.pending_buyers));
+    set("daKpiVerifiedBuyers", formatValue(kpis.verified_buyers ?? data.verified_buyers));
+    set("daKpiEtl", formatValue(kpis.etl_failures ?? (data.etl || []).filter(item => String(item.status || "").toLowerCase().includes("fail")).length));
 
     const lastRefresh = data.last_refresh || data.last_updated || data.data_freshness?.last_refresh || data.freshness?.last_ingestion || data.last_ingestion || "";
     const psaRefresh = data.psa_openstat_date || data.psa_last_ingestion || data.freshness?.psa_openstat || data.freshness?.psa || "";
@@ -336,19 +348,37 @@ function renderDaDashboard(data) {
             ? data.supply_risk.map(item => `<tr><td>${escapeDaHtml(item.municipality)}</td><td>${escapeDaHtml(item.commodity)}</td><td>${Number(item.supply_30d_kg || 0).toLocaleString()}</td><td>${Number(item.demand_30d_kg || 0).toLocaleString()}</td><td><span class="da-status ${escapeDaHtml(item.status || "BALANCED")}">${escapeDaHtml(item.status || "BALANCED")}</span></td></tr>`).join("")
             : `<tr><td colspan="5">No regional supply data available.</td></tr>`;
     }
+    const supplyCards = document.getElementById("daSupplyCards");
+    if (supplyCards) {
+        supplyCards.innerHTML = supplyRisk.length
+            ? supplyRisk.slice(0, 5).map(item => {
+                const supply = Number(item.supply_30d_kg || 0);
+                const demand = Number(item.demand_30d_kg || 0);
+                const percentage = demand > 0 ? Math.round((supply / demand) * 100) : 0;
+                const status = String(item.status || "BALANCED").toUpperCase();
+                const tone = status === "SURPLUS" ? "risk" : status === "DEFICIT" ? "warn" : "";
+                return `<div class="da-supply-row ${tone}"><div class="da-supply-row-head"><strong>${escapeDaHtml(item.commodity || "Commodity")}</strong><span>${percentage}% · ${escapeDaHtml(titleCase(status))}</span></div><div class="da-progress"><i style="width:${Math.min(Math.max(percentage, 3), 100)}%"></i></div><small><span>${supply.toLocaleString()} kg projected</span><span>${demand.toLocaleString()} kg target</span></small></div>`;
+            }).join("")
+            : `<div class="da-supply-row"><div class="da-supply-row-head"><strong>No supply data</strong><span>Awaiting regional inputs</span></div></div>`;
+    }
 
     const priceBody = document.getElementById("daPricesBody");
     if (priceBody) {
         priceBody.innerHTML = (data.prices || []).length
-            ? data.prices.map(item => `<tr><td>${escapeDaHtml(item.commodity)}</td><td>${item.wholesale_price_per_kg == null ? "—" : `₱${Number(item.wholesale_price_per_kg).toFixed(2)}`}</td><td>${item.retail_price_per_kg == null ? "—" : `₱${Number(item.retail_price_per_kg).toFixed(2)}`}</td><td>${escapeDaHtml(item.trend || "Stable")}</td></tr>`).join("")
-            : `<tr><td colspan="4">No market price data available.</td></tr>`;
+            ? data.prices.map(item => {
+                const price = item.wholesale_price_per_kg == null ? "—" : `₱${Number(item.wholesale_price_per_kg).toFixed(2)}`;
+                const trend = String(item.trend || "Stable");
+                const isOffTarget = /drop|below|low|decrease/i.test(trend);
+                return `<div class="da-price-card ${isOffTarget ? "off-target" : ""}"><div><span class="commodity">${escapeDaHtml(item.commodity)}</span><span class="range">Fair range: ${escapeDaHtml(item.forecast_range || "—")}</span></div><div class="da-price-value">${price}<small>${escapeDaHtml(trend)}</small></div></div>`;
+            }).join("")
+            : `<div class="da-price-card"><span class="commodity">No market price data available.</span></div>`;
     }
 
     const actions = Array.isArray(data.actions) ? data.actions : [];
     const actionList = document.getElementById("daActionsList");
     if (actionList) {
         actionList.innerHTML = actions.length
-            ? actions.map(item => `<div class="da-action-item"><span class="da-action-name">${escapeDaHtml(item.label || item.name || "Action")}</span><span class="da-action-count">${Number(item.count || 0).toLocaleString()}</span></div>`).join("")
+            ? actions.slice(0, 4).map(item => `<div class="da-priority-item"><div><span class="da-panel-tag">${escapeDaHtml(item.type || "Action")}</span><strong>${escapeDaHtml(item.label || item.name || "Action")}</strong><p>${escapeDaHtml(item.description || "Requires regional review and authorization.")}</p></div><footer><span>${escapeDaHtml(item.location || "Regional operations")}</span><button class="da-priority-action" type="button">Review →</button></footer></div>`).join("")
             : `<div class="da-action-item"><span class="da-action-name">No action items at the moment.</span><span class="da-action-count">0</span></div>`;
     }
     const actionCount = document.getElementById("daActionCount");
@@ -358,13 +388,13 @@ function renderDaDashboard(data) {
     const alertList = document.getElementById("daAlertsList");
     if (alertList) {
         alertList.innerHTML = alerts.length
-            ? alerts.slice(0, 4).map(item => {
+            ? alerts.slice(0, 5).map(item => {
                 const level = String(item.severity || "medium").toLowerCase();
                 const severityClass = level === "high" ? "high" : level === "low" ? "low" : "medium";
                 const message = escapeDaHtml(item.message || `${item.municipality || "Region"} · ${item.commodity || "Commodity"}`);
-                return `<div class="da-alert-item ${severityClass}"><div class="da-alert-head"><span class="da-alert-sev">${escapeDaHtml(level)}</span></div><p>${message}</p></div>`;
+                return `<div class="da-alert-table-row"><span>${escapeDaHtml(item.alert_type || "Advisory")}</span><span>${escapeDaHtml(item.commodity || "—")}</span><strong class="${severityClass}">${escapeDaHtml(level)}</strong><span>${escapeDaHtml(item.municipality || "Regional")}</span></div>`;
             }).join("")
-            : `<div class="da-alert-item low"><div class="da-alert-head"><span class="da-alert-sev">low</span></div><p>No active alerts.</p></div>`;
+            : `<div class="da-alert-table-row"><span>No active alerts</span><span>—</span><strong>LOW</strong><span>Regional</span></div>`;
     }
     const alertCount = document.getElementById("daAlertCount");
     if (alertCount) alertCount.textContent = String(alerts.length || 0);
