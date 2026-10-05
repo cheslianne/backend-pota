@@ -138,28 +138,92 @@
       background:var(--white); border:1px solid var(--border);
       border-radius:12px; padding:24px 28px;
     }
-    .da-dashboard-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
-    .da-kpi{ border-left:5px solid var(--secondary); padding:18px 20px; }
-    .da-kpi:nth-child(2){ border-left-color:#D97706; }
-    .da-kpi:nth-child(3){ border-left-color:#2E7D32; }
-    .da-kpi:nth-child(4){ border-left-color:#C0392B; }
-    .da-kpi-label{ color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-    .da-kpi-value{ color:var(--primary); font-size:28px; font-weight:800; margin-top:7px; }
-    .da-dashboard-columns{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr); gap:18px; }
-    .da-dashboard-card{ margin-bottom:18px; }
-    .da-dashboard-card h2{ color:var(--primary); font-size:16px; margin-bottom:14px; }
+    .da-dashboard-hero{
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;
+      padding:24px 28px; margin-bottom:20px; border:1px solid var(--border); border-radius:22px;
+      background:linear-gradient(135deg, rgba(11,56,42,0.06) 0%, rgba(255,255,255,0.96) 100%);
+      box-shadow:0 12px 30px rgba(11,56,42,0.06);
+    }
+    .da-hero-copy h1{ margin:0; font-size:38px; line-height:1.08; }
+    .da-freshness-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .freshness-chip{
+      display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
+      background:#fff; border:1px solid var(--border); color:var(--neutral); font-size:12px; font-weight:600;
+    }
+    .freshness-chip strong{ color:var(--primary); }
+    .da-hero-actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .da-freshness-card{
+      min-width:150px; padding:10px 14px; border-radius:12px; background:var(--primary); color:#fff;
+      box-shadow:0 10px 24px rgba(11,56,42,0.18);
+    }
+    .da-freshness-card span{ display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em; opacity:.8; }
+    .da-freshness-card strong{ display:block; margin-top:4px; font-size:14px; }
+    .da-dashboard-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:20px; }
+    .da-kpi{
+      position:relative; display:flex; align-items:center; gap:14px; overflow:hidden; min-height:130px;
+      border:1px solid var(--border); border-radius:18px; padding:18px 18px 16px; background:#fff; box-shadow:0 8px 22px rgba(11,56,42,0.04);
+    }
+    .da-kpi::before{ content:""; position:absolute; inset:0 auto 0 0; width:5px; background:var(--primary); }
+    .da-kpi-amber::before{ background:#D97706; }
+    .da-kpi-green::before{ background:#2E7D32; }
+    .da-kpi-red::before{ background:#C0392B; }
+    .da-kpi-icon{
+      width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+      font-size:24px; background:rgba(11,56,42,0.08); color:var(--primary); flex-shrink:0;
+    }
+    .da-kpi-amber .da-kpi-icon{ background:rgba(217,119,6,0.10); color:#B45309; }
+    .da-kpi-green .da-kpi-icon{ background:rgba(46,125,50,0.10); color:#2E7D32; }
+    .da-kpi-red .da-kpi-icon{ background:rgba(192,57,43,0.10); color:#B42318; }
+    .da-kpi-info{ min-width:0; }
+    .da-kpi-label{ color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .da-kpi-value{ color:var(--primary); font-size:28px; font-weight:800; margin-top:8px; line-height:1.1; }
+    .da-dashboard-columns{ display:grid; grid-template-columns:minmax(0,1.55fr) minmax(290px,.95fr); gap:18px; }
+    .da-main-stack, .da-side-stack{ display:flex; flex-direction:column; gap:18px; }
+    .da-dashboard-card{ margin:0; }
+    .da-panel-lg{ padding:20px 20px 18px; }
+    .da-side-panel{ padding:18px 18px 16px; }
+    .da-panel-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .da-dashboard-card h2{ color:var(--primary); font-size:16px; margin:0; }
+    .da-panel-tag{ display:inline-flex; align-items:center; padding:6px 9px; border-radius:999px; background:var(--surface); color:var(--primary); font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
     .da-dashboard-table{ width:100%; margin:0; border-collapse:collapse; }
     .da-dashboard-table th,.da-dashboard-table td{ border-bottom:1px solid var(--border-light); padding:10px 8px; text-align:left; font-size:12px; }
     .da-dashboard-table th{ color:var(--muted); font-size:10px; letter-spacing:.05em; text-transform:uppercase; }
+    .da-dashboard-table tbody tr:hover td{ background:rgba(11,56,42,0.02); }
     .da-status{ border-radius:999px; display:inline-block; padding:4px 9px; font-size:10px; font-weight:800; }
     .da-status.SURPLUS{ background:#FFF0D5; color:#9A5B00; }
     .da-status.DEFICIT{ background:#FDE7E5; color:#A83227; }
     .da-status.BALANCED{ background:#E5F3E8; color:#216B35; }
     .da-status.NO_DEMAND{ background:#EEF1F0; color:#5F6B65; }
-    .da-alert{ border-left:4px solid #D97706; background:#FFF8EA; border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:12px; }
-    .da-alert.high{ border-left-color:#C0392B; background:#FFF1F0; }
+    .da-stat-list, .da-action-list, .da-alert-list{ display:flex; flex-direction:column; gap:10px; }
+    .da-action-item{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:12px;
+      background:linear-gradient(135deg, #F4F8F5 0%, #F9FBF9 100%); border:1px solid var(--border-light);
+    }
+    .da-action-name{ font-size:12px; color:var(--neutral); line-height:1.3; }
+    .da-action-count{ display:inline-flex; min-width:28px; height:28px; align-items:center; justify-content:center; border-radius:999px; background:var(--primary); color:#fff; font-size:12px; font-weight:700; }
+    .da-alert-item{
+      border-radius:12px; padding:10px 12px; border:1px solid var(--border-light); background:#fff;
+    }
+    .da-alert-item.high{ background:#FFF1F0; border-color:#F5C7C1; }
+    .da-alert-item.medium{ background:#FFF8EA; border-color:#F7DDA4; }
+    .da-alert-item.low{ background:#F0F8F4; border-color:#CFE7D6; }
+    .da-alert-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .da-alert-sev{ display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .da-alert-sev::before{ content:""; width:8px; height:8px; border-radius:50%; display:inline-block; background:currentColor; }
+    .da-alert-item.high .da-alert-sev{ color:#B42318; }
+    .da-alert-item.medium .da-alert-sev{ color:#B45309; }
+    .da-alert-item.low .da-alert-sev{ color:#2E7D32; }
+    .da-alert-item p{ margin:0; font-size:12px; line-height:1.45; color:var(--neutral); }
+    .da-stat-row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 10px;
+      border-bottom:1px solid var(--border-light); font-size:12px; color:var(--neutral);
+    }
+    .da-stat-row:last-child{ border-bottom:none; }
+    .da-stat-row strong{ font-size:13px; color:var(--primary); }
+    .count-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; }
+    .count-badge.muted{ background:#E8EEE9; color:var(--primary); }
     @media (max-width:900px){ .da-dashboard-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } .da-dashboard-columns{ grid-template-columns:1fr; } }
-    @media (max-width:520px){ .da-dashboard-grid{ grid-template-columns:1fr; } }
+    @media (max-width:520px){ .da-dashboard-grid{ grid-template-columns:1fr; } .da-dashboard-hero{ padding:20px 18px; } .da-hero-copy h1{ font-size:30px; } }
 
     /* ---------- PAGE HEADER (eyebrow + title + description) ---------- */
 .main-header{ align-items:flex-end; margin-bottom:26px; }
@@ -1154,35 +1218,67 @@ input[type="checkbox"]{ accent-color:var(--primary); }
 
       <!-- VIEW 1: DA-RFO Regional Dashboard -->
       <section class="view active-view" id="view-dashboard">
-        <div class="main-header">
-          <div class="header-left">
+        <div class="da-dashboard-hero">
+          <div class="da-hero-copy">
             <span class="eyebrow">Regional Operations</span>
             <h1>DA-RFO Dashboard</h1>
-            <p>PII-free regional view of supply, prices, alerts, and report operations.</p>
+            <div class="da-freshness-row">
+              <span class="freshness-chip"><strong>Region</strong> Central Luzon</span>
+              <span class="freshness-chip"><strong>Municipality</strong> Pampanga</span>
+              <span class="freshness-chip"><strong>Data refresh</strong> <span id="daLastRefresh">—</span></span>
+            </div>
           </div>
-          <button class="btn-outline-report" id="refreshDaDashboardBtn" type="button">Refresh</button>
+          <div class="da-hero-actions">
+            <div class="da-freshness-card">
+              <span>PSA OpenSTAT</span>
+              <strong id="daLastPsa">—</strong>
+            </div>
+            <button class="btn-outline-report" id="refreshDaDashboardBtn" type="button">Refresh</button>
+          </div>
         </div>
+
         <div class="da-dashboard-grid">
-          <div class="card da-kpi"><div class="da-kpi-label">Registered farmers</div><div class="da-kpi-value" id="daKpiFarmers">—</div></div>
-          <div class="card da-kpi"><div class="da-kpi-label">Expected harvest · 30 days</div><div class="da-kpi-value" id="daKpiHarvest">—</div></div>
-          <div class="card da-kpi"><div class="da-kpi-label">Reports pending</div><div class="da-kpi-value" id="daKpiReports">—</div></div>
-          <div class="card da-kpi"><div class="da-kpi-label">Active alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div></div>
+          <div class="card da-kpi da-kpi-primary"><div class="da-kpi-icon">👨‍🌾</div><div class="da-kpi-info"><div class="da-kpi-label">Registered farmers</div><div class="da-kpi-value" id="daKpiFarmers">—</div></div></div>
+          <div class="card da-kpi da-kpi-amber"><div class="da-kpi-icon">🌾</div><div class="da-kpi-info"><div class="da-kpi-label">Expected harvest · 30 days</div><div class="da-kpi-value" id="daKpiHarvest">—</div></div></div>
+          <div class="card da-kpi da-kpi-green"><div class="da-kpi-icon">📄</div><div class="da-kpi-info"><div class="da-kpi-label">Reports pending</div><div class="da-kpi-value" id="daKpiReports">—</div></div></div>
+          <div class="card da-kpi da-kpi-red"><div class="da-kpi-icon">⚠️</div><div class="da-kpi-info"><div class="da-kpi-label">Active alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div></div></div>
         </div>
+
         <div class="da-dashboard-columns">
-          <div>
-            <div class="card da-dashboard-card">
-              <h2>Supply risk by municipality and commodity</h2>
+          <div class="da-main-stack">
+            <div class="card da-dashboard-card da-panel-lg">
+              <div class="da-panel-header">
+                <h2>Supply risk by municipality and commodity</h2>
+                <span class="da-panel-tag">Regional view</span>
+              </div>
               <div style="overflow-x:auto;"><table class="da-dashboard-table"><thead><tr><th>Municipality</th><th>Commodity</th><th>Supply kg</th><th>Demand kg</th><th>Status</th></tr></thead><tbody id="daSupplyRiskBody"><tr><td colspan="5">Loading regional aggregates...</td></tr></tbody></table></div>
             </div>
-            <div class="card da-dashboard-card">
-              <h2>Market prices</h2>
+            <div class="card da-dashboard-card da-panel-lg">
+              <div class="da-panel-header">
+                <h2>Market prices</h2>
+                <span class="da-panel-tag">Latest observed</span>
+              </div>
               <div style="overflow-x:auto;"><table class="da-dashboard-table"><thead><tr><th>Commodity</th><th>Wholesale/kg</th><th>Retail/kg</th><th>Trend</th></tr></thead><tbody id="daPricesBody"></tbody></table></div>
             </div>
           </div>
-          <div>
-            <div class="card da-dashboard-card"><h2>Actions &amp; alerts</h2><div id="daActionsList"></div><div id="daAlertsList"></div></div>
-            <div class="card da-dashboard-card"><h2>Report pipeline</h2><div id="daPipelineList"></div></div>
-            <div class="card da-dashboard-card"><h2>ETL pipeline</h2><div id="daEtlList"></div></div>
+
+          <div class="da-side-stack">
+            <div class="card da-dashboard-card da-side-panel">
+              <div class="da-panel-header"><h2>Action required</h2><span class="count-badge" id="daActionCount">0</span></div>
+              <div id="daActionsList" class="da-action-list"></div>
+            </div>
+            <div class="card da-dashboard-card da-side-panel">
+              <div class="da-panel-header"><h2>Recent alerts</h2><span class="count-badge muted" id="daAlertCount">0</span></div>
+              <div id="daAlertsList" class="da-alert-list"></div>
+            </div>
+            <div class="card da-dashboard-card da-side-panel">
+              <div class="da-panel-header"><h2>Report pipeline</h2><span class="count-badge muted">Live</span></div>
+              <div id="daPipelineList" class="da-stat-list"></div>
+            </div>
+            <div class="card da-dashboard-card da-side-panel">
+              <div class="da-panel-header"><h2>ETL pipeline</h2><span class="count-badge muted">Health</span></div>
+              <div id="daEtlList" class="da-stat-list"></div>
+            </div>
           </div>
         </div>
       </section>

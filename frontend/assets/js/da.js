@@ -301,29 +301,88 @@ function renderDaDashboard(data) {
         const element = document.getElementById(id);
         if (element) element.textContent = value;
     };
-    set("daKpiFarmers", Number(kpis.registered_farmers || 0).toLocaleString());
-    set("daKpiHarvest", `${Number(kpis.expected_harvest_30d_kg || 0).toLocaleString()} kg`);
-    set("daKpiReports", Number(kpis.reports_pending || 0).toLocaleString());
-    set("daKpiAlerts", Number(kpis.alerts || 0).toLocaleString());
+
+    const formatValue = (value, suffix = "") => {
+        const number = Number(value ?? 0);
+        return `${number.toLocaleString()}${suffix}`.trim();
+    };
+
+    const normalizeRefresh = (value) => {
+        if (!value) return "—";
+        const str = String(value).trim();
+        if (!str || str === "null" || str === "undefined") return "—";
+        return str.replace("T", " ").replace("Z", " UTC");
+    };
+
+    const titleCase = (value) => {
+        const str = String(value ?? "").replace(/[_-]+/g, " ").trim();
+        if (!str) return "—";
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    };
+
+    set("daKpiFarmers", formatValue(kpis.registered_farmers));
+    set("daKpiHarvest", formatValue(kpis.expected_harvest_30d_kg, " kg"));
+    set("daKpiReports", formatValue(kpis.reports_pending));
+    set("daKpiAlerts", formatValue(kpis.alerts));
+
+    const lastRefresh = data.last_refresh || data.last_updated || data.data_freshness?.last_refresh || data.freshness?.last_ingestion || data.last_ingestion || "";
+    const psaRefresh = data.psa_openstat_date || data.psa_last_ingestion || data.freshness?.psa_openstat || data.freshness?.psa || "";
+    set("daLastRefresh", normalizeRefresh(lastRefresh));
+    set("daLastPsa", normalizeRefresh(psaRefresh));
 
     const riskBody = document.getElementById("daSupplyRiskBody");
     if (riskBody) {
         riskBody.innerHTML = (data.supply_risk || []).length
-            ? data.supply_risk.map(item => `<tr><td>${escapeDaHtml(item.municipality)}</td><td>${escapeDaHtml(item.commodity)}</td><td>${Number(item.supply_30d_kg || 0).toLocaleString()}</td><td>${Number(item.demand_30d_kg || 0).toLocaleString()}</td><td><span class="da-status ${escapeDaHtml(item.status)}">${escapeDaHtml(item.status)}</span></td></tr>`).join("")
+            ? data.supply_risk.map(item => `<tr><td>${escapeDaHtml(item.municipality)}</td><td>${escapeDaHtml(item.commodity)}</td><td>${Number(item.supply_30d_kg || 0).toLocaleString()}</td><td>${Number(item.demand_30d_kg || 0).toLocaleString()}</td><td><span class="da-status ${escapeDaHtml(item.status || "BALANCED")}">${escapeDaHtml(item.status || "BALANCED")}</span></td></tr>`).join("")
             : `<tr><td colspan="5">No regional supply data available.</td></tr>`;
     }
+
     const priceBody = document.getElementById("daPricesBody");
     if (priceBody) {
-        priceBody.innerHTML = (data.prices || []).map(item => `<tr><td>${escapeDaHtml(item.commodity)}</td><td>${item.wholesale_price_per_kg == null ? "—" : `₱${Number(item.wholesale_price_per_kg).toFixed(2)}`}</td><td>${item.retail_price_per_kg == null ? "—" : `₱${Number(item.retail_price_per_kg).toFixed(2)}`}</td><td>${escapeDaHtml(item.trend)}</td></tr>`).join("");
+        priceBody.innerHTML = (data.prices || []).length
+            ? data.prices.map(item => `<tr><td>${escapeDaHtml(item.commodity)}</td><td>${item.wholesale_price_per_kg == null ? "—" : `₱${Number(item.wholesale_price_per_kg).toFixed(2)}`}</td><td>${item.retail_price_per_kg == null ? "—" : `₱${Number(item.retail_price_per_kg).toFixed(2)}`}</td><td>${escapeDaHtml(item.trend || "Stable")}</td></tr>`).join("")
+            : `<tr><td colspan="4">No market price data available.</td></tr>`;
     }
+
+    const actions = Array.isArray(data.actions) ? data.actions : [];
     const actionList = document.getElementById("daActionsList");
-    if (actionList) actionList.innerHTML = (data.actions || []).map(item => `<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:12px;"><span>${escapeDaHtml(item.label)}</span><strong>${Number(item.count || 0).toLocaleString()}</strong></div>`).join("");
+    if (actionList) {
+        actionList.innerHTML = actions.length
+            ? actions.map(item => `<div class="da-action-item"><span class="da-action-name">${escapeDaHtml(item.label || item.name || "Action")}</span><span class="da-action-count">${Number(item.count || 0).toLocaleString()}</span></div>`).join("")
+            : `<div class="da-action-item"><span class="da-action-name">No action items at the moment.</span><span class="da-action-count">0</span></div>`;
+    }
+    const actionCount = document.getElementById("daActionCount");
+    if (actionCount) actionCount.textContent = String(actions.length || 0);
+
+    const alerts = Array.isArray(data.alerts) ? data.alerts : [];
     const alertList = document.getElementById("daAlertsList");
-    if (alertList) alertList.innerHTML = (data.alerts || []).map(item => `<div class="da-alert ${item.severity === "high" ? "high" : ""}"><strong>${escapeDaHtml(item.severity)}</strong> · ${escapeDaHtml(item.message || `${item.municipality} · ${item.commodity}`)}</div>`).join("") || `<div style="color:var(--muted);font-size:12px;">No active alerts.</div>`;
+    if (alertList) {
+        alertList.innerHTML = alerts.length
+            ? alerts.slice(0, 4).map(item => {
+                const level = String(item.severity || "medium").toLowerCase();
+                const severityClass = level === "high" ? "high" : level === "low" ? "low" : "medium";
+                const message = escapeDaHtml(item.message || `${item.municipality || "Region"} · ${item.commodity || "Commodity"}`);
+                return `<div class="da-alert-item ${severityClass}"><div class="da-alert-head"><span class="da-alert-sev">${escapeDaHtml(level)}</span></div><p>${message}</p></div>`;
+            }).join("")
+            : `<div class="da-alert-item low"><div class="da-alert-head"><span class="da-alert-sev">low</span></div><p>No active alerts.</p></div>`;
+    }
+    const alertCount = document.getElementById("daAlertCount");
+    if (alertCount) alertCount.textContent = String(alerts.length || 0);
+
     const pipeline = document.getElementById("daPipelineList");
-    if (pipeline) pipeline.innerHTML = Object.entries(data.report_pipeline || {}).map(([key, value]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;"><span>${escapeDaHtml(key.replaceAll("_", " "))}</span><strong>${Number(value || 0).toLocaleString()}</strong></div>`).join("");
+    if (pipeline) {
+        const entries = Object.entries(data.report_pipeline || {});
+        pipeline.innerHTML = entries.length
+            ? entries.map(([key, value]) => `<div class="da-stat-row"><span>${escapeDaHtml(titleCase(key))}</span><strong>${Number(value || 0).toLocaleString()}</strong></div>`).join("")
+            : `<div class="da-stat-row"><span>Report pipeline</span><strong>0</strong></div>`;
+    }
+
     const etl = document.getElementById("daEtlList");
-    if (etl) etl.innerHTML = (data.etl || []).map(item => `<div style="padding:7px 0;border-bottom:1px solid var(--border-light);font-size:11px;"><strong>${escapeDaHtml(item.data_source)}</strong><br><span style="color:var(--muted);">${escapeDaHtml(item.status)} · ${escapeDaHtml(item.run_date_time)}</span></div>`).join("") || `<div style="color:var(--muted);font-size:12px;">No ETL runs recorded.</div>`;
+    if (etl) {
+        etl.innerHTML = (data.etl || []).length
+            ? data.etl.slice(0, 4).map(item => `<div class="da-stat-row"><span>${escapeDaHtml(item.data_source || "ETL source")}</span><strong>${escapeDaHtml(item.status || "Unknown")}</strong></div>`).join("")
+            : `<div class="da-stat-row"><span>No ETL runs recorded</span><strong>—</strong></div>`;
+    }
 }
 
 async function loadDaDashboard() {
