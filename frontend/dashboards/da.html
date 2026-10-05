@@ -1297,8 +1297,6 @@ input[type="checkbox"]{ accent-color:var(--primary); }
             <h1>DA-RFO Dashboard</h1>
             <div class="da-freshness-row">
               <span class="freshness-chip"><strong>Region</strong> Central Luzon</span>
-              <span class="freshness-chip"><strong>Municipality</strong> Pampanga</span>
-              <span class="freshness-chip"><strong>Data refresh</strong> <span id="daLastRefresh">—</span></span>
             </div>
           </div>
           <div class="da-hero-actions">
@@ -1306,8 +1304,8 @@ input[type="checkbox"]{ accent-color:var(--primary); }
               <span>Last PSA update</span>
               <strong id="daLastPsa">—</strong>
             </div>
-            <button class="btn-outline-report" type="button" data-view-target="reports">Open Reports</button>
             <button class="btn-outline-report" id="refreshDaDashboardBtn" type="button">Refresh</button>
+            <button class="btn-outline-report" type="button" data-view-target="reports">Open Reports</button>
           </div>
         </div>
 
@@ -1326,14 +1324,14 @@ input[type="checkbox"]{ accent-color:var(--primary); }
         <div class="da-dashboard-columns">
           <div class="da-main-stack">
             <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Harvest</span><h2>Harvest forecast</h2><p>Expected harvest volume by commodity for the next 30 days.</p></div><span class="da-panel-tag">30 days</span></div><div id="daHarvestTimeline" class="da-timeline"></div></div>
-          </div>
-
-          <div class="da-side-stack">
-            <div class="card da-dashboard-card da-side-panel da-map-panel"><div class="da-panel-header"><div><span class="da-section-kicker">Geospatial clusters</span><h2>Pampanga Commodity Map Overview</h2></div><span class="da-panel-tag">4 clusters</span></div><div class="da-mini-map"><span class="da-map-label">Sector South · Pampanga</span><span class="da-map-pin pin-red">Angeles (Surplus)</span><span class="da-map-pin pin-green">San Fernando (Balanced)</span><span class="da-map-pin pin-amber">Apalit (Deficit)</span></div><div class="da-map-stats"><span><b>1</b> Surplus area</span><span><b>1</b> Deficit cluster</span><span><b>2</b> Balanced areas</span></div><button class="da-map-link" type="button" data-view-target="map">Open full regional map ↗</button></div>
             <div class="card da-dashboard-card da-side-panel">
               <div class="da-panel-header"><div><span class="da-section-kicker">Planting plans</span><h2>By municipality</h2></div><span class="da-panel-tag">30 days</span></div>
               <div id="daPlantingIntentList" class="da-municipality-list"></div>
             </div>
+          </div>
+
+          <div class="da-side-stack">
+            <div class="card da-dashboard-card da-side-panel da-map-panel"><div class="da-panel-header"><div><span class="da-section-kicker">Geospatial clusters</span><h2>Pampanga Commodity Map Overview</h2></div><span class="da-panel-tag">4 clusters</span></div><div class="da-mini-map"><span class="da-map-label">Sector South · Pampanga</span><span class="da-map-pin pin-red">Angeles (Surplus)</span><span class="da-map-pin pin-green">San Fernando (Balanced)</span><span class="da-map-pin pin-amber">Apalit (Deficit)</span></div><div class="da-map-stats"><span><b>1</b> Surplus area</span><span><b>1</b> Deficit cluster</span><span><b>2</b> Balanced areas</span></div><button class="da-map-link" type="button" data-view-target="map">Open full regional map ↗</button></div>
             <div class="card da-dashboard-card da-side-panel">
               <div class="da-panel-header"><h2>Data sync</h2><span class="count-badge muted">Status</span></div>
               <div id="daEtlReliability" class="da-etl-reliability"></div>
