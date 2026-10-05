@@ -390,7 +390,7 @@ function renderDaDashboard(data) {
     const timeline = document.getElementById("daHarvestTimeline");
     if (timeline) {
         const rows = Array.isArray(data.harvest_timeline) ? data.harvest_timeline : [];
-        const colors = { "Red Onion": "#0B382A", "White Onion": "#D97706", Tomato: "#4F8A5B", Squash: "#7C6AA6", Other: "#67756D" };
+        const colors = { "Red Onion": "#167A58", "White Onion": "#4385B7", Tomato: "#D65B4A", Squash: "#D28A16", Other: "#67756D" };
         const maxVolume = Math.max(...rows.flatMap(row => Object.values(row.commodities || {})).map(Number), 1);
         timeline.innerHTML = rows.length
             ? rows.map(row => {

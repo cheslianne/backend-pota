@@ -339,13 +339,19 @@ function renderAewDashboard(data) {
 
     const supplyRows = data.supply_outlook || [];
     const maxSupply = Math.max(...supplyRows.map((row) => Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0)), 1);
-    const chartColors = { "Red Onion": "red", "White Onion": "white", Tomato: "tomato", Squash: "squash" };
+    const chartColors = {
+        "Red Onion": "#167A58",
+        "White Onion": "#4385B7",
+        Tomato: "#D65B4A",
+        Squash: "#D28A16",
+        Other: "#67756D",
+    };
     document.getElementById("aewDashboardSupply").innerHTML = supplyRows.length
         ? `<div class="aew-chart">${supplyRows.map((row) => {
             const total = Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0);
-            const bars = Object.entries(row.volumes || {}).map(([commodity, volume]) => `<span class="aew-chart-bar ${chartColors[commodity] || "squash"}" style="height:${Math.max(Number(volume || 0) / maxSupply * 150, Number(volume || 0) ? 4 : 0)}px" title="${escapeHtml(commodity)}: ${dashboardNumber(volume)} kg"></span>`).join("");
+            const bars = Object.entries(row.volumes || {}).map(([commodity, volume]) => `<span class="aew-chart-bar" style="height:${Math.max(Number(volume || 0) / maxSupply * 150, Number(volume || 0) ? 4 : 0)}px;background:${chartColors[commodity] || chartColors.Other}" title="${escapeHtml(commodity)}: ${dashboardNumber(volume)} kg"></span>`).join("");
             return `<div class="aew-chart-month"><div class="aew-chart-stack">${bars}</div><strong>${escapeHtml(row.label)}</strong><small>${dashboardNumber(total)} kg</small></div>`;
-        }).join("")}</div><div class="aew-chart-legend">${Object.entries(chartColors).map(([label, color]) => `<span><i class="aew-legend-dot" style="background:var(--${color === "squash" ? "green-dark" : "brown"})"></i>${escapeHtml(label)}</span>`).join("")}</div>`
+        }).join("")}</div><div class="aew-chart-legend">${Object.entries(chartColors).filter(([label]) => label !== "Other").map(([label, color]) => `<span><i class="aew-legend-dot" style="background:${color}"></i>${escapeHtml(label)}</span>`).join("")}</div>`
         : '<div class="aew-empty">No supply outlook data.</div>';
 
     document.getElementById("aewDashboardPrices").innerHTML = (data.fair_prices || []).map((price) => `<div class="aew-price-card"><div><strong>${escapeHtml(price.commodity)}</strong><small>Last: ${price.last_price == null ? "No data" : `₱${Number(price.last_price).toFixed(2)}/kg`} · ${escapeHtml(price.trend)}</small></div><div><strong>${price.forecast_low == null ? "—" : `₱${Number(price.forecast_low).toFixed(2)}–₱${Number(price.forecast_high).toFixed(2)}`}</strong><small>${price.offtake_below_fair ? `<span class="aew-warning">${price.offtake_below_fair} offtake request(s) below fair range</span>` : "Forecast range"}</small></div></div>`).join("") || '<div class="aew-empty">No price data.</div>';
