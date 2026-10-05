@@ -191,6 +191,70 @@ body #confirmLogoutModal button:focus-visible {
   outline-offset: 2px;
 }
 
+body #profileModal .profile-modal-box {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  color: var(--admin-ink);
+}
+body #profileModal .profile-modal-box h2 {
+  color: var(--admin-ink);
+}
+body #profileModal .profile-modal-box h3,
+body #profileModal .form-field-item label {
+  color: var(--admin-ink);
+}
+body #profileModal .avatar-option {
+  border-color: var(--admin-line);
+  background: var(--admin-green-tint);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+body #profileModal .avatar-option:hover,
+body #profileModal .avatar-option.selected {
+  border-color: var(--admin-forest-2);
+  box-shadow: 0 0 0 3px rgba(15,77,58,.18);
+}
+body #profileModal .profile-readonly-field {
+  background: #eef3f0 !important;
+  border-color: var(--admin-line);
+  color: var(--admin-muted) !important;
+}
+body #profileModal .form-field-item input,
+body #profileModal .form-field-item select,
+body #profileModal .form-field-item textarea {
+  border-color: var(--admin-line);
+  background: #fff;
+  color: var(--admin-ink);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+body #profileModal .form-field-item input:focus,
+body #profileModal .form-field-item select:focus,
+body #profileModal .form-field-item textarea:focus {
+  border-color: var(--admin-forest-2);
+  box-shadow: 0 0 0 3px rgba(15,77,58,.12);
+}
+body #profileModal .btn-secondary {
+  background: #fff;
+  border-color: var(--admin-line);
+  color: var(--admin-forest-2);
+}
+body #profileModal .btn-secondary:hover {
+  background: var(--admin-green-tint);
+  border-color: var(--admin-forest-2);
+}
+body #profileModal .btn-primary {
+  background: var(--admin-forest-2);
+  border-color: var(--admin-forest-2);
+  color: #fff;
+}
+body #profileModal .btn-primary:hover {
+  background: var(--admin-forest);
+  border-color: var(--admin-forest);
+}
+body #profileModal button:focus-visible {
+  outline: 3px solid rgba(227,169,58,.55);
+  outline-offset: 2px;
+}
+
 .dashboard-header > div > p,
 .dashboard-panel-heading p {
   margin-top: 5px;
