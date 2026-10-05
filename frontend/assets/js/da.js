@@ -1364,111 +1364,106 @@ function renderSystemAlertLogs() {
         return;
     }
 
+    const wrapper = document.createElement("div");
+    wrapper.className = "alert-table-wrap";
+    wrapper.innerHTML = `
+        <table class="alert-table">
+            <thead>
+                <tr>
+                    <th>Alert Type</th>
+                    <th>Commodity</th>
+                    <th>Severity Level</th>
+                    <th>Region</th>
+                    <th>Date Generated</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+    const tbody = wrapper.querySelector("tbody");
+
     paginatedAlerts.forEach(alertItem => {
-        const isDeficit = alertItem.status === "DEFICIT";
         const sev = getAlertSeverity(alertItem);
-
-        // Surplus for oversupply; shortfall for deficit
-        const gap = isDeficit
-            ? Math.abs(alertItem.excess_supply) || Math.max(alertItem.base_demand - alertItem.projected_supply, 0)
-            : Math.abs(alertItem.excess_supply);
-
-        const statusLabel = alertItem.status === "DEFICIT"
-            ? "Deficit"
-            : alertItem.status === "SURPLUS" ? "Surplus" : "Oversupply";
-        const title = `${alertItem.commodity} ${statusLabel} — ${alertItem.municipality}`;
-        const desc = isDeficit
-            ? `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is only ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`
-            : `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is ${alertItem.supply_percentage.toFixed(1)}% of the base demand.`;
-
-        const card = document.createElement("div");
-        card.className = "alert-card";
-        card.style.cursor = "pointer";
-
-        card.innerHTML = `
-            <div class="alert-top">
-                <span class="alert-title">${escapeHtml(title)}</span>
-                <span class="sev-pill ${sev.cls}">${escapeHtml(sev.label)}</span>
-            </div>
-            <div class="alert-desc">${escapeHtml(desc)}</div>
-            <div class="alert-stats">
-                <span>Supply: <b>${escapeHtml(formatKg(alertItem.projected_supply))}</b></span>
-                <span>Demand: <b>${escapeHtml(formatKg(alertItem.base_demand))}</b></span>
-                <span>${isDeficit ? "Deficit" : "Surplus"}: <b>${escapeHtml(formatKg(gap))}</b></span>
-            </div>
-            <div class="alert-date">${escapeHtml(formatDateTimeLong(alertItem.date))}</div>
+        const row = document.createElement("tr");
+        row.className = "clickable-row";
+        row.tabIndex = 0;
+        row.innerHTML = `
+            <td>${escapeHtml(getAlertTypeLabel(alertItem))}</td>
+            <td>${escapeHtml(alertItem.commodity)}</td>
+            <td><span class="sev-pill ${sev.cls}">${escapeHtml(sev.label)}</span></td>
+            <td>${escapeHtml(alertItem.municipality)}</td>
+            <td>${escapeHtml(formatDateLong(alertItem.date))}</td>
+            <td>Active</td>
         `;
 
-        card.addEventListener("click", () => {
+        const open = () => {
             if (currentActiveAlertCard) currentActiveAlertCard.classList.remove("active");
-            card.classList.add("active");
-            currentActiveAlertCard = card;
-            openAlertDetailModal(card);
+            row.classList.add("active");
+            currentActiveAlertCard = row;
+            openAlertDetailModal(alertItem);
+        };
+        row.addEventListener("click", open);
+        row.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                open();
+            }
         });
-
-        alertList.appendChild(card);
+        tbody.appendChild(row);
     });
 
+    alertList.appendChild(wrapper);
     renderPaginationUI("alertList", currentAlertsPage, totalPages, (newPage) => {
         currentAlertsPage = newPage;
         renderSystemAlertLogs();
     }, "alertListPagination", { totalItems: alerts.length, pageSize: ALERTS_PER_PAGE, label: "alerts" });
 }
 
-function openAlertDetailModal(card) {
-    const title = card.querySelector(".alert-title")?.textContent || "—";
-    const desc = card.querySelector(".alert-desc")?.textContent || "—";
-    const severity = card.querySelector(".sev-pill");
-    const stats = card.querySelectorAll(".alert-stats span b");
-    const date = card.querySelector(".alert-date")?.textContent || "—";
+function getAlertTypeLabel(alertItem) {
+    return alertItem.status === "DEFICIT"
+        ? "Deficit"
+        : alertItem.status === "SURPLUS" ? "Surplus" : "Oversupply";
+}
 
-    const titleElement = document.getElementById("modalAlertTitle");
-    if (titleElement) titleElement.textContent = title;
+function openAlertDetailModal(alertItem) {
+    const isDeficit = alertItem.status === "DEFICIT";
+    const sev = getAlertSeverity(alertItem);
+    const gap = isDeficit
+        ? Math.max(alertItem.base_demand - alertItem.projected_supply, 0)
+        : Math.abs(alertItem.excess_supply);
+    const pct = alertItem.supply_percentage.toFixed(1);
 
-    const descElement = document.getElementById("modalAlertDesc");
-    if (descElement) descElement.textContent = desc;
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText("modalAlertTitle", `${alertItem.commodity} ${getAlertTypeLabel(alertItem)} — ${alertItem.municipality}`);
+    setText("modalAlertDesc", isDeficit
+        ? `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is only ${pct}% of the base demand.`
+        : `Projected supply of ${alertItem.commodity} in ${alertItem.municipality} is ${pct}% of the base demand.`);
 
     const modalSeverity = document.getElementById("modalAlertSev");
-    if (modalSeverity && severity) {
-        modalSeverity.textContent = severity.textContent;
-        modalSeverity.className = "sev-pill";
-        if (severity.classList.contains("high")) {
-            modalSeverity.classList.add("high");
-        } else if (severity.classList.contains("medium")) {
-            modalSeverity.classList.add("medium");
-        } else {
-            modalSeverity.classList.add("low");
-        }
+    if (modalSeverity) {
+        modalSeverity.textContent = sev.label;
+        modalSeverity.className = `sev-pill ${sev.cls}`;
     }
 
-    const supply = document.getElementById("modalAlertSupply");
-    if (supply) supply.textContent = stats[0]?.textContent || "—";
+    setText("modalAlertSupply", formatKg(alertItem.projected_supply));
+    setText("modalAlertDemand", formatKg(alertItem.base_demand));
 
-    const demand = document.getElementById("modalAlertDemand");
-    if (demand) demand.textContent = stats[1]?.textContent || "—";
-
-    // Detect deficit or oversupply
-    const thirdStatLabel = card.querySelectorAll(".alert-stats span")[2]?.textContent || "";
-    const isDeficit = thirdStatLabel.toLowerCase().includes("deficit");
-
-    // Update label of third stat in modal
     const thirdStatContainer = document.querySelector(
         "#alertDetailModal .modal-stats-grid div:nth-child(3)"
     );
     if (thirdStatContainer) {
-        const labelText = isDeficit ? "Deficit:" : "Surplus:";
-        thirdStatContainer.innerHTML = `${labelText} <b id="modalAlertSurplus" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b>`;
+        thirdStatContainer.innerHTML = `${isDeficit ? "Deficit:" : "Surplus:"} <b id="modalAlertSurplus" style="color: var(--ink); display: block; font-size: 14px; margin-top: 2px;"></b>`;
     }
-
-    const surplus = document.getElementById("modalAlertSurplus");
-    if (surplus) surplus.textContent = stats[2]?.textContent || "—";
-
-    const dateElement = document.getElementById("modalAlertDate");
-    if (dateElement) dateElement.textContent = date;
+    setText("modalAlertSurplus", formatKg(gap));
+    setText("modalAlertDate", formatDateTimeLong(alertItem.date));
 
     document.getElementById("alertDetailModal")?.classList.add("show");
 }
-
 
 /* ============================================================
    MODAL LISTENERS
@@ -3195,6 +3190,39 @@ function initSummaryPeriodPicker() {
     }
 }
 
+async function loadRegionalDemandLookup() {
+    const lookup = {};
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            { method: "GET", headers: getAuthHeaders(false) }
+        );
+        if (!response.ok) return lookup;
+        const result = await response.json();
+        (result.data || []).forEach(entry => {
+            (entry.commodities || []).forEach(item => {
+                const key = `${String(entry.municipality || "").trim().toLowerCase()}|${String(item.commodity || "").trim().toLowerCase()}`;
+                lookup[key] = {
+                    demand: Number(item.base_demand || 0),
+                    status: String(item.status || "").toUpperCase()
+                };
+            });
+        });
+    } catch (error) {
+        console.warn("Market demand data unavailable for summary:", error);
+    }
+    return lookup;
+}
+
+function formatSupplyStatus(status) {
+    if (status === "OVERSUPPLY") return { text: "Oversupply", color: "#C0392B" };
+    if (status === "SURPLUS") return { text: "Surplus", color: "#D97706" };
+    if (status === "DEFICIT") return { text: "Deficit", color: "#2980B9" };
+    if (!status) return { text: "—", color: "var(--muted)" };
+    const label = status.charAt(0) + status.slice(1).toLowerCase();
+    return { text: label, color: "#2E7D32" };
+}
+
 async function loadRegionalSummary() {
     const loadingCard = document.getElementById("summaryLoadingCard");
     const contentCard = document.getElementById("summaryContentCard");
@@ -3218,6 +3246,7 @@ async function loadRegionalSummary() {
             15000
         );
 
+        data.demandLookup = await loadRegionalDemandLookup();
         currentSummaryData = data;
 
         if (loadingCard) loadingCard.style.display = "none";
@@ -3370,6 +3399,8 @@ function renderRegionalSummary(data) {
         hour: "numeric", minute: "2-digit"
     });
 
+    const generatedDate = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
     let html = "";
 
     html += `
@@ -3403,6 +3434,54 @@ function renderRegionalSummary(data) {
             </div>
         </div>
     `;
+
+    const demandLookup = data.demandLookup || {};
+    const groups = {};
+    intents.forEach(intent => {
+        const region = intent.municipality || "Unknown";
+        const commodity = intent.commodity || "Unknown";
+        const key = `${region}|${commodity}`;
+        if (!groups[key]) groups[key] = { region, commodity, count: 0, volume: 0 };
+        groups[key].count += 1;
+        groups[key].volume += Number(intent.volume) || 0;
+    });
+    const summaryRows = Object.values(groups).sort((a, b) =>
+        a.region.localeCompare(b.region) || b.volume - a.volume);
+
+    html += `
+        <div class="summary-table-wrap">
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Commodity</th>
+                        <th class="num">Total Planting Intent</th>
+                        <th class="num">Estimated Production</th>
+                        <th class="num">Market Demand</th>
+                        <th>Oversupply Status</th>
+                        <th>Date Generated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${summaryRows.map(row => {
+                        const market = demandLookup[`${row.region.trim().toLowerCase()}|${row.commodity.trim().toLowerCase()}`];
+                        const supply = formatSupplyStatus(market?.status);
+                        return `<tr>
+                            <td>${escapeHtml(row.region)}</td>
+                            <td>${escapeHtml(row.commodity)}</td>
+                            <td class="num">${row.count}</td>
+                            <td class="num">${escapeHtml(formatKg(row.volume))}</td>
+                            <td class="num">${market ? escapeHtml(formatKg(market.demand)) : "—"}</td>
+                            <td><b style="color:${supply.color};">${escapeHtml(supply.text)}</b></td>
+                            <td>${escapeHtml(generatedDate)}</td>
+                        </tr>`;
+                    }).join("")}
+                </tbody>
+            </table>
+        </div>
+        <details class="summary-details no-print">
+            <summary>Supporting details (drill-down)</summary>
+`;
 
     html += `
         <div class="summary-kpi-grid">
@@ -3480,6 +3559,8 @@ function renderRegionalSummary(data) {
     html += `</div>`;
 
     html += `</div>`;
+
+    html += `</details>`;
 
     html += `
         <div class="summary-footer">

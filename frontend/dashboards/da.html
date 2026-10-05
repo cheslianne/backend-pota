@@ -1021,6 +1021,34 @@ input[type="checkbox"]{ accent-color:var(--primary); }
       .search-box{ min-width:220px; }
     }
 
+    /* ===== Alert log + regional summary tables ===== */
+    .alert-table-wrap, .summary-table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; margin-bottom:16px; }
+    .alert-table, .summary-table{ margin:0; border-collapse:collapse; }
+    .alert-table thead tr, .summary-table thead tr{ background:transparent; }
+    .alert-table thead th, .summary-table thead th{
+      text-align:left; font-size:12px; font-weight:700; color:var(--muted); padding:12px 14px;
+      letter-spacing:0.04em; text-transform:uppercase; border-bottom:1.5px solid var(--border); border-radius:0;
+    }
+    .alert-table tbody td, .summary-table tbody td{ text-align:left; padding:12px 14px; border-bottom:1px solid var(--border); }
+    .alert-table tbody tr:last-child td, .summary-table tbody tr:last-child td{ border-bottom:0; }
+    .alert-table tbody tr.clickable-row:hover td, .alert-table tbody tr.active td{ background:rgba(46,125,50,0.08); }
+    .alert-table .sev-pill{ display:inline-block; }
+    .summary-table .num, .summary-table th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+    .summary-details{ margin-top:8px; }
+    .summary-details > summary{ cursor:pointer; font-weight:700; font-size:13px; color:var(--muted); padding:8px 0; }
+
+    @media print{
+      @page{ size:A4 landscape; margin:12mm; }
+      .topbar, .sidebar, .main-header, .summary-quick-pills, .no-print, .modal-overlay{ display:none !important; }
+      body, .main, .card{ background:#fff !important; color:#000 !important; box-shadow:none !important; border:0 !important; }
+      .main{ margin:0 !important; padding:0 !important; width:100% !important; }
+      .layout, .app-shell{ display:block !important; }
+      .summary-table-wrap{ overflow:visible; border-color:#999; }
+      .summary-table thead th, .summary-table tbody td{ color:#000 !important; font-size:11px; padding:6px 8px; border-color:#999 !important; }
+      .summary-table tr{ break-inside:avoid; }
+      .summary-table thead{ display:table-header-group; }
+      .summary-kpi-card{ border:1px solid #999 !important; background:#fff !important; }
+    }
   </style>
 
 </head>
