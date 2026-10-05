@@ -159,6 +159,38 @@ body .modal-overlay { background: rgba(6,43,32,.55); backdrop-filter: blur(4px);
 body .modal-box { border: 0; border-radius: 18px; box-shadow: 0 24px 60px rgba(6,43,32,.24); }
 body .modal-box h2 { color: var(--admin-ink); font-weight: 800; }
 
+/* Keep the sign-out confirmation consistent with the System Admin palette. */
+body #confirmLogoutModal .modal-box {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  color: var(--admin-ink);
+}
+body #confirmLogoutModal .modal-box p {
+  color: var(--admin-muted);
+}
+body #confirmLogoutModal #cancelLogoutBtn {
+  background: #fff;
+  border-color: var(--admin-line);
+  color: var(--admin-forest-2);
+}
+body #confirmLogoutModal #cancelLogoutBtn:hover {
+  background: var(--admin-green-tint);
+  border-color: var(--admin-forest-2);
+}
+body #confirmLogoutModal #finalLogoutBtn {
+  background: var(--admin-forest-2) !important;
+  border-color: var(--admin-forest-2);
+  color: #fff !important;
+}
+body #confirmLogoutModal #finalLogoutBtn:hover {
+  background: var(--admin-forest) !important;
+  border-color: var(--admin-forest);
+}
+body #confirmLogoutModal button:focus-visible {
+  outline: 3px solid rgba(227,169,58,.55);
+  outline-offset: 2px;
+}
+
 .dashboard-header > div > p,
 .dashboard-panel-heading p {
   margin-top: 5px;
