@@ -324,11 +324,9 @@ function renderAewDashboard(data) {
         ["Registered Farmers", data.kpis.registered_farmers],
         ["Active Planting Intents", data.kpis.active_planting_intents],
         ["Expected Harvest · 30 days (kg)", data.kpis.expected_harvest_30d_kg],
-        ["Open Offtake Requests", data.kpis.open_offtake_requests],
         ["Reports Needing Revision", data.kpis.reports_needing_revision],
-        ["Active Alerts", data.kpis.active_alerts],
     ];
-    const kpiViews = ["farmers", "planting-intent", "planting-intent", "offtake-request", "reports", "map"];
+    const kpiViews = ["farmers", "planting-intent", "planting-intent", "reports"];
     document.getElementById("aewDashboardKpis").innerHTML = kpis.map(([label, value], index) => `<div class="aew-kpi" role="button" tabindex="0" data-dashboard-view="${kpiViews[index]}" aria-label="Open ${escapeHtml(label)}"><strong>${dashboardNumber(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
 
     const actions = data.action_required || [];

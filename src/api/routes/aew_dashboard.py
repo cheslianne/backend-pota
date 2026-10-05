@@ -218,8 +218,11 @@ def get_aew_dashboard(
         for month in months
     ]
 
-    # ---- Offtake requests (open = harvest date not yet passed) ----
-    open_offtakes = [request for request in offtakes if request.harvest_date >= today]
+    # ---- Offtake requests ----
+    # OfftakeRequest has no status or completion field. Until one exists,
+    # every request returned by the owned-request query is still open and
+    # must match the requests shown on the Offtake Requests page.
+    open_offtakes = offtakes
     offtake_pairs = {
         (request.farmer_id, _commodity_key(request.commodity) or (request.commodity or "").lower())
         for request in open_offtakes
