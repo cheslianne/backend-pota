@@ -3749,8 +3749,9 @@ async function manualRunETL() {
         return;
     }
 
-    const confirmed = confirm(
-        "Are you sure you want to run the ETL pipeline manually?"
+    const confirmed = await ESaka.confirm(
+        "Are you sure you want to run the ETL pipeline manually?",
+        { title: "Run ETL pipeline?", confirmText: "Run now" }
     );
     if (!confirmed) return;
 
@@ -3964,9 +3965,7 @@ function showActionConfirm({
 
     // Fallback to native confirm if modal markup is missing
     if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
-        if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
-            onConfirm && onConfirm();
-        }
+        ESaka.confirm(message, { title, confirmText }).then(ok => { if (ok && onConfirm) onConfirm(); });
         return;
     }
 

@@ -1452,7 +1452,7 @@ function initFarmerSubviews() {
                 return;
             }
 
-            const confirmSave = confirm("Are you sure you want to save these changes?\n\nFarmer: " + getFarmerFullName(currentActiveFarmer));
+            const confirmSave = await ESaka.confirm("Are you sure you want to save these changes?\n\nFarmer: " + getFarmerFullName(currentActiveFarmer), { title: "Save changes?", confirmText: "Save" });
             if (!confirmSave) return;
 
             const email = getValue("manEmail");
@@ -1605,11 +1605,11 @@ if (!gmailPattern.test(email)) {
    CANCEL FARMER EDIT
 ============================================================ */
 
-function cancelFarmerEdit() {
+async function cancelFarmerEdit() {
     const farmer = currentActiveFarmer;
     if (!farmer) return;
 
-    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) return;
+    if (!(await ESaka.confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.", { title: "Cancel editing?", confirmText: "Discard changes", cancelText: "Keep editing" }))) return;
 
     setValue("manAddress", farmer.address || "");
     setValue("manPhone", farmer.phone_number || "");
@@ -1824,7 +1824,7 @@ async function submitPlantingIntentStatus(intent) {
         return;
     }
 
-    if (!confirm("Are you sure you want to submit this planting intent?")) {
+    if (!(await ESaka.confirm("Are you sure you want to submit this planting intent?", { title: "Submit planting intent?", confirmText: "Submit" }))) {
         return;
     }
 
@@ -1896,7 +1896,7 @@ async function deletePlantingIntent(intent) {
         return;
     }
 
-    if (!confirm(`Are you sure you want to permanently delete this planting intent for "${intent.commodity}"?\n\nThis action cannot be undone.`)) {
+    if (!(await ESaka.confirm(`Are you sure you want to permanently delete this planting intent for "${intent.commodity}"?\n\nThis action cannot be undone.`, { title: "Delete planting intent?", confirmText: "Delete", danger: true }))) {
         return;
     }
 
@@ -1962,7 +1962,7 @@ async function pullPlantingIntent(intent) {
         return;
     }
 
-    if (!confirm("Are you sure you want to revert this planting intent to DRAFT?")) {
+    if (!(await ESaka.confirm("Are you sure you want to revert this planting intent to DRAFT?", { title: "Revert to draft?", confirmText: "Revert" }))) {
         return;
     }
 
@@ -2986,7 +2986,7 @@ async function findReportIdForIntent(intentId) {
 // TOGGLE PLANTING INTENT EDIT MODE
 // ============================================================
 
-function togglePlantingIntentEditMode() {
+async function togglePlantingIntentEditMode() {
     const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
         alert("No planting intent selected.");
@@ -3082,7 +3082,7 @@ function togglePlantingIntentEditMode() {
         console.log("Entered edit mode.");
 
     } else {
-        const confirmSave = confirm("Are you sure you want to save these changes?");
+        const confirmSave = await ESaka.confirm("Are you sure you want to save these changes?", { title: "Save changes?", confirmText: "Save" });
         if (!confirmSave) {
             cancelPlantingIntentEdit();
             return;
@@ -3096,7 +3096,7 @@ function togglePlantingIntentEditMode() {
 // CANCEL PLANTING INTENT EDIT
 // ============================================================
 
-function cancelPlantingIntentEdit() {
+async function cancelPlantingIntentEdit() {
     const intent = window.currentSelectedPlantingIntent;
     if (!intent) {
         console.warn("No planting intent to cancel edit.");
@@ -3106,7 +3106,7 @@ function cancelPlantingIntentEdit() {
     const details = document.getElementById("plantingIntentDetailsSubview");
     if (!details) return;
 
-    if (!confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.")) {
+    if (!(await ESaka.confirm("Are you sure you want to cancel editing?\n\nYour changes will be discarded.", { title: "Cancel editing?", confirmText: "Discard changes", cancelText: "Keep editing" }))) {
         return;
     }
 
@@ -3530,7 +3530,7 @@ function showConfirmModal({
 
     // Fallback to native confirm if modal markup is missing
     if (!modal || !titleEl || !textEl || !cancelBtn || !proceedBtn) {
-        if (window.confirm(message)) onConfirm && onConfirm();
+        ESaka.confirm(message, { title, confirmText }).then(ok => { if (ok && onConfirm) onConfirm(); });
         return;
     }
 
@@ -3890,9 +3890,10 @@ function initReporting() {
             // ============================================================
             // ✅ STEP 1: Confirm
             // ============================================================
-            const confirmed = confirm(
+            const confirmed = await ESaka.confirm(
                 "Are you sure you want to resubmit this report to Municipal?\n\n" +
-                "It will be sent back for validation and moved to the Pending list."
+                "It will be sent back for validation and moved to the Pending list.",
+                { title: "Resubmit report?", confirmText: "Resubmit" }
             );
             if (!confirmed) return;
 
@@ -10046,8 +10047,9 @@ function renderHistoricalMarketPrices(prices) {
 async function deleteHistoricalMarketPrice(marketPriceId, label, button) {
     if (!marketPriceId) return;
 
-    const confirmed = window.confirm(
-        `Remove ${label || "this historical market price record"}? This cannot be undone.`
+    const confirmed = await ESaka.confirm(
+        `Remove ${label || "this historical market price record"}? This cannot be undone.`,
+        { title: "Remove record?", confirmText: "Remove", danger: true }
     );
     if (!confirmed) return;
 

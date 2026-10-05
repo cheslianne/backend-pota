@@ -2483,9 +2483,7 @@ function showActionConfirm({
 
     // Fallback sa native confirm kung wala ang modal markup
     if (!modal || !titleEl || !messageEl || !okBtn || !cancelBtn) {
-        if (window.confirm(message.replace(/<[^>]*>/g, ""))) {
-            onConfirm && onConfirm();
-        }
+        ESaka.confirm(message, { title, confirmText }).then(ok => { if (ok && onConfirm) onConfirm(); });
         return;
     }
 
