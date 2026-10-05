@@ -150,20 +150,20 @@ def test_create_normalizes_role():
     response = client.post("/api/users", json={
         "first_name": "N", "last_name": "U", "username": "newaew",
         "email_address": "newaew@gmail.com", "phone_number": "09171234567",
-        "birthdate": "1990-01-15", "role": "AEW", "password": "Passw0rd!",
+        "role": "AEW", "password": "Passw0rd!",
     })
     assert response.status_code in (200, 201), response.text
     assert response.json()["role"] == "Agricultural Extension Worker", response.json()
-    assert response.json()["birthdate"] == "1990-01-15"
+    assert "birthdate" not in response.json()
 
 
-def test_profile_name_and_birthdate_round_trip():
+def test_profile_updates_only_return_required_account_data():
     acting["id"] = admin_one
-    response = put(plain_user, first_name="Avery", last_name="Santos", birthdate="1992-04-03")
+    response = put(plain_user, first_name="Avery", last_name="Santos")
     assert response.status_code == 200, response.text
     assert response.json()["first_name"] == "Avery"
     assert response.json()["last_name"] == "Santos"
-    assert response.json()["birthdate"] == "1992-04-03"
+    assert "birthdate" not in response.json()
 
 
 def test_admin_cannot_deactivate_own_account():
@@ -178,7 +178,7 @@ def test_admin_cannot_deactivate_own_account():
     session.close()
 
 
-def test_session_returns_profile_names_and_birthdate():
+def test_session_returns_profile_names_without_birthdate():
     session = session_factory()
     user = session.query(User).filter(User.user_id == admin_one).first()
     user.first_name = "Casey"
@@ -192,7 +192,7 @@ def test_session_returns_profile_names_and_birthdate():
     assert response.status_code == 200
     assert response.json()["first_name"] == "Casey"
     assert response.json()["last_name"] == "Admin"
-    assert response.json()["birthdate"] == "1988-02-09"
+    assert "birthdate" not in response.json()
 
 
 def test_delete_guards():

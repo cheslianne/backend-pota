@@ -142,7 +142,6 @@ function initProfileModal() {
     const profileUsername = document.getElementById("profileUsername");
     const profileFirstName = document.getElementById("profileFirstName");
     const profileLastName = document.getElementById("profileLastName");
-    const profileBirthdate = document.getElementById("profileBirthdate");
     const avatarOptions = document.querySelectorAll(".avatar-option");
 
     const customAlertModal = document.getElementById("customAlertModal");
@@ -196,9 +195,6 @@ function initProfileModal() {
         if (profileUsername) {
             profileUsername.value = localStorage.getItem("username") || localStorage.getItem("user_id") || "darfo_user_01";
         }
-        if (profileBirthdate) {
-            profileBirthdate.value = localStorage.getItem("user_birthdate") || "1980-01-15";
-        }
 
         avatarOptions.forEach(opt => {
             opt.classList.toggle("selected", opt.dataset.avatarImg === currentSelectedSrc);
@@ -233,15 +229,12 @@ function initProfileModal() {
 
         const fName = profileFirstName.value.trim();
         const lName = profileLastName.value.trim();
-        const bDate = profileBirthdate.value;
-
-        if (!fName || !lName || !bDate) {
+        if (!fName || !lName) {
             showCustomAlert("Pakisagutan ang lahat ng kinakailangang fields.");
             return;
         }
 
         localStorage.setItem("user_display_name", fName + " " + lName);
-        localStorage.setItem("user_birthdate", bDate);
         localStorage.setItem("user_avatar_src", currentSelectedSrc);
 
         loadSavedProfile();

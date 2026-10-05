@@ -11,7 +11,6 @@ def account_payload():
         "username": "elise.dela-cruz",
         "email_address": "elise@example.com",
         "phone_number": "09171234567",
-        "birthdate": "1990-01-15",
         "role": "Municipal Coordinator",
         "password": "Password1!",
     }
@@ -90,24 +89,11 @@ def test_profile_update_uses_the_same_field_validation():
         UserUpdate(first_name="Name🚀")
 
 
-def test_birthdate_is_validated_for_create_and_update():
-    payload = account_payload()
-    payload["birthdate"] = "2999-01-01"
-    with pytest.raises(ValidationError, match="Birthdate cannot be in the future"):
-        UserCreate(**payload)
-    with pytest.raises(ValidationError, match="Birthdate cannot be in the future"):
-        UserUpdate(birthdate="2999-01-01")
-
-
-def test_account_creation_requires_birthdate():
-    payload = account_payload()
-    del payload["birthdate"]
-    with pytest.raises(ValidationError, match="birthdate"):
-        UserCreate(**payload)
-
-    payload["birthdate"] = None
-    with pytest.raises(ValidationError, match="birthdate"):
-        UserCreate(**payload)
+def test_staff_account_schemas_do_not_collect_birthdate():
+    user = UserCreate(**account_payload())
+    assert "birthdate" not in UserCreate.model_fields
+    assert "birthdate" not in UserUpdate.model_fields
+    assert not hasattr(user, "birthdate")
 
 
 def test_password_feedback_requirements_are_enforced_by_api_schema():

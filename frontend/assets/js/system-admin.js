@@ -65,8 +65,7 @@ function initializeLoggedInUser(user) {
     localStorage.setItem("username", user.username);
     localStorage.setItem("role", role);
     if (fullName) localStorage.setItem("user_display_name", fullName);
-    if (user.birthdate) localStorage.setItem("user_birthdate", user.birthdate);
-    else localStorage.removeItem("user_birthdate");
+    localStorage.removeItem("user_birthdate");
     const usernameElement = document.getElementById("loggedInUserName");
     const roleElement = document.getElementById("loggedInUserRole");
     if (usernameElement) usernameElement.textContent = displayName;
@@ -383,7 +382,7 @@ function renderUsersTable() {
         const message = cachedUsers.length === 0
             ? "No users found."
             : "No users match your search.";
-        userRows.innerHTML = `<tr><td colspan="5" style="text-align:center;">${message}</td></tr>`;
+        userRows.innerHTML = `<tr><td colspan="6" style="text-align:center;">${message}</td></tr>`;
         currentUserPage = 1;
         renderPagination(0, usersPerPage, currentUserPage, () => {}).updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
         return;
@@ -401,6 +400,10 @@ function renderUsersTable() {
         const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—";
         const email = user.email_address || user.email || "—";
         const role = user.role || "—";
+        const createdAt = user.created_at ? new Date(user.created_at) : null;
+        const createdDate = createdAt && !Number.isNaN(createdAt.getTime())
+            ? createdAt.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "2-digit" })
+            : "—";
         const isActive = isUserActive(user);
         const roleStyle = getRoleStyle(role);
         const userId = user.user_id ?? user.id ?? "";
@@ -411,6 +414,7 @@ function renderUsersTable() {
             <td>${escapeHTML(email)}</td>
             <td><span class="role ${roleStyle.cls}">${escapeHTML(roleStyle.label)}</span></td>
             <td><span class="status-badge ${isActive ? "active" : "inactive"}">${isActive ? "Active" : "Inactive"}</span></td>
+            <td>${escapeHTML(createdDate)}</td>
             <td>
                 <button class="${isActive ? "btn-deactivate" : "btn-reactivate"}" type="button" data-user-id="${escapeHTML(userId)}" data-active="${isActive}" ${isCurrentUser && isActive ? 'disabled title="You cannot deactivate your own account."' : ""}>
                     ${isActive ? "Deactivate" : "Reactivate"}
@@ -465,7 +469,7 @@ async function loadUsers() {
     const userRows = document.getElementById("userRows");
     if (!userRows) return;
 
-    userRows.innerHTML = `<tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>`;
+    userRows.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading users...</td></tr>`;
     dashboardUsersLoading = true;
     dashboardUsersError = null;
     renderDashboardSummary();
@@ -482,7 +486,7 @@ async function loadUsers() {
         if (response.status === 403) {
             dashboardUsersError = getErrorMessage(data, "You do not have permission to view users.");
             dashboardUsersLoading = false;
-            userRows.innerHTML = `<tr><td colspan="5" class="api-error">${escapeHTML(dashboardUsersError)}</td></tr>`;
+            userRows.innerHTML = `<tr><td colspan="6" class="api-error">${escapeHTML(dashboardUsersError)}</td></tr>`;
             renderDashboardSummary();
             return;
         }
@@ -503,7 +507,7 @@ async function loadUsers() {
     } catch (error) {
         dashboardUsersError = error.message || "Failed to load users.";
         dashboardUsersLoading = false;
-        userRows.innerHTML = `<tr><td colspan="5" class="api-error">Failed to load users.<br><br>${escapeHTML(dashboardUsersError)}</td></tr>`;
+        userRows.innerHTML = `<tr><td colspan="6" class="api-error">Failed to load users.<br><br>${escapeHTML(dashboardUsersError)}</td></tr>`;
         renderDashboardSummary();
     }
 }
@@ -603,8 +607,7 @@ function parseDashboardDate(value) {
 function renderDashboardCharts() {
     const charts = [
         ["accountStatusChart", "accountStatusChartMessage"],
-        ["accountsCreatedChart", "accountsCreatedChartMessage"],
-        ["userGrowthChart", "userGrowthChartMessage"]
+        ["accountsCreatedChart", "accountsCreatedChartMessage"]
     ];
 
     const showChartMessage = message => {
@@ -653,23 +656,15 @@ function renderDashboardCharts() {
     );
     const monthKeys = monthDates.map(date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
     const createdPerMonth = new Map(monthKeys.map(key => [key, 0]));
-    let olderAccounts = 0;
 
     cachedUsers.forEach(user => {
         const createdAt = parseDashboardDate(user.created_at);
         if (!createdAt) return;
         const key = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
-        if (createdAt < monthStart) olderAccounts++;
         if (createdPerMonth.has(key)) createdPerMonth.set(key, createdPerMonth.get(key) + 1);
     });
 
     const monthlyCounts = monthKeys.map(key => createdPerMonth.get(key));
-    const growthCounts = [];
-    let cumulativeCount = olderAccounts;
-    monthlyCounts.forEach(count => {
-        cumulativeCount += count;
-        growthCounts.push(cumulativeCount);
-    });
     const monthLabels = monthDates.map(date => date.toLocaleDateString("en", { month: "short", year: "numeric" }));
 
     Object.values(dashboardChartInstances).forEach(chart => chart.destroy());
@@ -677,8 +672,7 @@ function renderDashboardCharts() {
 
     const statusCanvas = document.getElementById("accountStatusChart");
     const createdCanvas = document.getElementById("accountsCreatedChart");
-    const growthCanvas = document.getElementById("userGrowthChart");
-    if (!statusCanvas || !createdCanvas || !growthCanvas) return;
+    if (!statusCanvas || !createdCanvas) return;
 
     dashboardChartInstances.accountStatusChart = new Chart(statusCanvas, {
         type: "pie",
@@ -706,28 +700,6 @@ function renderDashboardCharts() {
                 data: monthlyCounts,
                 backgroundColor: "#2e7d5b",
                 borderRadius: 5
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    dashboardChartInstances.userGrowthChart = new Chart(growthCanvas, {
-        type: "line",
-        data: {
-            labels: monthLabels,
-            datasets: [{
-                label: "Cumulative accounts",
-                data: growthCounts,
-                borderColor: "#2e7d5b",
-                backgroundColor: "rgba(46, 125, 91, .12)",
-                pointBackgroundColor: "#e3a93a",
-                pointRadius: 3,
-                fill: true,
-                tension: .3
             }]
         },
         options: {
@@ -1193,7 +1165,6 @@ const addAccountFieldErrors = {
     last_name: ["lastName", "lastNameError"],
     username: ["newUsername", "newUsernameError"],
     email_address: ["newEmail", "newEmailError"],
-    birthdate: ["newBirthdate", "newBirthdateError"],
     password: ["newPassword", "passwordHint"],
     confirm_password: ["confirmPassword", "confirmPasswordHint"],
     phone_number: ["phoneNumber", "phoneNumberError"],
@@ -1248,7 +1219,6 @@ function validateAddAccountForm() {
     const lastName = document.getElementById("lastName");
     const username = document.getElementById("newUsername");
     const email = document.getElementById("newEmail");
-    const birthdate = document.getElementById("newBirthdate");
     const password = document.getElementById("newPassword");
     const confirmPassword = document.getElementById("confirmPassword");
     const phone = document.getElementById("phoneNumber");
@@ -1268,11 +1238,6 @@ function validateAddAccountForm() {
     if (!username.value.trim()) addError("username", "Please enter a username.");
     if (!email.value.trim()) addError("email_address", "Please enter an email address.");
     else if (!email.checkValidity()) addError("email_address", "Please enter a valid email address.");
-
-    const today = new Date();
-    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    if (!birthdate.value) addError("birthdate", "Please enter a birthdate.");
-    else if (birthdate.value > todayLocal) addError("birthdate", "Birthdate cannot be in the future.");
 
     if (getPasswordRequirements(password.value).length) {
         setAddAccountFieldError("password", getPasswordFeedback(password.value));
@@ -1312,7 +1277,6 @@ function showAddAccountApiErrors(data, fallback) {
         if (!fieldName && normalizedMessage.includes("email")) fieldName = "email_address";
         if (!fieldName && normalizedMessage.includes("password")) fieldName = "password";
         if (!fieldName && normalizedMessage.includes("phone")) fieldName = "phone_number";
-        if (!fieldName && normalizedMessage.includes("birthdate")) fieldName = "birthdate";
 
         if (fieldName && setAddAccountFieldError(fieldName, message)) {
             hasFieldError = true;
@@ -1381,7 +1345,6 @@ async function createAccount(event) {
     const lastName = document.getElementById("lastName")?.value.trim();
     const username = document.getElementById("newUsername")?.value.trim();
     const email = document.getElementById("newEmail")?.value.trim();
-    const birthdate = document.getElementById("newBirthdate")?.value;
     const password = document.getElementById("newPassword")?.value;
     const confirmPassword = document.getElementById("confirmPassword")?.value;
     const phone = document.getElementById("phoneNumber")?.value.trim();
@@ -1416,7 +1379,6 @@ async function createAccount(event) {
                 last_name: lastName,
                 username: username,
                 email_address: email,
-                birthdate: birthdate,
                 phone_number: phone,
                 role: role,
                 password: password,
@@ -1857,7 +1819,6 @@ async function openEditUserForm(user) {
     document.getElementById("editLastName").value = user.last_name || "";
     document.getElementById("editUsername").value = user.username || "";
     document.getElementById("editEmail").value = user.email_address || user.email || "";
-    document.getElementById("editBirthdate").value = user.birthdate || "";
     document.getElementById("editPhone").value = user.phone_number || user.phone || "";
     document.getElementById("editRole").value = user.role || "";
 
@@ -1900,7 +1861,6 @@ async function saveUserEdits(event) {
     const lastName = document.getElementById("editLastName").value.trim();
     const username = document.getElementById("editUsername").value.trim();
     const email = document.getElementById("editEmail").value.trim();
-    const birthdate = document.getElementById("editBirthdate").value;
     const phone = document.getElementById("editPhone").value.trim();
     const role = document.getElementById("editRole").value;
 
@@ -1936,7 +1896,6 @@ async function saveUserEdits(event) {
             last_name: lastName,
             username: username,
             email_address: email,
-            birthdate: birthdate || null,
             phone_number: phone,
             role: role,
             region: region,
@@ -1975,7 +1934,6 @@ async function saveUserEdits(event) {
                 last_name: lastName,
                 username,
                 email_address: email,
-                birthdate: birthdate || null,
                 phone_number: phone,
                 role,
                 region,
@@ -2090,7 +2048,6 @@ function initProfileModal() {
     const profileUsername = document.getElementById("profileUsername");
     const profileFirstName = document.getElementById("profileFirstName");
     const profileLastName = document.getElementById("profileLastName");
-    const profileBirthdate = document.getElementById("profileBirthdate");
     const avatarOptions = document.querySelectorAll(".avatar-option");
 
     const customAlertModal = document.getElementById("customAlertModal");
@@ -2140,10 +2097,6 @@ function initProfileModal() {
         if (profileUsername) {
             profileUsername.value = currentSessionUser?.username || localStorage.getItem("username") || "sysadmin";
         }
-        if (profileBirthdate) {
-            profileBirthdate.value = currentSessionUser?.birthdate || "";
-        }
-
         avatarOptions.forEach(opt => {
             opt.classList.toggle("selected", opt.dataset.avatarImg === currentSelectedSrc);
         });
@@ -2177,7 +2130,6 @@ function initProfileModal() {
 
         const fName = profileFirstName.value.trim();
         const lName = profileLastName.value.trim();
-        const bDate = profileBirthdate.value;
 
         if (!fName || !lName) {
             showCustomAlert("First name and last name are required.");
@@ -2203,7 +2155,6 @@ function initProfileModal() {
                 body: JSON.stringify({
                     first_name: fName,
                     last_name: lName,
-                    birthdate: bDate || null
                 })
             });
             let data = {};
@@ -2233,17 +2184,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentSessionUser = sessionUser;
     if (!initializeLoggedInUser(sessionUser)) return;
     if (!checkAdminRole()) return;
-    const today = new Date();
-    const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const birthdateInputs = [
-        document.getElementById("newBirthdate"),
-        document.getElementById("profileBirthdate"),
-        document.getElementById("editBirthdate")
-    ];
-    birthdateInputs.forEach(input => {
-        if (input) input.max = todayLocal;
-    });
-
     /* ============================================================
    PASSWORD TOGGLE (Show/Hide)
 ============================================================ */

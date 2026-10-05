@@ -231,7 +231,6 @@ def read_archived_users(
             "username": user.username,
             "email_address": user.email_address,
             "phone_number": user.phone_number,
-            "birthdate": user.birthdate,
             "role": user.role,
             "region": user.region,
             "province": user.province,

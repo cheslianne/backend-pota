@@ -20,6 +20,7 @@
   localStorage.removeItem("access_token");
   localStorage.removeItem("token");
   localStorage.removeItem("token_type");
+  localStorage.removeItem("user_birthdate");
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from datetime import date, datetime
+from datetime import datetime
 import unicodedata
 
 
@@ -61,7 +61,6 @@ class UserBase(BaseModel):
     username: str
     email_address: EmailStr
     phone_number: str
-    birthdate: date | None = None
     role: str
     region: str | None = None
     province: str | None = None
@@ -82,16 +81,8 @@ class UserBase(BaseModel):
     def phone_number_is_numeric(cls, value: str) -> str:
         return validate_phone_number(value)
 
-    @field_validator("birthdate")
-    @classmethod
-    def birthdate_is_not_in_the_future(cls, value: date | None) -> date | None:
-        if value is not None and value > date.today():
-            raise ValueError("Birthdate cannot be in the future.")
-        return value
-
 
 class UserCreate(UserBase):
-    birthdate: date
     password: str
 
     @field_validator("password")
@@ -106,7 +97,6 @@ class UserUpdate(BaseModel):
     username: str | None = None
     email_address: EmailStr | None = None
     phone_number: str | None = None
-    birthdate: date | None = None
     password: str | None = None
     role: str | None = None
     region: str | None = None
@@ -127,13 +117,6 @@ class UserUpdate(BaseModel):
     @classmethod
     def phone_number_is_numeric(cls, value: str | None) -> str | None:
         return validate_phone_number(value) if value is not None else None
-
-    @field_validator("birthdate")
-    @classmethod
-    def birthdate_is_not_in_the_future(cls, value: date | None) -> date | None:
-        if value is not None and value > date.today():
-            raise ValueError("Birthdate cannot be in the future.")
-        return value
 
 
 class UserStatusUpdate(BaseModel):
