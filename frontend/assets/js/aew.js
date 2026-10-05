@@ -281,7 +281,6 @@ function dashboardSwitchView(view) {
 }
 
 function initAewDashboard() {
-    document.getElementById("aewPrintButton")?.addEventListener("click", () => window.print());
     document.querySelectorAll("[data-dashboard-view]").forEach((button) => {
         button.addEventListener("click", () => dashboardSwitchView(button.dataset.dashboardView));
     });
