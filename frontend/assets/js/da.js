@@ -293,6 +293,20 @@ function initDaDashboard() {
             target?.click();
         });
     });
+
+    const actionsList = document.getElementById("daActionsList");
+    actionsList?.addEventListener("click", (event) => {
+        const reviewButton = event.target.closest(".da-priority-action");
+        if (!reviewButton) return;
+
+        const targetView = reviewButton.dataset.reviewTarget || "reports";
+        const target = document.querySelector(`.nav-item[data-view="${targetView}"]`);
+        if (target) {
+            target.click();
+        } else {
+            console.error(`Unable to open DA review view: ${targetView}`);
+        }
+    });
 }
 
 function escapeDaHtml(value) {
@@ -403,7 +417,10 @@ function renderDaDashboard(data) {
     const actionList = document.getElementById("daActionsList");
     if (actionList) {
         actionList.innerHTML = actions.length
-            ? actions.slice(0, 4).map(item => `<div class="da-priority-item"><div><span class="da-panel-tag">${escapeDaHtml(item.type || "Action")}</span><strong>${escapeDaHtml(item.label || item.name || "Action")}</strong><p>${escapeDaHtml(item.description || "Requires regional review and authorization.")}</p></div><footer><span>${escapeDaHtml(item.location || "Regional operations")}</span><button class="da-priority-action" type="button">Review →</button></footer></div>`).join("")
+            ? actions.slice(0, 4).map(item => {
+                const reviewTarget = item.type === "supply_risk" ? "map" : "reports";
+                return `<div class="da-priority-item"><div><span class="da-panel-tag">${escapeDaHtml(item.type || "Action")}</span><strong>${escapeDaHtml(item.label || item.name || "Action")}</strong><p>${escapeDaHtml(item.description || "Requires regional review and authorization.")}</p></div><footer><span>${escapeDaHtml(item.location || "Regional operations")}</span><button class="da-priority-action" data-review-target="${reviewTarget}" type="button">Review →</button></footer></div>`;
+            }).join("")
             : `<div class="da-action-item"><span class="da-action-name">No action items at the moment.</span><span class="da-action-count">0</span></div>`;
     }
     const actionCount = document.getElementById("daActionCount");
