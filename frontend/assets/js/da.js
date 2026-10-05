@@ -427,7 +427,10 @@ function renderDaDashboard(data) {
         actionList.innerHTML = actions.length
             ? actions.slice(0, 4).map(item => {
                 const reviewTarget = item.type === "supply_risk" ? "map" : "reports";
-                return `<div class="da-priority-item"><div><span class="da-panel-tag">${escapeDaHtml(item.type || "Action")}</span><strong>${escapeDaHtml(item.label || item.name || "Action")}</strong><p>${escapeDaHtml(item.description || "Requires regional review and authorization.")}</p></div><footer><span>${escapeDaHtml(item.location || "Regional operations")}</span><button class="da-priority-action" data-review-target="${reviewTarget}" type="button">Review →</button></footer></div>`;
+                const description = item.description
+                    ? `<p>${escapeDaHtml(item.description)}</p>`
+                    : "";
+                return `<div class="da-priority-item"><div><span class="da-panel-tag">${escapeDaHtml(item.type || "Action")}</span><strong>${escapeDaHtml(item.label || item.name || "Action")}</strong>${description}</div><footer><span>${escapeDaHtml(item.location || "Regional operations")}</span><button class="da-priority-action" data-review-target="${reviewTarget}" type="button">Review →</button></footer></div>`;
             }).join("")
             : `<div class="da-action-item"><span class="da-action-name">No action items at the moment.</span><span class="da-action-count">0</span></div>`;
     }
