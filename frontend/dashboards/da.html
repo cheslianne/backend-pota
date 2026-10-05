@@ -227,6 +227,27 @@
     .da-price-card .range{ display:block; margin-top:3px; color:var(--muted); font-size:9px; }
     .da-price-value{ color:var(--primary); font-size:14px; font-weight:800; text-align:right; white-space:nowrap; }
     .da-price-value small{ display:block; color:#2E7D32; font-size:8px; font-weight:700; }
+    .da-price-card .range{ min-height:24px; }
+    .da-timeline{ display:flex; flex-direction:column; gap:10px; }
+    .da-timeline-row{ display:grid; grid-template-columns:72px 1fr; gap:10px; align-items:center; }
+    .da-timeline-label{ color:var(--muted); font-size:10px; font-weight:700; }
+    .da-timeline-track{ display:flex; height:22px; overflow:hidden; border-radius:6px; background:#EEF2EE; }
+    .da-timeline-segment{ min-width:2px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:8px; font-weight:800; }
+    .da-timeline-legend{ display:flex; flex-wrap:wrap; gap:8px 12px; margin-top:3px; color:var(--muted); font-size:9px; }
+    .da-timeline-legend span::before{ content:""; display:inline-block; width:7px; height:7px; margin-right:4px; border-radius:2px; background:var(--primary); }
+    .da-timeline-legend span:nth-child(2)::before{ background:#D97706; }
+    .da-timeline-legend span:nth-child(3)::before{ background:#4F8A5B; }
+    .da-timeline-legend span:nth-child(4)::before{ background:#7C6AA6; }
+    .da-municipality-list{ display:flex; flex-direction:column; gap:10px; }
+    .da-municipality-row{ display:grid; grid-template-columns:92px 1fr 24px; gap:8px; align-items:center; color:var(--muted); font-size:10px; }
+    .da-municipality-row strong{ color:var(--primary); font-size:10px; }
+    .da-municipality-bar{ height:8px; overflow:hidden; border-radius:999px; background:#EEF2EE; }
+    .da-municipality-bar i{ display:block; height:100%; border-radius:inherit; background:var(--primary); }
+    .da-etl-reliability{ margin-bottom:12px; padding:10px; border-radius:9px; background:#F3F7F3; }
+    .da-etl-reliability-head{ display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .da-etl-reliability-head strong{ color:var(--primary); font-size:13px; }
+    .da-etl-reliability-track{ height:6px; margin-top:7px; overflow:hidden; border-radius:999px; background:#DCE7DE; }
+    .da-etl-reliability-track i{ display:block; height:100%; border-radius:inherit; background:#2E7D32; }
     .da-map-panel{ min-height:320px; }
     .da-mini-map{ position:relative; height:190px; overflow:hidden; border:1px solid #CDD8D0; border-radius:11px; background:linear-gradient(135deg,#D9E7DC 0%,#AFCDBA 45%,#D4E2D8 46%,#EEF1E8 100%); }
     .da-mini-map::before,.da-mini-map::after{ content:""; position:absolute; background:rgba(255,255,255,.6); transform:rotate(-18deg); }
@@ -1292,8 +1313,6 @@ input[type="checkbox"]{ accent-color:var(--primary); }
         <div class="da-dashboard-grid">
           <div class="card da-kpi da-kpi-primary"><div class="da-kpi-icon">♧</div><div class="da-kpi-info"><div class="da-kpi-label">Active alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div><div class="da-kpi-meta" id="daKpiAlertBreakdown">High · Medium · Low</div></div></div>
           <div class="card da-kpi da-kpi-amber"><div class="da-kpi-icon">▰</div><div class="da-kpi-info"><div class="da-kpi-label">Oversupply risks</div><div class="da-kpi-value" id="daKpiOversupply">—</div><div class="da-kpi-meta">Commodity-region pairs</div></div></div>
-          <div class="card da-kpi da-kpi-sand"><div class="da-kpi-icon">⌛</div><div class="da-kpi-info"><div class="da-kpi-label">Pending buyers</div><div class="da-kpi-value" id="daKpiPendingBuyers">—</div><div class="da-kpi-meta">Awaiting review</div></div></div>
-          <div class="card da-kpi da-kpi-green"><div class="da-kpi-icon">✓</div><div class="da-kpi-info"><div class="da-kpi-label">Verified buyers</div><div class="da-kpi-value" id="daKpiVerifiedBuyers">—</div><div class="da-kpi-meta">Active network</div></div></div>
           <div class="card da-kpi da-kpi-slate"><div class="da-kpi-icon">▤</div><div class="da-kpi-info"><div class="da-kpi-label">Final sign-off</div><div class="da-kpi-value" id="daKpiReports">—</div><div class="da-kpi-meta">Reports queued</div></div></div>
           <div class="card da-kpi da-kpi-red"><div class="da-kpi-icon">↻</div><div class="da-kpi-info"><div class="da-kpi-label">ETL health</div><div class="da-kpi-value" id="daKpiEtl">—</div><div class="da-kpi-meta">Last 10 runs</div></div></div>
         </div>
@@ -1311,20 +1330,19 @@ input[type="checkbox"]{ accent-color:var(--primary); }
               <div class="da-supply-advisory">ⓘ Official market advisory: alert limits are triggered automatically when projected supply breaches 110% of local demand. <button type="button" class="da-mini-button" data-view-target="threshold">Configure limits</button></div>
               <div class="da-hidden-table" aria-hidden="true"><table class="da-dashboard-table"><tbody id="daSupplyRiskBody"></tbody></table></div>
             </div>
-            <div class="da-dashboard-bottom-grid">
-              <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Live telemetry</span><h2>Recent Alerts &amp; Deviations</h2><p>Continuous monitoring of price drops, surplus alerts, and deficit warnings.</p></div><button class="da-mini-button" type="button" data-view-target="alerts">View all logs</button></div><div id="daAlertsList" class="da-alert-table-list"></div></div>
-              <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Price stability radar</span><h2>Farmgate vs Market Benchmark</h2><p>PSA OpenSTAT and Bantay Presyo indicators.</p></div><span class="da-panel-tag">Region II</span></div><div id="daPricesBody" class="da-price-cards"></div></div>
-            </div>
+            <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Harvest timeline</span><h2>Projected Harvest Volume</h2><p>Weekly harvest volume by commodity for the next 30 days.</p></div><span class="da-panel-tag">30-day view</span></div><div id="daHarvestTimeline" class="da-timeline"></div></div>
+            <div class="card da-dashboard-card da-panel-lg"><div class="da-panel-header"><div><span class="da-section-kicker">Price stability radar</span><h2>Farmgate vs Market Benchmark</h2><p>PSA OpenSTAT and Bantay Presyo indicators.</p></div><span class="da-panel-tag">Regional</span></div><div id="daPricesBody" class="da-price-cards"></div></div>
           </div>
 
           <div class="da-side-stack">
             <div class="card da-dashboard-card da-side-panel da-map-panel"><div class="da-panel-header"><div><span class="da-section-kicker">Geospatial clusters</span><h2>Pampanga Commodity Map Overview</h2></div><span class="da-panel-tag">4 clusters</span></div><div class="da-mini-map"><span class="da-map-label">Sector South · Pampanga</span><span class="da-map-pin pin-red">Angeles (Surplus)</span><span class="da-map-pin pin-green">San Fernando (Balanced)</span><span class="da-map-pin pin-amber">Apalit (Deficit)</span></div><div class="da-map-stats"><span><b>1</b> Surplus area</span><span><b>1</b> Deficit cluster</span><span><b>2</b> Balanced areas</span></div><button class="da-map-link" type="button" data-view-target="map">Open full regional map ↗</button></div>
             <div class="card da-dashboard-card da-side-panel">
-              <div class="da-panel-header"><h2>Report pipeline</h2><span class="count-badge muted">Live</span></div>
-              <div id="daPipelineList" class="da-stat-list"></div>
+              <div class="da-panel-header"><div><span class="da-section-kicker">Planting intent</span><h2>By Municipality</h2></div><span class="da-panel-tag">30-day view</span></div>
+              <div id="daPlantingIntentList" class="da-municipality-list"></div>
             </div>
             <div class="card da-dashboard-card da-side-panel">
               <div class="da-panel-header"><h2>ETL pipeline</h2><span class="count-badge muted">Health</span></div>
+              <div id="daEtlReliability" class="da-etl-reliability"></div>
               <div id="daEtlList" class="da-stat-list"></div>
             </div>
           </div>

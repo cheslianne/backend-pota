@@ -11,6 +11,7 @@ from src.core.database import get_db
 from src.models.etl_run_log import ETLRunLog
 from src.models.farmers import Farmer
 from src.models.market_price import MarketPrice
+from src.models.market_price_forecast import MarketPriceForecast
 from src.models.offtake_requests import OfftakeRequest
 from src.models.planting_intents import PlantingIntent
 from src.models.raw_plant_reports import RawPlantReport
@@ -129,6 +130,18 @@ def get_da_rfo_dashboard(
                 "message": f"{status.title()} risk for {commodity}.",
             })
 
+    intent_status = defaultdict(int)
+    harvest_timeline = defaultdict(lambda: defaultdict(float))
+    planting_intents_by_municipality = defaultdict(lambda: defaultdict(int))
+    for row in active_intents:
+        status = (row.finalized_status or "NOT PLANTED").upper()
+        intent_status[status] += 1
+        municipality = row.farmer.municipality if row.farmer else "Unknown"
+        planting_intents_by_municipality[municipality][status] += 1
+        if today <= row.harvest_date <= horizon:
+            week_start = row.harvest_date - timedelta(days=row.harvest_date.weekday())
+            harvest_timeline[week_start.isoformat()][_commodity(row.commodity) or "Other"] += _number(row.volume)
+
     prices = []
     for commodity in COMMODITIES:
         rows = sorted(
@@ -141,21 +154,32 @@ def get_da_rfo_dashboard(
             _number(latest.wholesale_price_per_kg) - _number(previous.wholesale_price_per_kg)
             if latest and previous else 0
         )
+        forecast = (
+            db.query(MarketPriceForecast)
+            .filter(MarketPriceForecast.commodity == commodity, MarketPriceForecast.forecast_date >= today)
+            .order_by(MarketPriceForecast.forecast_date.asc())
+            .first()
+        )
         prices.append({
             "commodity": commodity,
             "wholesale_price_per_kg": _number(latest.wholesale_price_per_kg) if latest else None,
             "retail_price_per_kg": _number(latest.retail_price_per_kg) if latest else None,
             "record_date": _iso(latest.record_date) if latest else None,
             "trend": "up" if delta > 0 else "down" if delta < 0 else "steady",
+            "forecast_low": _number(forecast.forecast_price_low) if forecast else None,
+            "forecast_high": _number(forecast.forecast_price_high) if forecast else None,
+            "forecast_date": _iso(forecast.forecast_date) if forecast else None,
         })
 
     etl = []
-    for row in db.query(ETLRunLog).order_by(ETLRunLog.run_date_time.desc()).limit(5).all():
+    recent_etl = db.query(ETLRunLog).order_by(ETLRunLog.run_date_time.desc()).limit(10).all()
+    for row in recent_etl[:5]:
         etl.append({
             "data_source": row.data_source,
             "status": row.status,
             "run_date_time": _iso(row.run_date_time),
         })
+    etl_successes = sum(1 for row in recent_etl if (row.status or "").upper() == "SUCCESS")
 
     flagged = report_counts["flagged"]
     if flagged:
@@ -180,6 +204,7 @@ def get_da_rfo_dashboard(
             "reports_pending": report_counts["municipal_pending"] + report_counts["provincial_pending"] + report_counts["regional_pending"],
             "reports_approved": report_counts["approved"],
             "alerts": len(alerts),
+            "etl_reliability_pct": round(etl_successes / len(recent_etl) * 100, 1) if recent_etl else None,
         },
         "actions": [
             {"type": "regional_validation", "label": "Reports awaiting regional validation", "count": report_counts["regional_pending"]},
@@ -190,6 +215,36 @@ def get_da_rfo_dashboard(
         "alerts": alerts,
         "prices": prices,
         "etl": etl,
+        "etl_reliability": {
+            "successes": etl_successes,
+            "runs": len(recent_etl),
+            "success_rate_pct": round(etl_successes / len(recent_etl) * 100, 1) if recent_etl else None,
+        },
+        "intent_status": [
+            {"status": status, "count": count}
+            for status, count in sorted(intent_status.items())
+        ],
+        "harvest_timeline": [
+            {
+                "week": week,
+                "commodities": {
+                    commodity: _number(volume)
+                    for commodity, volume in sorted(commodities.items())
+                },
+            }
+            for week, commodities in sorted(harvest_timeline.items())
+        ],
+        "planting_intents_by_municipality": [
+            {
+                "municipality": municipality,
+                "statuses": dict(sorted(statuses.items())),
+                "total": sum(statuses.values()),
+            }
+            for municipality, statuses in sorted(
+                planting_intents_by_municipality.items(),
+                key=lambda item: (-sum(item[1].values()), item[0]),
+            )
+        ],
         "report_pipeline": dict(report_counts),
         "summary": {
             "active_municipalities": len({item["municipality"] for item in supply_risk}),
