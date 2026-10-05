@@ -1,5 +1,4 @@
 ﻿(() => {
-  const themeKey = "esaka-theme";
   const apiBase = new URL(window.API_BASE_URL || "https://esaka-backend-production.up.railway.app");
   const nativeFetch = window.fetch.bind(window);
   let pendingApiRequests = 0;
@@ -22,29 +21,8 @@
   localStorage.removeItem("token_type");
   localStorage.removeItem("user_birthdate");
 
-  function setTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem(themeKey, theme);
-    const button = document.getElementById("themeToggle");
-    if (button) {
-      const dark = theme === "dark";
-      const label = dark ? "Switch to light mode" : "Switch to dark mode";
-      button.innerHTML = dark
-        ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
-        : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
-      button.title = label;
-      button.setAttribute("aria-label", label);
-      button.setAttribute("aria-pressed", String(dark));
-    }
-  }
-
-  const savedTheme = localStorage.getItem(themeKey);
-  document.documentElement.dataset.theme =
-    savedTheme === "dark" || savedTheme === "light"
-      ? savedTheme
-      : window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+  localStorage.removeItem("esaka-theme");
+  document.documentElement.dataset.theme = "light";
 
   function getSession() {
     if (!sessionPromise) {
@@ -179,16 +157,6 @@
   }, true);
 
   document.addEventListener("DOMContentLoaded", () => {
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.id = "themeToggle";
-    toggle.className = "theme-toggle";
-    toggle.addEventListener("click", () => {
-      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
-    });
-    const topbar = document.querySelector(".topbar-right");
-    (topbar || document.body).appendChild(toggle);
-    setTheme(document.documentElement.dataset.theme);
     updateLoadingState();
 
     document.addEventListener("click", event => {
