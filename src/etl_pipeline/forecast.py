@@ -22,6 +22,39 @@ DATA_SOURCE = "PSA OpenSTAT"
 ETL_CADENCE = "Quarterly"
 
 
+def _baseline_forecast(commodity, historical_data):
+    """Create a conservative monthly forecast when Prophet lacks enough history."""
+    if not historical_data:
+        return []
+
+    ordered = sorted(historical_data, key=lambda row: row["ds"])
+    latest_date = pd.Timestamp(ordered[-1]["ds"])
+    latest_price = float(ordered[-1]["y"])
+    prices = [float(row["y"]) for row in ordered]
+    observed_range = max(prices) - min(prices) if len(prices) > 1 else 0.0
+    interval = max(observed_range / 2, latest_price * 0.05, 0.01)
+    trend = 0.0
+    if len(ordered) > 1:
+        first = float(ordered[0]["y"])
+        trend = (latest_price - first) / (len(ordered) - 1)
+
+    results = []
+    for month_offset in range(1, FORECAST_MONTHS + 1):
+        forecast_date = latest_date + pd.offsets.MonthBegin(month_offset)
+        predicted = max(0.01, latest_price + trend * month_offset)
+        results.append({
+            "commodity": commodity,
+            "variety": None,
+            "data_source": DATA_SOURCE,
+            "etl_cadence": ETL_CADENCE,
+            "price_movement_wow": None,
+            "forecast_date": forecast_date.date(),
+            "forecast_price_low": Decimal(f"{max(0.01, predicted - interval):.2f}"),
+            "forecast_price_high": Decimal(f"{predicted + interval:.2f}"),
+        })
+    return results
+
+
 # ============================================================
 # GET HISTORICAL PRICE DATA
 # ============================================================
@@ -85,8 +118,8 @@ def generate_forecast(commodity):
     print(f"Historical records: {len(historical_data)}")
 
     if len(historical_data) < 3:
-        print("Not enough historical data for forecasting.")
-        return []
+        print("Not enough historical data for Prophet; using baseline forecast.")
+        return _baseline_forecast(commodity, historical_data)
 
     # ========================================================
     # PREPARE PROPHET DATA
