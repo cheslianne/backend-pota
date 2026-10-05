@@ -284,6 +284,17 @@ function initAewDashboard() {
     document.querySelectorAll("[data-dashboard-view]").forEach((button) => {
         button.addEventListener("click", () => dashboardSwitchView(button.dataset.dashboardView));
     });
+    document.getElementById("aewDashboardKpis")?.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-dashboard-view]");
+        if (card) dashboardSwitchView(card.dataset.dashboardView);
+    });
+    document.getElementById("aewDashboardKpis")?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const card = event.target.closest("[data-dashboard-view]");
+        if (!card) return;
+        event.preventDefault();
+        dashboardSwitchView(card.dataset.dashboardView);
+    });
     loadAewDashboard();
 }
 
@@ -317,7 +328,8 @@ function renderAewDashboard(data) {
         ["Reports Needing Revision", data.kpis.reports_needing_revision],
         ["Active Alerts", data.kpis.active_alerts],
     ];
-    document.getElementById("aewDashboardKpis").innerHTML = kpis.map(([label, value]) => `<div class="aew-kpi"><strong>${dashboardNumber(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+    const kpiViews = ["farmers", "planting-intent", "planting-intent", "offtake-request", "reports", "map"];
+    document.getElementById("aewDashboardKpis").innerHTML = kpis.map(([label, value], index) => `<div class="aew-kpi" role="button" tabindex="0" data-dashboard-view="${kpiViews[index]}" aria-label="Open ${escapeHtml(label)}"><strong>${dashboardNumber(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
 
     const actions = data.action_required || [];
     document.getElementById("aewDashboardActions").innerHTML = actions.length ? actions.slice(0, 8).map((item) => `<div class="aew-action"><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></div><button type="button" data-dashboard-view="${escapeHtml(item.view)}">${item.type === "revise_report" ? "Fix Report" : item.type === "match_offtake" ? "Match Offtake" : item.type === "confirm_planting" ? "Confirm Planted" : "Resume Form"}</button></div>`).join("") : '<div class="aew-empty">Nothing needs attention right now.</div>';
