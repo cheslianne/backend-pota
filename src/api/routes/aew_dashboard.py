@@ -306,19 +306,31 @@ def get_aew_dashboard(
         municipalities.add(current_user.municipality.strip().lower())
     map_data = _get_municipality_map_data(db)["data"]
     alerts = []
+    alert_keys = set()
     for entry in map_data:
         if entry["municipality"].strip().lower() not in municipalities:
             continue
         for item in entry["commodities"]:
-            if item["status"] == "OVERSUPPLY":
-                alerts.append({
-                    "municipality": entry["municipality"],
-                    "commodity": item["commodity"],
-                    "message": (
-                        f"Advisory: expected {item['commodity']} supply in "
-                        f"{entry['municipality']} is above the alert limit."
-                    ),
-                })
+            status = str(item.get("status") or "").upper()
+            if status not in {"OVERSUPPLY", "SURPLUS", "DEFICIT"}:
+                continue
+            commodity = str(item.get("commodity") or "").strip()
+            municipality = entry["municipality"].strip()
+            alert_type = "DEFICIT" if status == "DEFICIT" else "OVERSUPPLY"
+            alert_key = (municipality.lower(), commodity.lower(), alert_type)
+            if not commodity or alert_key in alert_keys:
+                continue
+            alert_keys.add(alert_key)
+            status_label = "below expected demand" if alert_type == "DEFICIT" else "above expected demand"
+            alerts.append({
+                "municipality": municipality,
+                "commodity": commodity,
+                "status": alert_type,
+                "message": (
+                    f"Advisory: expected {commodity} supply in "
+                    f"{municipality} is {status_label}."
+                ),
+            })
 
     # ---- Farmers without any planting intent (identifiers only) ----
     with_intent = {intent.farmer_id for intent in intents}

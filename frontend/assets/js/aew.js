@@ -10557,11 +10557,12 @@ function updateAEWNotifications(mapResult) {
             const commodity = String(item.commodity || "").trim();
             if (!commodity) continue;
 
-            const key = `${municipality.toLowerCase()}|${commodity.toLowerCase()}|${status}`;
+            const alertType = status === "DEFICIT" ? "DEFICIT" : "OVERSUPPLY";
+            const key = `${municipality.toLowerCase()}|${commodity.toLowerCase()}|${alertType}`;
             if (alertKeys.has(key)) continue;
 
             alertKeys.add(key);
-            alerts.push({ municipality, commodity, status });
+            alerts.push({ municipality, commodity, status: alertType });
         }
     }
 
