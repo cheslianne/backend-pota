@@ -354,6 +354,42 @@
     .view { display: none; }
     .view.active-view { display: block; }
 
+    .aew-dashboard-grid { display: grid; gap: 20px; }
+    .aew-dashboard-head, .aew-dashboard-panel, .aew-kpi {
+      background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(31, 54, 39, .06);
+    }
+    .aew-dashboard-head { padding: 24px; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    .aew-dashboard-head h1 { margin: 0; color: var(--green-dark); font-size: 28px; }
+    .aew-dashboard-head p { margin: 6px 0 0; color: var(--muted); }
+    .aew-freshness { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .aew-chip { padding: 7px 10px; border-radius: 999px; background: var(--green-light); color: var(--green-dark); font-size: 12px; }
+    .aew-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+    .aew-kpi { padding: 16px; min-height: 104px; }
+    .aew-kpi strong { display: block; font-size: 25px; color: var(--green-dark); }
+    .aew-kpi span { display: block; color: var(--muted); font-size: 12px; margin-top: 7px; }
+    .aew-dashboard-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 20px; }
+    .aew-dashboard-panel { padding: 18px; }
+    .aew-dashboard-panel h2 { margin: 0 0 14px; color: var(--green-dark); font-size: 18px; }
+    .aew-action { border-top: 1px solid var(--border-light); padding: 12px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .aew-action:first-child { border-top: 0; }
+    .aew-action strong, .aew-action small { display: block; }
+    .aew-action small { color: var(--muted); margin-top: 3px; }
+    .aew-action button, .aew-link { border: 0; background: var(--green-light); color: var(--green-dark); padding: 7px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    .aew-status-grid, .aew-pipeline-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .aew-status-item { background: var(--green-light); border-radius: 10px; padding: 12px; text-align: center; }
+    .aew-status-item strong { display: block; color: var(--green-dark); font-size: 20px; }
+    .aew-status-item span { font-size: 11px; color: var(--muted); }
+    .aew-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .aew-table th, .aew-table td { text-align: left; padding: 9px; border-bottom: 1px solid var(--border-light); }
+    .aew-table th { color: var(--muted); font-size: 11px; }
+    .aew-price-card { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; }
+    .aew-price-card small { display: block; color: var(--muted); margin-top: 4px; }
+    .aew-warning { color: #a35300; font-size: 11px; font-weight: 700; }
+    .aew-empty { color: var(--muted); padding: 12px 0; font-size: 13px; }
+    @media (max-width: 1100px) { .aew-kpis { grid-template-columns: repeat(3, 1fr); } .aew-dashboard-columns { grid-template-columns: 1fr; } }
+    @media (max-width: 650px) { .aew-kpis, .aew-status-grid, .aew-pipeline-grid { grid-template-columns: repeat(2, 1fr); } .aew-dashboard-head { align-items: flex-start; flex-direction: column; } .aew-freshness { justify-content: flex-start; } }
+
     .main-header {
       display: flex;
       align-items: center;
@@ -1944,7 +1980,11 @@ body .view.active-view { animation: esakaFade .35s ease; }
   <div class="layout">
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="farmers">
+        <button class="nav-item active" type="button" data-view="dashboard">
+          <svg viewBox="0 0 24 24"><path d="M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6v-9h-6v9zm0-16v5h6V4h-6z"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-item" type="button" data-view="farmers">
           <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Farmers
         </button>
@@ -1988,7 +2028,36 @@ body .view.active-view { animation: esakaFade .35s ease; }
       <!-- ============================================================
           VIEW 1: FARMERS
       ============================================================ -->
-      <section class="view active-view" id="view-farmers">
+      <section class="view active-view" id="view-dashboard">
+        <div class="aew-dashboard-grid">
+          <div class="aew-dashboard-head">
+            <div><h1 id="aewDashboardGreeting">Mabuhay!</h1><p id="aewDashboardLocation">AEW overview</p></div>
+            <div class="aew-freshness" id="aewDashboardFreshness"><span class="aew-chip">Loading data freshness...</span></div>
+          </div>
+          <div class="aew-kpis" id="aewDashboardKpis"></div>
+          <div class="aew-dashboard-columns">
+            <div class="aew-dashboard-panel"><h2>Action Required</h2><div id="aewDashboardActions"><div class="aew-empty">Loading actions...</div></div></div>
+            <div class="aew-dashboard-panel"><h2>Quick Actions</h2>
+              <div class="aew-action"><div><strong>Add Farmer</strong><small>Register a farmer without exposing PII here.</small></div><button type="button" data-dashboard-view="farmers">Open</button></div>
+              <div class="aew-action"><div><strong>Add Plant Intent</strong><small>Record the next planting plan.</small></div><button type="button" data-dashboard-view="planting-intent">Open</button></div>
+              <div class="aew-action"><div><strong>Create Offtake Request</strong><small>Match harvest with a buyer.</small></div><button type="button" data-dashboard-view="offtake-request">Open</button></div>
+              <div class="aew-action"><div><strong>Submit Report</strong><small>Send the weekly report for review.</small></div><button type="button" data-dashboard-view="reports">Open</button></div>
+            </div>
+          </div>
+          <div class="aew-dashboard-panel"><h2>Planting Intent Status</h2><div class="aew-status-grid" id="aewDashboardStatuses"></div></div>
+          <div class="aew-dashboard-columns">
+            <div class="aew-dashboard-panel"><h2>Supply Outlook</h2><div id="aewDashboardSupply"></div></div>
+            <div class="aew-dashboard-panel"><h2>Fair Price Snapshot</h2><div id="aewDashboardPrices"></div></div>
+          </div>
+          <div class="aew-dashboard-columns">
+            <div class="aew-dashboard-panel"><h2>Report Pipeline</h2><div class="aew-pipeline-grid" id="aewDashboardPipeline"></div></div>
+            <div class="aew-dashboard-panel"><h2>Municipal Supply Distribution</h2><div id="aewDashboardMap"></div><button class="aew-link" type="button" data-dashboard-view="map">Open Full Geospatial Map</button></div>
+          </div>
+          <div class="aew-dashboard-panel"><h2>Recent Field Activity</h2><div id="aewDashboardActivity"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-farmers">
           <div id="farmersListSubview">
               <div class="main-header">
                   <div class="header-left">

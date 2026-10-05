@@ -27,6 +27,7 @@ from src.api.routes import (
     audit_logs,
     email,
     public_stats,
+    aew_dashboard,
 )
 
 
@@ -90,6 +91,12 @@ app.include_router(
     offtake_requests.router,
     prefix="/api/offtake-requests",
     tags=["Offtake Requests"]
+)
+
+app.include_router(
+    aew_dashboard.router,
+    prefix="/api/aew/dashboard",
+    tags=["AEW Dashboard"]
 )
 
 app.include_router(

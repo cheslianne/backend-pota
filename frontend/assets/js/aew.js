@@ -91,6 +91,7 @@ let marketPriceFiltersBound = false;
 
 const MARKET_PRICES_ENDPOINT = `${API_BASE_URL}/api/market-prices/`;
 const MARKET_PRICE_FORECASTS_ENDPOINT = `${API_BASE_URL}/api/market-price-forecasts/monthly`;
+const AEW_DASHBOARD_ENDPOINT = `${API_BASE_URL}/api/aew/dashboard`;
 
 // Reporting
 let allIndividualReports = [];
@@ -261,7 +262,82 @@ document.addEventListener("DOMContentLoaded", async () => {
     initFarmerSearch();
     initializePlantingIntentSearch();
     initMarketPriceDashboard();
+    initAewDashboard();
 });
+
+function dashboardDate(value) {
+    if (!value) return "No data";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "No data" : date.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function dashboardNumber(value) {
+    return new Intl.NumberFormat("en-PH", { maximumFractionDigits: 0 }).format(Number(value || 0));
+}
+
+function dashboardSwitchView(view) {
+    const button = document.querySelector(`.nav-item[data-view="${view}"]`);
+    if (button) button.click();
+}
+
+function initAewDashboard() {
+    document.querySelectorAll("[data-dashboard-view]").forEach((button) => {
+        button.addEventListener("click", () => dashboardSwitchView(button.dataset.dashboardView));
+    });
+    loadAewDashboard();
+}
+
+async function loadAewDashboard() {
+    const actionsHost = document.getElementById("aewDashboardActions");
+    try {
+        const response = await fetch(AEW_DASHBOARD_ENDPOINT, { headers: { "Accept": "application/json" } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        renderAewDashboard(await response.json());
+    } catch (error) {
+        console.error("Failed to load AEW dashboard:", error);
+        if (actionsHost) actionsHost.innerHTML = '<div class="aew-empty" role="alert">Dashboard data could not be loaded. Please refresh and try again.</div>';
+    }
+}
+
+function renderAewDashboard(data) {
+    const greeting = document.getElementById("aewDashboardGreeting");
+    const location = document.getElementById("aewDashboardLocation");
+    const freshness = document.getElementById("aewDashboardFreshness");
+    if (greeting) greeting.textContent = `Mabuhay, ${data.aew_name || "AEW"}!`;
+    if (location) location.textContent = `${data.municipality || "Municipality not set"} · ${dashboardDate(data.today)}`;
+    if (freshness) freshness.innerHTML = [
+        ["PSA OpenSTAT", data.freshness?.psa_openstat],
+        ["Bantay Presyo", data.freshness?.bantay_presyo],
+    ].map(([label, value]) => `<span class="aew-chip">${escapeHtml(label)}: ${escapeHtml(dashboardDate(value))}</span>`).join("");
+
+    const kpis = [
+        ["Registered Farmers", data.kpis.registered_farmers],
+        ["Active Planting Intents", data.kpis.active_planting_intents],
+        ["Expected Harvest · 30 days (kg)", data.kpis.expected_harvest_30d_kg],
+        ["Open Offtake Requests", data.kpis.open_offtake_requests],
+        ["Reports Needing Revision", data.kpis.reports_needing_revision],
+        ["Active Alerts", data.kpis.active_alerts],
+    ];
+    document.getElementById("aewDashboardKpis").innerHTML = kpis.map(([label, value]) => `<div class="aew-kpi"><strong>${dashboardNumber(value)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+
+    const actions = data.action_required || [];
+    document.getElementById("aewDashboardActions").innerHTML = actions.length ? actions.slice(0, 8).map((item) => `<div class="aew-action"><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></div><button type="button" data-dashboard-view="${escapeHtml(item.view)}">${item.type === "revise_report" ? "Fix Report" : item.type === "match_offtake" ? "Match Offtake" : item.type === "confirm_planting" ? "Confirm Planted" : "Resume Form"}</button></div>`).join("") : '<div class="aew-empty">Nothing needs attention right now.</div>';
+    document.querySelectorAll("#aewDashboardActions [data-dashboard-view]").forEach((button) => button.addEventListener("click", () => dashboardSwitchView(button.dataset.dashboardView)));
+
+    const statusLabels = [["draft", "Draft"], ["not_planted", "Not Planted"], ["planted", "Planted"], ["harvested", "Harvested"], ["mediating", "Mediating"]];
+    document.getElementById("aewDashboardStatuses").innerHTML = statusLabels.map(([key, label]) => `<div class="aew-status-item"><strong>${dashboardNumber(data.intent_breakdown?.[key])}</strong><span>${label}</span></div>`).join("");
+    document.getElementById("aewDashboardPipeline").innerHTML = [["draft", "Draft"], ["municipal_pending", "Municipal Pending"], ["provincial", "Provincial"], ["approved", "Approved"]].map(([key, label]) => `<div class="aew-status-item"><strong>${dashboardNumber(data.report_pipeline?.[key])}</strong><span>${label}</span></div>`).join("");
+
+    document.getElementById("aewDashboardSupply").innerHTML = (data.supply_outlook || []).map((row) => {
+        const total = Object.values(row.volumes || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+        return `<div class="aew-action"><div><strong>${escapeHtml(row.label)}</strong><small>${Object.entries(row.volumes || {}).map(([commodity, volume]) => `${escapeHtml(commodity)}: ${dashboardNumber(volume)} kg`).join(" · ") || "No expected harvest"}</small></div><strong>${dashboardNumber(total)} kg</strong></div>`;
+    }).join("") || '<div class="aew-empty">No supply outlook data.</div>';
+
+    document.getElementById("aewDashboardPrices").innerHTML = (data.fair_prices || []).map((price) => `<div class="aew-price-card"><div><strong>${escapeHtml(price.commodity)}</strong><small>Last: ${price.last_price == null ? "No data" : `₱${Number(price.last_price).toFixed(2)}/kg`} · ${escapeHtml(price.trend)}</small></div><div><strong>${price.forecast_low == null ? "—" : `₱${Number(price.forecast_low).toFixed(2)}–₱${Number(price.forecast_high).toFixed(2)}`}</strong><small>${price.offtake_below_fair ? `<span class="aew-warning">${price.offtake_below_fair} offtake request(s) below fair range</span>` : "Forecast range"}</small></div></div>`).join("") || '<div class="aew-empty">No price data.</div>';
+
+    document.getElementById("aewDashboardMap").innerHTML = (data.map || []).slice(0, 5).map((entry) => `<div class="aew-action"><div><strong>${escapeHtml(entry.municipality)}</strong><small>${(entry.commodities || []).map((item) => `${escapeHtml(item.commodity)}: ${escapeHtml(item.status)}`).join(" · ") || "No data"}</small></div></div>`).join("") || '<div class="aew-empty">No municipal supply markers available.</div>';
+    document.getElementById("aewDashboardActivity").innerHTML = (data.recent_activity || []).map((item) => `<div class="aew-action"><div><strong>${escapeHtml(item.action)}</strong><small>${escapeHtml(item.resource_type)} #${escapeHtml(item.resource_id)} · ${escapeHtml(dashboardDate(item.created_at))}</small></div></div>`).join("") || '<div class="aew-empty">No recent activity.</div>';
+}
 
 
 /* ============================================================
