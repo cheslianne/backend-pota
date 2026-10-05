@@ -3705,11 +3705,14 @@ function initReporting() {
 
     if (createReportBtn) {
         createReportBtn.addEventListener("click", async function () {
-            console.log("Refreshing planting intents before opening report form...");
-            await fetchPlantingIntents();
-            await loadReports();
-            
-            openSubmitReportSubview();
+            setReportLoading(true);
+            try {
+                await fetchPlantingIntents();
+                await loadReports();
+                await openSubmitReportSubview();
+            } finally {
+                setReportLoading(false);
+            }
         });
     }
 
@@ -3860,28 +3863,7 @@ function initReporting() {
     }
 
     if (fileInput) {
-        fileInput.addEventListener("change", function () {
-            const files = Array.from(this.files || []);
-
-            if (fileNameInput) {
-                fileNameInput.value =
-                    files.length > 0
-                        ? files.map(file => file.name).join(", ")
-                        : "";
-            }
-
-            const list = document.getElementById("selectedFilesList");
-
-            if (list) {
-                if (files.length === 0) {
-                    list.innerHTML = "";
-                } else {
-                    list.innerHTML = files
-                        .map(file => `<div>${escapeHtml(file.name)}</div>`)
-                        .join("");
-                }
-            }
-        });
+        initReportAttachments();
 
         document.addEventListener("click", function(e) {
             if (e.target && e.target.id === "reportSummaryToggle") {
@@ -4993,9 +4975,194 @@ document.addEventListener('click', function(e) {
 // OPEN SUBMIT REPORT SUBVIEW
 // ============================================================
 
+function setReportLoading(isLoading) {
+    document.getElementById("reportLoadingOverlay")?.classList.toggle("hidden-element", !isLoading);
+}
+
+function formatReportFileSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+let reportAttachmentFiles = [];
+let reportAttachmentUrls = [];
+let reportReplaceIndex = -1;
+
+function setReportAttachments(files) {
+    reportAttachmentFiles = files;
+    const input = document.getElementById("reportFileInput");
+    if (input) {
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+    }
+    renderReportAttachmentList();
+}
+
+function isReportPdf(file) {
+    return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+}
+
+function renderReportAttachmentList() {
+    const list = document.getElementById("selectedFilesList");
+    const nameInput = document.getElementById("reportDocFilename");
+    reportAttachmentUrls.forEach(url => URL.revokeObjectURL(url));
+    reportAttachmentUrls = [];
+
+    if (nameInput) {
+        nameInput.value = reportAttachmentFiles.map(file => file.name).join(", ");
+    }
+    if (!list) return;
+    list.replaceChildren();
+
+    reportAttachmentFiles.forEach((file, index) => {
+        const item = document.createElement("div");
+        item.className = "report-file-item";
+
+        let thumb;
+        if (file.type.startsWith("image/")) {
+            const url = URL.createObjectURL(file);
+            reportAttachmentUrls.push(url);
+            thumb = document.createElement("img");
+            thumb.src = url;
+            thumb.alt = "";
+        } else {
+            thumb = document.createElement("div");
+            thumb.textContent = isReportPdf(file) ? "PDF" : (file.name.split(".").pop() || "FILE").slice(0, 4).toUpperCase();
+        }
+        thumb.className = "report-file-thumb";
+
+        const meta = document.createElement("div");
+        meta.className = "report-file-meta";
+        const name = document.createElement("div");
+        name.className = "report-file-name";
+        name.textContent = file.name;
+        name.title = file.name;
+        const size = document.createElement("div");
+        size.className = "report-file-size";
+        size.textContent = formatReportFileSize(file.size);
+        meta.append(name, size);
+
+        const actions = document.createElement("div");
+        actions.className = "report-file-actions";
+        [["Preview", "preview"], ["Replace", "replace"], ["Remove", "remove danger"]].forEach(([label, action]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "btn-outline-report " + (action.includes("danger") ? "danger" : "");
+            button.dataset.action = action.split(" ")[0];
+            button.dataset.index = String(index);
+            button.textContent = label;
+            actions.appendChild(button);
+        });
+
+        item.append(thumb, meta, actions);
+        list.appendChild(item);
+    });
+}
+
+function closeReportFilePreview() {
+    const modal = document.getElementById("reportFilePreviewModal");
+    const body = document.getElementById("reportFilePreviewBody");
+    modal?.classList.add("hidden-element");
+    if (body) {
+        body.querySelectorAll("[src]").forEach(el => {
+            if (el.src.startsWith("blob:")) URL.revokeObjectURL(el.src);
+        });
+        body.replaceChildren();
+    }
+}
+
+function previewReportFile(file) {
+    const modal = document.getElementById("reportFilePreviewModal");
+    const body = document.getElementById("reportFilePreviewBody");
+    const title = document.getElementById("reportFilePreviewName");
+    if (!modal || !body) return;
+
+    body.replaceChildren();
+    title.textContent = `${file.name} (${formatReportFileSize(file.size)})`;
+
+    if (file.type.startsWith("image/")) {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.alt = file.name;
+        body.appendChild(img);
+    } else if (isReportPdf(file)) {
+        const frame = document.createElement("iframe");
+        frame.src = URL.createObjectURL(file);
+        frame.title = file.name;
+        body.appendChild(frame);
+    } else {
+        const note = document.createElement("div");
+        note.textContent = "Preview is not available for this file type. Filename: " + file.name;
+        body.appendChild(note);
+    }
+    modal.classList.remove("hidden-element");
+}
+
+function initReportAttachments() {
+    const input = document.getElementById("reportFileInput");
+    const replaceInput = document.getElementById("reportReplaceInput");
+    const list = document.getElementById("selectedFilesList");
+    if (!input || input.dataset.previewReady === "true") return;
+    input.dataset.previewReady = "true";
+
+    input.addEventListener("change", function () {
+        const added = Array.from(this.files || []);
+        const existing = reportAttachmentFiles.filter(f => !added.includes(f));
+        const merged = existing.concat(added.filter(file =>
+            !existing.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)));
+        setReportAttachments(merged);
+    });
+
+    replaceInput?.addEventListener("change", function () {
+        const file = this.files?.[0];
+        if (file && reportReplaceIndex >= 0 && reportAttachmentFiles[reportReplaceIndex]) {
+            const next = reportAttachmentFiles.slice();
+            next[reportReplaceIndex] = file;
+            setReportAttachments(next);
+        }
+        reportReplaceIndex = -1;
+        this.value = "";
+    });
+
+    list?.addEventListener("click", function (event) {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const index = parseInt(button.dataset.index, 10);
+        const file = reportAttachmentFiles[index];
+        if (!file) return;
+
+        if (button.dataset.action === "preview") {
+            previewReportFile(file);
+        } else if (button.dataset.action === "replace") {
+            reportReplaceIndex = index;
+            replaceInput?.click();
+        } else if (button.dataset.action === "remove") {
+            setReportAttachments(reportAttachmentFiles.filter((_, i) => i !== index));
+        }
+    });
+
+    document.getElementById("reportFilePreviewClose")?.addEventListener("click", closeReportFilePreview);
+    document.getElementById("reportFilePreviewModal")?.addEventListener("click", function (event) {
+        if (event.target === this) closeReportFilePreview();
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeReportFilePreview();
+    });
+}
+
 async function openSubmitReportSubview(reportId = null) {
     console.log("Opening submit report subview...");
-    
+    setReportLoading(true);
+    try {
+        await openSubmitReportSubviewContent(reportId);
+    } finally {
+        setReportLoading(false);
+    }
+}
+
+async function openSubmitReportSubviewContent(reportId = null) {
     closeAllModals();
     resetReportForm();
     
@@ -5172,6 +5339,12 @@ function populateReportIntentSelect() {
     if (!select) return;
 
     const currentValue = select.value;
+    setTimeout(function () {
+        const search = document.getElementById("reportIntentSearch");
+        if (search && document.activeElement !== search) {
+            search.value = select.value ? (select.options[select.selectedIndex]?.textContent || "") : "";
+        }
+    }, 0);
     select.innerHTML = `<option value="">Select Planting Intent</option>`;
 
     const availableIntents = (PLANTING_INTENTS_DATA || []).filter(function(intent) {
@@ -5249,20 +5422,7 @@ function resetReportForm() {
         `;
     }
 
-    const files = document.getElementById("selectedFilesList");
-    if (files) {
-        files.innerHTML = "";
-    }
-
-    const fileName = document.getElementById("reportDocFilename");
-    if (fileName) {
-        fileName.value = "";
-    }
-
-    const reportFile = document.getElementById("reportFileInput");
-    if (reportFile) {
-        reportFile.value = "";
-    }
+    setReportAttachments([]);
 
     window.selectedReportIntents = [];
     
@@ -5280,6 +5440,7 @@ function resetReportForm() {
 // ============================================================
 
 function initAddIntentButton() {
+    initSearchableSelection("reportIntentSearch", "reportIntentSelect");
     const btn = document.getElementById("addIntentToReportBtn");
     if (!btn) {
         console.warn("addIntentToReportBtn not found");
@@ -5780,11 +5941,7 @@ async function saveReport(status) {
         }
 
         // ✅ I-CLEAR ANG FILE INPUT PAGKATAPOS I-UPLOAD
-        if (fileInput) fileInput.value = "";
-        const fileNameInput = document.getElementById("reportDocFilename");
-        if (fileNameInput) fileNameInput.value = "";
-        const filesList = document.getElementById("selectedFilesList");
-        if (filesList) filesList.innerHTML = "";
+        setReportAttachments([]);
 
         // ============================================================
         // ✅ FORCE RETURN TO REPORTS MAIN LIST

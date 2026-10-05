@@ -3120,6 +3120,7 @@ body .view.active-view { animation: esakaFade .35s ease; }
                CREATE NEW REPORT
           ============================================================ -->
           <div id="submitReportSubview" class="hidden-element">
+              <div id="reportLoadingOverlay" class="report-loading-overlay hidden-element" role="status" aria-live="polite"><div class="report-spinner"></div><span>Loading report form...</span></div>
               <div class="main-header">
                   <div class="header-left">
                       <h1>Create New Report</h1>
@@ -3141,9 +3142,18 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               Planting Intents <span class="req">*</span>
                           </label>
                           <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                              <select id="reportIntentSelect" style="flex:1; min-width:200px; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#fff;">
+                              <div style="flex:1; min-width:200px;">
+                                <div class="searchable-select" data-searchable-select="reportIntentSelect">
+                                  <input id="reportIntentSearch" class="searchable-select-input" type="search" role="combobox" aria-label="Search planting intent" aria-autocomplete="list" aria-expanded="false" aria-controls="reportIntentOptionList" placeholder="Search planting intents..." autocomplete="off">
+                                  <div class="searchable-select-options" id="reportIntentOptions">
+                                    <div class="searchable-select-list" id="reportIntentOptionList" role="listbox"></div>
+                                    <div class="searchable-select-pagination"></div>
+                                  </div>
+                                </div>
+                                <select id="reportIntentSelect" hidden aria-hidden="true" tabindex="-1">
                                   <option value="">Select Planting Intent</option>
-                              </select>
+                                </select>
+                              </div>
                               <button type="button" class="btn-primary" id="addIntentToReportBtn" style="white-space:nowrap;">+ Add Row</button>
                           </div>
 
@@ -3185,7 +3195,8 @@ body .view.active-view { animation: esakaFade .35s ease; }
                               <input type="text" id="reportDocFilename" placeholder="No file chosen" readonly style="flex:1; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; background:#F4EFE6; cursor:pointer;">
                               <button type="button" class="btn-outline-report" id="selectReportFileBtn">Select File</button>
                           </div>
-                          <div id="selectedFilesList" style="margin-top:8px; font-size:12px; color:var(--muted);"></div>
+                          <div id="selectedFilesList" class="report-file-list"></div>
+                          <input type="file" id="reportReplaceInput" style="display:none;">
                       </div>
 
                       <div class="actions-right-row">
@@ -3595,5 +3606,39 @@ body .view.active-view { animation: esakaFade .35s ease; }
     </div>
   </div>
 </div>
-</body>
+<div id="reportFilePreviewModal" class="report-preview-modal hidden-element" role="dialog" aria-modal="true" aria-label="File preview">
+  <div class="report-preview-dialog">
+    <div class="report-preview-head"><strong id="reportFilePreviewName"></strong><button type="button" id="reportFilePreviewClose" class="btn-outline-report">Close</button></div>
+    <div class="report-preview-body" id="reportFilePreviewBody"></div>
+  </div>
+</div>
+<style>
+.report-loading-overlay{position:fixed;inset:0;z-index:2500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,.75);font-weight:600;color:var(--ink)}
+.report-loading-overlay.hidden-element{display:none!important}
+.report-spinner{width:38px;height:38px;border:4px solid #d9d2c3;border-top-color:#2E7D32;border-radius:50%;animation:reportSpin .8s linear infinite}
+@keyframes reportSpin{to{transform:rotate(360deg)}}
+.report-file-list{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.report-file-item{display:flex;align-items:center;gap:12px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.report-file-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#F4EFE6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex:none}
+.report-file-meta{flex:1;min-width:0}
+.report-file-name{font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report-file-size{font-size:12px;color:var(--muted)}
+.report-file-actions{display:flex;gap:6px;flex-wrap:wrap}
+.report-file-actions button{padding:4px 10px;font-size:12px;cursor:pointer}
+.report-file-actions .danger{border-color:#C0392B;color:#C0392B}
+.report-preview-modal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.report-preview-modal.hidden-element{display:none!important}
+.report-preview-dialog{background:#fff;border-radius:14px;width:min(900px,100%);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.report-preview-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);color:var(--ink)}
+.report-preview-body{padding:12px;overflow:auto;min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.report-preview-body img{max-width:100%;max-height:70vh}
+.report-preview-body iframe{width:100%;height:70vh;border:0}
+html[data-theme="dark"] .report-loading-overlay{background:rgba(10,15,12,.75)}
+html[data-theme="dark"] .report-file-item,
+html[data-theme="dark"] .report-preview-dialog{background:#1b2420;border-color:#33423a;color:#e8efe9}
+html[data-theme="dark"] .report-file-thumb{background:#26322c}
+html[data-theme="dark"] .report-file-name,
+html[data-theme="dark"] .report-preview-head,
+html[data-theme="dark"] .report-preview-body{color:#e8efe9}
+</style></body>
 </html>
