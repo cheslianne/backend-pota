@@ -138,6 +138,28 @@
       background:var(--white); border:1px solid var(--border);
       border-radius:12px; padding:24px 28px;
     }
+    .da-dashboard-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+    .da-kpi{ border-left:5px solid var(--secondary); padding:18px 20px; }
+    .da-kpi:nth-child(2){ border-left-color:#D97706; }
+    .da-kpi:nth-child(3){ border-left-color:#2E7D32; }
+    .da-kpi:nth-child(4){ border-left-color:#C0392B; }
+    .da-kpi-label{ color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .da-kpi-value{ color:var(--primary); font-size:28px; font-weight:800; margin-top:7px; }
+    .da-dashboard-columns{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr); gap:18px; }
+    .da-dashboard-card{ margin-bottom:18px; }
+    .da-dashboard-card h2{ color:var(--primary); font-size:16px; margin-bottom:14px; }
+    .da-dashboard-table{ width:100%; margin:0; border-collapse:collapse; }
+    .da-dashboard-table th,.da-dashboard-table td{ border-bottom:1px solid var(--border-light); padding:10px 8px; text-align:left; font-size:12px; }
+    .da-dashboard-table th{ color:var(--muted); font-size:10px; letter-spacing:.05em; text-transform:uppercase; }
+    .da-status{ border-radius:999px; display:inline-block; padding:4px 9px; font-size:10px; font-weight:800; }
+    .da-status.SURPLUS{ background:#FFF0D5; color:#9A5B00; }
+    .da-status.DEFICIT{ background:#FDE7E5; color:#A83227; }
+    .da-status.BALANCED{ background:#E5F3E8; color:#216B35; }
+    .da-status.NO_DEMAND{ background:#EEF1F0; color:#5F6B65; }
+    .da-alert{ border-left:4px solid #D97706; background:#FFF8EA; border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:12px; }
+    .da-alert.high{ border-left-color:#C0392B; background:#FFF1F0; }
+    @media (max-width:900px){ .da-dashboard-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } .da-dashboard-columns{ grid-template-columns:1fr; } }
+    @media (max-width:520px){ .da-dashboard-grid{ grid-template-columns:1fr; } }
 
     /* ---------- PAGE HEADER (eyebrow + title + description) ---------- */
 .main-header{ align-items:flex-end; margin-bottom:26px; }
@@ -1083,7 +1105,11 @@ input[type="checkbox"]{ accent-color:var(--primary); }
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
-        <button class="nav-item active" type="button" data-view="buyer-registry">
+        <button class="nav-item active" type="button" data-view="dashboard">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-item" type="button" data-view="buyer-registry">
           <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Buyer Registry
         </button>
@@ -1126,8 +1152,43 @@ input[type="checkbox"]{ accent-color:var(--primary); }
     <!-- MAIN CONTENT -->
     <main class="main">
 
-      <!-- VIEW 1: Buyer Registry (redesigned — cards + report-style tables) -->
-      <section class="view active-view" id="view-buyer-registry">
+      <!-- VIEW 1: DA-RFO Regional Dashboard -->
+      <section class="view active-view" id="view-dashboard">
+        <div class="main-header">
+          <div class="header-left">
+            <span class="eyebrow">Regional Operations</span>
+            <h1>DA-RFO Dashboard</h1>
+            <p>PII-free regional view of supply, prices, alerts, and report operations.</p>
+          </div>
+          <button class="btn-outline-report" id="refreshDaDashboardBtn" type="button">Refresh</button>
+        </div>
+        <div class="da-dashboard-grid">
+          <div class="card da-kpi"><div class="da-kpi-label">Registered farmers</div><div class="da-kpi-value" id="daKpiFarmers">—</div></div>
+          <div class="card da-kpi"><div class="da-kpi-label">Expected harvest · 30 days</div><div class="da-kpi-value" id="daKpiHarvest">—</div></div>
+          <div class="card da-kpi"><div class="da-kpi-label">Reports pending</div><div class="da-kpi-value" id="daKpiReports">—</div></div>
+          <div class="card da-kpi"><div class="da-kpi-label">Active alerts</div><div class="da-kpi-value" id="daKpiAlerts">—</div></div>
+        </div>
+        <div class="da-dashboard-columns">
+          <div>
+            <div class="card da-dashboard-card">
+              <h2>Supply risk by municipality and commodity</h2>
+              <div style="overflow-x:auto;"><table class="da-dashboard-table"><thead><tr><th>Municipality</th><th>Commodity</th><th>Supply kg</th><th>Demand kg</th><th>Status</th></tr></thead><tbody id="daSupplyRiskBody"><tr><td colspan="5">Loading regional aggregates...</td></tr></tbody></table></div>
+            </div>
+            <div class="card da-dashboard-card">
+              <h2>Market prices</h2>
+              <div style="overflow-x:auto;"><table class="da-dashboard-table"><thead><tr><th>Commodity</th><th>Wholesale/kg</th><th>Retail/kg</th><th>Trend</th></tr></thead><tbody id="daPricesBody"></tbody></table></div>
+            </div>
+          </div>
+          <div>
+            <div class="card da-dashboard-card"><h2>Actions &amp; alerts</h2><div id="daActionsList"></div><div id="daAlertsList"></div></div>
+            <div class="card da-dashboard-card"><h2>Report pipeline</h2><div id="daPipelineList"></div></div>
+            <div class="card da-dashboard-card"><h2>ETL pipeline</h2><div id="daEtlList"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: Buyer Registry (redesigned — cards + report-style tables) -->
+      <section class="view" id="view-buyer-registry">
         <div id="buyerRegistryList">
 
           <div class="main-header">

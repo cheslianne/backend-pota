@@ -28,6 +28,7 @@ from src.api.routes import (
     email,
     public_stats,
     aew_dashboard,
+    da_rfo_dashboard,
 )
 
 
@@ -97,6 +98,12 @@ app.include_router(
     aew_dashboard.router,
     prefix="/api/aew/dashboard",
     tags=["AEW Dashboard"]
+)
+
+app.include_router(
+    da_rfo_dashboard.router,
+    prefix="/api/da-rfo/dashboard",
+    tags=["DA-RFO Dashboard"]
 )
 
 app.include_router(

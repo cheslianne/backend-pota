@@ -17,6 +17,7 @@ const APPROVED_BY_REGIONAL_ENDPOINT    = `${API_BASE_URL}/api/report-submissions
 const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions/bulk-approve`;
 
 const REGIONAL_SUMMARY_ENDPOINT        = `${API_BASE_URL}/api/report-submissions/regional-summary`;
+const DA_RFO_DASHBOARD_ENDPOINT       = `${API_BASE_URL}/api/da-rfo/dashboard`;
 
 
 /* ============================================================
@@ -113,6 +114,7 @@ let selectedReport = null;
 
 let currentSummaryPeriod = { start: null, end: null, preset: "this-week" };
 let currentSummaryData = null;
+let daDashboardData = null;
 
 /* ---------- PAGINATION STATE (7 items per page) ---------- */
 const ITEMS_PER_PAGE = 7;
@@ -250,6 +252,7 @@ function initProfileModal() {
 document.addEventListener("DOMContentLoaded", async () => {
     initSidebar();
     initViewNavigation();
+    initDaDashboard();
     initMap();
     initBuyerRegistry();
     initAlertThreshold();
@@ -272,11 +275,71 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await loadReports();
 
+    if (document.getElementById("view-dashboard")?.classList.contains("active-view")) {
+        loadDaDashboard();
+    }
     const summaryView = document.getElementById("view-summary");
     if (summaryView && summaryView.classList.contains("active-view")) {
         loadRegionalSummary();
     }
 });
+
+function initDaDashboard() {
+    const refreshButton = document.getElementById("refreshDaDashboardBtn");
+    refreshButton?.addEventListener("click", loadDaDashboard);
+}
+
+function escapeDaHtml(value) {
+    return String(value ?? "—").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[char]));
+}
+
+function renderDaDashboard(data) {
+    const kpis = data.kpis || {};
+    const set = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+    set("daKpiFarmers", Number(kpis.registered_farmers || 0).toLocaleString());
+    set("daKpiHarvest", `${Number(kpis.expected_harvest_30d_kg || 0).toLocaleString()} kg`);
+    set("daKpiReports", Number(kpis.reports_pending || 0).toLocaleString());
+    set("daKpiAlerts", Number(kpis.alerts || 0).toLocaleString());
+
+    const riskBody = document.getElementById("daSupplyRiskBody");
+    if (riskBody) {
+        riskBody.innerHTML = (data.supply_risk || []).length
+            ? data.supply_risk.map(item => `<tr><td>${escapeDaHtml(item.municipality)}</td><td>${escapeDaHtml(item.commodity)}</td><td>${Number(item.supply_30d_kg || 0).toLocaleString()}</td><td>${Number(item.demand_30d_kg || 0).toLocaleString()}</td><td><span class="da-status ${escapeDaHtml(item.status)}">${escapeDaHtml(item.status)}</span></td></tr>`).join("")
+            : `<tr><td colspan="5">No regional supply data available.</td></tr>`;
+    }
+    const priceBody = document.getElementById("daPricesBody");
+    if (priceBody) {
+        priceBody.innerHTML = (data.prices || []).map(item => `<tr><td>${escapeDaHtml(item.commodity)}</td><td>${item.wholesale_price_per_kg == null ? "—" : `₱${Number(item.wholesale_price_per_kg).toFixed(2)}`}</td><td>${item.retail_price_per_kg == null ? "—" : `₱${Number(item.retail_price_per_kg).toFixed(2)}`}</td><td>${escapeDaHtml(item.trend)}</td></tr>`).join("");
+    }
+    const actionList = document.getElementById("daActionsList");
+    if (actionList) actionList.innerHTML = (data.actions || []).map(item => `<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:12px;"><span>${escapeDaHtml(item.label)}</span><strong>${Number(item.count || 0).toLocaleString()}</strong></div>`).join("");
+    const alertList = document.getElementById("daAlertsList");
+    if (alertList) alertList.innerHTML = (data.alerts || []).map(item => `<div class="da-alert ${item.severity === "high" ? "high" : ""}"><strong>${escapeDaHtml(item.severity)}</strong> · ${escapeDaHtml(item.message || `${item.municipality} · ${item.commodity}`)}</div>`).join("") || `<div style="color:var(--muted);font-size:12px;">No active alerts.</div>`;
+    const pipeline = document.getElementById("daPipelineList");
+    if (pipeline) pipeline.innerHTML = Object.entries(data.report_pipeline || {}).map(([key, value]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;"><span>${escapeDaHtml(key.replaceAll("_", " "))}</span><strong>${Number(value || 0).toLocaleString()}</strong></div>`).join("");
+    const etl = document.getElementById("daEtlList");
+    if (etl) etl.innerHTML = (data.etl || []).map(item => `<div style="padding:7px 0;border-bottom:1px solid var(--border-light);font-size:11px;"><strong>${escapeDaHtml(item.data_source)}</strong><br><span style="color:var(--muted);">${escapeDaHtml(item.status)} · ${escapeDaHtml(item.run_date_time)}</span></div>`).join("") || `<div style="color:var(--muted);font-size:12px;">No ETL runs recorded.</div>`;
+}
+
+async function loadDaDashboard() {
+    try {
+        daDashboardData = await fetchJsonWithTimeout(
+            DA_RFO_DASHBOARD_ENDPOINT,
+            { method: "GET", headers: getAuthHeaders(false) },
+            15000
+        );
+        renderDaDashboard(daDashboardData);
+    } catch (error) {
+        console.error("Load DA-RFO dashboard error:", error);
+        const body = document.getElementById("daSupplyRiskBody");
+        if (body) body.innerHTML = `<tr><td colspan="5">Unable to load regional dashboard.</td></tr>`;
+    }
+}
 
 
 /* ============================================================
@@ -418,6 +481,7 @@ function initViewNavigation() {
                 setTimeout(() => mapInstance.invalidateSize(), 100);
             }
 
+            if (targetViewKey === "dashboard") loadDaDashboard();
             if (targetViewKey === "buyer-registry") loadBuyerRegistry();
             if (targetViewKey === "reports") loadReports();
             if (targetViewKey === "summary") loadRegionalSummary();
