@@ -334,6 +334,14 @@ function renderDaDashboard(data) {
         return str.replace("T", " ").replace("Z", " UTC");
     };
 
+    const normalizeDateOnly = (value) => {
+        if (!value) return "—";
+        const str = String(value).trim();
+        if (!str || str === "null" || str === "undefined") return "—";
+        const dateMatch = str.match(/^(\d{4}-\d{2}-\d{2})/);
+        return dateMatch ? dateMatch[1] : str;
+    };
+
     const titleCase = (value) => {
         const str = String(value ?? "").replace(/[_-]+/g, " ").trim();
         if (!str) return "—";
@@ -350,7 +358,7 @@ function renderDaDashboard(data) {
     const lastRefresh = data.last_refresh || data.last_updated || data.data_freshness?.last_refresh || data.freshness?.last_ingestion || data.last_ingestion || "";
     const psaRefresh = data.psa_openstat_date || data.psa_last_ingestion || data.freshness?.psa_openstat || data.freshness?.psa || "";
     set("daLastRefresh", normalizeRefresh(lastRefresh));
-    set("daLastPsa", normalizeRefresh(psaRefresh));
+    set("daLastPsa", normalizeDateOnly(psaRefresh));
 
     const riskBody = document.getElementById("daSupplyRiskBody");
     if (riskBody) {
